@@ -148,22 +148,32 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+      {/* Animated background effects - match My Voice Agents */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="relative z-10 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Package className="h-8 w-8" />
-            Inventory Management
+            <span className="text-gray-700">Inventory</span>
+            <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+              Management
+            </span>
           </h1>
-          <p className="text-muted-foreground">Track stock, manage suppliers, and monitor alerts</p>
+          <p className="text-gray-600 mt-1">Track stock, manage suppliers, and monitor alerts</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={loadInventoryData}>
+          <Button variant="outline" onClick={loadInventoryData} className="border-purple-200 text-gray-700 hover:bg-purple-50">
             <Search className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button onClick={() => toast.info('Add Item dialog coming soon')}>
+          <Button onClick={() => toast.info('Add Item dialog coming soon')} className="bg-purple-600 hover:bg-purple-700">
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
@@ -173,64 +183,72 @@ export default function InventoryPage() {
       {/* Quick Stats */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-              <Package className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalItems}</div>
-              <p className="text-xs text-muted-foreground">Active inventory</p>
-            </CardContent>
-          </Card>
+          <div className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-row items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Total Items</p>
+                <p className="text-2xl font-bold mt-1 text-gray-900">{stats.totalItems}</p>
+                <p className="text-xs text-gray-500">Active inventory</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/20">
+                <Package className="h-5 w-5 text-purple-500" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStockCount}</div>
-              <p className="text-xs text-muted-foreground">Need attention</p>
-            </CardContent>
-          </Card>
+          <div className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-row items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Low Stock</p>
+                <p className="text-2xl font-bold mt-1 text-gray-900">{stats.lowStockCount}</p>
+                <p className="text-xs text-gray-500">Need attention</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-500/20">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.outOfStockCount}</div>
-              <p className="text-xs text-muted-foreground">Critical</p>
-            </CardContent>
-          </Card>
+          <div className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-row items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Out of Stock</p>
+                <p className="text-2xl font-bold mt-1 text-gray-900">{stats.outOfStockCount}</p>
+                <p className="text-xs text-gray-500">Critical</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-500/20">
+                <TrendingDown className="h-5 w-5 text-red-500" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalValue}</div>
-              <p className="text-xs text-muted-foreground">Inventory value</p>
-            </CardContent>
-          </Card>
+          <div className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-row items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Total Value</p>
+                <p className="text-2xl font-bold mt-1 text-gray-900">${stats.totalValue}</p>
+                <p className="text-xs text-gray-500">Inventory value</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-500/20">
+                <DollarSign className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="items">
+        <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+          <TabsTrigger value="items" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 data-[state=inactive]:hover:text-purple-600">
             <Package className="h-4 w-4 mr-2" />
             Items ({items.length})
           </TabsTrigger>
-          <TabsTrigger value="suppliers">
+          <TabsTrigger value="suppliers" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 data-[state=inactive]:hover:text-purple-600">
             <Truck className="h-4 w-4 mr-2" />
             Suppliers ({suppliers.length})
           </TabsTrigger>
-          <TabsTrigger value="alerts">
+          <TabsTrigger value="alerts" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 data-[state=inactive]:hover:text-purple-600">
             <AlertTriangle className="h-4 w-4 mr-2" />
             Alerts ({alerts.length})
           </TabsTrigger>
@@ -250,26 +268,22 @@ export default function InventoryPage() {
           </div>
 
           {loading ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                Loading items...
-              </CardContent>
-            </Card>
+            <div className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm py-12 text-center text-gray-600">
+              Loading items...
+            </div>
           ) : filteredItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Inventory Items</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Start adding items to track your inventory
-                </p>
-                <Button>Add First Item</Button>
-              </CardContent>
-            </Card>
+            <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-white/50 text-center">
+              <Package className="h-12 w-12 text-purple-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No inventory items yet</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Start adding items to track your inventory
+              </p>
+              <Button className="mt-4 bg-purple-600 hover:bg-purple-700">Add First Item</Button>
+            </div>
           ) : (
             <div className="grid gap-4">
               {filteredItems.map((item) => (
-                <Card key={item.id}>
+                <Card key={item.id} className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -322,20 +336,18 @@ export default function InventoryPage() {
 
         <TabsContent value="suppliers" className="space-y-4 mt-6">
           {!Array.isArray(suppliers) || suppliers.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Truck className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Suppliers</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add suppliers to manage your inventory sources
-                </p>
-                <Button>Add First Supplier</Button>
-              </CardContent>
-            </Card>
+            <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-white/50 text-center">
+              <Truck className="h-12 w-12 text-purple-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No suppliers yet</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Add suppliers to manage your inventory sources
+              </p>
+              <Button className="mt-4 bg-purple-600 hover:bg-purple-700">Add First Supplier</Button>
+            </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {suppliers.map((supplier) => (
-                <Card key={supplier.id}>
+                <Card key={supplier.id} className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">{supplier.name}</CardTitle>
                     {supplier.contactPerson && (
@@ -372,19 +384,17 @@ export default function InventoryPage() {
 
         <TabsContent value="alerts" className="space-y-4 mt-6">
           {!Array.isArray(alerts) || alerts.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Active Alerts</p>
-                <p className="text-sm text-muted-foreground">
-                  All inventory items are at healthy stock levels
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-white/50 text-center">
+              <AlertTriangle className="h-12 w-12 text-purple-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No active alerts</p>
+              <p className="text-xs text-gray-500 mt-1">
+                All inventory items are at healthy stock levels
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4">
               {alerts.map((alert) => (
-                <Card key={alert.id} className="border-l-4 border-l-red-500">
+                <Card key={alert.id} className="border-2 border-purple-200/50 border-l-4 border-l-red-500 bg-white/80 backdrop-blur-sm shadow-sm">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -436,22 +446,23 @@ export default function InventoryPage() {
       </Tabs>
 
       {/* Info Box */}
-      <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <Package className="h-6 w-6 text-blue-600 dark:text-blue-400 mt-1" />
-            <div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                Inventory Management Active
-              </h3>
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                Track your stock levels, manage suppliers, and receive alerts when items run low. 
-                Inventory automatically updates when items are sold through your POS or used in the kitchen.
-              </p>
-            </div>
+      <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+            <Package className="h-5 w-5 text-purple-500" />
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Inventory Management Active
+            </h3>
+            <p className="text-sm text-gray-600">
+              Track your stock levels, manage suppliers, and receive alerts when items run low. 
+              Inventory automatically updates when items are sold through your POS or used in the kitchen.
+            </p>
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
   );
 }
