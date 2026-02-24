@@ -67,8 +67,10 @@ export function VoiceAgentsPage() {
   const [historyTimeSpan, setHistoryTimeSpan] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
-    fetchAgents();
-  }, []);
+    if (session !== undefined) {
+      fetchAgents();
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchStats();
@@ -115,13 +117,20 @@ export function VoiceAgentsPage() {
     try {
       const response = await fetch('/api/voice-agents');
       const json = await response.json();
+      if (!response.ok) {
+        const errMsg = json?.error || response.statusText;
+        console.error('[VoiceAgents] API error:', errMsg);
+        toast.error(`Failed to load voice agents: ${errMsg}`);
+        setAgents([]);
+        return;
+      }
       const validAgents = (Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? [])).filter((a: any) => a && a.id);
       setAgents(validAgents);
       const urlAgentId = searchParams?.get('agentId');
       const agentToSelect = urlAgentId
         ? (validAgents.find((a: any) => a.id === urlAgentId) ?? validAgents[0])
         : validAgents[0];
-      if (validAgents.length > 0 && agentToSelect && !selectedAgent) {
+      if (validAgents.length > 0 && agentToSelect) {
         setSelectedAgent(agentToSelect);
       }
     } catch (error) {

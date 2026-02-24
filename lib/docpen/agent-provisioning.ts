@@ -533,7 +533,6 @@ class DocpenAgentProvisioning {
       // Update with latest function configurations while preserving all existing settings
       // CRITICAL: Remove llm from prompt - English agents must use turbo or flash v2.
       // gemini-2.5-flash fails; omitting llm lets ElevenLabs use a valid default.
-      const agentPrompt = currentAgent.conversation_config?.agent?.prompt || {};
       const { llm: _removed, ...promptWithoutLlm } = agentPrompt;
 
       const updatePayload = {

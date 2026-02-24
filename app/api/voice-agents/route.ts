@@ -20,13 +20,12 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Use session.user.id first (matches industry/professional/RE provision APIs).
-    // Fall back to email lookup for legacy compatibility.
-    let user = session.user.id
-      ? await prisma.user.findUnique({ where: { id: session.user.id } })
+    // Look up user from main DB (where provision writes agents). Prefer email for consistency across meta/main DB split.
+    let user = session.user.email
+      ? await prisma.user.findUnique({ where: { email: session.user.email } })
       : null;
-    if (!user && session.user.email) {
-      user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user && session.user.id) {
+      user = await prisma.user.findUnique({ where: { id: session.user.id } });
     }
     const userId = user?.id ?? session.user.id;
     if (!userId) {
@@ -35,6 +34,7 @@ export async function GET(request: NextRequest) {
 
     const pagination = parsePagination(request);
 
+    // VoiceAgent, Industry/RE/Professional AI Employee agents all live in main DB (provision writes there)
     const agents = await (prisma as any).voiceAgent.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -51,13 +51,9 @@ export async function GET(request: NextRequest) {
       skip: pagination.skip,
     });
 
-    // Include Industry AI Employee agents (Dental, Medical, etc.) for preview
+    // Include Industry AI Employee agents (Dental, Medical, Orthodontist, etc.)
     const industryAgents = await (prisma as any).industryAIEmployeeAgent.findMany({
-      where: {
-        userId,
-        elevenLabsAgentId: { not: null },
-        status: 'active',
-      },
+      where: { userId, status: 'active' },
     });
 
     const industryAgentsForPreview = industryAgents.map((a: any) => ({
@@ -72,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     // Include RE AI Employee agents (Sarah, Michael, etc.) for preview
     const reAgents = await (prisma as any).rEAIEmployeeAgent.findMany({
-      where: { userId, elevenLabsAgentId: { not: null } },
+      where: { userId },
     });
     const reAgentsForPreview = reAgents.map((a: any) => ({
       id: a.id,
@@ -86,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     // Include Professional AI Employee agents (Accountant, Developer, etc.) for preview
     const profAgents = await (prisma as any).professionalAIEmployeeAgent.findMany({
-      where: { userId, elevenLabsAgentId: { not: null } },
+      where: { userId },
     });
     const profAgentsForPreview = profAgents.map((a: any) => ({
       id: a.id,
@@ -195,15 +191,18 @@ export async function GET(request: NextRequest) {
     ];
 
     const total = allAgents.length;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[voice-agents] Returning ${total} agents for user ${userId}`);
+    }
     return paginatedResponse(allAgents, total, pagination, 'voiceAgents');
   } catch (error: any) {
     console.error('Error fetching voice agents:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
-    });
-    // Return empty array on error to prevent filter crashes
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        { error: error?.message, stack: error?.stack },
+        { status: 500 }
+      );
+    }
     return NextResponse.json([], { status: 200 });
   }
 }
