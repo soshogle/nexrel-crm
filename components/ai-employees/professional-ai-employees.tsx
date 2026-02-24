@@ -183,11 +183,11 @@ export function ProfessionalAIEmployees() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'HIGH': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'MEDIUM': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'LOW': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'URGENT': return 'bg-red-100 text-red-700 border-red-200';
+      case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'LOW': return 'bg-green-100 text-green-700 border-green-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
@@ -200,16 +200,16 @@ export function ProfessionalAIEmployees() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-purple-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
-            <Bot className="w-7 h-7 text-purple-400" />
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Bot className="w-7 h-7 text-purple-600" />
             Professional AI Experts
           </h2>
-          <p className="text-slate-400 mt-1">
+          <p className="text-gray-600 mt-1">
             12 expert roles with deep domain expertise. Voice + text. Use in workflows and campaigns.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">
+          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
@@ -217,7 +217,7 @@ export function ProfessionalAIEmployees() {
             variant="ghost"
             size="sm"
             onClick={fetchProvisionedAgents}
-            className="text-slate-400 hover:text-slate-300"
+            className="text-gray-500 hover:text-gray-700"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -231,10 +231,10 @@ export function ProfessionalAIEmployees() {
             variant={selectedCategory === cat.id ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedCategory(cat.id)}
-            className={selectedCategory === cat.id ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-700 hover:bg-slate-800'}
+            className={selectedCategory === cat.id ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-200 hover:bg-purple-50'}
           >
             {cat.label}
-            <Badge variant="secondary" className="ml-2 bg-slate-700">{cat.count}</Badge>
+            <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-700">{cat.count}</Badge>
           </Button>
         ))}
       </div>
@@ -254,7 +254,7 @@ export function ProfessionalAIEmployees() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card
-                  className={`bg-black border-slate-700 hover:border-slate-500 transition-all cursor-pointer group ${employee.borderColor}`}
+                  className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
                   onClick={() => {
                     setSelectedEmployee(employee);
                     setShowDetailDialog(true);
@@ -267,19 +267,19 @@ export function ProfessionalAIEmployees() {
                       </div>
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(employee.id) ? (
-                          <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 text-green-400">
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-200">
                             <CheckCircle2 className="w-3 h-3 mr-1" />Ready
                           </Badge>
                         ) : employee.voiceEnabled ? (
-                          <Badge variant="outline" className="text-xs bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
+                          <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
                             <AlertCircle className="w-3 h-3 mr-1" />Not Provisioned
                           </Badge>
                         ) : null}
                       </div>
                     </div>
-                    <h3 className="font-bold text-white text-lg">{employee.name}</h3>
-                    <p className="text-sm text-slate-300 mb-2">{employee.title}</p>
-                    <p className="text-xs text-slate-400 mb-4 line-clamp-2">{employee.description}</p>
+                    <h3 className="font-bold text-gray-900 text-lg">{employee.name}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{employee.title}</p>
+                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">{employee.description}</p>
                     <div className="flex items-center justify-between">
                       <Badge className={`text-xs ${getPriorityColor(employee.priority)}`}>{employee.priority}</Badge>
                       <div className="flex items-center gap-1">
@@ -287,7 +287,7 @@ export function ProfessionalAIEmployees() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
-                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-400 hover:bg-slate-700'}`}
+                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-600 hover:bg-green-50' : 'text-gray-500 hover:bg-purple-50'}`}
                             title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
                           >
                             <Phone className="w-4 h-4" />
@@ -296,7 +296,7 @@ export function ProfessionalAIEmployees() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
+                          className="text-purple-600 hover:bg-purple-50 p-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRunEmployee(employee.id);
@@ -316,7 +316,7 @@ export function ProfessionalAIEmployees() {
       </div>
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="bg-black border-slate-700 max-w-2xl">
+        <DialogContent className="bg-white border-2 border-purple-200/50 max-w-2xl">
           {selectedEmployee && (
             <>
               <DialogHeader>
@@ -328,17 +328,17 @@ export function ProfessionalAIEmployees() {
                     })()}
                   </div>
                   <div>
-                    <DialogTitle className="text-xl text-white">{selectedEmployee.name} - {selectedEmployee.title}</DialogTitle>
-                    <DialogDescription className="text-slate-400">{selectedEmployee.fullDescription}</DialogDescription>
+                    <DialogTitle className="text-xl text-gray-900">{selectedEmployee.name} - {selectedEmployee.title}</DialogTitle>
+                    <DialogDescription className="text-gray-600">{selectedEmployee.fullDescription}</DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Capabilities</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Capabilities</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedEmployee.capabilities.map((c) => (
-                      <Badge key={c} variant="outline" className="bg-slate-800 border-slate-600 text-slate-300">
+                      <Badge key={c} variant="outline" className="bg-purple-50 text-gray-700 border-purple-200">
                         {c}
                       </Badge>
                     ))}
@@ -356,14 +356,14 @@ export function ProfessionalAIEmployees() {
                   {isAgentProvisioned(selectedEmployee.id) && (
                     <Button
                       variant="outline"
-                      className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                      className="border-purple-200 text-purple-600 hover:bg-purple-50"
                       onClick={() => setShowTaskDashboard(true)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Manage Tasks
                     </Button>
                   )}
-                  <p className="text-xs text-slate-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history.</p>
+                  <p className="text-xs text-gray-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history.</p>
                 </div>
               </div>
             </>
