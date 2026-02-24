@@ -58,18 +58,18 @@ export default function AppointmentsPage() {
   }, [appointments]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 antialiased">
       <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3 antialiased">
               <div className="h-12 w-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <Calendar className="h-6 w-6 text-white" />
               </div>
               {config.bookingPluralNoun}
             </h1>
-            <p className="text-gray-600 mt-2 text-sm">Manage your schedule and {config.bookingPluralNoun.toLowerCase()}</p>
+            <p className="text-gray-700 mt-2 text-sm font-medium antialiased">Manage your schedule and {config.bookingPluralNoun.toLowerCase()}</p>
           </div>
           {isAdmin && (
             <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20">
@@ -84,8 +84,8 @@ export default function AppointmentsPage() {
           <CardHeader className="border-b border-purple-200/50 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-gray-900 text-xl">All {config.bookingPluralNoun}</CardTitle>
-                <CardDescription className="text-gray-600">{appointments.length} {config.bookingPluralNoun.toLowerCase()}</CardDescription>
+                <CardTitle className="text-gray-900 text-xl font-semibold antialiased">All {config.bookingPluralNoun}</CardTitle>
+                <CardDescription className="text-gray-700 font-medium antialiased">{appointments.length} {config.bookingPluralNoun.toLowerCase()}</CardDescription>
               </div>
               <Tabs value={view} onValueChange={(v: any) => setView(v)}>
                 <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
@@ -115,15 +115,15 @@ export default function AppointmentsPage() {
             ) : view === 'list' ? (
               <div className="space-y-2">
                 {!Array.isArray(appointments) || appointments.length === 0 ? (
-                  <div className="text-center py-12 text-gray-600">No {config.bookingPluralNoun.toLowerCase()}</div>
+                  <div className="text-center py-12 text-gray-700 font-semibold antialiased">No {config.bookingPluralNoun.toLowerCase()}</div>
                 ) : (
                   appointments.map(apt => (
                     <div key={apt.id} className="flex items-center justify-between p-4 border-2 border-purple-200/50 bg-white/80 rounded-lg hover:border-purple-300 transition-all shadow-sm">
                       <div>
-                        <p className="font-medium text-gray-900">{apt.title}</p>
-                        <p className="text-sm text-gray-600">{new Date(apt.startTime).toLocaleString()}</p>
+                        <p className="font-semibold text-gray-900 antialiased">{apt.title}</p>
+                        <p className="text-sm font-medium text-gray-700 antialiased">{new Date(apt.startTime).toLocaleString()}</p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold antialiased ${
                         apt.status === 'CONFIRMED' ? 'bg-green-500/10 text-green-600 border border-green-500/30' :
                         apt.status === 'SCHEDULED' ? 'bg-blue-500/10 text-blue-600 border border-blue-500/30' :
                         apt.status === 'COMPLETED' ? 'bg-purple-600 text-white border border-purple-500/30' :
@@ -150,20 +150,20 @@ export default function AppointmentsPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="border-2 border-purple-200/50 bg-white/80 rounded-xl p-5 shadow-sm">
-                    <div className="text-3xl font-bold text-gray-900">{stats.scheduled}</div>
-                    <div className="text-gray-600 text-sm">Scheduled</div>
+                    <div className="text-3xl font-bold text-gray-900 antialiased">{stats.scheduled}</div>
+                    <div className="text-gray-700 text-sm font-semibold antialiased">Scheduled</div>
                   </div>
                   <div className="border-2 border-purple-200/50 bg-white/80 rounded-xl p-5 shadow-sm">
-                    <div className="text-3xl font-bold text-gray-900">{stats.confirmed}</div>
-                    <div className="text-gray-600 text-sm">Confirmed</div>
+                    <div className="text-3xl font-bold text-gray-900 antialiased">{stats.confirmed}</div>
+                    <div className="text-gray-700 text-sm font-semibold antialiased">Confirmed</div>
                   </div>
                   <div className="border-2 border-purple-200/50 bg-white/80 rounded-xl p-5 shadow-sm">
-                    <div className="text-3xl font-bold text-gray-900">{stats.completed}</div>
-                    <div className="text-gray-600 text-sm">Completed</div>
+                    <div className="text-3xl font-bold text-gray-900 antialiased">{stats.completed}</div>
+                    <div className="text-gray-700 text-sm font-semibold antialiased">Completed</div>
                   </div>
                   <div className="border-2 border-purple-200/50 bg-white/80 rounded-xl p-5 shadow-sm">
-                    <div className="text-3xl font-bold text-gray-900">{stats.cancelled}</div>
-                    <div className="text-gray-600 text-sm">Cancelled</div>
+                    <div className="text-3xl font-bold text-gray-900 antialiased">{stats.cancelled}</div>
+                    <div className="text-gray-700 text-sm font-semibold antialiased">Cancelled</div>
                   </div>
                 </div>
 

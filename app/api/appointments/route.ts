@@ -255,6 +255,11 @@ export async function POST(request: NextRequest) {
           customerEmail = (lead as any).email || ''
           customerPhone = (lead as any).phone || ''
           resolvedLeadId = leadId
+        } else if (contactFallback?.name) {
+          customerName = contactFallback.name
+          customerEmail = contactFallback.email || ''
+          customerPhone = contactFallback.phone || ''
+          console.warn('⚠️ Lead not found in DB (id may be mock):', leadId, '- using fallback from form')
         } else {
           console.warn('⚠️ Lead not found in DB (id may be mock):', leadId, '- creating appointment without lead link')
         }
@@ -265,6 +270,11 @@ export async function POST(request: NextRequest) {
           customerEmail = (contact as any).email || ''
           customerPhone = (contact as any).phone || ''
           resolvedContactId = contactId
+        } else if (contactFallback?.name) {
+          customerName = contactFallback.name
+          customerEmail = contactFallback.email || ''
+          customerPhone = contactFallback.phone || ''
+          console.warn('⚠️ Contact not found in DB (id may be mock):', contactId, '- using fallback from form')
         } else {
           console.warn('⚠️ Contact not found in DB (id may be mock):', contactId, '- creating appointment without contact link')
         }

@@ -66,12 +66,12 @@ interface MondayAppointmentsProps {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  'SCHEDULED': { bg: 'bg-blue-500/10', text: 'text-blue-600', dot: 'bg-blue-500' },
-  'CONFIRMED': { bg: 'bg-green-500/10', text: 'text-green-600', dot: 'bg-green-500' },
-  'IN_PROGRESS': { bg: 'bg-purple-500/10', text: 'text-purple-600', dot: 'bg-purple-500' },
+  'SCHEDULED': { bg: 'bg-blue-500/20', text: 'text-blue-700', dot: 'bg-blue-500' },
+  'CONFIRMED': { bg: 'bg-green-500/20', text: 'text-green-700', dot: 'bg-green-500' },
+  'IN_PROGRESS': { bg: 'bg-purple-500/20', text: 'text-purple-700', dot: 'bg-purple-500' },
   'COMPLETED': { bg: 'bg-purple-600', text: 'text-white', dot: 'bg-purple-500' },
-  'CANCELLED': { bg: 'bg-red-500/10', text: 'text-red-600', dot: 'bg-red-500' },
-  'NO_SHOW': { bg: 'bg-orange-500/10', text: 'text-orange-600', dot: 'bg-orange-500' },
+  'CANCELLED': { bg: 'bg-red-500/20', text: 'text-red-700', dot: 'bg-red-500' },
+  'NO_SHOW': { bg: 'bg-orange-500/20', text: 'text-orange-700', dot: 'bg-orange-500' },
 };
 
 const TYPE_ICONS: Record<string, any> = {
@@ -260,27 +260,27 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
         <div className="border-2 border-purple-200/50 bg-white/80 rounded-lg p-4 shadow-sm">
-          <div className="text-2xl font-bold text-gray-900">{appointments.filter(a => a.status === 'SCHEDULED').length}</div>
-          <div className="text-xs text-gray-600">Scheduled</div>
+          <div className="text-2xl font-bold text-gray-900 antialiased">{appointments.filter(a => a.status === 'SCHEDULED').length}</div>
+          <div className="text-xs font-semibold text-gray-700 antialiased">Scheduled</div>
         </div>
         <div className="border-2 border-purple-200/50 bg-white/80 rounded-lg p-4 shadow-sm">
-          <div className="text-2xl font-bold text-gray-900">{appointments.filter(a => a.status === 'CONFIRMED').length}</div>
-          <div className="text-xs text-gray-600">Confirmed</div>
+          <div className="text-2xl font-bold text-gray-900 antialiased">{appointments.filter(a => a.status === 'CONFIRMED').length}</div>
+          <div className="text-xs font-semibold text-gray-700 antialiased">Confirmed</div>
         </div>
         <div className="border-2 border-purple-200/50 bg-white/80 rounded-lg p-4 shadow-sm">
-          <div className="text-2xl font-bold text-gray-900">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
-          <div className="text-xs text-gray-600">Completed</div>
+          <div className="text-2xl font-bold text-gray-900 antialiased">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
+          <div className="text-xs font-semibold text-gray-700 antialiased">Completed</div>
         </div>
         <div className="border-2 border-purple-200/50 bg-white/80 rounded-lg p-4 shadow-sm">
-          <div className="text-2xl font-bold text-gray-900">{appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length}</div>
-          <div className="text-xs text-gray-600">Cancelled/No-show</div>
+          <div className="text-2xl font-bold text-gray-900 antialiased">{appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length}</div>
+          <div className="text-xs font-semibold text-gray-700 antialiased">Cancelled/No-show</div>
         </div>
       </div>
 
       {/* Monday-style Table */}
       <div className="border-2 border-purple-200/50 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm shadow-sm">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-purple-50/80 border-b border-purple-200/50 text-xs font-medium text-gray-600 uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-purple-50/80 border-b border-purple-200/50 text-xs font-semibold text-gray-700 uppercase tracking-wider antialiased">
           <div className="col-span-4">Appointment</div>
           <div className="col-span-2 text-center">Date & Time</div>
           <div className="col-span-2 text-center">Status</div>
@@ -290,9 +290,9 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
         {/* Grouped by Date */}
         {Object.keys(groupedByDate).length === 0 ? (
-          <div className="px-4 py-12 text-center text-gray-600">
+          <div className="px-4 py-12 text-center">
             <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-500" />
-            <p>No appointments found</p>
+            <p className="font-semibold text-gray-700 antialiased">No appointments found</p>
           </div>
         ) : (
           Object.entries(groupedByDate).map(([date, dateAppointments]) => (
@@ -300,7 +300,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
               {/* Date Header */}
               <div className="px-4 py-2 bg-purple-50/80 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-purple-600" />
-                <span className="font-semibold text-sm text-gray-900">
+                <span className="font-semibold text-sm text-gray-900 antialiased">
                   {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                 </span>
                 <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 border-purple-200">{dateAppointments.length}</Badge>
@@ -321,11 +321,11 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                   >
                     {/* Appointment Title */}
                     <div className="col-span-4 flex items-center gap-3">
-                      <GripVertical className="h-4 w-4 text-gray-400" />
+                      <GripVertical className="h-4 w-4 text-gray-500" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate text-gray-900">{apt.title}</p>
+                        <p className="font-semibold text-sm truncate text-gray-900 antialiased">{apt.title}</p>
                         {apt.contact && (
-                          <p className="text-xs text-gray-600 flex items-center gap-1">
+                          <p className="text-xs font-medium text-gray-700 flex items-center gap-1 antialiased">
                             <User className="h-3 w-3" />
                             {apt.contact.name}
                           </p>
@@ -335,10 +335,10 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
                     {/* Date & Time */}
                     <div className="col-span-2 text-center">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-semibold text-gray-900 antialiased">
                         {new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs font-medium text-gray-700 antialiased">
                         {apt.endTime && `to ${new Date(apt.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
                       </div>
                     </div>
@@ -347,7 +347,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                     <div className="col-span-2 flex justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild disabled={!isAdmin}>
-                          <button className={`px-3 py-1 rounded-full text-xs font-medium border ${colors.bg} ${colors.text} border-purple-200 hover:opacity-80`}>
+                          <button className={`px-3 py-1 rounded-full text-xs font-semibold border antialiased ${colors.bg} ${colors.text} border-purple-200 hover:opacity-80`}>
                             <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${colors.dot}`} />
                             {apt.status.replace('_', ' ')}
                           </button>
@@ -365,7 +365,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
                     {/* Type */}
                     <div className="col-span-2 flex justify-center">
-                      <Badge variant="outline" className="text-xs border-purple-200 text-gray-600 bg-purple-50/50">
+                      <Badge variant="outline" className="text-xs font-semibold border-purple-200 text-gray-700 bg-purple-50/50 antialiased">
                         <TypeIcon className="h-3 w-3 mr-1" />
                         {apt.type.replace('_', ' ')}
                       </Badge>

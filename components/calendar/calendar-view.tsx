@@ -16,7 +16,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
-  closestCenter,
+  pointerWithin,
 } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { Appointment } from '@/types/appointment';
@@ -35,9 +35,13 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
     return null
   }
 
+  // Voice AI reservations can't be moved via PATCH - only booking appointments
+  const isDraggable = appointment.source !== 'VOICE_AI'
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: appointment.id,
     data: appointment,
+    disabled: !isDraggable,
   })
 
   // Safely get the meeting icon with fallback
@@ -74,11 +78,11 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...(isDraggable ? { ...listeners, ...attributes } : {})}
       className={`
-        text-xs px-2 py-1 rounded-lg border cursor-move shadow-sm
+        text-xs px-2 py-1 rounded-lg border shadow-sm antialiased
         ${statusColor || 'gradient-primary text-white border-purple-500/30'}
+        ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
         ${isDragging ? 'opacity-50' : 'hover:shadow-md hover:shadow-purple-500/20'}
       `}
       onClick={(e) => {
@@ -90,7 +94,7 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
         <MeetingIcon className="h-3 w-3 flex-shrink-0" />
         <span className="font-semibold truncate">{timeText}</span>
       </div>
-      <div className="truncate font-medium">{title}</div>
+      <div className="truncate font-semibold">{title}</div>
     </div>
   )
 }
@@ -195,6 +199,12 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       return
     }
 
+    // Voice AI reservations can't be moved via this API
+    if (appointment.source === 'VOICE_AI') {
+      toast.error('Voice AI reservations cannot be moved. Edit the reservation directly.')
+      return
+    }
+
     try {
       const response = await fetch(`/api/appointments/${appointment.id}`, {
         method: 'PATCH',
@@ -206,14 +216,15 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update appointment')
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.message || 'Failed to update appointment')
       }
 
       toast.success(`Appointment moved to ${format(newDate, 'MMMM d, yyyy')}`)
       onAppointmentUpdated()
     } catch (error) {
-      console.error('Error updating appointment:', error)
-      toast.error('Failed to move appointment')
+      console.error('Error moving appointment:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to move appointment')
     }
   }
 
@@ -274,11 +285,11 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
   const paddingDays = Array(startDayOfWeek).fill(null)
 
   const statusColors: Record<string, string> = {
-    SCHEDULED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    CONFIRMED: 'bg-green-500/20 text-green-400 border-green-500/30',
-    COMPLETED: 'gradient-primary text-white border-purple-500/30',
-    NO_SHOW: 'bg-red-500/20 text-red-400 border-red-500/30',
-    CANCELLED: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    SCHEDULED: 'bg-blue-500/25 text-blue-700 border-blue-500/40 font-medium',
+    CONFIRMED: 'bg-green-500/25 text-green-700 border-green-500/40 font-medium',
+    COMPLETED: 'gradient-primary text-white border-purple-500/30 font-semibold',
+    NO_SHOW: 'bg-red-500/25 text-red-700 border-red-500/40 font-medium',
+    CANCELLED: 'bg-orange-500/25 text-orange-700 border-orange-500/40 font-medium',
   }
 
   const meetingTypeIcons: Record<string, any> = {
@@ -290,7 +301,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -311,7 +322,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-2 mb-4">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-sm font-semibold text-purple-300/80 py-2">
+              <div key={day} className="text-center text-sm font-semibold text-purple-200 antialiased py-2">
                 {day}
               </div>
             ))}
@@ -336,7 +347,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                   isTodayDate={isTodayDate}
                 >
                   <div className="flex flex-col h-full">
-                    <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'text-white font-bold underline' : isCurrentMonth ? 'text-white' : 'text-purple-300/40'}`}>
+                    <div className={`text-sm font-semibold mb-1 antialiased ${isTodayDate ? 'text-white font-bold underline' : isCurrentMonth ? 'text-white' : 'text-purple-300/50'}`}>
                       {format(date, 'd')}
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
@@ -350,7 +361,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                         />
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div className={`text-xs px-2 ${isCurrentMonth ? 'text-white/70' : 'text-purple-300/30'}`}>
+                        <div className={`text-xs px-2 font-medium antialiased ${isCurrentMonth ? 'text-white/90' : 'text-purple-300/50'}`}>
                           +{dayAppointments.length - 3} more
                         </div>
                       )}
@@ -381,7 +392,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
         {activeAppointment ? (
           <div
             className={`
-              text-xs px-2 py-1 rounded-lg border opacity-90 shadow-xl shadow-purple-500/30
+              text-xs px-2 py-1 rounded-lg border opacity-95 shadow-xl shadow-purple-500/30 antialiased font-semibold
               ${statusColors[activeAppointment.status] || 'gradient-primary text-white border-purple-500/30'}
             `}
           >
