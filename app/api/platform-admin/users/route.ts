@@ -34,9 +34,10 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
+    // Build where clause - exclude deleted users
     const where: any = {
       role: { not: 'SUPER_ADMIN' }, // Don't show other super admins
+      deletedAt: null, // Exclude soft-deleted users
     };
 
     if (search) {

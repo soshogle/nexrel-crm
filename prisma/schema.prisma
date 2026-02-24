@@ -774,6 +774,7 @@ model VoiceAgent {
   enableReservations      Boolean?         @default(false)
   inboundGreeting         String?
   outboundGreeting        String?
+  ownerPromptAddition     String? // Admin's custom prompt addition, AI-formatted and appended to ElevenLabs agent
 
   // Relations
   twilioAccount      TwilioAccount?                @relation(fields: [twilioAccountId], references: [id], onDelete: SetNull)

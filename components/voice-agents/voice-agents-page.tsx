@@ -22,11 +22,13 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  Sparkles,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { CreateVoiceAgentDialog } from './create-voice-agent-dialog';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
 import { EditVoiceAgentDialog } from './edit-voice-agent-dialog';
@@ -65,6 +67,8 @@ export function VoiceAgentsPage() {
   const [loadingCalls, setLoadingCalls] = useState(false);
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
   const [historyTimeSpan, setHistoryTimeSpan] = useState<'7d' | '30d' | '90d'>('30d');
+  const [ownerPromptAddition, setOwnerPromptAddition] = useState('');
+  const [savingOwnerPrompt, setSavingOwnerPrompt] = useState(false);
 
   useEffect(() => {
     if (session !== undefined) {
@@ -113,7 +117,11 @@ export function VoiceAgentsPage() {
     if (action === 'purchase-number') setShowPurchaseDialog(true);
   }, [searchParams]);
 
-  const fetchAgents = async () => {
+  useEffect(() => {
+    setOwnerPromptAddition(selectedAgent?.ownerPromptAddition ?? '');
+  }, [selectedAgent?.id, selectedAgent?.ownerPromptAddition]);
+
+  const fetchAgents = async (opts?: { preserveSelection?: boolean }) => {
     try {
       const response = await fetch('/api/voice-agents');
       const json = await response.json();
@@ -126,12 +134,17 @@ export function VoiceAgentsPage() {
       }
       const validAgents = (Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? [])).filter((a: any) => a && a.id);
       setAgents(validAgents);
-      const urlAgentId = searchParams?.get('agentId');
-      const agentToSelect = urlAgentId
-        ? (validAgents.find((a: any) => a.id === urlAgentId) ?? validAgents[0])
-        : validAgents[0];
-      if (validAgents.length > 0 && agentToSelect) {
-        setSelectedAgent(agentToSelect);
+      if (opts?.preserveSelection && selectedAgent?.id) {
+        const updated = validAgents.find((a: any) => a.id === selectedAgent.id);
+        if (updated) setSelectedAgent(updated);
+      } else {
+        const urlAgentId = searchParams?.get('agentId');
+        const agentToSelect = urlAgentId
+          ? (validAgents.find((a: any) => a.id === urlAgentId) ?? validAgents[0])
+          : validAgents[0];
+        if (validAgents.length > 0 && agentToSelect) {
+          setSelectedAgent(agentToSelect);
+        }
       }
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -143,11 +156,12 @@ export function VoiceAgentsPage() {
 
   const fetchStats = async () => {
     try {
-      const [callsRes] = await Promise.all([
-        fetch('/api/calls?countOnly=true'),
-      ]);
-      const callsData = await callsRes.json();
-      const totalCalls = callsData?.count ?? 0;
+      // Use same source as Call History: sum from agents (ElevenLabs + CallLog)
+      // /api/calls uses CallLog which can be empty or in different DB; Call History uses ElevenLabs
+      const totalCalls = agents.reduce(
+        (sum, a) => sum + (a.elevenLabsCallCount ?? a._count?.callLogs ?? 0),
+        0
+      );
       const activeCount = agents.filter((a) =>
         a.status === 'ACTIVE' || a.status === 'active' || a.source === 'industry'
       ).length;
@@ -198,6 +212,30 @@ export function VoiceAgentsPage() {
       }
     } catch (e: any) {
       toast.error(e.message || 'Verification failed', { id: toastId });
+    }
+  };
+
+  const handleSaveOwnerPrompt = async () => {
+    if (!selectedAgent?.id || selectedAgent.source) return;
+    setSavingOwnerPrompt(true);
+    const toastId = toast.loading('Formatting and saving to Soshogle Voice...');
+    try {
+      const res = await fetch(`/api/voice-agents/${selectedAgent.id}/owner-prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addition: ownerPromptAddition }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Prompt saved to Soshogle Voice', { id: toastId });
+        await fetchAgents({ preserveSelection: true });
+      } else {
+        toast.error(data?.message || data?.error || 'Failed to save', { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save', { id: toastId });
+    } finally {
+      setSavingOwnerPrompt(false);
     }
   };
 
@@ -485,6 +523,12 @@ export function VoiceAgentsPage() {
                             <TabsTrigger value="profile" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Profile
                             </TabsTrigger>
+                            {!selectedAgent.source && (
+                              <TabsTrigger value="prompt" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                                <Sparkles className="w-4 h-4 mr-1.5" />
+                                Prompt
+                              </TabsTrigger>
+                            )}
                             <TabsTrigger value="connections" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Connections
                             </TabsTrigger>
@@ -508,6 +552,38 @@ export function VoiceAgentsPage() {
                               </div>
                             </div>
                           </TabsContent>
+                          {!selectedAgent.source && (
+                            <TabsContent value="prompt" className="space-y-4">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
+                                <p className="text-sm font-medium text-gray-900 mb-1">Add or Edit Prompt</p>
+                                <p className="text-xs text-gray-600 mb-3">
+                                  Describe what you want to add or remove from your voice agent&apos;s instructions. AI will format it and update Soshogle Voice. The original prompt is never deleted.
+                                </p>
+                                <Textarea
+                                  value={ownerPromptAddition}
+                                  onChange={(e) => setOwnerPromptAddition(e.target.value)}
+                                  placeholder="e.g., Always mention our new loyalty program. If they ask about hours, say we're open 9-5 weekdays. Be extra friendly with first-time callers."
+                                  rows={5}
+                                  className="bg-white border-purple-200"
+                                />
+                                <Button
+                                  onClick={handleSaveOwnerPrompt}
+                                  disabled={savingOwnerPrompt || !selectedAgent.elevenLabsAgentId}
+                                  className="mt-3"
+                                >
+                                  {savingOwnerPrompt ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                  )}
+                                  Format & Save to Soshogle Voice
+                                </Button>
+                                {!selectedAgent.elevenLabsAgentId && (
+                                  <p className="text-xs text-amber-600 mt-2">Agent must be provisioned with Soshogle Voice first.</p>
+                                )}
+                              </div>
+                            </TabsContent>
+                          )}
                           <TabsContent value="connections" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50 flex items-center gap-3">

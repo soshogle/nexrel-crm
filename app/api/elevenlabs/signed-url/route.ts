@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "ElevenLabs API key not configured" }, { status: 500, headers: corsHeaders });
+      return NextResponse.json({ error: "Soshogle Voice API key not configured" }, { status: 500, headers: corsHeaders });
     }
 
     // ElevenLabs get-signed-url only accepts agent_id, include_conversation_id, branch_id.
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       const errorText = await response.text();
       console.error("[elevenlabs/signed-url] API error:", response.status, errorText);
       return NextResponse.json(
-        { error: errorText || `ElevenLabs API error ${response.status}` },
+        { error: errorText || `Soshogle Voice API error ${response.status}` },
         { status: 500, headers: corsHeaders }
       );
     }

@@ -230,7 +230,7 @@ export function ElevenLabsAgent({
           }
         },
         onError: (error: any) => {
-          console.error("[Voice] ElevenLabs error:", error);
+          console.error("[Voice] Soshogle Voice error:", error);
           setError("Connection error. Please try again.");
           setIsLoading(false);
           setStatus("idle");

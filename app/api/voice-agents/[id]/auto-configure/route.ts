@@ -210,7 +210,7 @@ export async function POST(
 
               return NextResponse.json({
                 success: true,
-                message: 'Connected to existing ElevenLabs agent',
+                message: 'Connected to existing Soshogle Voice agent',
                 agentId: existingPhone.assigned_agent.agent_id,
                 phoneRegistered: true,
               });
@@ -317,7 +317,7 @@ export async function POST(
         return NextResponse.json(
           { 
             error: result.error || 'Failed to configure voice agent',
-            details: 'Could not create ElevenLabs conversational AI agent'
+            details: 'Could not create Soshogle Voice conversational AI agent'
           },
           { status: 500 }
         );

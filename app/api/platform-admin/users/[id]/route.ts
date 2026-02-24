@@ -153,5 +153,58 @@ export async function PATCH(
   }
 }
 
+/**
+ * DELETE /api/platform-admin/users/[id]
+ * Soft delete a user (SUPER_ADMIN only) - sets deletedAt, blocks login
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+
+    if (session.user.role !== 'SUPER_ADMIN') {
+      return apiErrors.forbidden('Super Admin access required');
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, role: true, deletedAt: true },
+    });
+
+    if (!existingUser) {
+      return apiErrors.notFound('User not found');
+    }
+
+    if (existingUser.role === 'SUPER_ADMIN') {
+      return apiErrors.forbidden('Cannot delete Super Admin accounts');
+    }
+
+    if (existingUser.deletedAt) {
+      return apiErrors.badRequest('User is already deleted');
+    }
+
+    await prisma.user.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date() },
+    });
+
+    console.log(`✅ Super Admin soft-deleted user ${params.id}`);
+
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Error deleting user:', error);
+    return apiErrors.internal(error.message || 'Failed to delete user');
+  }
+}
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

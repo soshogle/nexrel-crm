@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       console.error('❌ Agent validation failed:', validation.error);
       return NextResponse.json(
         { 
-          error: 'Voice agent not found in ElevenLabs. The agent may have been deleted or not properly configured.',
+          error: 'Voice agent not found in Soshogle Voice. The agent may have been deleted or not properly configured.',
           details: validation.error,
           suggestion: 'Please delete this agent and create a new one, or use the "Auto-Configure" button to recreate it.'
         },
@@ -237,13 +237,13 @@ export async function POST(request: NextRequest) {
         let userFriendlyError = callError.message;
         
         if (callError.message.includes('quota') || callError.message.includes('insufficient')) {
-          userFriendlyError = 'ElevenLabs account quota exceeded. Please upgrade your plan or wait for quota reset. Free plan: 15 min/month. Starter: $5/month with 50 min.';
+          userFriendlyError = 'Soshogle Voice account quota exceeded. Please upgrade your plan or wait for quota reset. Free plan: 15 min/month. Starter: $5/month with 50 min.';
         } else if (callError.message.includes('phone') || callError.message.includes('number')) {
-          userFriendlyError = 'Phone number not properly configured in ElevenLabs. Please ensure: 1) Phone is imported to ElevenLabs, 2) Phone is assigned to this agent, 3) Phone is purchased (not just verified) in Twilio.';
+          userFriendlyError = 'Phone number not properly configured in Soshogle Voice. Please ensure: 1) Phone is imported, 2) Phone is assigned to this agent, 3) Phone is purchased (not just verified) in Twilio.';
         } else if (callError.message.includes('agent') || callError.message.includes('not found')) {
-          userFriendlyError = 'Voice agent not found in ElevenLabs. Please try using "Auto-Configure" to set up the agent properly.';
+          userFriendlyError = 'Voice agent not found in Soshogle Voice. Please try using "Auto-Configure" to set up the agent properly.';
         } else if (callError.message.includes('unauthorized') || callError.message.includes('authentication')) {
-          userFriendlyError = 'ElevenLabs API authentication failed. Please check your ElevenLabs API key in settings.';
+          userFriendlyError = 'Soshogle Voice API authentication failed. Please check your API key in settings.';
         }
         
         // CRITICAL FIX: Create CallLog even for failed calls so users can see what went wrong

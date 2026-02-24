@@ -11,7 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Search, UserCog, Shield, Users, LogIn, BarChart3, LogOut, Clock, UserPlus, Edit, Phone, AlertTriangle, Settings } from 'lucide-react';
+import { Loader2, Search, UserCog, Shield, Users, LogIn, BarChart3, LogOut, Clock, UserPlus, Edit, Phone, AlertTriangle, Settings, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import UsageAnalyticsDashboard from '@/components/admin/usage-analytics-dashboard';
 import CreateBusinessOwnerDialog from '@/components/admin/create-business-owner-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
@@ -57,6 +67,8 @@ export default function PlatformAdminPage() {
   const [showCreateBusinessOwnerDialog, setShowCreateBusinessOwnerDialog] = useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // 15-minute auto-logout mechanism
   useEffect(() => {
@@ -207,6 +219,25 @@ export default function PlatformAdminPage() {
 
   const handleEditSuccess = () => {
     fetchUsers(); // Refresh the user list
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeletingUserId(userToDelete.id);
+    try {
+      const response = await fetch(`/api/platform-admin/users/${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete user');
+      toast.success(`User ${userToDelete.name || userToDelete.email} has been deleted`);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete user');
+    } finally {
+      setDeletingUserId(null);
+    }
   };
 
   const handleApproveUser = async (userId: string, userName: string) => {
@@ -495,6 +526,15 @@ export default function PlatformAdminPage() {
                             </>
                           )}
                         </Button>
+                        <Button
+                          onClick={() => setUserToDelete(user)}
+                          variant="outline"
+                          size="sm"
+                          className="bg-gray-700 hover:bg-red-900/50 border-red-500/50 text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -566,6 +606,38 @@ export default function PlatformAdminPage() {
         user={selectedUser}
         onSuccess={handleEditSuccess}
       />
+
+      {/* Delete User Confirmation */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent className="bg-gray-900 border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete User Account?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              This will soft-delete the account for {userToDelete?.name || userToDelete?.email}. The user will no longer be able to log in. Their data (leads, deals, etc.) will be preserved for audit purposes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-gray-700 text-gray-300 hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteUser();
+              }}
+              disabled={!!deletingUserId}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deletingUserId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

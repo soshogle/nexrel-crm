@@ -316,7 +316,7 @@ export default function VoiceAgentPreviewPage() {
           </Card>
         )}
 
-        {/* Active Conversation - ElevenLabs SDK (same as Voice AI Assistant) */}
+        {/* Active Conversation - Soshogle Voice SDK (same as Voice AI Assistant) */}
         {signedUrl && (
           <>
             <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ minHeight: 400 }}>

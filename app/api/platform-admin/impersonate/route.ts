@@ -33,14 +33,18 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Target user ID required');
     }
 
-    // Verify target user exists
+    // Verify target user exists and is not deleted
     const targetUser = await prisma.user.findUnique({
       where: { id: targetUserId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, deletedAt: true },
     });
 
     if (!targetUser) {
       return apiErrors.notFound('Target user not found');
+    }
+
+    if (targetUser.deletedAt) {
+      return apiErrors.forbidden('Cannot impersonate a deleted user');
     }
 
     // Prevent impersonating another super admin
