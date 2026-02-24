@@ -75,7 +75,10 @@ export function DentalCardGrid({
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <ExactArchOdontogram toothData={odontogramData} />
+              <ExactArchOdontogram
+                toothData={odontogramData}
+                scanTeethIncluded={selectedXray?.teethIncluded}
+              />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}

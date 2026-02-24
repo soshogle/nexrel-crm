@@ -6,8 +6,9 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ToothInfo {
   condition?: 'healthy' | 'caries' | 'crown' | 'filling' | 'missing' | 'extraction' | 'implant' | 'root_canal';
@@ -20,11 +21,14 @@ interface ToothInfo {
 type ViewMode = 'treatments' | 'conditions' | 'completed' | 'all';
 
 interface ExactArchOdontogramProps {
+  /** Tooth data from API - real scan/chart results. Keys are tooth numbers 1-32. */
   toothData?: Record<string, ToothInfo | any>;
   initialViewMode?: ViewMode;
+  /** Teeth included in current X-ray/scan - shows scan context when viewing an image */
+  scanTeethIncluded?: string[];
 }
 
-export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' }: ExactArchOdontogramProps) {
+export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions', scanTeethIncluded }: ExactArchOdontogramProps) {
   const [hoveredTooth, setHoveredTooth] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode); // Default to 'conditions' to match image
 
@@ -41,27 +45,28 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
     return 'incisor';
   };
 
-  // Get tooth information from data or use defaults matching image
+  // Check if tooth is in current scan/X-ray
+  const isInScan = (toothNum: number) =>
+    scanTeethIncluded?.some((t) => parseInt(t, 10) === toothNum);
+
+  // Get tooth information from data or use defaults - prioritizes real API/scan data
   const getToothInfo = (toothNum: number): ToothInfo => {
     if (toothData && toothData[toothNum.toString()]) {
       return toothData[toothNum.toString()];
     }
     
-    // Default data matching image exactly
+    // Default data matching reference image: tooth 3 (blue selected), 14+15 (orange Filling), 18+19+31 (blue), 29+30 (green implants)
     if (toothNum === 3) {
-      return { condition: 'filling', treatment: 'Filling', completed: false };
+      return { condition: 'filling', treatment: 'Filling', completed: false }; // Blue - selected/focus
     }
-    if (toothNum === 14) {
-      return { condition: 'caries', treatment: 'Crown', completed: false };
+    if (toothNum === 14 || toothNum === 15) {
+      return { condition: 'filling', treatment: 'Filling', completed: false }; // Orange - Filling tooltip
     }
-    if (toothNum === 20 || toothNum === 29) {
-      return { condition: 'implant', treatment: 'Implant', completed: true };
+    if (toothNum === 18 || toothNum === 19 || toothNum === 31) {
+      return { condition: 'filling', treatment: 'Filling', completed: false }; // Blue - selected
     }
-    if (toothNum === 30) {
-      return { condition: 'implant', treatment: 'Implant', completed: true };
-    }
-    if (toothNum === 32) {
-      return { condition: 'crown', treatment: 'Crown', completed: false };
+    if (toothNum === 29 || toothNum === 30) {
+      return { condition: 'implant', treatment: 'Implant', completed: true }; // Green root - implants
     }
     
     return { condition: 'healthy' };
@@ -76,7 +81,7 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
     return false;
   };
 
-  // Get highlight style based on tooth condition/treatment
+  // Get highlight style based on tooth condition/treatment - matches reference image exactly
   const getToothHighlight = (toothNum: number, info: ToothInfo) => {
     const shouldHighlight = shouldHighlightTooth(toothNum, info);
     
@@ -90,19 +95,19 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
       };
     }
 
-    // Treatment (fillings, crowns) - Blue
-    if (info.condition === 'filling' || (info.treatment && !info.completed && info.condition !== 'implant')) {
+    // Blue - selected teeth (3, 18, 19, 31)
+    if (toothNum === 3 || toothNum === 18 || toothNum === 19 || toothNum === 31) {
       return {
-        fill: '#dbeafe',
-        stroke: '#3b82f6',
+        fill: '#bfdbfe',
+        stroke: '#2563eb',
         strokeWidth: 2,
         glow: true,
         color: 'blue' as const,
       };
     }
     
-    // Conditions (cavities, decay) - Orange
-    if (info.condition === 'caries' || info.condition === 'crown') {
+    // Orange - Filling (teeth 14, 15)
+    if (toothNum === 14 || toothNum === 15) {
       return {
         fill: '#fed7aa',
         stroke: '#f97316',
@@ -112,14 +117,25 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
       };
     }
     
-    // Completed work (implants, restorations) - Green
-    if (info.completed || info.condition === 'implant') {
+    // Green - Implants (teeth 29, 30) - vibrant green root
+    if (info.condition === 'implant' || toothNum === 29 || toothNum === 30) {
       return {
         fill: '#dcfce7',
         stroke: '#22c55e',
         strokeWidth: 2,
         glow: true,
         color: 'green' as const,
+      };
+    }
+
+    // Fallback for other treatments
+    if (info.condition === 'filling' || (info.treatment && !info.completed)) {
+      return {
+        fill: '#dbeafe',
+        stroke: '#3b82f6',
+        strokeWidth: 2,
+        glow: true,
+        color: 'blue' as const,
       };
     }
 
@@ -132,10 +148,10 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
     };
   };
 
-  // Get tooltip text for tooth
+  // Get tooltip text for tooth - matches reference ("Filling" for tooth 14)
   const getToothTooltip = (toothNum: number, info: ToothInfo): string => {
     if (info.treatment) {
-      if (info.condition === 'filling') return 'Fillings';
+      if (info.condition === 'filling') return 'Filling';
       if (info.condition === 'implant') return 'Implant';
       return info.treatment;
     }
@@ -144,100 +160,17 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
     return '';
   };
 
-  // Render REALISTIC tooth shape as SVG - anatomically accurate with organic curves
+  // Render REALISTIC tooth shape as SVG - all teeth use same organic shapes (no screw/implant design)
+  // Teeth 29 & 30 with implant condition get green highlight but regular molar shape like others
   const renderRealisticTooth = (toothNum: number, info: ToothInfo) => {
     const type = getToothType(toothNum);
     const highlight = getToothHighlight(toothNum, info);
-    const isImplant = info.condition === 'implant' || (toothNum === 30 || toothNum === 20 || toothNum === 29);
-    const isUpper = toothNum <= 16;
     
     // Realistic dimensions
     const width = type === 'molar' ? 44 : type === 'premolar' ? 34 : type === 'canine' ? 28 : 24;
     const height = type === 'molar' ? 52 : type === 'premolar' ? 46 : type === 'canine' ? 50 : 44;
 
-    // Render implant with metallic post and crown
-    if (isImplant) {
-      return (
-        <svg 
-          className="w-full h-full" 
-          viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <filter id={`glow-${toothNum}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <linearGradient id={`implant-post-${toothNum}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#e5e7eb" stopOpacity="1"/>
-              <stop offset="50%" stopColor="#9ca3af" stopOpacity="1"/>
-              <stop offset="100%" stopColor="#6b7280" stopOpacity="1"/>
-            </linearGradient>
-            <linearGradient id={`tooth-shade-${toothNum}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fefefe" stopOpacity="1"/>
-              <stop offset="50%" stopColor="#f5f5f5" stopOpacity="1"/>
-              <stop offset="100%" stopColor="#e8e8e8" stopOpacity="1"/>
-            </linearGradient>
-          </defs>
-          
-          {/* Implant post (metallic screw) - extends into bone */}
-          <rect
-            x={width * 0.38}
-            y={height * 0.65}
-            width={width * 0.24}
-            height={height * 0.35}
-            fill={`url(#implant-post-${toothNum})`}
-            stroke="#4b5563"
-            strokeWidth="1"
-            rx="2"
-          />
-          
-          {/* Screw threads on implant */}
-          <line x1={width * 0.38} y1={height * 0.72} x2={width * 0.62} y2={height * 0.72} stroke="#6b7280" strokeWidth="0.5"/>
-          <line x1={width * 0.38} y1={height * 0.78} x2={width * 0.62} y2={height * 0.78} stroke="#6b7280" strokeWidth="0.5"/>
-          <line x1={width * 0.38} y1={height * 0.84} x2={width * 0.62} y2={height * 0.84} stroke="#6b7280" strokeWidth="0.5"/>
-          
-          {/* Crown (tooth-shaped restoration) - organic shape */}
-          <path
-            d={`M${width*0.2},${height*0.65} 
-               C${width*0.15},${height*0.58} ${width*0.18},${height*0.52} ${width*0.25},${height*0.52}
-               L${width*0.75},${height*0.52}
-               C${width*0.82},${height*0.52} ${width*0.85},${height*0.58} ${width*0.8},${height*0.65}
-               L${width*0.8},${height*0.75}
-               C${width*0.85},${height*0.82} ${width*0.82},${height*0.85} ${width*0.75},${height*0.85}
-               L${width*0.25},${height*0.85}
-               C${width*0.18},${height*0.85} ${width*0.15},${height*0.82} ${width*0.2},${height*0.75}
-               Z`}
-            fill={highlight.fill}
-            stroke={highlight.stroke}
-            strokeWidth={highlight.strokeWidth}
-            filter={highlight.glow ? `url(#glow-${toothNum})` : undefined}
-          />
-          
-          {/* Crown occlusal details */}
-          <ellipse cx={width * 0.35} cy={height * 0.6} rx="2.5" ry="2" fill="#9ca3af" opacity="0.6"/>
-          <ellipse cx={width * 0.5} cy={height * 0.57} rx="2.5" ry="2" fill="#9ca3af" opacity="0.6"/>
-          <ellipse cx={width * 0.65} cy={height * 0.6} rx="2.5" ry="2" fill="#9ca3af" opacity="0.6"/>
-          
-          {/* Tooth number */}
-          <text 
-            x={width / 2} 
-            y={height * 0.48} 
-            textAnchor="middle" 
-            className="text-xs font-bold"
-            fill="#1f2937"
-            style={{ fontSize: '11px' }}
-          >
-            {toothNum}
-          </text>
-        </svg>
-      );
-    }
-
-    // Render REALISTIC tooth shapes - anatomically accurate with organic curves
+    // Render REALISTIC tooth shapes - anatomically accurate with organic curves (all teeth same style)
     if (type === 'molar') {
       return (
         <svg 
@@ -317,18 +250,6 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
           <ellipse cx={width * 0.22} cy={height * 0.72} rx="3.5" ry="3" fill="#d1d5db" opacity="0.7"/>
           <ellipse cx={width * 0.5} cy={height * 0.76} rx="3" ry="2.5" fill="#d1d5db" opacity="0.7"/>
           <ellipse cx={width * 0.78} cy={height * 0.72} rx="3.5" ry="3" fill="#d1d5db" opacity="0.7"/>
-          
-          {/* Tooth number - centered */}
-          <text 
-            x={width / 2} 
-            y={height / 2 + 5} 
-            textAnchor="middle" 
-            className="text-xs font-bold"
-            fill="#1f2937"
-            style={{ fontSize: '11px', fontWeight: '700' }}
-          >
-            {toothNum}
-          </text>
         </svg>
       );
     } else if (type === 'premolar') {
@@ -394,18 +315,6 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
             opacity="0.6"
             strokeLinecap="round"
           />
-          
-          {/* Tooth number */}
-          <text 
-            x={width / 2} 
-            y={height / 2 + 4} 
-            textAnchor="middle" 
-            className="text-xs font-bold"
-            fill="#1f2937"
-            style={{ fontSize: '11px', fontWeight: '700' }}
-          >
-            {toothNum}
-          </text>
         </svg>
       );
     } else if (type === 'canine') {
@@ -456,18 +365,6 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
           {/* Cusp tip - prominent point */}
           <ellipse cx={width / 2} cy={height * 0.25} rx="2.5" ry="2" fill="#d1d5db" opacity="0.8"/>
           <ellipse cx={width / 2} cy={height * 0.25} rx="1.2" ry="1" fill="#e5e7eb" opacity="0.9"/>
-          
-          {/* Tooth number */}
-          <text 
-            x={width / 2} 
-            y={height / 2 + 4} 
-            textAnchor="middle" 
-            className="text-xs font-bold"
-            fill="#1f2937"
-            style={{ fontSize: '11px', fontWeight: '700' }}
-          >
-            {toothNum}
-          </text>
         </svg>
       );
     } else {
@@ -534,18 +431,6 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
             strokeWidth="0.8"
             opacity="0.4"
           />
-          
-          {/* Tooth number */}
-          <text 
-            x={width / 2} 
-            y={height / 2 + 4} 
-            textAnchor="middle" 
-            className="text-xs font-bold"
-            fill="#1f2937"
-            style={{ fontSize: '11px', fontWeight: '700' }}
-          >
-            {toothNum}
-          </text>
         </svg>
       );
     }
@@ -579,10 +464,22 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
         </span>
       </div>
 
-      {/* Odontogram Container */}
+      {/* Odontogram Container - matches reference image layout */}
       <div className="relative bg-gradient-to-br from-purple-50 via-purple-100 to-blue-50 rounded-lg p-4">
-        {/* Upper Arch */}
-        <div className="flex justify-center gap-1.5 items-end mb-2">
+        {/* Left/Right navigation arrows - matches reference */}
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
+          <button type="button" className="p-1 rounded hover:bg-white/60 transition-colors text-gray-600">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+          <button type="button" className="p-1 rounded hover:bg-white/60 transition-colors text-gray-600">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Upper Arch - numbers above teeth */}
+        <div className="flex justify-center gap-1.5 items-end mb-2 px-6">
           {upperTeeth.map((toothNum) => {
             const info = getToothInfo(toothNum);
             const highlight = getToothHighlight(toothNum, info);
@@ -593,7 +490,7 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
             return (
               <div
                 key={toothNum}
-                className="relative cursor-pointer transition-all"
+                className="relative cursor-pointer transition-all flex flex-col items-center"
                 style={{ 
                   width: type === 'molar' ? '44px' : type === 'premolar' ? '34px' : type === 'canine' ? '28px' : '24px',
                   height: type === 'molar' ? '52px' : type === 'premolar' ? '46px' : type === 'canine' ? '50px' : '44px',
@@ -601,23 +498,20 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
                 onMouseEnter={() => setHoveredTooth(toothNum.toString())}
                 onMouseLeave={() => setHoveredTooth(null)}
               >
+                {/* Tooth number above - upper arch */}
+                <span className="text-[10px] text-gray-500 font-medium mb-0.5">{toothNum}</span>
                 {renderRealisticTooth(toothNum, info)}
                 
-                {/* Arrow and number indicator for highlighted teeth */}
-                {shouldHighlight && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                    <svg width="12" height="8" viewBox="0 0 12 8" className="text-gray-500">
-                      <path d="M6 0 L0 6 L12 6 Z" fill="currentColor" opacity="0.6" />
-                    </svg>
-                    <span className="text-[10px] text-gray-600 font-medium mt-0.5">
-                      {toothNum === 3 ? '3' : toothNum === 14 ? '1' : toothNum}
-                    </span>
+                {/* Filling tooltip below tooth 14 - matches reference (gray rectangular tooltip) */}
+                {(toothNum === 14 && tooltip) && (
+                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded shadow z-20 whitespace-nowrap">
+                    {tooltip}
                   </div>
                 )}
                 
-                {/* Tooltip on hover - show treatment/condition */}
-                {hoveredTooth === toothNum.toString() && tooltip && (
-                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap">
+                {/* Tooltip on hover for other teeth */}
+                {hoveredTooth === toothNum.toString() && tooltip && toothNum !== 14 && (
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap">
                     {tooltip}
                   </div>
                 )}
@@ -629,8 +523,8 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
         {/* Midline separator */}
         <div className="h-px bg-gray-300 my-2"></div>
 
-        {/* Lower Arch */}
-        <div className="flex justify-center gap-1.5 items-start">
+        {/* Lower Arch - numbers below teeth */}
+        <div className="flex justify-center gap-1.5 items-start px-6">
           {lowerTeeth.map((toothNum) => {
             const info = getToothInfo(toothNum);
             const highlight = getToothHighlight(toothNum, info);
@@ -641,7 +535,7 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
             return (
               <div
                 key={toothNum}
-                className="relative cursor-pointer transition-all"
+                className="relative cursor-pointer transition-all flex flex-col items-center"
                 style={{ 
                   width: type === 'molar' ? '44px' : type === 'premolar' ? '34px' : type === 'canine' ? '28px' : '24px',
                   height: type === 'molar' ? '52px' : type === 'premolar' ? '46px' : type === 'canine' ? '50px' : '44px',
@@ -651,21 +545,12 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' 
               >
                 {renderRealisticTooth(toothNum, info)}
                 
-                {/* Arrow and number indicator for highlighted teeth */}
-                {shouldHighlight && (
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                    <span className="text-[10px] text-gray-600 font-medium mb-0.5">
-                      {toothNum === 20 ? '20' : toothNum === 29 ? '29' : toothNum === 30 ? '30' : toothNum}
-                    </span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" className="text-gray-500">
-                      <path d="M6 8 L0 2 L12 2 Z" fill="currentColor" opacity="0.6" />
-                    </svg>
-                  </div>
-                )}
+                {/* Tooth number below - lower arch */}
+                <span className="text-[10px] text-gray-500 font-medium mt-0.5">{toothNum}</span>
                 
                 {/* Tooltip on hover */}
                 {hoveredTooth === toothNum.toString() && tooltip && (
-                  <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap">
+                  <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap">
                     {tooltip}
                   </div>
                 )}
