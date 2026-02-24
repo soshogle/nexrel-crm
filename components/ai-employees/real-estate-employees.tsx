@@ -442,11 +442,11 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'HIGH': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'MEDIUM': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'LOW': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'URGENT': return 'bg-red-100 text-red-700 border-red-200';
+      case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'LOW': return 'bg-green-100 text-green-700 border-green-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
@@ -455,15 +455,15 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Bot className="w-7 h-7 text-purple-400" />
             Real Estate AI Team
           </h2>
-          <p className="text-slate-400 mt-1">12 specialized AI employees with OACIQ compliance and multi-language support</p>
-          <p className="text-xs text-slate-500 mt-1">Auto-provisioned when you set Real Estate as your industry</p>
+          <p className="text-gray-600 mt-1">12 specialized AI employees with OACIQ compliance and multi-language support</p>
+          <p className="text-xs text-gray-500 mt-1">Auto-provisioned when you set Real Estate as your industry</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">
+          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
@@ -471,7 +471,7 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
             variant="ghost"
             size="sm"
             onClick={fetchProvisionedAgents}
-            className="text-slate-400 hover:text-slate-300"
+            className="text-gray-500 hover:text-gray-700"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -514,7 +514,7 @@ className={selectedCategory === cat.id
                 transition={{ delay: index * 0.05 }}
               >
                 <Card 
-                  className={`border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-all cursor-pointer group ${employee.borderColor}`}
+                  className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
                   onClick={() => {
                     setSelectedEmployee(employee);
                     setShowDetailDialog(true);
@@ -528,12 +528,12 @@ className={selectedCategory === cat.id
                       </div>
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(employee.id) ? (
-                          <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 text-green-400">
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-200">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             Ready
                           </Badge>
                         ) : employee.voiceEnabled ? (
-                          <Badge variant="outline" className="text-xs bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
+                          <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             Not Provisioned
                           </Badge>
@@ -542,9 +542,9 @@ className={selectedCategory === cat.id
                     </div>
 
                     {/* Name & Title */}
-                    <h3 className="font-bold text-white text-lg">{employee.name}</h3>
-                    <p className="text-sm text-slate-300 mb-2">{employee.title}</p>
-                    <p className="text-xs text-slate-400 mb-4 line-clamp-2">{employee.description}</p>
+                    <h3 className="font-bold text-gray-900 text-lg">{employee.name}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{employee.title}</p>
+                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">{employee.description}</p>
 
                     {/* Priority & Status */}
                     <div className="flex items-center justify-between">
@@ -556,7 +556,7 @@ className={selectedCategory === cat.id
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
-                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-400 hover:bg-slate-700'}`}
+                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-600 hover:bg-green-50' : 'text-gray-500 hover:bg-purple-50'}`}
                             title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
                           >
                             <Phone className="w-4 h-4" />
@@ -565,7 +565,7 @@ className={selectedCategory === cat.id
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
+                          className="text-purple-600 hover:bg-purple-50 p-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRunEmployee(employee.id);
@@ -599,10 +599,10 @@ className={selectedCategory === cat.id
                     <selectedEmployee.icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl text-white">
+                    <DialogTitle className="text-xl text-gray-900">
                       {selectedEmployee.name} - {selectedEmployee.title}
                     </DialogTitle>
-                    <DialogDescription className="text-slate-400">
+                    <DialogDescription className="text-gray-600">
                       {selectedEmployee.fullDescription}
                     </DialogDescription>
                   </div>
@@ -612,11 +612,11 @@ className={selectedCategory === cat.id
               <div className="space-y-6 mt-4">
                 {/* Capabilities */}
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">Capabilities</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Capabilities</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedEmployee.capabilities.map((cap, i) => (
                       <Badge key={i} variant="secondary" className="bg-purple-50 text-gray-700 border border-purple-200">
-                        <CheckCircle2 className="w-3 h-3 mr-1 text-green-400" />
+                        <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />
                         {cap}
                       </Badge>
                     ))}
@@ -629,7 +629,7 @@ className={selectedCategory === cat.id
                     <Settings className="w-5 h-5 text-slate-400" />
                     <div>
                       <p className="text-white font-medium">Auto-Run</p>
-                      <p className="text-xs text-slate-400">Automatically trigger on events</p>
+                      <p className="text-xs text-gray-600">Automatically trigger on events</p>
                     </div>
                   </div>
                   <Switch
@@ -643,10 +643,10 @@ className={selectedCategory === cat.id
                 {selectedEmployee.voiceEnabled && (
                   <div className={`p-4 rounded-lg border ${
                     isAgentProvisioned(selectedEmployee.id) 
-                      ? 'bg-green-500/10 border-green-500/30' 
-                      : 'bg-slate-800/50 border-slate-600'
+? 'bg-green-100 border-green-200'
+                      : 'bg-purple-50/50 border-purple-200'
                   }`}>
-                    <h4 className="text-sm font-medium text-slate-200 mb-2 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <Mic className="w-4 h-4" />
                       Setup — Voice Agent
                     </h4>
@@ -655,16 +655,16 @@ className={selectedCategory === cat.id
                         {isAgentProvisioned(selectedEmployee.id) ? (
                           <><CheckCircle2 className="w-4 h-4 text-green-400" /><span className="text-green-400 font-medium">Voice Agent Ready</span></>
                         ) : (
-                          <><Mic className="w-4 h-4 text-slate-400" /><span className="text-slate-300 font-medium">Voice Agent</span></>
+                          <><Mic className="w-4 h-4 text-gray-500" /><span className="text-gray-700 font-medium">Voice Agent</span></>
                         )}
                       </div>
                       {isAgentProvisioned(selectedEmployee.id) && (
-                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                        <Badge className="bg-green-100 text-green-700 border-green-200">
                           {getProvisionedAgent(selectedEmployee.id)?.callCount || 0} calls
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-400 mb-3">
+                    <p className="text-sm text-gray-600 mb-3">
                       {isAgentProvisioned(selectedEmployee.id)
                         ? 'Voice AI agent configured with OACIQ compliance. Test in browser or assign a phone for calls.'
                         : 'Click Test Voice Agent to set up automatically on first use.'}
@@ -685,7 +685,7 @@ className={selectedCategory === cat.id
                               description="Select from your Soshogle Call account. Required for inbound/outbound calls."
                             />
                             {assigningPhone === selectedEmployee.id && (
-                              <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">
+                              <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 Assigning...
                               </div>
@@ -712,7 +712,7 @@ className={selectedCategory === cat.id
                           description="Select from your Soshogle Call account. Assigned to agent in Soshogle Voice AI."
                         />
                         {assigningPhone === selectedEmployee.id && (
-                          <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">
+                          <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             Assigning...
                           </div>
@@ -733,14 +733,14 @@ className={selectedCategory === cat.id
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                          className="border-purple-200 text-purple-600 hover:bg-purple-50"
                           onClick={(e) => { e.stopPropagation(); setShowTaskDashboard(true); }}
                         >
                           <Settings className="w-3 h-3 mr-1" />
                           Manage Tasks
                         </Button>
                       )}
-                      <p className="text-xs text-slate-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history, run.</p>
+                      <p className="text-xs text-gray-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history, run.</p>
                     </div>
                   </div>
                 )}
@@ -751,7 +751,7 @@ className={selectedCategory === cat.id
                     <Award className="w-4 h-4 text-purple-400" />
                     <span className="text-purple-400 font-medium">OACIQ Compliant</span>
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-gray-600">
                     This AI employee follows Quebec real estate regulations (OACIQ). It identifies as an AI assistant, handles personal information according to Law 25, and escalates compliance matters to human agents.
                   </p>
                 </div>
@@ -762,7 +762,7 @@ className={selectedCategory === cat.id
                   Close
                 </Button>
                 {isAgentProvisioned(selectedEmployee.id) && (
-                  <Button variant="outline" className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => setShowTaskDashboard(true)}>
+                  <Button variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50" onClick={() => setShowTaskDashboard(true)}>
                     <Settings className="w-4 h-4 mr-2" />Manage Tasks
                   </Button>
                 )}
@@ -877,18 +877,18 @@ export function RealEstateAITeamWidget() {
                 key={employee.id}
                 onClick={() => handleQuickRun(employee.id)}
                 disabled={isRunning}
-                className={`p-3 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 transition-all text-left group`}
+                className="p-3 rounded-lg bg-white/80 border-2 border-purple-200/50 hover:border-purple-300 transition-all text-left group"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-4 h-4 text-slate-300" />
+                  <Icon className="w-4 h-4 text-gray-500" />
                   {isRunning ? (
-                    <Loader2 className="w-3 h-3 animate-spin text-purple-400 ml-auto" />
+                    <Loader2 className="w-3 h-3 animate-spin text-purple-600 ml-auto" />
                   ) : (
-                    <Play className="w-3 h-3 text-slate-500 group-hover:text-purple-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Play className="w-3 h-3 text-gray-500 group-hover:text-purple-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </div>
-                <p className="text-sm font-medium text-white">{employee.name}</p>
-                <p className="text-xs text-slate-400 truncate">{employee.title}</p>
+                <p className="text-sm font-medium text-gray-900">{employee.name}</p>
+                <p className="text-xs text-gray-600 truncate">{employee.title}</p>
               </button>
             );
           })}
