@@ -309,11 +309,11 @@ class DocpenAgentProvisioning {
             // No llm - match CRM/AI Employee agents; ElevenLabs default satisfies "turbo or flash v2"
           },
           first_message: `Hello${config.practitionerName ? ` ${config.practitionerName}` : ''}${userIndustry ? ` from the ${userIndustry.toLowerCase().replace(/_/g, ' ')} industry` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
-          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
         tts: {
           voice_id: voiceId,
-          model_id: 'eleven_turbo_v2_5', // Matches CRM; omit llm for English agent requirement
+          model_id: 'eleven_multilingual_v2', // Best accent quality (matches landing page)
           stability: 0.6, // Slightly higher for professional tone
           similarity_boost: 0.8,
           optimize_streaming_latency: 3,

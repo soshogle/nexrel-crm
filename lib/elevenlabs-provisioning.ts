@@ -332,10 +332,11 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: 'en', // API only accepts single codes. Multilingual via LANGUAGE_PROMPT_SECTION in prompt.
+            language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
+            model_id: 'eleven_multilingual_v2', // Best accent quality for multilingual (matches landing page)
             stability: 0.5, // Voice stability (0-1)
             similarity_boost: 0.75, // Voice similarity (0-1)
             optimize_streaming_latency: 3, // Optimize for real-time (0-4)
@@ -572,10 +573,11 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: 'en', // API only accepts single codes. Multilingual via LANGUAGE_PROMPT_SECTION in prompt.
+            language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+            model_id: 'eleven_multilingual_v2', // Best accent quality (matches landing page)
             stability: 0.5,
             similarity_boost: 0.75,
             optimize_streaming_latency: 3,

@@ -122,7 +122,7 @@ export class CrmVoiceAgentService {
             prompt: systemPrompt,
           },
           first_message: this.getGreetingMessage(language),
-          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
         asr: {
           quality: 'high',
@@ -130,7 +130,7 @@ export class CrmVoiceAgentService {
         },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-          model_id: 'eleven_turbo_v2_5', // v2_5 required for multilingual
+          model_id: 'eleven_multilingual_v2', // Best accent quality for multilingual (matches landing page)
         },
         turn: {
           mode: 'turn',
@@ -1005,8 +1005,11 @@ ${getConfidentialityGuard()}`;
             first_message: this.getGreetingMessage(language),
             language: currentAgent.conversation_config?.agent?.language || language,
           },
-          // Preserve TTS settings
-          tts: currentAgent.conversation_config?.tts,
+          // TTS: use eleven_multilingual_v2 for accent-free multilingual (matches landing page)
+          tts: {
+            ...currentAgent.conversation_config?.tts,
+            model_id: 'eleven_multilingual_v2',
+          },
           // Preserve conversation settings
           conversation: currentAgent.conversation_config?.conversation,
           // Preserve ASR settings

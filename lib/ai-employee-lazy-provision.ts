@@ -46,12 +46,12 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_flash_v2', // Required for English agents
+          model_id: 'eleven_multilingual_v2', // Best accent quality (matches landing page)
         },
         turn: { mode: 'turn' },
       },

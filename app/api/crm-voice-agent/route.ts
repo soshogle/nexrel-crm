@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { crmVoiceAgentService } from '@/lib/crm-voice-agent';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
+import { getLanguageLabel } from '@/lib/voice-languages';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,11 +22,19 @@ export async function GET(request: NextRequest) {
     console.log('🔄 CRM Voice Agent API: Getting/creating agent for user:', session.user.id);
     const result = await crmVoiceAgentService.getOrCreateCrmVoiceAgent(session.user.id);
 
+    // Get user's preferred language for multilingual voice (matches landing page)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+    const preferredLanguage = getLanguageLabel(user?.language ?? 'en');
+
     console.log('✅ CRM Voice Agent API: Success - agentId:', result.agentId, 'created:', result.created);
     return NextResponse.json({
       success: true,
       agentId: result.agentId,
       created: result.created,
+      preferredLanguage,
     });
   } catch (error: any) {
     console.error('❌ CRM Voice Agent API: Error getting CRM voice agent:', error);

@@ -209,7 +209,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         useSpeakerBoost: body.useSpeakerBoost ?? true,
         
         // TTS Configuration
-        ttsModel: body.ttsModel || 'eleven_turbo_v2',
+        ttsModel: body.ttsModel || 'eleven_multilingual_v2',
         outputFormat: body.outputFormat || 'pcm_16000',
         
         // LLM Configuration

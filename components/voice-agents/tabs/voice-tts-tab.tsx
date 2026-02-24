@@ -60,10 +60,10 @@ export function VoiceTtsTab({ formData, setFormData, voices, loadingVoices }: Vo
           <Select value={formData.ttsModel} onValueChange={(value) => update({ ttsModel: value })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="eleven_turbo_v2">Eleven Turbo v2 (Recommended)</SelectItem>
+              <SelectItem value="eleven_multilingual_v2">Eleven Multilingual v2 (Recommended)</SelectItem>
               <SelectItem value="eleven_turbo_v2_5">Eleven Turbo v2.5</SelectItem>
+              <SelectItem value="eleven_turbo_v2">Eleven Turbo v2</SelectItem>
               <SelectItem value="eleven_monolingual_v1">Eleven Monolingual v1</SelectItem>
-              <SelectItem value="eleven_multilingual_v2">Eleven Multilingual v2</SelectItem>
             </SelectContent>
           </Select>
         </div>

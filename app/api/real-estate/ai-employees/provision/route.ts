@@ -54,13 +54,12 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en',
-          // No llm - match CRM Voice Assistant structure
+          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_turbo_v2_5',
+          model_id: 'eleven_multilingual_v2',
         },
         turn: { mode: 'turn', turn_timeout_seconds: 30 },
         conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },

@@ -63,7 +63,7 @@ export function CreateVoiceAgentDialog({
     
     // Voice & TTS Settings
     voiceId: 'EXAVITQu4vr4xnSDxMaL',
-    ttsModel: 'eleven_turbo_v2',
+    ttsModel: 'eleven_multilingual_v2',
     outputFormat: 'pcm_16000',
     stability: 0.5,
     similarityBoost: 0.75,
@@ -425,7 +425,7 @@ export function CreateVoiceAgentDialog({
           firstMessage: '',
           systemPrompt: '',
           voiceId: 'EXAVITQu4vr4xnSDxMaL',
-          ttsModel: 'eleven_turbo_v2',
+          ttsModel: 'eleven_multilingual_v2',
           outputFormat: 'pcm_16000',
           stability: 0.5,
           similarityBoost: 0.75,

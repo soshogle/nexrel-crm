@@ -135,7 +135,7 @@ export function EditVoiceAgentDialog({
         systemPrompt: agent.systemPrompt || '',
         enableReservations: (agent as any).enableReservations || false,
         voiceId: agent.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-        ttsModel: agent.ttsModel || 'eleven_turbo_v2',
+        ttsModel: agent.ttsModel || 'eleven_multilingual_v2',
         outputFormat: agent.outputFormat || 'pcm_16000',
         stability: agent.stability ?? 0.5,
         similarityBoost: agent.similarityBoost ?? 0.75,

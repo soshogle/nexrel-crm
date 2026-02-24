@@ -30,6 +30,7 @@ export function GlobalVoiceAssistant() {
   const [websiteBuilderContext, setWebsiteBuilderContextState] = useState<ReturnType<typeof getWebsiteBuilderContext>>(null);
   const [screenContext, setScreenContext] = useState('');
   const [agentId, setAgentId] = useState<string | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState<string>('English');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -108,6 +109,7 @@ export function GlobalVoiceAssistant() {
       if (response.ok) {
         const data = await response.json();
         setAgentId(data.agentId);
+        setPreferredLanguage(data.preferredLanguage || 'English');
       } else {
         throw new Error('Failed to get voice agent');
       }
@@ -148,6 +150,7 @@ export function GlobalVoiceAssistant() {
   const dynamicVars = {
     company_name: 'Your CRM',
     user_name: 'User',
+    preferred_language: preferredLanguage,
     ...(typeof window !== 'undefined' && (() => {
       const pc = getPageContext();
       return pc.path ? { current_path: pc.path } : {};

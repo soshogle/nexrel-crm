@@ -27,9 +27,11 @@ interface CrmFramelessVoiceAgentProps {
   agentId: string | null;
   loading: boolean;
   error: string | null;
+  /** User's preferred language for accent-free multilingual (matches landing page) */
+  preferredLanguage?: string;
 }
 
-export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFramelessVoiceAgentProps) {
+export function CrmFramelessVoiceAgent({ agentId, loading, error, preferredLanguage = 'English' }: CrmFramelessVoiceAgentProps) {
   const pathname = usePathname();
   const { handleMessage } = useAIBrainVoice();
   const [expanded, setExpanded] = useState(() => {
@@ -95,6 +97,7 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
     const vars: Record<string, string> = {
       company_name: 'Your CRM',
       user_name: 'User',
+      preferred_language: preferredLanguage,
       ...(pc?.path ? { current_path: pc.path } : {}),
       ...(activeWorkflowDraftId && {
         active_workflow_draft_id: activeWorkflowDraftId,
@@ -114,7 +117,7 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
       ...(screenContext && { visible_screen_content: screenContext }),
     };
     return vars;
-  }, [activeWorkflowDraftId, isOnWebsitesPage, websiteBuilderContext, screenContext]);
+  }, [activeWorkflowDraftId, isOnWebsitesPage, websiteBuilderContext, screenContext, preferredLanguage]);
 
   const startConversation = useCallback(async () => {
     if (!agentId?.trim()) return;

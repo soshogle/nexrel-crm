@@ -744,7 +744,7 @@ model VoiceAgent {
   similarityBoost         Float?           @default(0.75)
   style                   Float?           @default(0.0)
   useSpeakerBoost         Boolean?         @default(true)
-  ttsModel                String?          @default("eleven_turbo_v2")
+  ttsModel                String?          @default("eleven_multilingual_v2")
   outputFormat            String?          @default("pcm_16000")
   llmModel                String?          @default("gpt-4")
   temperature             Float?           @default(0.7)
