@@ -299,20 +299,26 @@ export async function purchasePhoneNumber(
  */
 export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
   success: boolean;
-  numbers?: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string }>;
+  numbers?: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string; source?: 'primary' | 'backup' }>;
   error?: string;
 }> {
-  const results: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string }> = [];
+  const results: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string; source?: 'primary' | 'backup' }> = [];
   const seen = new Set<string>();
 
-  const fetchForAccount = async (creds: { accountSid: string; authToken: string; twilioAccountId?: string }) => {
+  const fetchForAccount = async (
+    creds: { accountSid: string; authToken: string; twilioAccountId?: string },
+    label: 'primary' | 'backup'
+  ) => {
     const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/IncomingPhoneNumbers.json?PageSize=100`;
     const res = await fetch(url, {
       headers: {
         Authorization: 'Basic ' + Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64'),
       },
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn(`[getPhoneNumbersFromPlatformAccounts] ${label} fetch failed: ${res.status} ${res.statusText}`);
+      return;
+    }
     const data = await res.json();
     const list = data.incoming_phone_numbers || [];
     for (const p of list) {
@@ -323,6 +329,7 @@ export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
           phoneNumber: num,
           friendlyName: p.friendly_name || num,
           twilioAccountId: creds.twilioAccountId,
+          source: label,
         });
       }
     }
@@ -331,9 +338,23 @@ export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
   try {
     const { getPrimaryCredentials, getBackupCredentials } = await import('./twilio-credentials');
     const primary = await getPrimaryCredentials();
-    if (primary) await fetchForAccount(primary);
+    if (primary) {
+      await fetchForAccount(primary, 'primary');
+      console.log(`[getPhoneNumbersFromPlatformAccounts] PRIMARY: ${results.length} numbers so far`);
+    } else {
+      console.warn('[getPhoneNumbersFromPlatformAccounts] PRIMARY credentials not found (check TwilioAccount envKey=PRIMARY or TWILIO_ACCOUNT_SID)');
+    }
     const backup = await getBackupCredentials();
-    if (backup) await fetchForAccount(backup);
+    if (backup) {
+      const beforeBackup = results.length;
+      await fetchForAccount(backup, 'backup');
+      console.log(`[getPhoneNumbersFromPlatformAccounts] BACKUP: added ${results.length - beforeBackup} numbers (total: ${results.length})`);
+    }
+    // Ensure primary numbers always appear before backup (in case of any reordering)
+    results.sort((a, b) => {
+      const order = { primary: 0, backup: 1 };
+      return (order[a.source ?? 'backup'] ?? 1) - (order[b.source ?? 'backup'] ?? 1);
+    });
     return { success: true, numbers: results };
   } catch (err) {
     console.error('getPhoneNumbersFromPlatformAccounts error:', err);
