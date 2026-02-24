@@ -93,12 +93,12 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         `}
       >
         {/* Top Bar with Search */}
-        <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-8 py-4">
+        <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-8 py-4 overflow-visible">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
               {session?.user?.name ?? 'Dashboard'}
             </h2>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 overflow-visible">
               {/* HITL Notification Bell - Only for Real Estate users */}
               {mounted && (
                 <ErrorBoundary>

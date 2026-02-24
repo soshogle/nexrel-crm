@@ -109,6 +109,7 @@ export type HITLPendingResponse = z.infer<typeof HITLPendingResponseSchema>;
 
 export const HITLApprovalSchema = z.object({
   id: z.string().optional(),
+  source: z.enum(['real_estate', 'generic']).optional(),
   task: z
     .object({
       name: z.string().optional(),

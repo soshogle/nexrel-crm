@@ -78,10 +78,17 @@ const config: Config = {
             height: '0',
           },
         },
+        'hitl-unroll': {
+          '0%, 100%': { transform: 'scaleX(0)' },
+          '20%': { transform: 'scaleX(1)' },
+          '50%': { transform: 'scaleX(1)' },
+          '70%': { transform: 'scaleX(0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'hitl-unroll': 'hitl-unroll 4s ease-in-out infinite',
       },
     },
   },

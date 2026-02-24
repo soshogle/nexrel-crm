@@ -21,12 +21,10 @@ export function HITLApprovalBanner() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
-
   const { data, isLoading } = useQuery({
     queryKey: hitlQueryKeys.pending(),
     queryFn: fetchHITLPendingData,
-    enabled: !!isRealEstateUser,
+    enabled: !!session?.user,
     refetchInterval: 30_000, // 30s poll
     staleTime: 15_000, // 15s - show cached while refetching (stale-while-revalidate)
   });
@@ -35,10 +33,13 @@ export function HITLApprovalBanner() {
     ? parseBannerNotifications(data)
     : [];
 
-  const handleApprove = async (executionId: string) => {
+  const handleApprove = async (executionId: string, source: 'real_estate' | 'generic') => {
     setProcessingId(executionId);
+    const url = source === 'generic'
+      ? `/api/workflows/hitl/${executionId}/approve`
+      : `/api/real-estate/workflows/hitl/${executionId}/approve`;
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${executionId}/approve`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Approved via banner' }),
@@ -58,10 +59,13 @@ export function HITLApprovalBanner() {
     }
   };
 
-  const handleReject = async (executionId: string) => {
+  const handleReject = async (executionId: string, source: 'real_estate' | 'generic') => {
     setProcessingId(executionId);
+    const url = source === 'generic'
+      ? `/api/workflows/hitl/${executionId}/reject`
+      : `/api/real-estate/workflows/hitl/${executionId}/reject`;
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${executionId}/reject`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Rejected via banner', pauseWorkflow: false }),
@@ -83,7 +87,7 @@ export function HITLApprovalBanner() {
 
   const visibleNotifications = notifications.filter((n) => !dismissedIds.has(n.id));
 
-  if (!isRealEstateUser || visibleNotifications.length === 0) {
+  if (visibleNotifications.length === 0) {
     return null;
   }
 
@@ -125,7 +129,7 @@ export function HITLApprovalBanner() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   size="sm"
-                  onClick={() => handleApprove(notification.executionId)}
+                  onClick={() => handleApprove(notification.executionId, notification.source)}
                   disabled={processingId === notification.executionId}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
@@ -141,7 +145,7 @@ export function HITLApprovalBanner() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleReject(notification.executionId)}
+                  onClick={() => handleReject(notification.executionId, notification.source)}
                   disabled={processingId === notification.executionId}
                   className="border-red-300 text-red-700 hover:bg-red-50"
                 >

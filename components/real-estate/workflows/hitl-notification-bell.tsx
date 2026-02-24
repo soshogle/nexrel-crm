@@ -7,7 +7,6 @@ import {
   Bell, Shield, Clock, User, CheckCircle, XCircle, Loader2,
   ChevronRight, Building2, X, AlertTriangle, ExternalLink,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -35,9 +34,12 @@ const URGENCY_STYLES: Record<string, string> = {
   LOW: 'border-l-4 border-l-gray-300',
 };
 
+type HITLSource = 'real_estate' | 'generic';
+
 interface NormalizedApproval {
   id: string;
   executionId: string;
+  source: HITLSource;
   taskName: string;
   message: string;
   contactName?: string;
@@ -54,9 +56,11 @@ interface NormalizedApproval {
 
 function normalizeNotification(n: any): NormalizedApproval {
   const taskExec = n.taskExecution;
+  const source: HITLSource = n.source === 'generic' ? 'generic' : 'real_estate';
   return {
     id: n.id || '',
     executionId: n.executionId || taskExec?.id || '',
+    source,
     taskName: taskExec?.task?.name || n.taskName || 'Approval Required',
     message: n.message || taskExec?.task?.description || 'This task requires your approval to proceed.',
     contactName:
@@ -86,12 +90,10 @@ export function HITLNotificationBell() {
   const hasAutoOpened = useRef(false);
   const router = useRouter();
 
-  const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
-
   const { data, isLoading, isFetching } = useQuery({
     queryKey: hitlQueryKeys.pending(),
     queryFn: fetchHITLPendingData,
-    enabled: !!isRealEstateUser,
+    enabled: !!session?.user,
     refetchInterval: 30_000,
     refetchIntervalInBackground: true,
     staleTime: 15_000,
@@ -117,9 +119,11 @@ export function HITLNotificationBell() {
     const pending: any[] = Array.isArray(data.pendingApprovals) ? data.pendingApprovals : [];
     for (const exec of pending) {
       if (!exec || !exec.id || seen.has(exec.id)) continue;
+      const source: HITLSource = exec.source === 'generic' ? 'generic' : 'real_estate';
       result.push({
         id: exec.id,
         executionId: exec.id,
+        source,
         taskName: exec.task?.name || 'Approval Required',
         message: exec.task?.description || 'This task requires your approval to proceed.',
         contactName: exec.instance?.lead?.businessName || exec.instance?.lead?.contactPerson || undefined,
@@ -145,11 +149,21 @@ export function HITLNotificationBell() {
     if (approvals.length === 0) hasAutoOpened.current = false;
   }, [approvals.length]);
 
-  const handleApprove = async (id: string, e?: React.MouseEvent) => {
+  const getApproveUrl = (execId: string, source: HITLSource) =>
+    source === 'generic'
+      ? `/api/workflows/hitl/${execId}/approve`
+      : `/api/real-estate/workflows/hitl/${execId}/approve`;
+  const getRejectUrl = (execId: string, source: HITLSource) =>
+    source === 'generic'
+      ? `/api/workflows/hitl/${execId}/reject`
+      : `/api/real-estate/workflows/hitl/${execId}/reject`;
+
+  const handleApprove = async (approval: NormalizedApproval, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    const { id, source } = approval;
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${id}/approve`, {
+      const res = await fetch(getApproveUrl(id, source), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Approved via notification bell' }),
@@ -168,11 +182,12 @@ export function HITLNotificationBell() {
     }
   };
 
-  const handleReject = async (id: string, e?: React.MouseEvent) => {
+  const handleReject = async (approval: NormalizedApproval, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    const { id, source } = approval;
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${id}/reject`, {
+      const res = await fetch(getRejectUrl(id, source), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Rejected via notification bell' }),
@@ -202,8 +217,6 @@ export function HITLNotificationBell() {
     }
   };
 
-  if (!isRealEstateUser) return null;
-
   const pendingCount = approvals.length;
   const loading = isLoading || (open && isFetching);
 
@@ -213,19 +226,9 @@ export function HITLNotificationBell() {
         <Button variant="ghost" size="icon" className="relative overflow-visible">
           {/* Alert ribbon: unrolls left and retracts every few seconds when HITL pending */}
           {pendingCount > 0 && (
-            <motion.div
-              className={`absolute right-full top-1/2 -translate-y-1/2 h-6 w-7 rounded-l pointer-events-none ${HITL_ACCENT} opacity-90 shadow-sm`}
-              style={{ transformOrigin: 'right center' }}
-              initial={false}
-              animate={{
-                scaleX: [0, 1, 1, 0],
-              }}
-              transition={{
-                duration: 3.5,
-                repeat: Infinity,
-                repeatDelay: 2,
-                times: [0, 0.2, 0.5, 0.7],
-              }}
+            <div
+              className={`absolute right-full top-1/2 -translate-y-1/2 h-6 w-7 rounded-l pointer-events-none origin-right animate-hitl-unroll ${HITL_ACCENT} opacity-90 shadow-sm`}
+              aria-hidden
             />
           )}
           <Bell className={`h-5 w-5 text-gray-600 ${pendingCount > 0 ? 'text-purple-600' : ''}`} />
@@ -311,10 +314,10 @@ export function HITLNotificationBell() {
                         {approval.workflowName && <><span className="mx-1">&bull;</span><span className="truncate">{approval.workflowName}</span></>}
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleApprove(approval.id, e)} disabled={isProcessing}>
+                        <Button size="sm" className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleApprove(approval, e)} disabled={isProcessing}>
                           {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3 mr-1" />Approve</>}
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => handleReject(approval.id, e)} disabled={isProcessing}>
+                        <Button size="sm" variant="outline" className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => handleReject(approval, e)} disabled={isProcessing}>
                           <XCircle className="h-3 w-3 mr-1" />Reject
                         </Button>
                       </div>
@@ -359,10 +362,10 @@ export function HITLNotificationBell() {
                               </div>
                             </div>
                             <div className="flex gap-1.5 flex-shrink-0">
-                              <Button size="sm" className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(approval.id, e); }} disabled={isProcessing}>
+                              <Button size="sm" className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(approval, e); }} disabled={isProcessing}>
                                 {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleReject(approval.id, e); }} disabled={isProcessing}>
+                              <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleReject(approval, e); }} disabled={isProcessing}>
                                 <XCircle className="h-3.5 w-3.5" />
                               </Button>
                             </div>

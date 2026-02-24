@@ -21,7 +21,7 @@ async function fetchHITLPending(): Promise<HITLPendingResponse> {
   return withCircuitBreaker(
     'hitl-pending',
     async () => {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending');
+      const res = await fetch('/api/workflows/hitl/pending');
       if (!res.ok) throw new Error('Failed to fetch HITL pending');
       return res.json();
     },
@@ -33,6 +33,7 @@ async function fetchHITLPending(): Promise<HITLPendingResponse> {
 export interface BannerNotification {
   id: string;
   executionId: string;
+  source: 'real_estate' | 'generic';
   taskName: string;
   contactName?: string;
   dealAddress?: string;
@@ -46,6 +47,7 @@ export function parseBannerNotifications(data: HITLPendingResponse): BannerNotif
   return approvals.slice(0, 1).map((approval) => ({
     id: approval?.id ?? '',
     executionId: approval?.id ?? '',
+    source: approval?.source === 'generic' ? 'generic' : 'real_estate',
     taskName: approval?.task?.name || 'Unknown Task',
     contactName: (approval?.instance?.lead?.businessName || approval?.instance?.lead?.contactPerson) ?? undefined,
     dealAddress: approval?.instance?.deal?.title,
