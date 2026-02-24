@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { CardModal } from '@/components/dental/card-modal';
-import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
-import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
+import { Odontogram } from '@/components/dental/odontogram';
 import { TreatmentPlanBuilder } from '@/components/dental/treatment-plan-builder';
 import { PeriodontalChart } from '@/components/dental/periodontal-chart';
 import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
@@ -20,7 +19,6 @@ interface DentalModalsProps {
   openModal: string | null;
   onCloseModal: () => void;
   selectedLeadId: string | null;
-  selectedPatient?: { contactPerson?: string; businessName?: string; dentalHistory?: any };
   sessionUserId: string | undefined;
   odontogramData: any;
   periodontalData: any;
@@ -40,7 +38,6 @@ export function DentalModals({
   openModal,
   onCloseModal,
   selectedLeadId,
-  selectedPatient,
   sessionUserId,
   odontogramData,
   periodontalData,
@@ -58,11 +55,18 @@ export function DentalModals({
     <>
       <CardModal isOpen={openModal === 'odontogram'} onClose={onCloseModal} title="Arch Odontogram">
         {selectedLeadId ? (
-          <div className="w-full">
-            <ExactArchOdontogram
-              toothData={odontogramData}
-              scanTeethIncluded={selectedXray?.teethIncluded}
-            />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <Select defaultValue="treatment">
+                <SelectTrigger className="h-8 w-64 border border-gray-300"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="treatment">Hover affected by: Treatment</SelectItem></SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100"><ChevronLeft className="h-4 w-4 text-gray-600" /></Button>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100"><ChevronRight className="h-4 w-4 text-gray-600" /></Button>
+              </div>
+            </div>
+            <Odontogram leadId={selectedLeadId} initialData={odontogramData} onSave={onSaveOdontogram} />
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
@@ -110,37 +114,7 @@ export function DentalModals({
 
       <CardModal isOpen={openModal === 'periodontal'} onClose={onCloseModal} title="Periodontal Charting">
         {selectedLeadId ? (
-          <div className="space-y-4">
-            <EnhancedPeriodontalChart
-              measurements={periodontalData}
-              showSidebar={true}
-              patient={{
-                name: selectedPatient?.contactPerson || selectedPatient?.businessName,
-                provider: 'Provider',
-                feeGuide: 'Standard UCR',
-                allergies: (() => {
-                  const dh = selectedPatient?.dentalHistory as any;
-                  if (Array.isArray(dh?.allergies)) return dh.allergies;
-                  if (dh?.allergies) return [dh.allergies];
-                  return ['Aspirin', 'Latex'];
-                })(),
-                medications: (() => {
-                  const dh = selectedPatient?.dentalHistory as any;
-                  if (Array.isArray(dh?.medications)) return dh.medications;
-                  if (dh?.medications) return [dh.medications];
-                  return ['Alprazolam'];
-                })(),
-              }}
-            />
-            <details className="border border-gray-200 rounded-lg">
-              <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Manual entry / Edit measurements
-              </summary>
-              <div className="p-4 border-t border-gray-200">
-                <PeriodontalChart leadId={selectedLeadId} initialData={periodontalData} onSave={onSavePeriodontalChart} />
-              </div>
-            </details>
-          </div>
+          <PeriodontalChart leadId={selectedLeadId} initialData={periodontalData} onSave={onSavePeriodontalChart} />
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
         )}

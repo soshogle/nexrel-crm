@@ -35,8 +35,6 @@ interface EnhancedPeriodontalChartProps {
     medications?: string[];
     medicalAlerts?: string[];
   };
-  /** Show patient sidebar (Medical Alerts, Allergies, etc.). Use false in grid, true when chart modal is open. */
-  showSidebar?: boolean;
 }
 
 const SITES = ['mesial', 'buccal', 'distal', 'lingual'] as const;
@@ -57,7 +55,7 @@ const DEMO_MEASUREMENTS: Record<string, ToothMeasurements> = (() => {
   return m;
 })();
 
-export function EnhancedPeriodontalChart({ measurements, patient, showSidebar = false }: EnhancedPeriodontalChartProps) {
+export function EnhancedPeriodontalChart({ measurements, patient }: EnhancedPeriodontalChartProps) {
   const [toothFilter, setToothFilter] = useState<'permanent' | 'missing' | 'unerupted' | 'deciduous'>('permanent');
   const [shortcutTab, setShortcutTab] = useState<'amalgam' | 'composite' | 'prophy'>('amalgam');
 
@@ -141,8 +139,7 @@ export function EnhancedPeriodontalChart({ measurements, patient, showSidebar = 
 
   return (
     <div className="flex gap-3 w-full min-h-[320px]">
-      {/* Sidebar Card - Curve style (only when showSidebar) */}
-      {showSidebar && (
+      {/* Sidebar Card - Curve style */}
       <div className="w-44 flex-shrink-0 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         <div className="p-2.5 space-y-2.5 text-xs">
           <div className="font-semibold text-gray-900 truncate">{patient?.name || 'Patient'}</div>
@@ -241,7 +238,6 @@ export function EnhancedPeriodontalChart({ measurements, patient, showSidebar = 
           </div>
         </div>
       </div>
-      )}
 
       {/* Main Chart - Odontogram style with perio overlays */}
       <div className="flex-1 min-w-0">

@@ -452,7 +452,6 @@ export default function DentalTestPage() {
         openModal={openModal}
         onCloseModal={() => setOpenModal(null)}
         selectedLeadId={selectedLeadId}
-        selectedPatient={selectedPatient}
         sessionUserId={session?.user?.id}
         odontogramData={odontogramData}
         periodontalData={periodontalData}

@@ -154,7 +154,6 @@ export function DentalCardGrid({
             {selectedLeadId ? (
               <EnhancedPeriodontalChart
                 measurements={periodontalData}
-                showSidebar={false}
                 patient={{
                   name: selectedPatient?.contactPerson || selectedPatient?.businessName,
                   provider: 'Provider',
