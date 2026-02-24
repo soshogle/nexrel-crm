@@ -41,7 +41,7 @@ export function ChannelStatsCards({ refreshKey = 0, compact = false }: ChannelSt
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
       </div>
     );
   }
@@ -49,19 +49,19 @@ export function ChannelStatsCards({ refreshKey = 0, compact = false }: ChannelSt
   if (!stats) return null;
 
   const cards = [
-    { label: 'Total Connections', value: stats.totalConnections, color: 'text-foreground' },
-    { label: 'Active Channels', value: stats.activeConnections, color: 'text-foreground' },
-    { label: 'Messages Received', value: stats.messagesReceived, color: 'text-foreground' },
-    { label: 'Messages Sent', value: stats.messagesSent, color: 'text-foreground' },
+    { label: 'Total Connections', value: stats.totalConnections, color: 'text-gray-900' },
+    { label: 'Active Channels', value: stats.activeConnections, color: 'text-gray-900' },
+    { label: 'Messages Received', value: stats.messagesReceived, color: 'text-gray-900' },
+    { label: 'Messages Sent', value: stats.messagesSent, color: 'text-gray-900' },
   ];
 
   if (compact) {
     return (
       <div className="grid grid-cols-4 gap-2 py-2">
         {cards.map((card) => (
-          <Card key={card.label} className="bg-card border">
+          <Card key={card.label} className="border border-purple-200/50 bg-white/60 backdrop-blur-sm">
             <CardContent className="p-3">
-              <p className="text-xs text-muted-foreground truncate">{card.label}</p>
+              <p className="text-xs text-gray-600 truncate">{card.label}</p>
               <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
             </CardContent>
           </Card>
@@ -73,9 +73,9 @@ export function ChannelStatsCards({ refreshKey = 0, compact = false }: ChannelSt
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <Card key={card.label} className="bg-card border">
+        <Card key={card.label} className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{card.label}</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">{card.label}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${card.color}`}>{card.value}</div>

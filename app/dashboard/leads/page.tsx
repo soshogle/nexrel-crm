@@ -110,35 +110,45 @@ export default async function LeadsPage() {
     })) as any;
 
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Leads</h1>
-            <p className="text-muted-foreground">Manage and track your leads</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
-
-        <LeadsList leads={leads} />
+        <div className="relative z-10 space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+                Leads
+              </h1>
+              <p className="text-gray-600 mt-1">Manage and track your leads</p>
+            </div>
+          </div>
+          <LeadsList leads={leads} />
+        </div>
       </div>
     )
   } catch (error: any) {
     console.error('Error in LeadsPage:', error);
     // Return a safe fallback UI instead of crashing
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Leads</h1>
-            <p className="text-muted-foreground">Manage and track your leads</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+        <div className="relative z-10 space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">Leads</h1>
+              <p className="text-gray-600 mt-1">Manage and track your leads</p>
+            </div>
           </div>
-        </div>
-        <div className="p-6 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+          <div className="p-6 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
           <p className="text-red-600 dark:text-red-400">
             Unable to load leads. Please try refreshing the page.
           </p>
           {process.env.NODE_ENV === 'development' && (
             <p className="text-sm text-red-500 mt-2">{error?.message}</p>
           )}
+          </div>
         </div>
       </div>
     )

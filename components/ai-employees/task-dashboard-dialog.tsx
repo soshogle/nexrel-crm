@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Mic, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
@@ -144,7 +145,17 @@ export function TaskDashboardDialog({
 
   /** Employees that support custom SMS/email templates */
   const supportsTemplates =
-    (source === 'industry' && ['APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'TREATMENT_COORDINATOR', 'BILLING_SPECIALIST'].includes(employeeType)) ||
+    (source === 'industry' && [
+      'APPOINTMENT_SCHEDULER',
+      'PATIENT_COORDINATOR',
+      'TREATMENT_COORDINATOR',
+      'TREATMENT_FOLLOWUP',
+      'BILLING_SPECIALIST',
+      'LEAD_QUALIFIER',
+      'SUPPORT_FOLLOWUP',
+      'INTAKE_COORDINATOR',
+      'CASE_FOLLOWUP',
+    ].includes(employeeType)) ||
     (source === 're' && employeeType === 'RE_SPEED_TO_LEAD');
 
   const fetchConfig = async () => {
@@ -159,7 +170,7 @@ export function TaskDashboardDialog({
 
       const res = await fetch(`/api/ai-employees/task-config?${params}`);
       const data = await res.json();
-      if (res.ok && data.tasks?.length) {
+      if (res.ok && Array.isArray(data.tasks)) {
         setTasks(data.tasks);
       } else {
         // Fallback: show duties from config so user always sees tasks + toggles
@@ -233,13 +244,14 @@ export function TaskDashboardDialog({
   };
 
   useEffect(() => {
-    if (open && agentId) {
+    const canFetch = open && (agentId || (source === 'industry' && employeeType && industry));
+    if (canFetch) {
       fetchConfig();
-      fetchHistory();
+      if (agentId) fetchHistory();
       if (canRun) fetchSchedule();
       if (supportsTemplates) fetchTemplates();
     }
-  }, [open, agentId, supportsTemplates]);
+  }, [open, agentId, source, employeeType, industry, canRun, supportsTemplates]);
 
   const handleToggle = async (taskKey: string, enabled: boolean) => {
     setToggling(taskKey);
@@ -464,13 +476,13 @@ export function TaskDashboardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-50 dark:border-slate-200 dark:text-slate-900">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col bg-white/95 border-2 border-purple-200/50 backdrop-blur-sm shadow-xl">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-900">
+          <DialogTitle className="flex items-center gap-2 text-gray-900">
             <Settings className="w-5 h-5 text-purple-600" />
             Manage Tasks — {agentName}
           </DialogTitle>
-          <DialogDescription className="text-slate-600 dark:text-slate-600">
+          <DialogDescription className="text-gray-600">
             {isAdmin
               ? 'Toggle duties, edit message templates (SMS/email), schedule runs, and view history.'
               : 'View-only. Talk to the AI employee from the main screen. Only admins can modify tasks, templates, or prompts.'}
@@ -480,14 +492,14 @@ export function TaskDashboardDialog({
         <div className="flex-1 min-h-0 overflow-y-auto space-y-6 mt-4 pr-1">
           {/* Task toggles */}
           <div>
-            <h4 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-800">Duties &amp; tasks</h4>
+            <h4 className="mb-3 text-sm font-semibold text-gray-800">Duties &amp; tasks</h4>
             {loading ? (
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-600">
+              <div className="flex items-center gap-2 text-gray-600">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading...
               </div>
             ) : tasks.length === 0 ? (
-              <p className="text-sm text-slate-600 dark:text-slate-600">
+              <p className="text-sm text-gray-600">
                 No tasks configured for this agent yet.
               </p>
             ) : (
@@ -498,8 +510,8 @@ export function TaskDashboardDialog({
                   return (
                     <div
                       key={t.taskKey}
-                      className={`rounded-lg border bg-white shadow-sm dark:bg-white dark:text-slate-900 ${
-                        isExpanded ? 'border-purple-300 dark:border-purple-300' : 'border-slate-200 dark:border-slate-200'
+                      className={`rounded-lg border bg-white shadow-sm ${
+                        isExpanded ? 'border-purple-300' : 'border-purple-200/50'
                       }`}
                     >
                       <div className="flex items-center justify-between p-3">
@@ -514,9 +526,9 @@ export function TaskDashboardDialog({
                             <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-500" />
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-slate-900 dark:text-slate-900">{t.description}</p>
+                            <p className="truncate font-medium text-gray-900">{t.description}</p>
                             {t.taskKey !== t.description && (
-                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-500">{t.taskKey}</p>
+                              <p className="mt-0.5 text-xs text-gray-500">{t.taskKey}</p>
                             )}
                           </div>
                         </button>
@@ -548,23 +560,23 @@ export function TaskDashboardDialog({
                         </div>
                       </div>
                       {isExpanded && canRun && (
-                        <div className="border-t border-slate-200 p-4 space-y-3 dark:border-slate-200">
-                          <h5 className="text-xs font-semibold text-slate-600 dark:text-slate-600 flex items-center gap-1">
+                        <div className="border-t border-purple-200/50 p-4 space-y-3">
+                          <h5 className="text-xs font-semibold text-gray-600 flex items-center gap-1">
                             <Clock className="w-3 h-3" /> Run daily at
                           </h5>
                           <div className="flex flex-wrap items-end gap-3">
                             <div className="space-y-1.5">
-                              <Label className="text-slate-700 text-xs">Time</Label>
+                              <Label className="text-gray-700 text-xs">Time</Label>
                               <input
                                 type="time"
                                 value={taskScheduleForm.runAtTime}
                                 onChange={(e) => isAdmin && updateTaskSchedule(t.taskKey, { runAtTime: e.target.value })}
                                 readOnly={!isAdmin}
-                                className={`flex h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-80' : ''}`}
+                                className={`flex h-9 rounded-md border border-purple-200 bg-white px-3 py-1 text-sm text-gray-900 ${!isAdmin ? 'cursor-default opacity-80' : ''}`}
                               />
                             </div>
                             <div className="space-y-1.5 min-w-[160px]">
-                              <Label className="text-slate-700 text-xs">Timezone</Label>
+                              <Label className="text-gray-700 text-xs">Timezone</Label>
                               <Select
                                 value={taskScheduleForm.runAtTimezone}
                                 onValueChange={(v) => isAdmin && updateTaskSchedule(t.taskKey, { runAtTimezone: v })}
@@ -586,7 +598,7 @@ export function TaskDashboardDialog({
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <Label className="text-slate-700 text-xs">Enable daily run</Label>
+                            <Label className="text-gray-700 text-xs">Enable daily run</Label>
                             <Switch
                               checked={taskScheduleForm.enabled}
                               onCheckedChange={(v) => isAdmin && updateTaskSchedule(t.taskKey, { enabled: v })}
@@ -613,29 +625,31 @@ export function TaskDashboardDialog({
           </div>
 
           {/* Edit message templates — always visible so users know where to customize SMS/email */}
-          <div className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-200 dark:bg-white">
-            <button
-              type="button"
-              onClick={() => setTemplateOpen(!templateOpen)}
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-50/50"
-            >
-              <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
-                <FileText className="w-4 h-4 text-purple-600" />
-                Message templates (SMS / email)
-              </h4>
-              {templateOpen ? (
-                <ChevronUp className="w-4 h-4 text-slate-500" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-slate-500" />
-              )}
-            </button>
-            {templateOpen && (
-              <div className="space-y-4 border-t border-slate-200 p-4 dark:border-slate-200">
+          <Collapsible open={templateOpen} onOpenChange={setTemplateOpen} defaultOpen={true}>
+            <div className="rounded-lg border border-purple-200/50 bg-white shadow-sm">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between p-4 text-left hover:bg-purple-50/50"
+                >
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                    <FileText className="w-4 h-4 text-purple-600" />
+                    Message templates (SMS / email)
+                  </h4>
+                  {templateOpen ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+              <div className="space-y-4 border-t border-purple-200/50 p-4">
                 {supportsTemplates ? (
                   <>
                     {isSmsEmployee && (
                       <div className="space-y-1.5">
-                        <Label className="text-slate-700">SMS message</Label>
+                        <Label className="text-gray-700">SMS message</Label>
                         <textarea
                           value={template?.smsTemplate ?? ''}
                           onChange={(e) => {
@@ -647,15 +661,15 @@ export function TaskDashboardDialog({
                           readOnly={!isAdmin}
                           placeholder="Hi {firstName}! ..."
                           rows={3}
-                          className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
+                          className={`w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm text-gray-900 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                         />
-                        <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
+                        <p className="text-xs text-gray-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
                       </div>
                     )}
                     {isEmailEmployee && (
                       <>
                         <div className="space-y-1.5">
-                          <Label className="text-slate-700">Email subject</Label>
+                          <Label className="text-gray-700">Email subject</Label>
                           <input
                             type="text"
                             value={template?.emailSubject ?? ''}
@@ -667,11 +681,11 @@ export function TaskDashboardDialog({
                             }}
                             readOnly={!isAdmin}
                             placeholder="Friendly reminder: Invoice pending"
-                            className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
+                            className={`w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm text-gray-900 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-slate-700">Email body</Label>
+                          <Label className="text-gray-700">Email body</Label>
                           <textarea
                             value={template?.emailBody ?? ''}
                             onChange={(e) => {
@@ -683,9 +697,9 @@ export function TaskDashboardDialog({
                             readOnly={!isAdmin}
                             placeholder="Hi {firstName}, ..."
                             rows={4}
-                            className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
+                            className={`w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm text-gray-900 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                           />
-                          <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
+                          <p className="text-xs text-gray-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
                         </div>
                       </>
                     )}
@@ -701,21 +715,22 @@ export function TaskDashboardDialog({
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                  <p className="text-sm text-gray-500">
                     This employee doesn&apos;t send customizable SMS or email. Templates are available for: Speed to Lead, Appointment Coordinator, Patient Coordinator, Treatment Coordinator, and Billing Specialist.
                   </p>
                 )}
               </div>
-            )}
-          </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
           {/* Voice prompts */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
-            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+          <div className="rounded-lg border border-purple-200/50 bg-white p-4 shadow-sm">
+            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
               <Mic className="w-4 h-4 text-purple-600" />
               Voice prompts
             </h4>
-            <p className="text-sm text-slate-500 dark:text-slate-500 mb-2">
+            <p className="text-sm text-gray-500 mb-2">
               {isAdmin
                 ? 'Customize what this AI says on phone calls. Voice prompts are set when the agent is provisioned.'
                 : 'Voice prompts are configured by your admin in Voice Agents.'}
@@ -732,12 +747,12 @@ export function TaskDashboardDialog({
 
           {/* Add custom task — industry employees only, admin only */}
           {canAddCustomTask && isAdmin && (
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+            <div className="rounded-lg border border-purple-200/50 bg-white p-4 shadow-sm">
+              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
                 <Plus className="w-4 h-4 text-purple-600" />
                 Add custom task
               </h4>
-              <p className="text-sm text-slate-500 dark:text-slate-500 mb-3">
+              <p className="text-sm text-gray-500 mb-3">
                 Add your own automated jobs (e.g. &quot;Send insurance claims daily at 5pm&quot;). Custom tasks appear above with toggles and schedules.
               </p>
               <div className="flex gap-2">
@@ -746,7 +761,7 @@ export function TaskDashboardDialog({
                   value={customTaskDesc}
                   onChange={(e) => setCustomTaskDesc(e.target.value)}
                   placeholder="e.g. Send insurance claims daily at 5pm"
-                  className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="flex-1 rounded-md border border-purple-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTask()}
                 />
                 <Button
@@ -780,28 +795,28 @@ export function TaskDashboardDialog({
           )}
 
           {canRun && isAdmin && (
-            <p className="text-xs text-slate-500 dark:text-slate-500">
+            <p className="text-xs text-gray-500">
               Expand a task above to set when it runs daily.
             </p>
           )}
 
           {/* History */}
           <div>
-            <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+            <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800">
               <History className="w-4 h-4" />
               Task history
             </h4>
             <div className="max-h-48 space-y-2 overflow-y-auto">
               {history.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-500">No runs yet.</p>
+                <p className="text-sm text-gray-500">No runs yet.</p>
               ) : (
                 history.map((h) => (
                   <div
                     key={h.id}
-                    className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm dark:border-slate-200 dark:bg-white dark:text-slate-700"
+                    className="rounded-lg border border-purple-200/50 bg-white p-3 text-sm shadow-sm"
                   >
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-slate-600 dark:text-slate-600">
+                      <span className="text-gray-600">
                         {new Date(h.date).toLocaleString()}
                       </span>
                       <Badge
@@ -821,7 +836,7 @@ export function TaskDashboardDialog({
                       </Badge>
                     </div>
                     {h.summary && (
-                      <p className="text-slate-700">{h.summary}</p>
+                      <p className="text-gray-700">{h.summary}</p>
                     )}
                   </div>
                 ))

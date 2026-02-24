@@ -238,16 +238,20 @@ export function MessagingPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
-      {/* Channel Stats - Reference for owners to see which channels get most communications */}
-      <div className="shrink-0 px-4 py-3 border-b border-border bg-card">
-        <p className="text-xs text-muted-foreground mb-2">Channel activity overview</p>
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+      {/* Channel Stats */}
+      <div className="shrink-0 px-4 py-3 border-b border-purple-200/50 bg-white/80 backdrop-blur-sm relative z-10">
+        <p className="text-xs text-gray-600 mb-2">Channel activity overview</p>
         <ChannelStatsCards refreshKey={refreshKey} compact />
       </div>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 relative z-10">
       {/* Conversations List */}
-      <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-border bg-card">
+      <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-purple-200/50 bg-white/80 backdrop-blur-sm">
         <div className="flex-1 overflow-hidden">
           <ConversationList
             key={refreshKey}
@@ -258,23 +262,23 @@ export function MessagingPage() {
         </div>
         
         {/* Channel Connections Panel - Collapsible */}
-        <div className="border-t border-border bg-card">
+        <div className="border-t border-purple-200/50 bg-white/80">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowConnectionsPanel(!showConnectionsPanel)}
-            className="w-full justify-between text-foreground hover:bg-muted rounded-none"
+            className="w-full justify-between text-gray-700 hover:bg-purple-50 rounded-none"
           >
             <span className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Channel Connections
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-gray-600">
               {showConnectionsPanel ? 'Hide' : 'Show'}
             </span>
           </Button>
           {showConnectionsPanel && (
-            <div className="max-h-96 overflow-y-auto border-t border-border">
+            <div className="max-h-96 overflow-y-auto border-t border-purple-200/50">
               <ChannelConnectionsPanel
                 onConnectionChange={() => {
                   setRefreshKey((prev) => prev + 1);
@@ -290,10 +294,10 @@ export function MessagingPage() {
       <div className="flex-1 hidden md:flex">
         {selectedConversationId ? (
           <Tabs defaultValue="messages" className="w-full">
-            <div className="border-b border-border px-6 pt-4 bg-card">
-              <TabsList className="bg-muted">
-                <TabsTrigger value="messages" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Messages</TabsTrigger>
-                <TabsTrigger value="calls" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Call History</TabsTrigger>
+            <div className="border-b border-purple-200/50 px-6 pt-4 bg-white/80 backdrop-blur-sm">
+              <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+                <TabsTrigger value="messages" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Messages</TabsTrigger>
+                <TabsTrigger value="calls" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Call History</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="messages" className="h-[calc(100vh-8rem)] mt-0">
@@ -304,12 +308,12 @@ export function MessagingPage() {
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="flex flex-col items-center justify-center w-full text-center p-8 bg-background">
-            <div className="rounded-full bg-primary/10 p-6 mb-4">
-              <MessageCircle className="h-12 w-12 text-primary" />
+          <div className="flex flex-col items-center justify-center w-full text-center p-8 bg-transparent">
+            <div className="rounded-full bg-purple-100/80 p-6 mb-4">
+              <MessageCircle className="h-12 w-12 text-purple-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">Select a conversation</h3>
-            <p className="text-muted-foreground mb-6 max-w-sm">
+            <h3 className="text-xl font-semibold mb-2 text-gray-800">Select a conversation</h3>
+            <p className="text-gray-600 mb-6 max-w-sm">
               Choose a conversation from the list to view messages and send replies
             </p>
             
@@ -612,12 +616,12 @@ export function MessagingPage() {
 
       {/* Mobile: Show thread in full screen when selected */}
       {selectedConversationId && (
-        <div className="fixed inset-0 z-50 md:hidden bg-background">
+        <div className="fixed inset-0 z-50 md:hidden bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50">
           <Tabs defaultValue="messages" className="w-full h-full">
-            <div className="border-b border-border px-4 pt-4 bg-card">
-              <TabsList className="bg-muted">
-                <TabsTrigger value="messages" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Messages</TabsTrigger>
-                <TabsTrigger value="calls" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Call History</TabsTrigger>
+            <div className="border-b border-purple-200/50 px-4 pt-4 bg-white/80 backdrop-blur-sm">
+              <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+                <TabsTrigger value="messages" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Messages</TabsTrigger>
+                <TabsTrigger value="calls" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Call History</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="messages" className="h-[calc(100vh-5rem)] mt-0">

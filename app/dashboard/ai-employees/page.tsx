@@ -209,69 +209,69 @@ function TasksEmbed() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 Total Tasks
               </CardTitle>
-              <ListTodo className="h-4 w-4 text-blue-500" />
+              <ListTodo className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.total || 0}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 {stats.summary?.completionRate || 0}% completion rate
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 In Progress
               </CardTitle>
-              <Clock className="h-4 w-4 text-purple-500" />
+              <Clock className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.inProgress || 0}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Active tasks
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 Overdue
               </CardTitle>
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.overdue || 0}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Need attention
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 Completed
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.completed || 0}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Tasks done
               </p>
             </CardContent>
@@ -288,21 +288,21 @@ function TasksEmbed() {
       />
 
       {/* Filters */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
+                className="pl-10 bg-white/80 border-purple-200 text-gray-900 placeholder:text-gray-500"
               />
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger className="bg-white/80 border-purple-200 text-gray-900">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -316,7 +316,7 @@ function TasksEmbed() {
             </Select>
 
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger className="bg-white/80 border-purple-200 text-gray-900">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -336,7 +336,7 @@ function TasksEmbed() {
                 setPriorityFilter('all');
                 setAssigneeFilter('all');
               }}
-              className="border-gray-700 text-gray-400 hover:text-white"
+              className="border-purple-200 text-gray-600 hover:bg-purple-50 hover:border-purple-300"
             >
               <Filter className="h-4 w-4 mr-2" />
               Clear Filters
@@ -346,31 +346,31 @@ function TasksEmbed() {
       </Card>
 
       {/* Tasks List */}
-      <Card className="bg-primary border-primary-foreground/20">
+      <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-primary-foreground">Your Tasks</CardTitle>
-              <CardDescription className="text-primary-foreground/80">
+              <CardTitle className="text-gray-900">Your Tasks</CardTitle>
+              <CardDescription className="text-gray-600">
                 {tasks.length} task{tasks.length !== 1 ? 's' : ''} found
               </CardDescription>
             </div>
             <Tabs value={view} onValueChange={(v: any) => setView(v)}>
-              <TabsList className="bg-primary-foreground/10">
-                <TabsTrigger value="monday" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
+              <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+                <TabsTrigger value="monday" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   📋 Board
                 </TabsTrigger>
-                <TabsTrigger value="list" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
+                <TabsTrigger value="list" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   List
                 </TabsTrigger>
-                <TabsTrigger value="kanban" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
+                <TabsTrigger value="kanban" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   Kanban
                 </TabsTrigger>
-                <TabsTrigger value="calendar" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
+                <TabsTrigger value="calendar" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   <Calendar className="h-4 w-4 mr-2" />
                   Calendar
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   Analytics
                 </TabsTrigger>
               </TabsList>
@@ -384,9 +384,9 @@ function TasksEmbed() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center py-12">
-              <ListTodo className="h-12 w-12 mx-auto text-primary-foreground/60 mb-4" />
-              <p className="text-primary-foreground/80">No tasks found</p>
-              <p className="text-primary-foreground/70 text-sm mt-1">
+              <ListTodo className="h-12 w-12 mx-auto text-purple-600/60 mb-4" />
+              <p className="text-gray-800">No tasks found</p>
+              <p className="text-gray-600 text-sm mt-1">
                 Create your first task to get started
               </p>
             </div>
@@ -1126,18 +1126,23 @@ export default function AIEmployeesPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+      <div className="relative z-10 container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Bot className="h-8 w-8" />
+            <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+              <Bot className="h-8 w-8 text-purple-600" />
               AI Employees
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-gray-600 mt-1">
               Automated assistants working 24/7 for your business
             </p>
           </div>
@@ -1155,7 +1160,7 @@ export default function AIEmployeesPage() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className={`grid w-full bg-black ${
+        <TabsList className={`grid w-full bg-white/80 border border-purple-200 backdrop-blur-sm ${
           isRealEstateUser && hasIndustryTeam ? 'grid-cols-8' :
           isRealEstateUser ? 'grid-cols-7' : 
           hasIndustryTeam ? 'grid-cols-7' :
@@ -1164,14 +1169,14 @@ export default function AIEmployeesPage() {
         }`}>
           <TabsTrigger
             value="ai-team"
-            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
           >
             AI Team
           </TabsTrigger>
           {isRealEstateUser && (
             <TabsTrigger
               value="re-team"
-              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
             >
               RE Team
             </TabsTrigger>
@@ -1179,7 +1184,7 @@ export default function AIEmployeesPage() {
           {hasIndustryTeam && (
             <TabsTrigger
               value="industry-team"
-              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
             >
               {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
             </TabsTrigger>
@@ -1187,26 +1192,26 @@ export default function AIEmployeesPage() {
           {(isRealEstateUser || hasWorkflowSystem) && (
             <TabsTrigger
               value="workflows"
-              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
             >
               Workflows
             </TabsTrigger>
           )}
           <TabsTrigger
             value="monitor"
-            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
           >
             Monitor Jobs
           </TabsTrigger>
           <TabsTrigger
             value="tasks"
-            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
           >
             Manage Tasks
           </TabsTrigger>
           <TabsTrigger
             value="activity"
-            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
           >
             Activity
           </TabsTrigger>
@@ -1215,7 +1220,7 @@ export default function AIEmployeesPage() {
         {/* AI Team Tab */}
         <TabsContent value="ai-team" className="space-y-4">
           {/* Setup CTA - replaces Hire AI Employee */}
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -1262,7 +1267,7 @@ export default function AIEmployeesPage() {
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-4">
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardContent className="pt-6">
               <TasksEmbed />
             </CardContent>
@@ -1333,6 +1338,7 @@ export default function AIEmployeesPage() {
         onOpenChange={setShowWorkflowResults}
         workflowResults={workflowResults}
       />
+      </div>
     </div>
   );
 }

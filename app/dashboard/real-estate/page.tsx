@@ -140,8 +140,8 @@ export default function RealEstateDashboard() {
   // Don't render until mounted (prevents hydration mismatch)
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-2 border-purple-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -182,42 +182,44 @@ export default function RealEstateDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Animated Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+      {/* Animated background effects - match My Voice Agents */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="relative z-10 p-6 space-y-6">
+      <div className="relative z-10 p-8 space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-violet-200 to-cyan-200 bg-clip-text text-transparent flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 border border-violet-500/30">
-                <Building2 className="w-8 h-8 text-violet-400" />
-              </div>
-              Real Estate Command Center
-            </h1>
-            <p className="text-slate-400 mt-1">AI-powered real estate intelligence & automation</p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-4xl font-bold flex items-center gap-3">
+                <span className="text-gray-700">Real Estate</span>
+                <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+                  Command Center
+                </span>
+              </h1>
+              <p className="text-gray-600 mt-1">AI-powered real estate intelligence & automation</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-700/50">
+            <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
               <Bell className="w-4 h-4 mr-2" />
               Alerts
-              <Badge className="ml-2 bg-red-500/20 text-red-400 border-red-500/30">3</Badge>
+              <Badge className="ml-2 bg-red-500/20 text-red-500 border-red-500/30">3</Badge>
             </Button>
-            <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-700/50">
+            <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
               <RefreshCw className="w-4 h-4 mr-2" />
               Sync MLS
             </Button>
             <Link href="/dashboard/real-estate/settings">
-              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-700/50">
+              <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
                 <Settings className="w-4 h-4" />
               </Button>
             </Link>
@@ -231,33 +233,30 @@ export default function RealEstateDashboard() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {marketStats.map((stat, index) => (
-            <Card
+          {marketStats.map((stat) => (
+            <div
               key={stat.label}
-              className="relative overflow-hidden bg-slate-900/50 border-slate-700/50 backdrop-blur-xl hover:border-slate-600/50 transition-all group"
+              className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-slate-400">{stat.label}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
-                    <div className={`flex items-center gap-1 mt-2 text-sm ${
-                      stat.trend === 'up' ? 'text-emerald-400' :
-                      stat.trend === 'down' ? 'text-red-400' : 'text-slate-400'
-                    }`}>
-                      {stat.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> :
-                       stat.trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
-                      {Math.abs(stat.change)}%
-                      <span className="text-slate-500 ml-1">vs last month</span>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 border border-violet-500/30">
-                    <stat.icon className="w-6 h-6 text-violet-400" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <div className={`flex items-center gap-1 mt-2 text-sm ${
+                    stat.trend === 'up' ? 'text-green-500' :
+                    stat.trend === 'down' ? 'text-red-500' : 'text-gray-500'
+                  }`}>
+                    {stat.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> :
+                     stat.trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
+                    {Math.abs(stat.change)}%
+                    <span className="text-gray-500 ml-1">vs last month</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="p-3 rounded-xl bg-purple-500/20">
+                  <stat.icon className="w-6 h-6 text-purple-500" />
+                </div>
+              </div>
+            </div>
           ))}
         </motion.div>
 
@@ -271,16 +270,15 @@ export default function RealEstateDashboard() {
           {quickActions.map((action) => (
             <Card
               key={action.id}
-              className={`relative overflow-hidden bg-slate-900/50 border-slate-700/50 backdrop-blur-xl cursor-pointer hover:border-slate-600/50 hover:scale-[1.02] transition-all group`}
+              className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm cursor-pointer hover:border-purple-300 hover:scale-[1.02] transition-all"
               onClick={() => setActiveTab(action.id)}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-              <CardContent className="p-6 flex flex-col items-center text-center relative">
-                <div className={`p-4 rounded-2xl bg-gradient-to-br ${action.gradient} border border-slate-700/50 mb-3`}>
-                  <action.icon className={`w-8 h-8 ${action.color}`} />
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className={`p-4 rounded-xl mb-3 bg-purple-500/20`}>
+                  <action.icon className={`w-8 h-8 text-purple-500`} />
                 </div>
-                <h3 className="font-semibold text-white">{action.label}</h3>
-                <p className="text-sm text-slate-400 mt-1">{action.description}</p>
+                <h3 className="font-semibold text-gray-900">{action.label}</h3>
+                <p className="text-sm text-gray-600 mt-1">{action.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -292,62 +290,62 @@ export default function RealEstateDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-lg flex items-center gap-2">
-                <LayoutDashboard className="w-5 h-5 text-violet-400" />
+              <CardTitle className="text-gray-900 text-lg flex items-center gap-2">
+                <LayoutDashboard className="w-5 h-5 text-purple-600" />
                 Quick Navigation
               </CardTitle>
-              <CardDescription className="text-slate-400">Access all Real Estate tools and pages</CardDescription>
+              <CardDescription className="text-gray-600">Access all Real Estate tools and pages</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <Link href="/dashboard/real-estate" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-violet-500/50 hover:bg-violet-500/10 transition-all text-center">
-                    <Building2 className="w-6 h-6 text-violet-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">RE Hub</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <Building2 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">RE Hub</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/fsbo-leads" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all text-center">
-                    <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">FSBO Leads</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <Users className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">FSBO Leads</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/cma" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all text-center">
-                    <TrendingUp className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">CMA Tools</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">CMA Tools</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/market-insights" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-center">
-                    <BarChart3 className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">Market Insights</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <BarChart3 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">Market Insights</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/net-sheet" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/50 hover:bg-amber-500/10 transition-all text-center">
-                    <DollarSign className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">Seller Net Sheet</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <DollarSign className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">Seller Net Sheet</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/listings" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-rose-500/50 hover:bg-rose-500/10 transition-all text-center">
-                    <Building2 className="w-6 h-6 text-rose-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">Listings</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <Building2 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">Listings</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/inquiry-analytics" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-pink-500/50 hover:bg-pink-500/10 transition-all text-center">
-                    <TrendingUp className="w-6 h-6 text-pink-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">Inquiries</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">Inquiries</span>
                   </div>
                 </Link>
                 <Link href="/dashboard/real-estate/analytics" className="group">
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all text-center">
-                    <LineChart className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
-                    <span className="text-sm text-white font-medium">RE Analytics</span>
+                  <div className="p-4 rounded-xl border border-purple-200/50 bg-white/60 hover:border-purple-500 hover:bg-purple-50 transition-all text-center">
+                    <LineChart className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                    <span className="text-sm text-gray-900 font-medium">RE Analytics</span>
                   </div>
                 </Link>
               </div>
@@ -357,32 +355,32 @@ export default function RealEstateDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300">
+          <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <LayoutDashboard className="w-4 h-4 mr-2" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="cma" className="data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300">
+            <TabsTrigger value="cma" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Brain className="w-4 h-4 mr-2" />
               CMA Engine
             </TabsTrigger>
-            <TabsTrigger value="voice" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <TabsTrigger value="voice" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Mic className="w-4 h-4 mr-2" />
               Voice AI
             </TabsTrigger>
-            <TabsTrigger value="presentation" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-300">
+            <TabsTrigger value="presentation" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <PresentationIcon className="w-4 h-4 mr-2" />
               Presentations
             </TabsTrigger>
-            <TabsTrigger value="fsbo" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300">
+            <TabsTrigger value="fsbo" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Search className="w-4 h-4 mr-2" />
               FSBO Leads
             </TabsTrigger>
-            <TabsTrigger value="attraction" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300">
+            <TabsTrigger value="attraction" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Target className="w-4 h-4 mr-2" />
               Attraction
             </TabsTrigger>
-            <TabsTrigger value="evaluation" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300">
+            <TabsTrigger value="evaluation" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Calculator className="w-4 h-4 mr-2" />
               Property Evaluation
             </TabsTrigger>
@@ -396,10 +394,10 @@ export default function RealEstateDashboard() {
               </div>
 
               {/* Recent Activity */}
-              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+              <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-violet-400" />
+                  <CardTitle className="text-gray-900 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-purple-600" />
                     Recent Activity
                   </CardTitle>
                 </CardHeader>
@@ -409,14 +407,14 @@ export default function RealEstateDashboard() {
                       {recentActivity.map((activity) => (
                         <div
                           key={activity.id}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30 hover:border-slate-600/50 transition-colors"
+                          className="flex items-start gap-3 p-3 rounded-lg border border-purple-200/50 bg-white/60 hover:border-purple-300 transition-colors"
                         >
-                          <div className="p-2 rounded-lg bg-violet-500/20">
-                            <activity.icon className="w-4 h-4 text-violet-400" />
+                          <div className="p-2 rounded-lg bg-purple-500/20">
+                            <activity.icon className="w-4 h-4 text-purple-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{activity.message}</p>
-                            <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                            <p className="text-sm text-gray-900 truncate">{activity.message}</p>
+                            <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
                           </div>
                         </div>
                       ))}

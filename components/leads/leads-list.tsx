@@ -180,14 +180,14 @@ export function LeadsList({ leads }: LeadsListProps) {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      NEW: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-      CONTACTED: 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30',
-      RESPONDED: 'bg-green-500/20 text-green-300 border border-green-500/30',
-      QUALIFIED: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-      CONVERTED: 'bg-green-500/20 text-green-300 border border-green-500/30',
-      LOST: 'bg-red-500/20 text-red-300 border border-red-500/30',
+      NEW: 'bg-blue-100 text-blue-700 border border-blue-200',
+      CONTACTED: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+      RESPONDED: 'bg-green-100 text-green-700 border border-green-200',
+      QUALIFIED: 'bg-purple-100 text-purple-700 border border-purple-200',
+      CONVERTED: 'bg-green-100 text-green-700 border border-green-200',
+      LOST: 'bg-red-100 text-red-700 border border-red-200',
     }
-    return colors[status as keyof typeof colors] || 'bg-muted text-muted-foreground'
+    return colors[status as keyof typeof colors] || 'bg-purple-100 text-purple-700 border-purple-200'
   }
 
   const getSourceIcon = (source: string) => {
@@ -201,19 +201,19 @@ export function LeadsList({ leads }: LeadsListProps) {
     <>
       {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-600">
           Showing {leadsToShow.length} of {leads.length} leads
         </p>
       </div>
 
       {/* Empty State */}
       {leadsToShow.length === 0 && (
-        <Card className="bg-card border">
+        <Card className="border-2 border-purple-200/50 bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm shadow-sm">
           <CardContent className="p-12">
             <div className="text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2 text-foreground">{emptyMessage}</h3>
-              <p className="text-muted-foreground mb-6">
+              <Users className="h-12 w-12 mx-auto text-purple-600/70 mb-4" />
+              <h3 className="text-lg font-medium mb-2 text-gray-800">{emptyMessage}</h3>
+              <p className="text-gray-600 mb-6">
                 {searchTerm || statusFilter !== 'ALL'
                   ? 'Try adjusting your search or filters'
                   : 'Start scraping social media to get your first leads'}
@@ -235,15 +235,15 @@ export function LeadsList({ leads }: LeadsListProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-primary border-primary-foreground/20 hover:border-primary-foreground/40 transition-colors h-full flex flex-col">
+                <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm hover:border-purple-300 transition-colors h-full flex flex-col shadow-sm">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg text-primary-foreground mb-2">
+                        <CardTitle className="text-lg text-gray-900 mb-2">
                           {lead.businessName}
                         </CardTitle>
                         {lead.contactPerson && (
-                          <p className="text-sm text-primary-foreground/80">{lead.contactPerson}</p>
+                          <p className="text-sm text-gray-600">{lead.contactPerson}</p>
                         )}
                       </div>
                       <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
@@ -252,39 +252,39 @@ export function LeadsList({ leads }: LeadsListProps) {
                   <CardContent className="flex-1 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
                       {lead.email && (
-                        <div className="flex items-center text-sm text-primary-foreground/90">
-                          <Mail className="h-4 w-4 mr-2 text-primary-foreground/60" />
+                        <div className="flex items-center text-sm text-gray-700">
+                          <Mail className="h-4 w-4 mr-2 text-gray-500" />
                           {lead.email}
                         </div>
                       )}
                       {lead.phone && (
-                        <div className="flex items-center text-sm text-primary-foreground/90">
-                          <Phone className="h-4 w-4 mr-2 text-primary-foreground/60" />
+                        <div className="flex items-center text-sm text-gray-700">
+                          <Phone className="h-4 w-4 mr-2 text-gray-500" />
                           {lead.phone}
                         </div>
                       )}
                       {lead.website && (
-                        <div className="flex items-center text-sm text-primary-foreground/90">
-                          <Globe className="h-4 w-4 mr-2 text-primary-foreground/60" />
+                        <div className="flex items-center text-sm text-gray-700">
+                          <Globe className="h-4 w-4 mr-2 text-gray-500" />
                           <a
                             href={lead.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-primary-foreground hover:underline truncate"
+                            className="hover:text-purple-600 hover:underline truncate"
                           >
                             {lead.website}
                           </a>
                         </div>
                       )}
                       {(lead.city || lead.address) && (
-                        <div className="flex items-center text-sm text-primary-foreground/90">
-                          <MapPin className="h-4 w-4 mr-2 text-primary-foreground/60" />
+                        <div className="flex items-center text-sm text-gray-700">
+                          <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                           {lead.city && lead.address
                             ? `${lead.city}, ${lead.address}`
                             : lead.city || lead.address}
                         </div>
                       )}
-                      <div className="flex items-center justify-between text-xs text-primary-foreground/70 pt-2">
+                      <div className="flex items-center justify-between text-xs text-gray-500 pt-2">
                         <div className="flex items-center gap-1">
                           <SourceIcon className="h-3 w-3" />
                           {lead.source}
@@ -294,7 +294,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                           {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-primary-foreground/70 pt-1">
+                      <div className="flex items-center gap-3 text-xs text-gray-500 pt-1">
                         <div className="flex items-center gap-1">
                           <MessageSquare className="h-3 w-3" />
                           {lead.messages.length} messages
@@ -355,41 +355,41 @@ export function LeadsList({ leads }: LeadsListProps) {
 
       {/* Table View */}
       {viewMode === 'table' && leadsToShow.length > 0 && (
-        <Card className="bg-card border">
+        <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border hover:bg-muted/50">
-                    <TableHead className="text-muted-foreground">Business</TableHead>
-                    <TableHead className="text-muted-foreground">Contact</TableHead>
-                    <TableHead className="text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-muted-foreground">Phone</TableHead>
-                    <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Source</TableHead>
-                    <TableHead className="text-muted-foreground">Created</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                  <TableRow className="border-purple-200/50 hover:bg-purple-50/50">
+                    <TableHead className="text-gray-600">Business</TableHead>
+                    <TableHead className="text-gray-600">Contact</TableHead>
+                    <TableHead className="text-gray-600">Email</TableHead>
+                    <TableHead className="text-gray-600">Phone</TableHead>
+                    <TableHead className="text-gray-600">Status</TableHead>
+                    <TableHead className="text-gray-600">Source</TableHead>
+                    <TableHead className="text-gray-600">Created</TableHead>
+                    <TableHead className="text-gray-600 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {leadsToShow.map((lead) => {
                     const SourceIcon = getSourceIcon(lead.source)
                     return (
-                      <TableRow key={lead.id} className="border-border hover:bg-muted/50">
-                        <TableCell className="text-foreground font-medium">{lead.businessName}</TableCell>
-                        <TableCell className="text-muted-foreground">{lead.contactPerson || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">{lead.email || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">{lead.phone || '-'}</TableCell>
+                      <TableRow key={lead.id} className="border-purple-200/50 hover:bg-purple-50/50">
+                        <TableCell className="text-gray-900 font-medium">{lead.businessName}</TableCell>
+                        <TableCell className="text-gray-600">{lead.contactPerson || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{lead.email || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{lead.phone || '-'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1 text-muted-foreground">
+                          <div className="flex items-center gap-1 text-gray-600">
                             <SourceIcon className="h-3 w-3" />
                             <span className="text-sm">{lead.source}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-gray-600">
                           {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
                         </TableCell>
                         <TableCell className="text-right">
@@ -444,21 +444,21 @@ export function LeadsList({ leads }: LeadsListProps) {
   return (
     <div className="space-y-6">
       {/* Header Actions */}
-      <Card className="bg-card border">
+      <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex flex-col md:flex-row gap-4 flex-1">
               <div className="relative flex-1 md:max-w-xs">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder="Search leads..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-muted border-input text-foreground"
+                  className="pl-10 bg-white/80 border-purple-200 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40 bg-muted border-input text-foreground">
+                <SelectTrigger className="w-full md:w-40 bg-white/80 border-purple-200 text-gray-900">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -472,7 +472,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                 </SelectContent>
               </Select>
               <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-full md:w-40 bg-muted border-input text-foreground">
+                <SelectTrigger className="w-full md:w-40 bg-white/80 border-purple-200 text-gray-900">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
                 <SelectContent>
@@ -514,7 +514,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                     <Button 
                       variant="outline"
                       disabled
-                      className="opacity-50 cursor-not-allowed bg-muted border-input text-muted-foreground"
+                      className="opacity-50 cursor-not-allowed border-purple-200 text-gray-600 bg-white/60"
                     >
                       <Linkedin className="h-4 w-4 mr-2" />
                       LinkedIn
@@ -529,7 +529,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                     <Button 
                       variant="outline"
                       disabled
-                      className="opacity-50 cursor-not-allowed bg-muted border-input text-muted-foreground"
+                      className="opacity-50 cursor-not-allowed border-purple-200 text-gray-600 bg-white/60"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Social Media
@@ -552,12 +552,12 @@ export function LeadsList({ leads }: LeadsListProps) {
       </Card>
       {/* Tabbed Content */}
       <Tabs defaultValue="all" className="space-y-6">
-        <TabsList className="grid w-full max-w-[1000px] grid-cols-4">
-          <TabsTrigger value="all" className="gap-2">
+        <TabsList className="grid w-full max-w-[1000px] grid-cols-4 bg-white/80 border border-purple-200 backdrop-blur-sm">
+          <TabsTrigger value="all" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Users className="h-4 w-4" />
             All Leads ({filteredLeads.length})
           </TabsTrigger>
-          <TabsTrigger value="website" className="gap-2">
+          <TabsTrigger value="website" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Globe className="h-4 w-4" />
             Website ({websiteLeads.length})
           </TabsTrigger>
@@ -600,9 +600,9 @@ export function LeadsList({ leads }: LeadsListProps) {
         {/* Social Media Leads Tab - Greyed out for all industries */}
         <TabsContent value="social" className="space-y-6">
           {/* Quick Launch Buttons - disabled */}
-          <Card className="bg-primary/10 border-primary/30 opacity-60">
+          <Card className="border-2 border-purple-200/50 bg-white/60 backdrop-blur-sm opacity-60">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
+              <CardTitle className="flex items-center gap-2 text-purple-600">
                 <Sparkles className="h-5 w-5" />
                 Quick Launch Soshogle Lead Finders
               </CardTitle>
@@ -612,25 +612,25 @@ export function LeadsList({ leads }: LeadsListProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 opacity-50 pointer-events-none">
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-primary/20 border-primary/40" disabled>
-                  <Instagram className="h-8 w-8 text-primary" />
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-purple-50/80 border-purple-200" disabled>
+                  <Instagram className="h-8 w-8 text-purple-600" />
                   <div>
                     <div className="font-semibold">Instagram</div>
-                    <div className="text-xs text-muted-foreground">{socialMediaStats.instagram} leads</div>
+                    <div className="text-xs text-gray-500">{socialMediaStats.instagram} leads</div>
                   </div>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-primary/20 border-primary/40" disabled>
-                  <Facebook className="h-8 w-8 text-primary" />
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-purple-50/80 border-purple-200" disabled>
+                  <Facebook className="h-8 w-8 text-purple-600" />
                   <div>
                     <div className="font-semibold">Facebook</div>
-                    <div className="text-xs text-muted-foreground">{socialMediaStats.facebook} leads</div>
+                    <div className="text-xs text-gray-500">{socialMediaStats.facebook} leads</div>
                   </div>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-muted border-border" disabled>
-                  <Music className="h-8 w-8 text-muted-foreground" />
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-white/60 border-purple-200" disabled>
+                  <Music className="h-8 w-8 text-gray-500" />
                   <div>
                     <div className="font-semibold">TikTok</div>
-                    <div className="text-xs text-muted-foreground">{socialMediaStats.tiktok} leads</div>
+                    <div className="text-xs text-gray-500">{socialMediaStats.tiktok} leads</div>
                   </div>
                 </Button>
               </div>
@@ -645,7 +645,7 @@ export function LeadsList({ leads }: LeadsListProps) {
           <div className="opacity-60 pointer-events-none">
             <LeadResearchCard />
           </div>
-          <p className="text-sm text-muted-foreground text-center">Lead Finder (Coming soon)</p>
+          <p className="text-sm text-gray-600 text-center">Lead Finder (Coming soon)</p>
         </TabsContent>
       </Tabs>
       {/* Voice AI Call Dialog */}
