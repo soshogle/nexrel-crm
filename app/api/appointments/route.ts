@@ -370,13 +370,13 @@ export async function POST(request: NextRequest) {
 
     emitCRMEvent('appointment_booked', session.user.id, { entityId: appointment.id, entityType: 'Appointment' });
 
-    const startTime = new Date(appointment.appointmentDate)
-    const endTime = new Date(startTime.getTime() + (appointment.duration || 30) * 60000)
+    const appointmentStart = new Date(appointment.appointmentDate)
+    const appointmentEnd = new Date(appointmentStart.getTime() + (appointment.duration || 30) * 60000)
     const transformed = {
       ...appointment,
       title: appointment.customerName || 'Untitled',
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
+      startTime: appointmentStart.toISOString(),
+      endTime: appointmentEnd.toISOString(),
     }
     return NextResponse.json(transformed, { status: 201 })
   } catch (error) {
