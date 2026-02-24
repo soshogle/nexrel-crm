@@ -115,13 +115,26 @@ export function VoiceAssistant({
 
       console.log('📥 [Docpen] Agent initialization response status:', response.status);
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const error = await response.json();
-        console.error('❌ [Docpen] Agent initialization failed:', error);
-        throw new Error(error.error || 'Failed to initialize agent');
+        let errorMessage = 'Failed to initialize agent';
+        try {
+          const error = JSON.parse(responseText);
+          errorMessage = error.error || error.message || errorMessage;
+        } catch {
+          errorMessage = responseText || `Server error (${response.status})`;
+        }
+        console.error('❌ [Docpen] Agent initialization failed:', errorMessage);
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data: { agentId?: string };
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error('Invalid response from server');
+      }
       console.log('✅ [Docpen] Agent initialization success:', data);
       console.log('📝 [Docpen] Agent ID received:', data.agentId);
       
@@ -155,13 +168,24 @@ export function VoiceAssistant({
         body: JSON.stringify({ agentId: agentIdToUse }),
       });
 
+      const tokenText = await response.text();
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to get conversation token');
+        let errMsg = 'Failed to get conversation token';
+        try {
+          const error = JSON.parse(tokenText);
+          errMsg = error.error || error.message || errMsg;
+        } catch {
+          errMsg = tokenText || errMsg;
+        }
+        throw new Error(errMsg);
       }
 
-      const data = await response.json();
-      return data.token;
+      try {
+        const data = JSON.parse(tokenText);
+        return data.token;
+      } catch {
+        throw new Error('Invalid response from server');
+      }
     } catch (err: any) {
       console.error('❌ [Docpen] Failed to get conversation token:', err);
       setError(err.message);

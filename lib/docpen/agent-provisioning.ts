@@ -103,19 +103,17 @@ class DocpenAgentProvisioning {
               // Agent exists in ElevenLabs - reuse it
               console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs - reusing`);
               
-              // Fix agent (strip invalid llm, update function server_url) BEFORE returning
-              // so voice connection works immediately. Previously ran in background and caused
-              // "English agents must use turbo or flash v2" errors when user connected too soon.
-              try {
-                const updated = await this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId);
-                if (updated) console.log(`✅ [Docpen] Agent ${existingAgent.elevenLabsAgentId} updated with valid config`);
-              } catch (err: any) {
-                console.warn(`⚠️ [Docpen] Failed to update agent functions (non-critical):`, err.message);
-              }
-              
-              // Update session context if provided
+              // Fix agent (strip invalid llm, update function server_url) in background.
+              // Don't await - prevents 504 timeout when ElevenLabs is slow. User can retry if needed.
+              this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
+                .then((updated) => {
+                  if (updated) console.log(`✅ [Docpen] Agent ${existingAgent.elevenLabsAgentId} updated with valid config`);
+                })
+                .catch((err: any) => console.warn(`⚠️ [Docpen] Failed to update agent functions (non-critical):`, err.message));
+
+              // Update session context in background (don't block return)
               if (config.sessionContext) {
-                await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+                this.updateAgentContext(existingAgent.elevenLabsAgentId, config).catch(() => {});
               }
               
               return {
