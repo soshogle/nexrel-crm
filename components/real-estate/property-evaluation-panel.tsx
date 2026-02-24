@@ -164,15 +164,15 @@ function BrokerEvaluationForm() {
   };
 
   return (
-    <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl border-pink-500/20">
+    <Card className="bg-card border border-primary/20">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-pink-500/30">
-            <Calculator className="w-6 h-6 text-pink-400" />
+          <div className="p-3 rounded-xl bg-primary/20 border border-primary/30">
+            <Calculator className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-white">Run Property Evaluation</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground">Run Property Evaluation</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Enter property details to get an instant market estimate based on comparable sales.
             </CardDescription>
           </div>
@@ -182,7 +182,7 @@ function BrokerEvaluationForm() {
         {!result ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1.5 block">
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1.5 block">
                 Property Address *
               </label>
               <PlaceAutocomplete
@@ -190,32 +190,32 @@ function BrokerEvaluationForm() {
                 onChange={handleAddressSelect}
                 placeholder="Search address (e.g. 123 Main St, Montreal)"
                 types="address"
-                className="bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-500"
+                className="bg-muted border-input text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1.5 block">City</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1.5 block">City</label>
               <Input
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Montreal"
-                className="bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-500 h-10"
+                className="bg-muted border-input text-foreground placeholder:text-muted-foreground h-10"
               />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1.5 block">Beds</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1.5 block">Beds</label>
                 <Input
                   type="number"
                   min={0}
                   value={bedrooms}
                   onChange={(e) => setBedrooms(e.target.value)}
                   placeholder="3"
-                  className="bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-500 h-10"
+                  className="bg-muted border-input text-foreground placeholder:text-muted-foreground h-10"
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1.5 block">Baths</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1.5 block">Baths</label>
                 <Input
                   type="number"
                   min={0}
@@ -223,15 +223,15 @@ function BrokerEvaluationForm() {
                   value={bathrooms}
                   onChange={(e) => setBathrooms(e.target.value)}
                   placeholder="2"
-                  className="bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-500 h-10"
+                  className="bg-muted border-input text-foreground placeholder:text-muted-foreground h-10"
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1.5 block">Type</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1.5 block">Type</label>
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
-                  className="w-full h-10 border border-slate-600/50 rounded-md px-3 text-white bg-slate-800/50 text-sm"
+                  className="w-full h-10 border border-input rounded-md px-3 text-foreground bg-muted text-sm"
                 >
                   <option value="house">House</option>
                   <option value="condo">Condo</option>
@@ -242,7 +242,7 @@ function BrokerEvaluationForm() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 {error}
               </div>
@@ -251,7 +251,7 @@ function BrokerEvaluationForm() {
             <Button
               type="submit"
               disabled={loading || !address.trim()}
-              className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white h-11"
+              className="w-full h-11"
             >
               {loading ? (
                 <>
@@ -288,25 +288,25 @@ function EvaluationResultDisplay({
   return (
     <div className="space-y-4">
       {/* Value card */}
-      <div className="rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20 p-5">
+      <div className="rounded-xl bg-primary/10 border border-primary/20 p-5">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-slate-400 uppercase tracking-wider">Estimated Market Value</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Market Value</span>
           {result.usedRegionalFallback && (
             <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-[10px]">
               Regional Estimate
             </Badge>
           )}
         </div>
-        <p className="text-3xl font-bold text-white">
+        <p className="text-3xl font-bold text-foreground">
           {result.estimatedValue > 0 ? formatCurrency(result.estimatedValue) : 'Contact for appraisal'}
         </p>
-        <div className="flex items-center gap-4 mt-3 text-sm text-slate-400">
+        <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
             {result.address}
           </span>
         </div>
-        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
           {result.bedrooms != null && <span>{result.bedrooms} bed</span>}
           {result.bathrooms != null && <span>{result.bathrooms} bath</span>}
           <span className="capitalize">{result.propertyType}</span>
@@ -350,14 +350,14 @@ function EvaluationResultDisplay({
                     <p className="text-sm text-white truncate">
                       {comp.address}{comp.city ? `, ${comp.city}` : ''}
                     </p>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       {comp.bedrooms != null && <span>{comp.bedrooms} bed</span>}
                       {comp.bathrooms != null && <span>{comp.bathrooms} bath</span>}
                       {comp.area != null && <span>{comp.area} sqft</span>}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
-                    <p className="text-sm font-medium text-white">{formatCurrency(comp.price)}</p>
+                    <p className="text-sm font-medium text-foreground">{formatCurrency(comp.price)}</p>
                     <Badge
                       variant="outline"
                       className={
@@ -379,7 +379,7 @@ function EvaluationResultDisplay({
       <Button
         onClick={onReset}
         variant="outline"
-        className="w-full border-slate-600/50 text-slate-300 hover:text-white hover:border-slate-500"
+        className="w-full"
       >
         <RefreshCw className="w-4 h-4 mr-2" />
         Run Another Evaluation
@@ -408,16 +408,16 @@ function EvaluationLeadsFeed() {
   }, [fetchLeads]);
 
   return (
-    <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl border-violet-500/20">
+    <Card className="bg-card border border-primary/20">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30">
-              <Users className="w-6 h-6 text-violet-400" />
+            <div className="p-3 rounded-xl bg-primary/20 border border-primary/30">
+              <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-white">Evaluation Leads</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-foreground">Evaluation Leads</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Website visitors who requested property evaluations
               </CardDescription>
             </div>
@@ -427,7 +427,7 @@ function EvaluationLeadsFeed() {
             size="sm"
             onClick={fetchLeads}
             disabled={loading}
-            className="text-slate-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -435,15 +435,15 @@ function EvaluationLeadsFeed() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex items-center justify-center gap-2 text-slate-400 py-8">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading leads...
           </div>
         ) : leads.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No evaluation leads yet.</p>
-            <p className="text-slate-500 text-xs mt-1">
+            <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">No evaluation leads yet.</p>
+            <p className="text-muted-foreground/80 text-xs mt-1">
               When visitors request evaluations on your website, they will appear here.
             </p>
           </div>
@@ -452,12 +452,12 @@ function EvaluationLeadsFeed() {
             {leads.map((lead) => (
               <div
                 key={lead.id}
-                className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30 hover:border-slate-600/50 transition-colors"
+                className="p-3 rounded-lg bg-muted border border-border hover:border-input transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white truncate">{lead.name}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                    <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       {lead.email !== '—' && (
                         <span className="flex items-center gap-1 truncate">
                           <Mail className="w-3 h-3" />
@@ -471,20 +471,20 @@ function EvaluationLeadsFeed() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 mt-1.5 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
                       <MapPin className="w-3 h-3" />
                       <span className="truncate">{lead.address}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     {lead.estimatedValue != null && lead.estimatedValue > 0 ? (
-                      <p className="text-sm font-medium text-emerald-400">
+                      <p className="text-sm font-medium text-success">
                         {formatCurrency(lead.estimatedValue)}
                       </p>
                     ) : (
-                      <p className="text-xs text-slate-500">No estimate</p>
+                      <p className="text-xs text-muted-foreground">No estimate</p>
                     )}
-                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 justify-end">
+                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 justify-end">
                       <Clock className="w-2.5 h-2.5" />
                       {timeAgo(lead.createdAt)}
                     </p>
@@ -495,10 +495,10 @@ function EvaluationLeadsFeed() {
           </div>
         )}
         {leads.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-700/30 flex items-center justify-between">
-            <p className="text-xs text-slate-500">{leads.length} evaluation{leads.length !== 1 ? 's' : ''} total</p>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">{leads.length} evaluation{leads.length !== 1 ? 's' : ''} total</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <TrendingUp className="w-3.5 h-3.5 text-success" />
               {leads.filter((l) => l.estimatedValue && l.estimatedValue > 0).length} with estimates
             </div>
           </div>
@@ -530,27 +530,27 @@ function LiveSiteLinks() {
   );
 
   return (
-    <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl border-emerald-500/20">
+    <Card className="bg-card border border-primary/20">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-            <Building2 className="w-6 h-6 text-emerald-400" />
+          <div className="p-3 rounded-xl bg-primary/20 border border-primary/30">
+            <Building2 className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-white">Live Website</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground">Live Website</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Your published Property Evaluation page where visitors can request appraisals
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg bg-slate-800/50 border border-slate-700/50 p-4 mb-4">
-          <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-emerald-400" />
+        <div className="rounded-lg bg-muted border border-border p-4 mb-4">
+          <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
             How it works
           </h4>
-          <ol className="text-sm text-slate-400 space-y-1 list-decimal list-inside">
+          <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Client enters address, beds, baths on your Property Evaluation page</li>
             <li>System finds comparable sold/active listings in the area</li>
             <li>Client enters contact info to receive the report</li>
@@ -559,17 +559,17 @@ function LiveSiteLinks() {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-slate-400 py-4">
+          <div className="flex items-center gap-2 text-muted-foreground py-4">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading your websites...
           </div>
         ) : serviceSites.length === 0 ? (
-          <p className="text-slate-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             No published real estate sites found. Publish a site to enable Property Evaluation.
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm text-slate-400">Open your Property Evaluation page:</p>
+            <p className="text-sm text-muted-foreground">Open your Property Evaluation page:</p>
             <div className="flex flex-wrap gap-3">
               {serviceSites.map((site) => {
                 const baseUrl = site.vercelDeploymentUrl!.replace(/\/$/, '');
@@ -578,7 +578,6 @@ function LiveSiteLinks() {
                   <Button
                     key={site.id}
                     variant="outline"
-                    className="border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200"
                     asChild
                   >
                     <a href={evalUrl} target="_blank" rel="noopener noreferrer">

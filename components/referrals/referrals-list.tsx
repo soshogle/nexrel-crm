@@ -99,14 +99,14 @@ export function ReferralsList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'CONVERTED':
-        return 'bg-green-500/10 text-green-500 border-green-500/20'
+        return 'bg-success/10 text-success border-success/20'
       case 'CONTACTED':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+        return 'bg-primary/10 text-primary border-primary/20'
       case 'EXPIRED':
       case 'DECLINED':
-        return 'bg-red-500/10 text-red-500 border-red-500/20'
+        return 'bg-destructive/10 text-destructive border-destructive/20'
       default:
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -148,12 +148,12 @@ export function ReferralsList() {
       </div>
 
       {referrals.length === 0 ? (
-        <Card className="p-12 text-center bg-gray-900 border-gray-800">
+        <Card className="p-12 text-center bg-card border">
           <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <User2 className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">No referrals yet</h3>
-          <p className="text-gray-400 mb-4">
+          <h3 className="text-lg font-semibold mb-2 text-foreground">No referrals yet</h3>
+          <p className="text-muted-foreground mb-4">
             Start tracking referrals from your satisfied customers
           </p>
           <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
@@ -164,11 +164,11 @@ export function ReferralsList() {
       ) : (
         <div className="grid gap-4">
           {referrals.map((referral) => (
-            <Card key={referral.id} className="p-6 bg-gray-900 border-gray-800">
+            <Card key={referral.id} className="p-6 bg-card border">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-white">{referral.referredName}</h3>
+                    <h3 className="text-lg font-semibold text-foreground">{referral.referredName}</h3>
                     <Badge className={getStatusColor(referral.status)}>
                       <span className="flex items-center gap-1">
                         {getStatusIcon(referral.status)}
@@ -176,16 +176,16 @@ export function ReferralsList() {
                       </span>
                     </Badge>
                     {referral.rewardGiven && (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                         Reward Given
                       </Badge>
                     )}
                   </div>
 
-                  <div className="space-y-2 text-sm text-gray-400">
+                  <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <User2 className="h-4 w-4" />
-                      <span>Referred by: <strong className="text-gray-200">{referral.referrer.businessName}</strong></span>
+                      <span>Referred by: <strong className="text-foreground">{referral.referrer.businessName}</strong></span>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -210,20 +210,20 @@ export function ReferralsList() {
                       </div>
                     )}
                     {referral.notes && (
-                      <div className="mt-2 p-3 bg-gray-800 border border-gray-700 rounded-md">
-                        <p className="text-sm text-gray-200">{referral.notes}</p>
+                      <div className="mt-2 p-3 bg-muted border border-border rounded-md">
+                        <p className="text-sm text-foreground">{referral.notes}</p>
                       </div>
                     )}
                     {referral.convertedLead && (
-                      <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
-                        <p className="text-sm text-green-400">
+                      <div className="mt-2 p-3 bg-success/10 border border-success/20 rounded-md">
+                        <p className="text-sm text-success">
                           ✓ Converted to lead: <strong>{referral.convertedLead.businessName}</strong>
                         </p>
                       </div>
                     )}
                     {referral.rewardDetails && (
-                      <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                        <p className="text-sm text-blue-400">
+                      <div className="mt-2 p-3 bg-primary/10 border border-primary/20 rounded-md">
+                        <p className="text-sm text-primary">
                           🎁 Reward: {referral.rewardDetails}
                         </p>
                       </div>

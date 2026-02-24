@@ -112,10 +112,10 @@ export function ConversationList({
   return (
     <div className="flex flex-col h-full bg-transparent">
       {/* Header */}
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
-            <Inbox className="h-5 w-5 text-[#7b42f6]" />
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+            <Inbox className="h-5 w-5 text-primary" />
             Messages
           </h2>
           {onSync && (
@@ -123,7 +123,7 @@ export function ConversationList({
               variant="ghost" 
               size="sm" 
               onClick={onSync}
-              className="text-white hover:bg-white/10"
+              className="text-foreground hover:bg-muted"
               title="Sync messages"
             >
               <RefreshCw className="h-4 w-4" />
@@ -131,33 +131,33 @@ export function ConversationList({
           )}
         </div>
 
-        {/* Search - medium dark gray like dashboard inputs */}
+        {/* Search */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-[#363636] border-gray-600 text-white placeholder:text-gray-400"
+            className="pl-9 bg-muted border-input text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
-        {/* Channel Filter - dropdown matches dashboard dark theme */}
+        {/* Channel Filter */}
         <Select value={channelFilter} onValueChange={setChannelFilter}>
-          <SelectTrigger className="w-full bg-[#363636] border-gray-600 text-white [&>svg]:text-white">
+          <SelectTrigger className="w-full bg-muted border-input text-foreground [&>svg]:text-muted-foreground">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-[#202124] border-gray-700 text-white [&>button]:text-white">
-            <SelectItem value="all" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">
+          <SelectContent>
+            <SelectItem value="all">
               All Channels
             </SelectItem>
-            <SelectItem value="SMS" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💬 SMS</SelectItem>
-            <SelectItem value="EMAIL" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">✉️ Email</SelectItem>
-            <SelectItem value="WHATSAPP" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">📱 WhatsApp</SelectItem>
-            <SelectItem value="INSTAGRAM" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">📸 Instagram</SelectItem>
-            <SelectItem value="FACEBOOK_MESSENGER" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💙 Facebook</SelectItem>
-            <SelectItem value="GOOGLE_BUSINESS" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">🏢 Google Business</SelectItem>
-            <SelectItem value="WEBSITE_CHAT" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💻 Website Chat</SelectItem>
+            <SelectItem value="SMS">💬 SMS</SelectItem>
+            <SelectItem value="EMAIL">✉️ Email</SelectItem>
+            <SelectItem value="WHATSAPP">📱 WhatsApp</SelectItem>
+            <SelectItem value="INSTAGRAM">📸 Instagram</SelectItem>
+            <SelectItem value="FACEBOOK_MESSENGER">💙 Facebook</SelectItem>
+            <SelectItem value="GOOGLE_BUSINESS">🏢 Google Business</SelectItem>
+            <SelectItem value="WEBSITE_CHAT">💻 Website Chat</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -168,18 +168,18 @@ export function ConversationList({
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3">
-                <div className="h-12 w-12 rounded-full bg-white/10 animate-pulse" />
+                <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-white/10 rounded animate-pulse w-3/4" />
-                  <div className="h-3 bg-white/10 rounded animate-pulse w-1/2" />
+                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <MessageCircle className="h-12 w-12 text-white/60 mb-3" />
-            <p className="text-white/80">
+            <MessageCircle className="h-12 w-12 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">
               {searchQuery ? 'No conversations found' : 'No conversations yet'}
             </p>
           </div>
@@ -191,22 +191,22 @@ export function ConversationList({
                 onClick={() => onSelectConversation(conversation.id)}
                 className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors ${
                   selectedConversationId === conversation.id
-                    ? 'bg-[#7b42f6] text-white'
-                    : 'hover:bg-white/10 text-white'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-foreground'
                 }`}
               >
                 <div className="relative">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={conversation.contactAvatar} />
-                    <AvatarFallback className="bg-white/20 text-white">
+                    <AvatarFallback className="bg-primary/20 text-primary-foreground">
                       {getInitials(conversation.contactName)}
                     </AvatarFallback>
                   </Avatar>
                   <div 
-                    className={`absolute -bottom-1 -right-1 text-xs px-1.5 py-0.5 rounded-full border ${channelColors[conversation.channelType]?.bg || 'bg-gray-500/10'} ${channelColors[conversation.channelType]?.border || 'border-gray-500/30'}`}
+                    className={`absolute -bottom-1 -right-1 text-xs px-1.5 py-0.5 rounded-full border ${channelColors[conversation.channelType]?.bg || 'bg-muted'} ${channelColors[conversation.channelType]?.border || 'border-border'}`}
                     title={conversation.channelType}
                   >
-                    <span className={channelColors[conversation.channelType]?.text || 'text-gray-400'}>
+                    <span className={channelColors[conversation.channelType]?.text || 'text-muted-foreground'}>
                       {channelIcons[conversation.channelType] || '💬'}
                     </span>
                   </div>
@@ -214,11 +214,11 @@ export function ConversationList({
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="font-semibold truncate text-white">
+                    <p className="font-semibold truncate">
                       {conversation.contactName}
                     </p>
                     {conversation.lastMessageAt && (
-                      <span className={`text-xs ${selectedConversationId === conversation.id ? 'text-white/80' : 'text-gray-400'}`}>
+                      <span className={`text-xs ${selectedConversationId === conversation.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                         {formatDistanceToNow(new Date(conversation.lastMessageAt), {
                           addSuffix: true,
                         })}
@@ -226,11 +226,11 @@ export function ConversationList({
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className={`text-sm truncate ${selectedConversationId === conversation.id ? 'text-white/90' : 'text-gray-400'}`}>
+                    <p className={`text-sm truncate ${selectedConversationId === conversation.id ? 'text-primary-foreground/90' : 'text-muted-foreground'}`}>
                       {conversation.lastMessagePreview || 'No messages yet'}
                     </p>
                     {conversation.unreadCount > 0 && (
-                      <Badge className="ml-2 bg-[#7b42f6] text-white border-0">
+                      <Badge className="ml-2 bg-primary text-primary-foreground border-0">
                         {conversation.unreadCount}
                       </Badge>
                     )}

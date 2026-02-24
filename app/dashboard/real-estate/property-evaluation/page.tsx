@@ -10,7 +10,7 @@ export default function PropertyEvaluationPage() {
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/real-estate"
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Real Estate Hub
