@@ -26,9 +26,22 @@ export async function triggerAutoRunOnLeadCreatedForUser(
   await triggerIndustryAutoRunOnLeadCreated(userId, leadId, userIndustry);
 }
 
+/** RE employee types that trigger on new lead creation */
+const RE_LEAD_TRIGGER_TYPES = [
+  'RE_SPEED_TO_LEAD',
+  'RE_SPHERE_NURTURE',
+  'RE_BUYER_FOLLOWUP',
+  'RE_MARKET_UPDATE',
+  'RE_STALE_DIAGNOSTIC',
+  'RE_LISTING_BOOST',
+  'RE_CMA_GENERATOR',
+] as const;
+
 /**
- * Trigger auto-run workflows for a new lead (e.g. RE_SPEED_TO_LEAD)
- * Starts the linked workflow instead of running the agent directly
+ * Trigger auto-run workflows for a new lead.
+ * Supports RE_SPEED_TO_LEAD, RE_SPHERE_NURTURE, RE_BUYER_FOLLOWUP, RE_MARKET_UPDATE,
+ * RE_STALE_DIAGNOSTIC, RE_LISTING_BOOST, RE_CMA_GENERATOR.
+ * Starts the linked workflow for each enabled employee type.
  */
 export async function triggerAutoRunOnLeadCreated(
   userId: string,
@@ -36,17 +49,17 @@ export async function triggerAutoRunOnLeadCreated(
 ): Promise<void> {
   try {
     const db = getCrmDb(createDalContext(userId));
-    const setting = await db.aIEmployeeAutoRun.findFirst({
+    const settings = await db.aIEmployeeAutoRun.findMany({
       where: {
         userId,
-        employeeType: 'RE_SPEED_TO_LEAD',
+        employeeType: { in: [...RE_LEAD_TRIGGER_TYPES] },
         autoRunEnabled: true,
         workflowId: { not: null },
         OR: [{ industry: 'REAL_ESTATE' }, { industry: null }],
       },
     });
 
-    if (!setting?.workflowId) return;
+    if (settings.length === 0) return;
 
     const ctx = createDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
@@ -58,22 +71,27 @@ export async function triggerAutoRunOnLeadCreated(
       : null;
     const workflowType = leadType?.toLowerCase?.().includes('seller') ? 'SELLER' : 'BUYER';
 
-    const template = await db.rEWorkflowTemplate.findUnique({
-      where: { id: setting.workflowId },
-    });
-    if (!template || template.userId !== userId || !template.isActive) return;
+    for (const setting of settings) {
+      if (!setting.workflowId) continue;
 
-    await startWorkflowInstance(userId, setting.workflowId, {
-      leadId,
-      triggerType: 'NEW_LEAD',
-      metadata: {
-        leadType: workflowType,
-        leadStatus: lead.status,
-        triggeredBy: 'auto_run',
-      },
-    });
+      const template = await db.rEWorkflowTemplate.findUnique({
+        where: { id: setting.workflowId },
+      });
+      if (!template || template.userId !== userId || !template.isActive) continue;
 
-    console.log(`[Auto-Run] Started Speed to Lead workflow ${setting.workflowId} for lead ${leadId}`);
+      await startWorkflowInstance(userId, setting.workflowId, {
+        leadId,
+        triggerType: 'NEW_LEAD',
+        metadata: {
+          leadType: workflowType,
+          leadStatus: lead.status,
+          triggeredBy: 'auto_run',
+          employeeType: setting.employeeType,
+        },
+      });
+
+      console.log(`[Auto-Run] Started ${setting.employeeType} workflow ${setting.workflowId} for lead ${leadId}`);
+    }
   } catch (error) {
     console.error('[Auto-Run] Failed to trigger workflow:', error);
   }

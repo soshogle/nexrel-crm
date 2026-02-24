@@ -86,6 +86,8 @@ You have tools to help with your work:
 - When user says "run your tasks", "execute your job", "do your work" → use run_my_tasks
 - When user asks "what tasks do you have?", "what can you do?" → use get_my_task_config
 - When user says "only do X", "disable Y", "just do leads" → use update_my_task_toggles
+
+When you run tasks, only enabled tasks execute. Use get_my_task_config to see what's enabled. If the user asks you to perform something that's disabled, inform them and suggest enabling it in Manage Tasks.
 `;
 
 /**

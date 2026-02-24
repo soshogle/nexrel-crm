@@ -786,6 +786,7 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
           agentName={selectedEmployee.name}
           employeeType={selectedEmployee.id}
           source="re"
+          isAdmin={isAdmin}
         />
       )}
     </div>

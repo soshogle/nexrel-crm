@@ -67,6 +67,13 @@ function canProvisionAgents(session: { user?: { role?: string; isImpersonating?:
   return u?.role === 'ADMIN' || u?.role === 'SUPER_ADMIN' || (u?.isImpersonating && u?.originalUserIsSuperAdmin) || false;
 }
 
+/** Can manage AI employee tasks (Manage Tasks screen): BUSINESS_OWNER, AGENCY_ADMIN, ADMIN, SUPER_ADMIN */
+function canManageAIEmployeeTasks(session: { user?: { role?: string } } | null): boolean {
+  if (!session?.user) return false;
+  const role = (session.user as any)?.role;
+  return ['SUPER_ADMIN', 'AGENCY_ADMIN', 'BUSINESS_OWNER', 'ADMIN'].includes(role || '');
+}
+
 const VOICE_LANGUAGES = [
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Spanish' },
@@ -1269,14 +1276,14 @@ export default function AIEmployeesPage() {
         {/* RE Team Tab - Only for Real Estate users */}
         {isRealEstateUser && (
           <TabsContent value="re-team" className="space-y-4">
-            <RealEstateAIEmployees isAdmin={canProvisionAgents(session)} />
+            <RealEstateAIEmployees isAdmin={canManageAIEmployeeTasks(session)} />
           </TabsContent>
         )}
 
         {/* Industry Team Tab - Dental, Medical, etc. */}
         {hasIndustryTeam && userIndustry && (
           <TabsContent value="industry-team" className="space-y-4">
-            <IndustryAIEmployees industry={userIndustry} isAdmin={canProvisionAgents(session)} />
+            <IndustryAIEmployees industry={userIndustry} isAdmin={canManageAIEmployeeTasks(session)} />
           </TabsContent>
         )}
 

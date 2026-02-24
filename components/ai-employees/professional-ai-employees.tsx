@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,11 @@ const PROFESSIONAL_EMPLOYEES = PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
   };
 });
 
+const ADMIN_ROLES = ['SUPER_ADMIN', 'AGENCY_ADMIN', 'BUSINESS_OWNER', 'ADMIN'];
+
 export function ProfessionalAIEmployees() {
+  const { data: session } = useSession();
+  const isAdmin = ADMIN_ROLES.includes((session?.user as any)?.role || '');
   const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -354,6 +359,7 @@ export function ProfessionalAIEmployees() {
           agentName={selectedEmployee.name}
           employeeType={selectedEmployee.id}
           source="professional"
+          isAdmin={isAdmin}
         />
       )}
     </div>

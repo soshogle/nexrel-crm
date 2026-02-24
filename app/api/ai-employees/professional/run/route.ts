@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { executeProfessionalEmployee } from '@/lib/ai-employees/run-professional-employee';
+import { getEnabledTaskKeys, shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 import { apiErrors } from '@/lib/api-error';
 import type { ProfessionalAIEmployeeType } from '@prisma/client';
 
@@ -23,10 +24,30 @@ export async function POST(request: NextRequest) {
 
     if (!employeeType) return apiErrors.badRequest('employeeType required');
 
+    const okToRun = await shouldRunEmployee(
+      session.user.id,
+      'professional',
+      null,
+      employeeType
+    );
+    if (!okToRun) {
+      return NextResponse.json(
+        { error: 'All tasks are disabled for this employee. Enable at least one task in Manage Tasks.' },
+        { status: 400 }
+      );
+    }
+
+    const enabledTaskKeys = await getEnabledTaskKeys(
+      session.user.id,
+      'professional',
+      null,
+      employeeType
+    );
+
     const result = await executeProfessionalEmployee(
       session.user.id,
       employeeType as ProfessionalAIEmployeeType,
-      { storeHistory: false }
+      { storeHistory: false, enabledTaskKeys }
     );
 
     return NextResponse.json({

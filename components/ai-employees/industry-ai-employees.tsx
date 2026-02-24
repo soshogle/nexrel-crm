@@ -614,6 +614,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
           employeeType={selectedEmployee.id}
           source="industry"
           industry={industry}
+          isAdmin={isAdmin}
         />
       )}
     </div>

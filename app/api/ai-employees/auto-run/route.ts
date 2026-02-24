@@ -97,25 +97,43 @@ export async function PATCH(request: NextRequest) {
     // When enabling Auto-Run: create default workflow if none exists
     let createdWorkflowId: string | null = null;
 
-    // RE_SPEED_TO_LEAD
+    // RE employees (REAL_ESTATE industry)
     if (
       autoRunEnabled &&
-      employeeType === 'RE_SPEED_TO_LEAD' &&
+      employeeType.startsWith('RE_') &&
       (resolvedIndustry === 'REAL_ESTATE' || !resolvedIndustry)
     ) {
-      const hasWorkflow = await hasSpeedToLeadWorkflow(session.user.id);
-      if (!hasWorkflow) {
-        const workflow = await createDefaultSpeedToLeadWorkflow(session.user.id);
-        createdWorkflowId = workflow.id;
-        await (prisma as any).aIEmployeeAutoRun.update({
-          where: { id: record.id },
-          data: { workflowId: workflow.id },
-        });
+      // RE_SPEED_TO_LEAD: create default workflow if none exists
+      if (employeeType === 'RE_SPEED_TO_LEAD') {
+        const hasWorkflow = await hasSpeedToLeadWorkflow(session.user.id);
+        if (!hasWorkflow) {
+          const workflow = await createDefaultSpeedToLeadWorkflow(session.user.id);
+          createdWorkflowId = workflow.id;
+          await (prisma as any).aIEmployeeAutoRun.update({
+            where: { id: record.id },
+            data: { workflowId: workflow.id },
+          });
+        } else {
+          const existing = await (prisma as any).rEWorkflowTask.findFirst({
+            where: {
+              template: { userId: session.user.id },
+              assignedAgentType: 'RE_SPEED_TO_LEAD',
+            },
+            select: { templateId: true },
+          });
+          if (existing) {
+            await (prisma as any).aIEmployeeAutoRun.update({
+              where: { id: record.id },
+              data: { workflowId: existing.templateId },
+            });
+          }
+        }
       } else {
+        // Other RE types: find existing workflow with this agent type and link it
         const existing = await (prisma as any).rEWorkflowTask.findFirst({
           where: {
-            template: { userId: session.user.id },
-            assignedAgentType: 'RE_SPEED_TO_LEAD',
+            template: { userId: session.user.id, isActive: true },
+            assignedAgentType: employeeType,
           },
           select: { templateId: true },
         });

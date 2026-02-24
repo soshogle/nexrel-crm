@@ -15,6 +15,8 @@ import { apiErrors } from '@/lib/api-error';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { executeIndustryEmployee } from '@/lib/ai-employees/run-industry-employee';
+import { executeProfessionalEmployee } from '@/lib/ai-employees/run-professional-employee';
+import { getEnabledTaskKeys, shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -191,6 +193,18 @@ async function runTasks(
   req: NextRequest
 ): Promise<{ success: boolean; summary: string; details?: any }> {
   if (ctx.source === 'industry' && ctx.industry) {
+    const okToRun = await shouldRunEmployee(
+      ctx.userId,
+      'industry',
+      ctx.industry,
+      ctx.employeeType
+    );
+    if (!okToRun) {
+      return {
+        success: false,
+        summary: "All my tasks are currently disabled. You can enable them in Manage Tasks.",
+      };
+    }
     const result = await executeIndustryEmployee(
       ctx.userId,
       ctx.industry,
@@ -226,10 +240,34 @@ async function runTasks(
     };
   }
 
-  // Professional - run not implemented (they're conversational only for now)
+  // Professional - run creates daily check-in tasks per enabled capability
+  const okToRun = await shouldRunEmployee(
+    ctx.userId,
+    'professional',
+    null,
+    ctx.employeeType
+  );
+  if (!okToRun) {
+    return {
+      success: false,
+      summary: "All my tasks are currently disabled. You can enable them in Manage Tasks.",
+    };
+  }
+  const enabledTaskKeys = await getEnabledTaskKeys(
+    ctx.userId,
+    'professional',
+    null,
+    ctx.employeeType
+  );
+  const result = await executeProfessionalEmployee(
+    ctx.userId,
+    ctx.employeeType as any,
+    { storeHistory: false, enabledTaskKeys }
+  );
   return {
-    success: false,
-    summary: "I'm a conversational assistant. I don't have automated tasks to run. Ask me questions about my expertise!",
+    success: result.success,
+    summary: result.summary || 'Tasks completed',
+    details: result,
   };
 }
 

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db';
 import { executeIndustryEmployee } from '@/lib/ai-employees/run-industry-employee';
 import { Industry } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
-import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
+import { getEnabledTaskKeys, shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -132,10 +132,16 @@ export async function GET(request: NextRequest) {
         });
       } else if (schedule.source === 'professional') {
         const { executeProfessionalEmployee } = await import('@/lib/ai-employees/run-professional-employee');
+        const enabledTaskKeys = await getEnabledTaskKeys(
+          schedule.userId,
+          'professional',
+          null,
+          schedule.employeeType
+        );
         const result = await executeProfessionalEmployee(
           schedule.userId,
           schedule.employeeType as any,
-          { storeHistory: false }
+          { storeHistory: false, enabledTaskKeys }
         );
         results.push({
           scheduleId: schedule.id,

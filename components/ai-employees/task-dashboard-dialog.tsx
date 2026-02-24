@@ -109,6 +109,8 @@ interface TaskDashboardDialogProps {
   employeeType: string;
   source: 'industry' | 're' | 'professional';
   industry?: string;
+  /** If false, user can only view; no toggles, templates, schedules, or modifications */
+  isAdmin?: boolean;
 }
 
 export function TaskDashboardDialog({
@@ -119,6 +121,7 @@ export function TaskDashboardDialog({
   employeeType,
   source,
   industry,
+  isAdmin = true,
 }: TaskDashboardDialogProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -468,7 +471,9 @@ export function TaskDashboardDialog({
             Manage Tasks — {agentName}
           </DialogTitle>
           <DialogDescription className="text-slate-600 dark:text-slate-600">
-            Toggle duties, edit message templates (SMS/email), schedule runs, and view history.
+            {isAdmin
+              ? 'Toggle duties, edit message templates (SMS/email), schedule runs, and view history.'
+              : 'View-only. Talk to the AI employee from the main screen. Only admins can modify tasks, templates, or prompts.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -516,7 +521,7 @@ export function TaskDashboardDialog({
                           </div>
                         </button>
                         <div className="flex items-center gap-2">
-                          {t.isCustom && (
+                          {t.isCustom && isAdmin && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -536,8 +541,8 @@ export function TaskDashboardDialog({
                           )}
                           <Switch
                             checked={t.enabled}
-                            onCheckedChange={(checked) => handleToggle(t.taskKey, checked)}
-                            disabled={toggling === t.taskKey}
+                            onCheckedChange={(checked) => isAdmin && handleToggle(t.taskKey, checked)}
+                            disabled={toggling === t.taskKey || !isAdmin}
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
@@ -553,15 +558,17 @@ export function TaskDashboardDialog({
                               <input
                                 type="time"
                                 value={taskScheduleForm.runAtTime}
-                                onChange={(e) => updateTaskSchedule(t.taskKey, { runAtTime: e.target.value })}
-                                className="flex h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                                onChange={(e) => isAdmin && updateTaskSchedule(t.taskKey, { runAtTime: e.target.value })}
+                                readOnly={!isAdmin}
+                                className={`flex h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-80' : ''}`}
                               />
                             </div>
                             <div className="space-y-1.5 min-w-[160px]">
                               <Label className="text-slate-700 text-xs">Timezone</Label>
                               <Select
                                 value={taskScheduleForm.runAtTimezone}
-                                onValueChange={(v) => updateTaskSchedule(t.taskKey, { runAtTimezone: v })}
+                                onValueChange={(v) => isAdmin && updateTaskSchedule(t.taskKey, { runAtTimezone: v })}
+                                disabled={!isAdmin}
                               >
                                 <SelectTrigger className="h-9">
                                   <SelectValue />
@@ -582,17 +589,20 @@ export function TaskDashboardDialog({
                             <Label className="text-slate-700 text-xs">Enable daily run</Label>
                             <Switch
                               checked={taskScheduleForm.enabled}
-                              onCheckedChange={(v) => updateTaskSchedule(t.taskKey, { enabled: v })}
+                              onCheckedChange={(v) => isAdmin && updateTaskSchedule(t.taskKey, { enabled: v })}
+                              disabled={!isAdmin}
                             />
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveTaskSchedule(t.taskKey)}
-                            disabled={scheduleSaving}
-                            className="bg-purple-600 hover:bg-purple-700"
-                          >
-                            {scheduleSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save schedule'}
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveTaskSchedule(t.taskKey)}
+                              disabled={scheduleSaving}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              {scheduleSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save schedule'}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -629,12 +639,15 @@ export function TaskDashboardDialog({
                         <textarea
                           value={template?.smsTemplate ?? ''}
                           onChange={(e) => {
-                            setTemplate((p) => ({ ...p, smsTemplate: e.target.value }));
-                            setTemplateDirty(true);
+                            if (isAdmin) {
+                              setTemplate((p) => ({ ...p, smsTemplate: e.target.value }));
+                              setTemplateDirty(true);
+                            }
                           }}
+                          readOnly={!isAdmin}
                           placeholder="Hi {firstName}! ..."
                           rows={3}
-                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                         />
                         <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
                       </div>
@@ -647,11 +660,14 @@ export function TaskDashboardDialog({
                             type="text"
                             value={template?.emailSubject ?? ''}
                             onChange={(e) => {
-                              setTemplate((p) => ({ ...p, emailSubject: e.target.value }));
-                              setTemplateDirty(true);
+                              if (isAdmin) {
+                                setTemplate((p) => ({ ...p, emailSubject: e.target.value }));
+                                setTemplateDirty(true);
+                              }
                             }}
+                            readOnly={!isAdmin}
                             placeholder="Friendly reminder: Invoice pending"
-                            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                            className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -659,18 +675,21 @@ export function TaskDashboardDialog({
                           <textarea
                             value={template?.emailBody ?? ''}
                             onChange={(e) => {
-                              setTemplate((p) => ({ ...p, emailBody: e.target.value }));
-                              setTemplateDirty(true);
+                              if (isAdmin) {
+                                setTemplate((p) => ({ ...p, emailBody: e.target.value }));
+                                setTemplateDirty(true);
+                              }
                             }}
+                            readOnly={!isAdmin}
                             placeholder="Hi {firstName}, ..."
                             rows={4}
-                            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                            className={`w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${!isAdmin ? 'cursor-default opacity-90' : ''}`}
                           />
                           <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
                         </div>
                       </>
                     )}
-                    {templateDirty && (
+                    {isAdmin && templateDirty && (
                       <Button
                         size="sm"
                         onClick={handleSaveTemplate}
@@ -697,18 +716,22 @@ export function TaskDashboardDialog({
               Voice prompts
             </h4>
             <p className="text-sm text-slate-500 dark:text-slate-500 mb-2">
-              Customize what this AI says on phone calls. Voice prompts are set when the agent is provisioned.
+              {isAdmin
+                ? 'Customize what this AI says on phone calls. Voice prompts are set when the agent is provisioned.'
+                : 'Voice prompts are configured by your admin in Voice Agents.'}
             </p>
-            <a
-              href={`/dashboard/voice-agents${agentId ? `?agentId=${agentId}` : ''}`}
-              className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
-            >
-              Configure in Voice Agents →
-            </a>
+            {isAdmin && (
+              <a
+                href={`/dashboard/voice-agents${agentId ? `?agentId=${agentId}` : ''}`}
+                className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
+              >
+                Configure in Voice Agents →
+              </a>
+            )}
           </div>
 
-          {/* Add custom task — industry employees only */}
-          {canAddCustomTask && (
+          {/* Add custom task — industry employees only, admin only */}
+          {canAddCustomTask && isAdmin && (
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
                 <Plus className="w-4 h-4 text-purple-600" />
@@ -738,8 +761,8 @@ export function TaskDashboardDialog({
             </div>
           )}
 
-          {/* Run button */}
-          {canRun && (
+          {/* Run button — admin only */}
+          {canRun && isAdmin && (
             <div>
               <Button
                 className="w-full bg-purple-600 hover:bg-purple-700"
@@ -756,7 +779,7 @@ export function TaskDashboardDialog({
             </div>
           )}
 
-          {canRun && (
+          {canRun && isAdmin && (
             <p className="text-xs text-slate-500 dark:text-slate-500">
               Expand a task above to set when it runs daily.
             </p>
