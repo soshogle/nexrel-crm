@@ -217,5 +217,9 @@
     "> 0.5%",
     "last 2 versions",
     "not dead"
-  ]
+  ],
+  "resolutions": {
+    "@smithy/middleware-endpoint": "4.4.14",
+    "@smithy/config-resolver": "4.4.6"
+  }
 }
