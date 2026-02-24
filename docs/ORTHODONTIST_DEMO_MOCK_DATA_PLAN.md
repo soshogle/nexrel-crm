@@ -82,7 +82,7 @@
 ---
 
 ## Phase 9: Messaging & Conversations ✅
-- **ChannelConnection** (2–4): SMS, EMAIL, WHATSAPP, GOOGLE_BUSINESS
+- **ChannelConnection** (2–3): SMS, EMAIL, WHATSAPP
 - **Conversation** (20–30), **ConversationMessage** (60–300)
 
 ---

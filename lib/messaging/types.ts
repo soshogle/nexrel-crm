@@ -7,7 +7,9 @@ export enum ChannelType {
   WHATSAPP = 'WHATSAPP',
   INSTAGRAM = 'INSTAGRAM',
   FACEBOOK_MESSENGER = 'FACEBOOK_MESSENGER',
+  /** @deprecated Discontinued by Google July 2024. Route tenants to SMS/WhatsApp. */
   GOOGLE_BUSINESS = 'GOOGLE_BUSINESS',
+  /** @deprecated Not supported. Use SMS or WhatsApp. */
   WEBSITE_CHAT = 'WEBSITE_CHAT',
 }
 

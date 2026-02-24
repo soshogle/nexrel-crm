@@ -119,7 +119,7 @@ To run a workflow for Instagram and Messenger (but not other channels):
 - `WHATSAPP` - WhatsApp Business
 - `SMS` - SMS messages
 - `EMAIL` - Email messages
-- `GOOGLE_BUSINESS` - Google Business Messages
+- `GOOGLE_BUSINESS` - (Deprecated) Google Business Messages discontinued July 2024. Use SMS/WhatsApp.
 - `WEBSITE_CHAT` - Website chat widget
 
 ## How Messages Are Routed

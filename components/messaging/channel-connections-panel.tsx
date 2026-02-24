@@ -68,22 +68,6 @@ const channelConfig = {
     borderColor: 'border-blue-500/20',
     connectUrl: '/dashboard/settings?section=meta',
   },
-  GOOGLE_BUSINESS: {
-    icon: MessageCircle,
-    name: 'Google Business',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-    connectUrl: '/dashboard/settings?section=messaging',
-  },
-  WEBSITE_CHAT: {
-    icon: MessageCircle,
-    name: 'Website Chat',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/20',
-    connectUrl: '/dashboard/settings?section=messaging',
-  },
 };
 
 interface ChannelConnectionsPanelProps {

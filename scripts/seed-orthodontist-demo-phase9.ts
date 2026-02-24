@@ -113,17 +113,6 @@ async function main() {
         isActive: true,
       },
     }),
-    prisma.channelConnection.create({
-      data: {
-        userId: user.id,
-        channelType: 'GOOGLE_BUSINESS',
-        channelIdentifier: 'montreal-orthodontics',
-        displayName: 'Google Business Messages',
-        status: 'CONNECTED',
-        providerType: 'google',
-        isActive: true,
-      },
-    }),
   ]);
   console.log(`   ✓ Created ${channels.length} channel connections\n`);
 

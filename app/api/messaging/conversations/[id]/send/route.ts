@@ -164,11 +164,13 @@ export async function POST(
         break;
 
       case 'GOOGLE_BUSINESS':
-      case 'WEBSITE_CHAT':
-        // Demo/mock support: store message locally without external send.
-        // Used by orthodontist and other industry demos with mock data.
-        externalMessageId = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        break;
+        return NextResponse.json(
+          {
+            code: 'CHANNEL_DEPRECATED',
+            message: 'Google Business Messages was discontinued by Google (July 2024). Use SMS or WhatsApp instead—add your number to your Google Business Profile.',
+          },
+          { status: 410 }
+        );
 
       default:
         return NextResponse.json(

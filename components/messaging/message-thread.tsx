@@ -156,7 +156,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || 'Failed to send message');
+        throw new Error(error.message || error.details || 'Failed to send message');
       }
 
       const data = await response.json();

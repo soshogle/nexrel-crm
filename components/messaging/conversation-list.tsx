@@ -161,8 +161,6 @@ export function ConversationList({
             <SelectItem value="WHATSAPP">📱 WhatsApp</SelectItem>
             <SelectItem value="INSTAGRAM">📸 Instagram</SelectItem>
             <SelectItem value="FACEBOOK_MESSENGER">💙 Facebook</SelectItem>
-            <SelectItem value="GOOGLE_BUSINESS">🏢 Google Business</SelectItem>
-            <SelectItem value="WEBSITE_CHAT">💻 Website Chat</SelectItem>
           </SelectContent>
         </Select>
       </div>
