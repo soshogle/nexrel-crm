@@ -61,7 +61,7 @@ export async function PATCH(
     const body = await request.json();
     const { status, markAsRead } = body;
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     
     // Mark as read if requested
     if (markAsRead) {

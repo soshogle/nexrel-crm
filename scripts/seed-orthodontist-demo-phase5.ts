@@ -2,11 +2,11 @@
  * Orthodontist Demo - Phase 5: Clinical & Administrative Dashboards
  * Creates: Odontograms, PeriodontalCharts, TreatmentPlans, Procedures, Forms, FormResponses,
  *          XRays (metadata), LabOrders, InsuranceClaims, BookingAppointments, PatientDocuments
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 const PROCEDURE_CODES = [
@@ -37,9 +37,9 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 5: Clinical & Admin Dashboards\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
 
@@ -191,11 +191,25 @@ async function main() {
 
   // ─── 4. Odontograms & Periodontal Charts ────────────────────────────────────
   console.log('🦷 Creating odontograms and periodontal charts...');
-  const toothData: Record<string, { condition: string; date: string }> = {};
-  for (let t = 1; t <= 32; t++) {
-    toothData[String(t)] = { condition: t <= 8 ? 'healthy' : 'none', date: '2024-01-15' };
-  }
-  const measurements = { tooth: '1', mesial: { pd: 2, bop: false }, buccal: { pd: 2, bop: false }, distal: { pd: 2, bop: false }, lingual: { pd: 2, bop: false } };
+  const buildToothData = () => {
+    const toothData: Record<string, { condition: string; date?: string; treatment?: string; completed?: boolean }> = {};
+    for (let t = 1; t <= 32; t++) {
+      if (t === 3) toothData[String(t)] = { condition: 'filling', treatment: 'Filling', completed: false, date: '2024-01-15' };
+      else if (t === 14) toothData[String(t)] = { condition: 'caries', treatment: 'Crown', completed: false, date: '2024-01-15' };
+      else if ([20, 29, 30].includes(t)) toothData[String(t)] = { condition: 'implant', treatment: 'Implant', completed: true, date: '2024-01-15' };
+      else if (t === 32) toothData[String(t)] = { condition: 'crown', treatment: 'Crown', completed: false, date: '2024-01-15' };
+      else toothData[String(t)] = { condition: 'healthy', date: '2024-01-15' };
+    }
+    return toothData;
+  };
+  const buildMeasurements = () => {
+    const m: Record<string, { mesial: { pd: number; bop: boolean }; buccal: { pd: number; bop: boolean }; distal: { pd: number; bop: boolean }; lingual: { pd: number; bop: boolean } }> = {};
+    for (let t = 1; t <= 32; t++) {
+      const pd = t <= 16 ? 2 + (t % 3) : 2 + ((t - 17) % 3);
+      m[String(t)] = { mesial: { pd, bop: t % 5 === 0 }, buccal: { pd, bop: false }, distal: { pd, bop: false }, lingual: { pd, bop: false } };
+    }
+    return m;
+  };
 
   for (let i = 0; i < 20; i++) {
     const lead = leads[i % leads.length];
@@ -204,7 +218,7 @@ async function main() {
         leadId: lead.id,
         userId: user.id,
         clinicId: clinic.id,
-        toothData,
+        toothData: buildToothData(),
         chartedBy: user.name || 'Staff',
         notes: 'Initial charting',
         chartDate: randomDate(sixMonthsAgo, now),
@@ -215,7 +229,7 @@ async function main() {
         leadId: lead.id,
         userId: user.id,
         clinicId: clinic.id,
-        measurements,
+        measurements: buildMeasurements(),
         chartedBy: user.name || 'Staff',
         chartDate: randomDate(sixMonthsAgo, now),
       },
@@ -226,23 +240,34 @@ async function main() {
   // ─── 5. X-Rays (metadata only) ──────────────────────────────────────────────
   console.log('📷 Creating X-ray records...');
   const xrayTypes = ['PANORAMIC', 'BITEWING', 'PERIAPICAL', 'CEPHALOMETRIC'];
-  for (let i = 0; i < 15; i++) {
-    const lead = leads[i % leads.length];
-    await prisma.dentalXRay.create({
-      data: {
-        leadId: lead.id,
-        userId: user.id,
-        clinicId: clinic.id,
-        xrayType: randomElement(xrayTypes),
-        teethIncluded: ['1', '2', '3', '14', '15', '16'],
-        dateTaken: randomDate(sixMonthsAgo, now),
-        notes: 'Routine orthodontic records',
-        aiAnalysis: { findings: 'No significant pathology. Adequate bone support.', confidence: 0.92 },
-        aiAnalyzedAt: new Date(),
-      },
-    });
+  let xrayCount = 0;
+  try {
+    for (let i = 0; i < 15; i++) {
+      const lead = leads[i % leads.length];
+      await prisma.dentalXRay.create({
+        data: {
+          leadId: lead.id,
+          userId: user.id,
+          clinicId: clinic.id,
+          xrayType: randomElement(xrayTypes),
+          teethIncluded: ['1', '2', '3', '14', '15', '16'],
+          dateTaken: randomDate(sixMonthsAgo, now),
+          notes: 'Routine orthodontic records',
+          aiAnalysis: { findings: 'No significant pathology. Adequate bone support.', confidence: 0.92 },
+          aiAnalyzedAt: new Date(),
+        },
+      });
+      xrayCount++;
+    }
+    console.log(`   ✓ Created ${xrayCount} X-ray records\n`);
+  } catch (e: unknown) {
+    const err = e as { meta?: { column?: string } };
+    if (err?.meta?.column?.includes('thumbnailUrl') || err?.meta?.column?.includes('DentalXRay')) {
+      console.log('   ⚠️  X-ray creation skipped (schema mismatch - run migrate-all-dbs)\n');
+    } else {
+      throw e;
+    }
   }
-  console.log('   ✓ Created 15 X-ray records\n');
 
   // ─── 6. Lab Orders ─────────────────────────────────────────────────────────
   console.log('🔬 Creating lab orders...');
@@ -300,6 +325,30 @@ async function main() {
   // ─── 8. Booking Appointments ─────────────────────────────────────────────────
   console.log('📅 Creating appointments...');
   const apptStatuses = ['SCHEDULED', 'CONFIRMED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'NO_SHOW'] as const;
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
+  for (let i = 0; i < 5; i++) {
+    const lead = leads[i % leads.length];
+    const aptType = randomElement(appointmentTypes);
+    const apptDate = new Date(todayStart.getTime() + i * 60 * 60 * 1000);
+    await prisma.bookingAppointment.create({
+      data: {
+        userId: user.id,
+        clinicId: clinic.id,
+        leadId: lead.id,
+        appointmentTypeId: aptType.id,
+        customerName: lead.contactPerson || lead.businessName,
+        customerEmail: lead.email || 'patient@example.com',
+        customerPhone: lead.phone || '+1 514-555-0000',
+        appointmentDate: apptDate,
+        duration: aptType.duration,
+        status: 'SCHEDULED',
+        notes: "Today's appointment",
+        reminderSent: false,
+        confirmationSent: true,
+        meetingType: 'IN_PERSON',
+      },
+    });
+  }
   for (let i = 0; i < 40; i++) {
     const lead = leads[i % leads.length];
     const aptType = randomElement(appointmentTypes);
@@ -326,6 +375,21 @@ async function main() {
   }
   const apptCount = await prisma.bookingAppointment.count({ where: { userId: user.id } });
   console.log(`   ✓ Created ${apptCount} appointments\n`);
+
+  // ─── 8b. Ensure RAMQ claims in Lead.insuranceInfo (for dental dashboard stats) ─
+  console.log('💳 Ensuring RAMQ claims in lead insuranceInfo...');
+  let ramqUpdated = 0;
+  for (let i = 0; i < 12; i++) {
+    const lead = leads[i];
+    const info = (lead.insuranceInfo as Record<string, unknown>) || {};
+    if (!info.ramqClaims || !Array.isArray(info.ramqClaims)) {
+      info.ramqClaims = [{ id: `claim-demo-${lead.id}`, patientName: lead.contactPerson, patientRAMQNumber: `QC${randomInt(1000000, 9999999)}`, procedureCode: 'D8080', procedureName: 'Ortho treatment', serviceDate: new Date().toISOString(), amount: randomInt(500, 2000), status: randomElement(['DRAFT', 'SUBMITTED'] as const), submissionDate: null, responseDate: null, rejectionReason: null, notes: null, createdAt: new Date().toISOString() }];
+      info.ramqNumber = info.ramqNumber || `QC${randomInt(1000000, 9999999)}`;
+      await prisma.lead.update({ where: { id: lead.id }, data: { insuranceInfo: info } });
+      ramqUpdated++;
+    }
+  }
+  console.log(`   ✓ Updated ${ramqUpdated} leads with RAMQ claims\n`);
 
   // ─── 9. Patient Documents (metadata) ─────────────────────────────────────────
   console.log('📁 Creating patient document records...');

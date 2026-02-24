@@ -37,9 +37,11 @@ interface Conversation {
 
 interface MessageThreadProps {
   conversationId: string;
+  /** Called when the conversation is not found (404) - allows parent to clear selection */
+  onConversationNotFound?: () => void;
 }
 
-export function MessageThread({ conversationId }: MessageThreadProps) {
+export function MessageThread({ conversationId, onConversationNotFound }: MessageThreadProps) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -82,6 +84,12 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   const loadConversation = async () => {
     try {
       const response = await fetch(`/api/messaging/conversations/${conversationId}`);
+      if (response.status === 404) {
+        toast.error('Conversation not found or no longer available');
+        onConversationNotFound?.();
+        setConversation(null);
+        return;
+      }
       const data = await response.json();
       setConversation(data.conversation);
     } catch (error) {
@@ -93,6 +101,11 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
     try {
       setLoading(true);
       const response = await fetch(`/api/messaging/conversations/${conversationId}/messages`);
+      if (response.status === 404) {
+        onConversationNotFound?.();
+        setMessages([]);
+        return;
+      }
       const data = await response.json();
       setMessages(data.messages || []);
     } catch (error) {
@@ -104,11 +117,14 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
 
   const markAsRead = async () => {
     try {
-      await fetch(`/api/messaging/conversations/${conversationId}`, {
+      const response = await fetch(`/api/messaging/conversations/${conversationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAsRead: true }),
       });
+      if (response.status === 404) {
+        onConversationNotFound?.();
+      }
     } catch (error) {
       console.error('Error marking as read:', error);
     }

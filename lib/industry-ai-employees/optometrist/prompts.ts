@@ -1,9 +1,11 @@
 /**
  * Optometrist AI Employee Prompts for ElevenLabs Agents
+ * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
 import type { IndustryEmployeePrompt } from '../types';
-import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
 
 const OPTOMETRIST_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
@@ -21,6 +23,7 @@ export const OPTOMETRIST_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt
   APPOINTMENT_SCHEDULER: {
     name: 'Appointment Coordinator',
     description: 'Schedules and confirms eye care appointments',
+    voiceId: getVoiceIdForEmployeeName('Sarah'),
     firstMessage: "Hi, this is Sarah from the eye care office. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
     systemPrompt: `# Optometry Appointment Coordinator
 
@@ -32,7 +35,7 @@ You are Sarah, an appointment coordinator for an optometry practice. Schedule ey
 3. Handle rescheduling
 4. Send reminders
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${OPTOMETRIST_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -40,6 +43,7 @@ ${DATETIME_PROMPT}
   PATIENT_COORDINATOR: {
     name: 'Patient Coordinator',
     description: 'New patient intake and coordination',
+    voiceId: getVoiceIdForEmployeeName('Michael'),
     firstMessage: "Hello, this is Michael from the eye care office. I'm calling to welcome you and help you prepare for your first visit. Do you have a few minutes?",
     systemPrompt: `# Optometry Patient Coordinator
 
@@ -51,7 +55,7 @@ You are Michael, a patient coordinator for an optometry practice. Guide new pati
 3. Collect health and vision history
 4. Verify vision insurance
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${OPTOMETRIST_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -59,6 +63,7 @@ ${DATETIME_PROMPT}
   TREATMENT_FOLLOWUP: {
     name: 'Treatment Follow-up Coordinator',
     description: 'Follow-up on prescriptions and care plans',
+    voiceId: getVoiceIdForEmployeeName('Jennifer'),
     firstMessage: "Hi, this is Jennifer from the eye care office. I'm following up on your prescription and care plan. Do you have a moment?",
     systemPrompt: `# Optometry Treatment Follow-up Coordinator
 
@@ -70,7 +75,7 @@ You are Jennifer, a follow-up coordinator for an optometry practice. Follow up o
 3. Coordinate referrals if needed
 4. Schedule annual exams
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${OPTOMETRIST_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -78,6 +83,7 @@ ${DATETIME_PROMPT}
   BILLING_SPECIALIST: {
     name: 'Billing Specialist',
     description: 'Insurance and payment coordination',
+    voiceId: getVoiceIdForEmployeeName('Emily'),
     firstMessage: "Hello, this is Emily from the eye care office. I'm calling to help with your vision insurance or payment questions. Do you have a moment?",
     systemPrompt: `# Optometry Billing Specialist
 
@@ -89,7 +95,7 @@ You are Emily, a billing specialist for an optometry practice. Help with vision 
 3. Set up payment plans
 4. Answer billing questions
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${OPTOMETRIST_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,

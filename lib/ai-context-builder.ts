@@ -297,7 +297,7 @@ export class AIContextBuilder {
     // Task insights
     if (lead.tasks && lead.tasks.length > 0) {
       const overdueTasks = lead.tasks.filter(
-        (t: any) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'DONE'
+        (t: any) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'COMPLETED'
       );
       if (overdueTasks.length > 0) {
         insights.push(`${overdueTasks.length} overdue task(s) for this lead.`);

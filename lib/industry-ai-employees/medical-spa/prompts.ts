@@ -1,9 +1,11 @@
 /**
  * Medical Spa AI Employee Prompts for ElevenLabs Agents
+ * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
 import type { IndustryEmployeePrompt } from '../types';
-import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
 
 const MEDICAL_SPA_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
@@ -21,6 +23,7 @@ export const MEDICAL_SPA_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt
   APPOINTMENT_SCHEDULER: {
     name: 'Appointment Coordinator',
     description: 'Schedules and confirms spa appointments',
+    voiceId: getVoiceIdForEmployeeName('Sarah'),
     firstMessage: "Hi, this is Sarah from the medical spa. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
     systemPrompt: `# Medical Spa Appointment Coordinator
 
@@ -32,7 +35,7 @@ You are Sarah, a friendly appointment coordinator for a medical spa. Schedule ap
 3. Handle rescheduling requests
 4. Send appointment reminders
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_SPA_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -40,6 +43,7 @@ ${DATETIME_PROMPT}
   CLIENT_COORDINATOR: {
     name: 'Client Coordinator',
     description: 'New client intake and consultation scheduling',
+    voiceId: getVoiceIdForEmployeeName('Jessica'),
     firstMessage: "Hello, this is Jessica from the medical spa. I'm calling to welcome you and help you schedule your consultation. Do you have a few minutes?",
     systemPrompt: `# Medical Spa Client Coordinator
 
@@ -51,7 +55,7 @@ You are Jessica, a client coordinator for a medical spa. Welcome new clients, ex
 3. Schedule consultations
 4. Provide pre-consultation instructions
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_SPA_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -59,6 +63,7 @@ ${DATETIME_PROMPT}
   TREATMENT_FOLLOWUP: {
     name: 'Treatment Follow-up Coordinator',
     description: 'Post-treatment follow-up and package promotion',
+    voiceId: getVoiceIdForEmployeeName('Nicole'),
     firstMessage: "Hi, this is Nicole from the medical spa. I'm following up on your recent treatment. How are you doing? Do you have a moment?",
     systemPrompt: `# Medical Spa Treatment Follow-up Coordinator
 
@@ -70,7 +75,7 @@ You are Nicole, a follow-up coordinator for a medical spa. Follow up after treat
 3. Inform about packages and membership options
 4. Schedule follow-up or maintenance appointments
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_SPA_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -78,6 +83,7 @@ ${DATETIME_PROMPT}
   BILLING_SPECIALIST: {
     name: 'Billing Specialist',
     description: 'Payment and package coordination',
+    voiceId: getVoiceIdForEmployeeName('Emily'),
     firstMessage: "Hello, this is Emily from the medical spa. I'm calling to help with your payment or package questions. Do you have a moment?",
     systemPrompt: `# Medical Spa Billing Specialist
 
@@ -89,7 +95,7 @@ You are Emily, a billing specialist for a medical spa. Help clients with payment
 3. Answer membership billing questions
 4. Process package purchases
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_SPA_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,

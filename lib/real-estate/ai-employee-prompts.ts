@@ -3,21 +3,17 @@
  * 
  * Each agent is specialized for the Quebec real estate market with:
  * - OACIQ (Organisme d'autoréglementation du courtage immobilier du Québec) compliance
- * - Multi-language support via ElevenLabs language detection
+ * - Multilingual support (same as Soshogle landing page voice AI)
  * - Role-specific expertise and conversation flows
+ * - Voice-gender matching: male names use male voice, female names use female voice
  */
 
 import { REAIEmployeeType } from '@prisma/client';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { AI_EMPLOYEE_VOICE_IDS } from '@/lib/ai-employee-voices';
 
-// Base prompt components that are shared across all agents
-const LANGUAGE_DETECTION_PROMPT = `
-## Language Handling
-You are fluent in all languages supported by ElevenLabs.
-
-If the caller speaks in a language other than English, use the language detection tool to identify the language and continue the conversation in that language.
-
-Once you switch to a new language, stay in that language for the rest of the conversation unless the caller switches back to English or another language.
-
+// Multilingual prompt - matches Soshogle landing page. preferred_language from user/task when available.
+const LANGUAGE_PROMPT = LANGUAGE_PROMPT_SECTION + `
 For Quebec callers, be prepared to speak French (Canadian French) fluently.
 `;
 
@@ -65,6 +61,7 @@ export const RE_AI_EMPLOYEE_PROMPTS: Record<REAIEmployeeType, {
   RE_SPEED_TO_LEAD: {
     name: 'Speed to Lead Specialist',
     description: 'Instantly responds to new leads within seconds to qualify and schedule appointments',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hi, this is Sarah from the real estate team. I saw you were interested in properties in the area. I'd love to help you find your perfect home. Do you have a moment to chat about what you're looking for?",
     systemPrompt: `# Speed to Lead Specialist - Real Estate AI
 
@@ -99,7 +96,7 @@ Ask these naturally in conversation:
 6. Confirm contact details
 7. Set clear next steps
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -108,6 +105,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_FSBO_OUTREACH: {
     name: 'FSBO Outreach Specialist',
     description: 'Contacts For Sale By Owner listings to offer professional representation services',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hello, this is Michael calling about the property you have listed for sale. I work with a local real estate team and wanted to see how your sale is going. Do you have a moment?",
     systemPrompt: `# FSBO Outreach Specialist - Real Estate AI
 
@@ -146,7 +144,7 @@ You are Michael, a consultative real estate assistant specializing in For Sale B
 - "I've had bad experiences with agents" → Acknowledge and differentiate
 - "I'm doing fine on my own" → Offer to be a resource if things change
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -155,6 +153,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_EXPIRED_OUTREACH: {
     name: 'Expired Listing Specialist',
     description: 'Reaches out to expired listings to offer fresh marketing strategies',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hello, this is Jessica from the real estate team. I noticed your home was recently on the market. I'd love to share some insights on what might help get it sold. Do you have a few minutes?",
     systemPrompt: `# Expired Listing Specialist - Real Estate AI
 
@@ -195,7 +194,7 @@ You are Jessica, a strategic real estate assistant specializing in expired listi
 - What was the feedback from showings?
 - How was the communication with your previous agent?
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -204,6 +203,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_COLD_REACTIVATION: {
     name: 'Lead Reactivation Specialist',
     description: 'Re-engages cold leads and past clients to revive dormant opportunities',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hi there, this is Alex from the real estate team. We connected a while back about real estate. I wanted to check in and see how things are going with your housing plans. Is this still a good number?",
     systemPrompt: `# Lead Reactivation Specialist - Real Estate AI
 
@@ -241,7 +241,7 @@ You are Alex, a friendly real estate assistant specializing in reconnecting with
 - Timing (been renting 2+ years, bought 5+ years ago)
 - Investment opportunities
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -250,6 +250,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_DOCUMENT_CHASER: {
     name: 'Document Coordinator',
     description: 'Follows up on missing documents and paperwork to keep transactions moving',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hello, this is Emma from the real estate team calling about your transaction. I'm following up on some documents we need to keep things moving smoothly. Do you have a moment?",
     systemPrompt: `# Document Coordinator - Real Estate AI
 
@@ -298,7 +299,7 @@ You are Emma, an organized and helpful real estate assistant specializing in doc
 - Building inspection contingencies are common
 - Notary involvement for closing
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -307,6 +308,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_SHOWING_CONFIRM: {
     name: 'Showing Coordinator',
     description: 'Confirms and manages property showings for buyers and listings',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hi, this is David from the real estate team. I'm calling to confirm your property showing scheduled for {{appointment_time}}. Will that still work for you?",
     systemPrompt: `# Showing Coordinator - Real Estate AI
 
@@ -353,7 +355,7 @@ You are David, an efficient and friendly real estate assistant specializing in s
 - Discuss next steps
 - Schedule follow-up if interested
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -362,6 +364,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_SPHERE_NURTURE: {
     name: 'Relationship Manager',
     description: 'Nurtures sphere of influence contacts to generate referrals',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hi, this is Rachel from the real estate team. I just wanted to reach out and see how you're doing. It's been a while since we connected!",
     systemPrompt: `# Relationship Manager - Real Estate AI
 
@@ -408,7 +411,7 @@ You are Rachel, a warm and personable real estate assistant specializing in rela
 - Birthday greetings
 - Holiday wishes
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -417,6 +420,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_BUYER_FOLLOWUP: {
     name: 'Buyer Success Specialist',
     description: 'Follows up with active buyers to keep them engaged and moving forward',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hi, this is Chris from the real estate team. I wanted to check in about your home search. Have you had a chance to think about the properties we discussed?",
     systemPrompt: `# Buyer Success Specialist - Real Estate AI
 
@@ -464,7 +468,7 @@ You are Chris, a supportive and knowledgeable real estate assistant specializing
 5. Create urgency (competition, market conditions)
 6. Schedule next steps
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -473,6 +477,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_MARKET_UPDATE: {
     name: 'Market Intelligence Analyst',
     description: 'Provides personalized market updates and property value insights',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hi, this is Jennifer from the real estate team. I have some interesting market updates for your area that I thought you'd want to know about. Do you have a moment?",
     systemPrompt: `# Market Intelligence Analyst - Real Estate AI
 
@@ -522,7 +527,7 @@ You are Jennifer, a data-savvy real estate assistant specializing in market anal
 - For homeowners: equity utilization options
 - For investors: opportunity identification
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -531,6 +536,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_STALE_DIAGNOSTIC: {
     name: 'Listing Health Specialist',
     description: 'Analyzes stale listings and recommends improvement strategies',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hello, this is Mark from the real estate team. I've been reviewing your listing and I have some suggestions that might help increase interest. Can we discuss for a few minutes?",
     systemPrompt: `# Listing Health Specialist - Real Estate AI
 
@@ -577,7 +583,7 @@ You are Mark, a strategic real estate assistant specializing in listing optimiza
 - Discussing property condition issues
 - Managing seller expectations
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -586,6 +592,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_LISTING_BOOST: {
     name: 'Marketing Specialist',
     description: 'Promotes listings and generates buyer interest through targeted outreach',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.female,
     firstMessage: "Hi, this is Sophie from the real estate team. I'm reaching out because we have a property that matches what buyers like you are looking for. Do you have a moment to hear about it?",
     systemPrompt: `# Marketing Specialist - Real Estate AI
 
@@ -638,7 +645,7 @@ You are Sophie, an enthusiastic real estate assistant specializing in listing pr
 - Provide property address and access info
 - Send follow-up confirmation
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `
@@ -647,6 +654,7 @@ ${DATETIME_CONTEXT_PROMPT}
   RE_CMA_GENERATOR: {
     name: 'Valuation Specialist',
     description: 'Creates and presents comparative market analyses for pricing decisions',
+    voiceId: AI_EMPLOYEE_VOICE_IDS.male,
     firstMessage: "Hello, this is Daniel from the real estate team. I've prepared a market analysis for your property based on recent sales in your area. Would you like to go over the findings together?",
     systemPrompt: `# Valuation Specialist - Real Estate AI
 
@@ -700,7 +708,7 @@ You are Daniel, an expert real estate assistant specializing in comparative mark
 - **Market**: At estimated value for balanced approach
 - **Aspirational**: Above market if time permits
 
-${LANGUAGE_DETECTION_PROMPT}
+${LANGUAGE_PROMPT}
 ${OACIQ_COMPLIANCE_PROMPT}
 ${DATETIME_CONTEXT_PROMPT}
 `

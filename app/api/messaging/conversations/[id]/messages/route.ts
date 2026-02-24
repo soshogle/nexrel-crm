@@ -24,7 +24,7 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     const messages = await provider.getMessages({
       conversationId: params.id,
       limit,
@@ -76,7 +76,7 @@ export async function POST(
       return apiErrors.notFound('Conversation not found');
     }
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     const result = await provider.sendMessage({
       channelType: conversation.channelConnection.channelType as any,
       to: conversation.contactIdentifier,

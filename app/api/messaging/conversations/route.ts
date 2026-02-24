@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     const conversations = await provider.getConversations({
       channelType: channelType as any,
       limit,

@@ -23,7 +23,7 @@ export function ChannelStatsCards({ refreshKey = 0, compact = false }: ChannelSt
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/soshogle/stats');
+        const response = await fetch('/api/messaging/stats');
         if (response.ok) {
           const data = await response.json();
           setStats(data);

@@ -60,6 +60,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error('Error generating AI suggestions:', error);
-    return apiErrors.internal('Failed to generate suggestions');
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (message.includes('not found')) {
+      return apiErrors.notFound(message);
+    }
+    return apiErrors.internal(
+      'Failed to generate suggestions',
+      process.env.NODE_ENV === 'development' ? { error: message } : undefined
+    );
   }
 }

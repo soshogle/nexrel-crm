@@ -2,11 +2,11 @@
  * Orthodontist Demo - Phase 11: DocPen (10 Completed Sessions)
  * Creates: DocpenSession (10) with status SIGNED, transcriptionComplete, soapNoteGenerated,
  *          DocpenTranscription, DocpenSOAPNote, DocpenSessionAuditLog
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 function randomDate(start: Date, end: Date): Date {
@@ -34,9 +34,9 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 11: DocPen Sessions\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
 

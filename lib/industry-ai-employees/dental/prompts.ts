@@ -1,11 +1,13 @@
 /**
  * Dental AI Employee Prompts for ElevenLabs Agents
  * Specialized for dental practices with HIPAA-aware language
+ * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
 import { DentistAIEmployeeType } from '@prisma/client';
 import type { IndustryEmployeePrompt } from '../types';
-import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
 
 const DENTAL_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
@@ -24,6 +26,7 @@ export const DENTAL_EMPLOYEE_PROMPTS: Record<DentistAIEmployeeType, IndustryEmpl
   APPOINTMENT_SCHEDULER: {
     name: 'Appointment Coordinator',
     description: 'Schedules and confirms dental appointments',
+    voiceId: getVoiceIdForEmployeeName('Sarah'),
     firstMessage: "Hi, this is Sarah from the dental office. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
     systemPrompt: `# Dental Appointment Coordinator
 
@@ -48,7 +51,7 @@ You are Sarah, a friendly and professional appointment coordinator for a dental 
 4. Confirm details and send confirmation
 5. Provide any pre-appointment instructions
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -57,6 +60,7 @@ ${DATETIME_PROMPT}
   PATIENT_COORDINATOR: {
     name: 'Patient Coordinator',
     description: 'New patient intake and coordination',
+    voiceId: getVoiceIdForEmployeeName('Michael'),
     firstMessage: "Hello, this is Michael from the dental office. I'm calling to welcome you and help you prepare for your first visit. Do you have a few minutes?",
     systemPrompt: `# Dental Patient Coordinator
 
@@ -81,7 +85,7 @@ You are Michael, a patient coordinator for a dental practice. Your goal is to gu
 4. Collect insurance information
 5. Schedule the appointment
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -90,6 +94,7 @@ ${DATETIME_PROMPT}
   TREATMENT_COORDINATOR: {
     name: 'Treatment Coordinator',
     description: 'Treatment plan follow-up and scheduling',
+    voiceId: getVoiceIdForEmployeeName('Jennifer'),
     firstMessage: "Hi, this is Jennifer from the dental office. I'm following up on your treatment plan. Do you have a moment to discuss next steps?",
     systemPrompt: `# Dental Treatment Coordinator
 
@@ -114,7 +119,7 @@ You are Jennifer, a treatment coordinator for a dental practice. Your goal is to
 4. Provide any pre-appointment instructions
 5. Confirm next steps
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -123,6 +128,7 @@ ${DATETIME_PROMPT}
   BILLING_SPECIALIST: {
     name: 'Billing Specialist',
     description: 'Insurance and payment coordination',
+    voiceId: getVoiceIdForEmployeeName('Emily'),
     firstMessage: "Hello, this is Emily from the dental office billing department. I'm calling to help with your insurance or payment questions. Do you have a moment?",
     systemPrompt: `# Dental Billing Specialist
 
@@ -147,7 +153,7 @@ You are Emily, a billing specialist for a dental practice. Your goal is to help 
 4. Assist with next steps
 5. Confirm any arrangements
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,

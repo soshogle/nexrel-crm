@@ -301,7 +301,10 @@ export function MessagingPage() {
               </TabsList>
             </div>
             <TabsContent value="messages" className="h-[calc(100vh-8rem)] mt-0">
-              <MessageThread conversationId={selectedConversationId} />
+              <MessageThread
+                conversationId={selectedConversationId}
+                onConversationNotFound={() => setSelectedConversationId(undefined)}
+              />
             </TabsContent>
             <TabsContent value="calls" className="h-[calc(100vh-8rem)] p-6 overflow-y-auto">
               <CallHistoryPanel selectedConversationId={selectedConversationId} />
@@ -625,7 +628,10 @@ export function MessagingPage() {
               </TabsList>
             </div>
             <TabsContent value="messages" className="h-[calc(100vh-5rem)] mt-0">
-              <MessageThread conversationId={selectedConversationId} />
+              <MessageThread
+                conversationId={selectedConversationId}
+                onConversationNotFound={() => setSelectedConversationId(undefined)}
+              />
             </TabsContent>
             <TabsContent value="calls" className="h-[calc(100vh-5rem)] p-4 overflow-y-auto">
               <CallHistoryPanel selectedConversationId={selectedConversationId} />

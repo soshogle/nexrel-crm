@@ -1,11 +1,11 @@
 /**
  * Orthodontist Demo - Phase 3: Pipeline, Deals, Payments, Invoices
  * Creates sales pipeline, 50+ deals across stages, payments (CAD), invoices
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 const DEAL_TITLES = [
@@ -44,9 +44,9 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 3: Pipeline, Deals, Payments, Invoices\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
 

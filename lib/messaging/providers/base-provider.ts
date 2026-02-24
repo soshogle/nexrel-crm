@@ -8,13 +8,15 @@ export abstract class BaseMessagingProvider implements MessagingProvider {
   abstract name: string;
   
   protected userId: string;
-  
-  constructor(userId: string) {
+  protected industry: string | null;
+
+  constructor(userId: string, industry?: string | null) {
     this.userId = userId;
+    this.industry = industry ?? null;
   }
 
   protected get ctx() {
-    return createDalContext(this.userId);
+    return createDalContext(this.userId, this.industry);
   }
 
   protected get db() {

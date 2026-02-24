@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { getTemplateById } from '@/lib/workflow-templates';
 import { apiErrors } from '@/lib/api-error';
 
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
       }
       workflowData = template;
     } else if (workflowId) {
-      // Fetch existing workflow
-      workflowData = await prisma.workflow.findUnique({
+      const db = getRouteDb(session);
+      workflowData = await (db as any).workflow.findUnique({
         where: { id: workflowId }
       });
       
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Scheduled time must be in the future');
     }
 
-    // Create or update workflow with schedule
-    const workflow = await prisma.workflow.create({
+    const db = getRouteDb(session);
+    const workflow = await (db as any).workflow.create({
       data: {
         userId: session.user.id,
         name: name || workflowData.name,
@@ -124,7 +124,8 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const scheduledWorkflows = await prisma.workflow.findMany({
+    const db = getRouteDb(session);
+    const scheduledWorkflows = await (db as any).workflow.findMany({
       where: {
         userId: session.user.id,
         status: 'SCHEDULED',
@@ -177,8 +178,8 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Workflow ID is required');
     }
 
-    // Update workflow status to cancelled
-    const workflow = await prisma.workflow.update({
+    const db = getRouteDb(session);
+    const workflow = await (db as any).workflow.update({
       where: {
         id: workflowId,
         userId: session.user.id

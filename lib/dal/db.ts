@@ -14,11 +14,12 @@ import type { DalContext } from './types';
  * Otherwise returns shared prisma (single DB).
  */
 export function getCrmDb(ctx: DalContext) {
-  if (ctx.industry && process.env[`DATABASE_URL_${ctx.industry}`]) {
+  const industry = ctx.industry;
+  if (industry && process.env[`DATABASE_URL_${industry}`]) {
     if (process.env.NODE_ENV === 'development' && process.env.DAL_LOG_ROUTING === 'true') {
-      console.debug('[DAL] Routing to industry DB:', ctx.industry);
+      console.debug('[DAL] Routing to industry DB:', industry);
     }
-    return getIndustryDb(ctx.industry);
+    return getIndustryDb(industry);
   }
   return prisma;
 }

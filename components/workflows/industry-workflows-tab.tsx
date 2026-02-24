@@ -16,6 +16,8 @@ const WorkflowBuilder = dynamic(
 );
 import { ScheduledWorkflowsList } from './scheduled-workflows-list';
 import { WorkflowsList } from './workflows-list';
+import { HITLApprovalPanel } from '@/components/real-estate/workflows/hitl-approval-panel';
+import { IndustryWorkflowMonitor } from './industry-workflow-monitor';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { Industry } from '@prisma/client';
 import { Button } from '@/components/ui/button';
@@ -232,29 +234,11 @@ export function IndustryWorkflowsTab({ industry, preSelectedAgent }: IndustryWor
         </TabsList>
 
         <TabsContent value="approvals">
-          {/* TODO: Create generic HITL approval panel */}
-          <Card className="bg-white border-2 border-purple-200">
-            <CardHeader>
-              <CardTitle>HITL Approvals</CardTitle>
-              <CardDescription>Human-in-the-loop approval requests</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">HITL approval panel coming soon...</p>
-            </CardContent>
-          </Card>
+          <HITLApprovalPanel />
         </TabsContent>
 
         <TabsContent value="monitor">
-          {/* TODO: Create generic workflow instance monitor */}
-          <Card className="bg-white border-2 border-purple-200">
-            <CardHeader>
-              <CardTitle>Workflow Monitor</CardTitle>
-              <CardDescription>Monitor running workflow instances</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Workflow monitor coming soon...</p>
-            </CardContent>
-          </Card>
+          <IndustryWorkflowMonitor />
         </TabsContent>
 
         <TabsContent value="scheduled">

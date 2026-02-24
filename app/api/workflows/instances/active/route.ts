@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
       whereClause.status = statusParam as any;
     }
 
-    const instances = await prisma.workflowInstance.findMany({
+    const db = getRouteDb(session);
+    const instances = await (db as any).workflowInstance.findMany({
       where: whereClause,
       include: {
         template: {

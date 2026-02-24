@@ -6,6 +6,10 @@ import { ChannelType, Conversation, Message } from '../types';
 
 export class DemoMessagingProvider extends BaseMessagingProvider {
   name = 'demo';
+
+  constructor(userId: string, industry?: string | null) {
+    super(userId, industry);
+  }
   
   async sendMessage(params: {
     channelType: ChannelType;

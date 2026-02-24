@@ -2,11 +2,12 @@
  * Orthodontist Demo - Phase 8: Workflows
  * Creates: WorkflowTemplate (10), WorkflowTask, WorkflowInstance, WorkflowTemplateEnrollment,
  *          TaskExecution, TaskTemplate (5-8), TaskAutomation (2-3)
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient, Industry } from '@prisma/client';
+import { Industry } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 function randomDate(start: Date, end: Date): Date {
@@ -38,9 +39,9 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 8: Workflows\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
 
@@ -72,7 +73,12 @@ async function main() {
 
   // ─── 1. WorkflowTemplates (10) + WorkflowTasks ──────────────────────────────
   console.log('📋 Creating workflow templates and tasks...');
-  const workflowTemplates: { id: string; tasks: { id: string }[] }[] = [];
+  let workflowTemplates: { id: string; tasks: { id: string }[] }[] = [];
+  let instanceCount = 0;
+  let execCount = 0;
+  let enrollCount = 0;
+  const taskTemplateNames = ['Consultation follow-up', 'Insurance verification', 'Appointment confirmation', 'Treatment plan review', 'Retainer check', 'Payment reminder'];
+  try {
   for (let i = 0; i < 10; i++) {
     const template = await prisma.workflowTemplate.create({
       data: {
@@ -119,8 +125,6 @@ async function main() {
 
   // ─── 2. WorkflowInstances + TaskExecutions ──────────────────────────────────
   console.log('🔄 Creating workflow instances...');
-  let instanceCount = 0;
-  let execCount = 0;
   for (let i = 0; i < 35; i++) {
     const tmpl = workflowTemplates[i % workflowTemplates.length];
     const lead = leads[i % leads.length];
@@ -158,7 +162,6 @@ async function main() {
 
   // ─── 3. WorkflowTemplateEnrollment ───────────────────────────────────────────
   console.log('📝 Creating workflow template enrollments...');
-  let enrollCount = 0;
   for (let i = 0; i < 20; i++) {
     const tmpl = workflowTemplates[i % workflowTemplates.length];
     const lead = leads[i % leads.length];
@@ -183,14 +186,6 @@ async function main() {
 
   // ─── 4. TaskTemplate (5–8) ──────────────────────────────────────────────────
   console.log('📌 Creating task templates...');
-  const taskTemplateNames = [
-    'Consultation follow-up',
-    'Insurance verification',
-    'Appointment confirmation',
-    'Treatment plan review',
-    'Retainer check',
-    'Payment reminder',
-  ];
   for (const name of taskTemplateNames) {
     await prisma.taskTemplate.create({
       data: {
@@ -252,6 +247,17 @@ async function main() {
     },
   });
   console.log('   ✓ Created 3 task automations\n');
+  } catch (e: unknown) {
+    const err = e as { code?: string };
+    if (err?.code === 'P2022' || err?.code === 'P2021') {
+      console.log('   ⚠️  Phase 8 skipped (WorkflowTemplate schema mismatch). Run: npx tsx scripts/migrate-all-dbs.ts\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('⚠️  Phase 8 skipped - workflows not created');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      return;
+    }
+    throw e;
+  }
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✅ Phase 8 complete!');

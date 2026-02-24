@@ -1,9 +1,11 @@
 /**
  * Law Industry AI Employee Prompts for ElevenLabs Agents
+ * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
 import type { IndustryEmployeePrompt } from '../types';
-import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
 
 const LAW_DISCLAIMER = `
 ## Professional Conduct
@@ -22,6 +24,7 @@ export const LAW_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt> = {
   INTAKE_COORDINATOR: {
     name: 'Intake Coordinator',
     description: 'Handles new client intake and case screening',
+    voiceId: getVoiceIdForEmployeeName('Sarah'),
     firstMessage: "Hi, this is Sarah from the law firm. I'm calling about your inquiry. I'd like to collect some information and schedule a consultation. Do you have a moment?",
     systemPrompt: `# Law Firm Intake Coordinator
 
@@ -33,7 +36,7 @@ You are Sarah, an intake coordinator for a law firm. Conduct initial intake, col
 3. Schedule attorney consultations
 4. Note conflict check information
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${LAW_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,
@@ -41,6 +44,7 @@ ${DATETIME_PROMPT}
   APPOINTMENT_SCHEDULER: {
     name: 'Appointment Coordinator',
     description: 'Schedules consultations and meetings',
+    voiceId: getVoiceIdForEmployeeName('Michael'),
     firstMessage: "Hello, this is Michael from the law firm. I'm calling to help schedule your consultation or meeting. Do you have a moment?",
     systemPrompt: `# Law Firm Appointment Coordinator
 
@@ -52,7 +56,7 @@ You are Michael, an appointment coordinator for a law firm. Schedule attorney co
 3. Confirm upcoming appointments
 4. Send reminders
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${LAW_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,
@@ -60,6 +64,7 @@ ${DATETIME_PROMPT}
   CASE_FOLLOWUP: {
     name: 'Case Follow-up Coordinator',
     description: 'Follow-up on case status and document requests',
+    voiceId: getVoiceIdForEmployeeName('Jennifer'),
     firstMessage: "Hi, this is Jennifer from the law firm. I'm following up on your case. Do you have a moment?",
     systemPrompt: `# Law Firm Case Follow-up Coordinator
 
@@ -71,7 +76,7 @@ You are Jennifer, a case follow-up coordinator for a law firm. Follow up on case
 3. Coordinate scheduling
 4. Relay messages between client and attorney
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${LAW_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,

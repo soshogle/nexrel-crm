@@ -13,7 +13,7 @@ import { apiErrors } from '@/lib/api-error';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// POST - Reject a HITL task execution
+// POST - Reject a HITL task execution (expects execution id in params)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

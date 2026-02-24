@@ -1,11 +1,11 @@
 /**
  * Orthodontist Demo - Phase 1: Foundation & User Setup
  * Creates: User config, Clinic, AppointmentTypes, BookingWidget, AutoReply, KnowledgeBase, Templates, Industry AI Agents
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set (same DB the app reads from).
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser, ensureUserInOrthoDb } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 // Quebec business hours (Mon-Fri 9-5, Sat 9-1)
@@ -79,13 +79,13 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 1: Foundation & User Setup\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
     console.error(`❌ User not found: ${USER_EMAIL}`);
     console.log('Create the user first (e.g. via signup or admin).');
     process.exit(1);
   }
-
+  await ensureUserInOrthoDb(user);
   console.log(`✅ Found user: ${user.name} (${user.id})\n`);
 
   // ─── 1. Update User ─────────────────────────────────────────────────────────

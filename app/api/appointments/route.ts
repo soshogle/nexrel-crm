@@ -85,27 +85,32 @@ export async function GET(request: NextRequest) {
     })
 
     // Also fetch voice AI reservations and include them in the calendar
-    const reservations = await getCrmDb(ctx).reservation.findMany({
-      where: {
-        userId: ctx.userId,
-        ...(status && {
-          status: status === 'SCHEDULED' ? 'CONFIRMED' : 
-                  status === 'COMPLETED' ? 'COMPLETED' : 
-                  status === 'CANCELLED' ? 'CANCELLED' : undefined
-        }),
-        ...(startDate || endDate ? {
-          reservationDate: {
-            ...(startDate && { gte: new Date(startDate) }),
-            ...(endDate && { lte: new Date(endDate) }),
-          },
-        } : {}),
-      },
-      orderBy: {
-        reservationDate: 'asc',
-      },
-    })
-
-    console.log(`📞 Found ${reservations.length} voice AI reservations to include`)
+    let reservations: Awaited<ReturnType<ReturnType<typeof getCrmDb>['reservation']['findMany']>> = []
+    try {
+      reservations = await getCrmDb(ctx).reservation.findMany({
+        where: {
+          userId: ctx.userId,
+          ...(status && {
+            status: status === 'SCHEDULED' ? 'CONFIRMED' : 
+                    status === 'COMPLETED' ? 'COMPLETED' : 
+                    status === 'CANCELLED' ? 'CANCELLED' : undefined
+          }),
+          ...(startDate || endDate ? {
+            reservationDate: {
+              ...(startDate && { gte: new Date(startDate) }),
+              ...(endDate && { lte: new Date(endDate) }),
+            },
+          } : {}),
+        },
+        orderBy: {
+          reservationDate: 'asc',
+        },
+      })
+      console.log(`📞 Found ${reservations.length} voice AI reservations to include`)
+    } catch (resErr) {
+      console.warn('⚠️ Could not fetch reservations (table may not exist):', resErr)
+      // Continue with appointments only - reservations are optional
+    }
 
     // Transform appointments to include startTime and endTime for calendar compatibility
     // Filter out appointments with invalid dates first
@@ -202,7 +207,9 @@ export async function GET(request: NextRequest) {
     return paginatedResponse(allAppointments, total, pagination, 'appointments')
   } catch (error) {
     console.error('Error fetching appointments:', error)
-    return apiErrors.internal('Failed to fetch appointments')
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const details = process.env.NODE_ENV === 'development' ? { message, stack: error instanceof Error ? error.stack : undefined } : undefined
+    return apiErrors.internal('Failed to fetch appointments', details)
   }
 }
 
@@ -225,6 +232,7 @@ export async function POST(request: NextRequest) {
       location,
       leadId,
       contactId,
+      contactFallback,
       meetingType,
       requiresPayment,
       notes,
@@ -232,10 +240,40 @@ export async function POST(request: NextRequest) {
     
     console.log('📥 Received appointment data:', { title, startTime, endTime, leadId, contactId, meetingType, location })
 
-    // Validate required fields - must have either lead or contact
-    if (!leadId && !contactId) {
-      console.error('❌ Validation failed: No lead or contact ID provided', { leadId, contactId })
-      return apiErrors.badRequest('A customer/lead or contact must be selected for this appointment')
+    // Customer name: from lead/contact when provided, otherwise from title
+    let customerName = title || 'New Appointment'
+    let customerEmail = ''
+    let customerPhone = ''
+    let resolvedLeadId: string | null = null
+    let resolvedContactId: string | null = null
+
+    if (leadId || contactId) {
+      if (leadId) {
+        const lead = await leadService.findUnique(ctx, leadId)
+        if (lead) {
+          customerName = (lead as any).contactPerson || customerName
+          customerEmail = (lead as any).email || ''
+          customerPhone = (lead as any).phone || ''
+          resolvedLeadId = leadId
+        } else {
+          console.warn('⚠️ Lead not found in DB (id may be mock):', leadId, '- creating appointment without lead link')
+        }
+      } else if (contactId) {
+        const contact = await leadService.findUnique(ctx, contactId)
+        if (contact) {
+          customerName = (contact as any).contactPerson || (contact as any).businessName || customerName
+          customerEmail = (contact as any).email || ''
+          customerPhone = (contact as any).phone || ''
+          resolvedContactId = contactId
+        } else {
+          console.warn('⚠️ Contact not found in DB (id may be mock):', contactId, '- creating appointment without contact link')
+        }
+      }
+    }
+
+    // customerPhone is required in schema - use placeholder when empty
+    if (!customerPhone || customerPhone.trim() === '') {
+      customerPhone = '—'
     }
 
     if (!startTime || !endTime) {
@@ -281,28 +319,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.conflict('Time slot conflicts with an existing appointment')
     }
 
-    // Get customer name from lead or contact
-    let customerName = title || 'New Appointment'
-    let customerEmail = ''
-    let customerPhone = ''
-
-    if (leadId) {
-      const lead = await leadService.findUnique(ctx, leadId)
-      if (lead) {
-        customerName = (lead as any).contactPerson || customerName
-        customerEmail = (lead as any).email || ''
-        customerPhone = (lead as any).phone || ''
-      }
-    } else if (contactId) {
-      const contact = await leadService.findUnique(ctx, contactId)
-      if (contact) {
-        customerName = (contact as any).contactPerson || (contact as any).businessName || customerName
-        customerEmail = (contact as any).email || ''
-        customerPhone = (contact as any).phone || ''
-      }
-    }
-
-    // Create appointment
+    // Create appointment (use resolved IDs only - omit when lead/contact not found in DB to avoid FK violation)
     const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         appointmentDate: start,
@@ -313,10 +330,10 @@ export async function POST(request: NextRequest) {
         notes,
         status: 'SCHEDULED',
         userId: ctx.userId,
-        leadId: leadId || null,
-        contactId: contactId || null,
+        leadId: resolvedLeadId,
+        contactId: resolvedContactId,
         customerName,
-        customerEmail,
+        customerEmail: customerEmail || null,
         customerPhone,
       },
       include: {
@@ -343,9 +360,19 @@ export async function POST(request: NextRequest) {
 
     emitCRMEvent('appointment_booked', session.user.id, { entityId: appointment.id, entityType: 'Appointment' });
 
-    return NextResponse.json(appointment, { status: 201 })
+    const startTime = new Date(appointment.appointmentDate)
+    const endTime = new Date(startTime.getTime() + (appointment.duration || 30) * 60000)
+    const transformed = {
+      ...appointment,
+      title: appointment.customerName || 'Untitled',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+    }
+    return NextResponse.json(transformed, { status: 201 })
   } catch (error) {
     console.error('Error creating appointment:', error)
-    return apiErrors.internal('Failed to create appointment')
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const details = process.env.NODE_ENV === 'development' ? { message, stack: error instanceof Error ? error.stack : undefined } : undefined
+    return apiErrors.internal('Failed to create appointment', details)
   }
 }

@@ -20,7 +20,7 @@ export async function DELETE(
       return apiErrors.unauthorized();
     }
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     await provider.disconnectChannel({ channelId: params.id });
     
     return NextResponse.json({ success: true });
@@ -41,7 +41,7 @@ export async function GET(
       return apiErrors.unauthorized();
     }
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     const status = await provider.getChannelStatus({ channelId: params.id });
     
     return NextResponse.json(status);

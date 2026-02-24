@@ -6,18 +6,13 @@ import { DemoMessagingProvider } from './providers/demo-provider';
 // Future providers will be added here:
 // import { TwilioProvider } from './providers/twilio-provider';
 
-export function getMessagingProvider(userId: string): MessagingProvider {
-  // For now, use demo provider
-  // Later, this can be configured per user or globally
+export function getMessagingProvider(userId: string, industry?: string | null): MessagingProvider {
   const providerType = process.env.MESSAGING_PROVIDER || 'demo';
-  
   switch (providerType) {
     case 'demo':
-      return new DemoMessagingProvider(userId);
-    // case 'twilio':
-    //   return new TwilioProvider(userId);
+      return new DemoMessagingProvider(userId, industry);
     default:
-      return new DemoMessagingProvider(userId);
+      return new DemoMessagingProvider(userId, industry);
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -87,7 +87,6 @@ export function HITLNotificationBell() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const hasAutoOpened = useRef(false);
   const router = useRouter();
 
   const { data, isLoading, isFetching } = useQuery({
@@ -140,14 +139,6 @@ export function HITLNotificationBell() {
 
     return result;
   }, [data]);
-
-  useEffect(() => {
-    if (approvals.length > 0 && !hasAutoOpened.current) {
-      hasAutoOpened.current = true;
-      setOpen(true);
-    }
-    if (approvals.length === 0) hasAutoOpened.current = false;
-  }, [approvals.length]);
 
   const getApproveUrl = (execId: string, source: HITLSource) =>
     source === 'generic'
@@ -227,7 +218,7 @@ export function HITLNotificationBell() {
           {/* Alert ribbon: unrolls left and retracts every few seconds when HITL pending */}
           {pendingCount > 0 && (
             <div
-              className={`absolute right-full top-1/2 -translate-y-1/2 h-6 w-7 rounded-l pointer-events-none origin-right animate-hitl-unroll ${HITL_ACCENT} opacity-90 shadow-sm`}
+              className={`absolute right-full top-1/2 -translate-y-1/2 h-10 w-32 rounded-l pointer-events-none origin-right animate-hitl-unroll ${HITL_ACCENT} opacity-95 shadow-md`}
               aria-hidden
             />
           )}

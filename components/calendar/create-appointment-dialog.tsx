@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -141,8 +141,16 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
 
       if (contactType === 'lead' && formData.leadId && formData.leadId !== 'none') {
         appointmentData.leadId = formData.leadId
+        const lead = leads.find((l) => l.id === formData.leadId)
+        if (lead) {
+          appointmentData.contactFallback = { name: lead.contactPerson || lead.businessName, email: lead.email, phone: lead.phone }
+        }
       } else if (contactType === 'contact' && formData.contactId && formData.contactId !== 'none') {
         appointmentData.contactId = formData.contactId
+        const contact = contacts.find((c: any) => c.id === formData.contactId)
+        if (contact) {
+          appointmentData.contactFallback = { name: contact.contactPerson || contact.businessName, email: contact.email, phone: contact.phone }
+        }
       }
 
       if (Object.keys(industryFields).length > 0) {
@@ -203,6 +211,9 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-purple-500/20">
         <DialogHeader>
+          <DialogDescription className="sr-only">
+            Create a new {config.bookingNoun.toLowerCase()} by selecting a lead or contact, date, time, and location.
+          </DialogDescription>
           <DialogTitle className="flex items-center gap-3 text-white">
             <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
               <CalendarDays className="h-5 w-5 text-white" />

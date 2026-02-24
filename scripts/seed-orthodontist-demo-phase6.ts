@@ -1,11 +1,11 @@
 /**
  * Orthodontist Demo - Phase 6: Referrals, Reviews, Reports, Feedback, BrandScan
  * Creates: Referral, Review, AiGeneratedReport, FeedbackCollection, BrandScan, BrandMention
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 const REVIEW_SOURCES = ['GOOGLE', 'FACEBOOK', 'YELP', 'TRUSTPILOT', 'HEALTHGRADES', 'ZOCDOC', 'INTERNAL', 'OTHER'] as const;
@@ -46,9 +46,9 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 6: Referrals, Reviews, Reports, Feedback, BrandScan\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
 
@@ -64,14 +64,22 @@ async function main() {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
 
-  // Clean Phase 6 data
+  // Clean Phase 6 data (skip if tables don't exist - schema may differ per DB)
   console.log('🧹 Cleaning existing Phase 6 data...');
-  await prisma.brandMention.deleteMany({ where: { userId: user.id } });
-  await prisma.brandScan.deleteMany({ where: { userId: user.id } });
-  await prisma.feedbackCollection.deleteMany({ where: { userId: user.id } });
-  await prisma.review.deleteMany({ where: { userId: user.id } });
-  await prisma.referral.deleteMany({ where: { userId: user.id } });
-  await prisma.aiGeneratedReport.deleteMany({ where: { userId: user.id } });
+  for (const fn of [
+    () => prisma.brandMention.deleteMany({ where: { userId: user.id } }),
+    () => prisma.brandScan.deleteMany({ where: { userId: user.id } }),
+    () => prisma.feedbackCollection.deleteMany({ where: { userId: user.id } }),
+    () => prisma.review.deleteMany({ where: { userId: user.id } }),
+    () => prisma.referral.deleteMany({ where: { userId: user.id } }),
+    () => prisma.aiGeneratedReport.deleteMany({ where: { userId: user.id } }),
+  ]) {
+    try {
+      await fn();
+    } catch (e: unknown) {
+      if ((e as { code?: string })?.code !== 'P2021') throw e;
+    }
+  }
   console.log('   ✓ Cleaned\n');
 
   // ─── 1. Referrals (10–15) ──────────────────────────────────────────────────
@@ -136,88 +144,102 @@ async function main() {
 
   // ─── 3. AiGeneratedReport (5–10) ───────────────────────────────────────────
   console.log('📊 Creating AI-generated reports...');
-  const reportTypes = ['sales', 'leads', 'revenue', 'overview', 'custom'] as const;
-  const periods = ['last_7_days', 'last_month', 'last_quarter', 'last_year'] as const;
-  const reportTitles = [
-    'Monthly Revenue Summary',
-    'Lead Conversion Report',
-    'Patient Acquisition Overview',
-    'Treatment Pipeline Analysis',
-    'Orthodontic Practice Performance',
-    'New Patient Trends',
-    'Revenue by Treatment Type',
-    'Consultation-to-Conversion Report',
-  ];
   let reportCount = 0;
-  for (let i = 0; i < 8; i++) {
-    const reportType = reportTypes[i % reportTypes.length];
-    await prisma.aiGeneratedReport.create({
-      data: {
-        userId: user.id,
-        title: reportTitles[i % reportTitles.length],
-        reportType,
-        period: randomElement(periods),
-        content: {
-          summary: `AI-generated ${reportType} report for orthodontic practice.`,
-          charts: [
-            { type: 'bar', label: 'Monthly Revenue', data: [12000, 14500, 13200, 15800, 14100] },
-            { type: 'line', label: 'New Leads', data: [18, 22, 19, 25, 21] },
-          ],
-          metrics: { totalRevenue: 69600, newLeads: 105, conversionRate: 0.42 },
+  try {
+    const reportTypes = ['sales', 'leads', 'revenue', 'overview', 'custom'] as const;
+    const periods = ['last_7_days', 'last_month', 'last_quarter', 'last_year'] as const;
+    const reportTitles = [
+      'Monthly Revenue Summary',
+      'Lead Conversion Report',
+      'Patient Acquisition Overview',
+      'Treatment Pipeline Analysis',
+      'Orthodontic Practice Performance',
+      'New Patient Trends',
+      'Revenue by Treatment Type',
+      'Consultation-to-Conversion Report',
+    ];
+    for (let i = 0; i < 8; i++) {
+      const reportType = reportTypes[i % reportTypes.length];
+      await prisma.aiGeneratedReport.create({
+        data: {
+          userId: user.id,
+          title: reportTitles[i % reportTitles.length],
+          reportType,
+          period: randomElement(periods),
+          content: {
+            summary: `AI-generated ${reportType} report for orthodontic practice.`,
+            charts: [
+              { type: 'bar', label: 'Monthly Revenue', data: [12000, 14500, 13200, 15800, 14100] },
+              { type: 'line', label: 'New Leads', data: [18, 22, 19, 25, 21] },
+            ],
+            metrics: { totalRevenue: 69600, newLeads: 105, conversionRate: 0.42 },
+          },
+          createdAt: randomDate(sixMonthsAgo, now),
         },
-        createdAt: randomDate(sixMonthsAgo, now),
-      },
-    });
-    reportCount++;
+      });
+      reportCount++;
+    }
+    console.log(`   ✓ Created ${reportCount} AI reports\n`);
+  } catch (e: unknown) {
+    if ((e as { code?: string })?.code === 'P2021') {
+      console.log('   ⚠️  AiGeneratedReport table missing - skipped\n');
+    } else throw e;
   }
-  console.log(`   ✓ Created ${reportCount} AI reports\n`);
 
   // ─── 4. FeedbackCollection (10–15) ─────────────────────────────────────────
   console.log('📋 Creating feedback collections...');
-  const methods = ['SMS', 'VOICE', 'BOTH'] as const;
-  const statuses = ['PENDING', 'COMPLETED', 'FAILED'] as const;
-  const sentiments = ['POSITIVE', 'NEGATIVE', 'NEUTRAL'] as const;
   let feedbackCount = 0;
-  for (let i = 0; i < 12; i++) {
-    const lead = leads[i % leads.length];
-    const appt = appointments[i % appointments.length];
-    const status = randomElement(statuses);
-    const sentiment = status === 'COMPLETED' ? randomElement(sentiments) : null;
-    const rating = status === 'COMPLETED' && sentiment ? randomInt(1, 5) : null;
-    await prisma.feedbackCollection.create({
-      data: {
-        userId: user.id,
-        leadId: lead.id,
-        appointmentId: appt?.id ?? null,
-        method: randomElement(methods),
-        status,
-        sentiment,
-        rating,
-        feedbackText: status === 'COMPLETED' ? 'Great experience, would recommend!' : null,
-        triggeredAt: randomDate(sixMonthsAgo, now),
-        completedAt: status === 'COMPLETED' ? randomDate(sixMonthsAgo, now) : null,
-        metadata: { channel: 'sms', templateId: 'post-appointment-feedback' },
-      },
-    });
-    feedbackCount++;
+  try {
+    const methods = ['SMS', 'VOICE', 'BOTH'] as const;
+    const statuses = ['PENDING', 'COMPLETED', 'FAILED'] as const;
+    const sentiments = ['POSITIVE', 'NEGATIVE', 'NEUTRAL'] as const;
+    for (let i = 0; i < 12; i++) {
+      const lead = leads[i % leads.length];
+      const appt = appointments[i % appointments.length];
+      const status = randomElement(statuses);
+      const sentiment = status === 'COMPLETED' ? randomElement(sentiments) : null;
+      const rating = status === 'COMPLETED' && sentiment ? randomInt(1, 5) : null;
+      await prisma.feedbackCollection.create({
+        data: {
+          userId: user.id,
+          leadId: lead.id,
+          appointmentId: appt?.id ?? null,
+          method: randomElement(methods),
+          status,
+          sentiment,
+          rating,
+          feedbackText: status === 'COMPLETED' ? 'Great experience, would recommend!' : null,
+          triggeredAt: randomDate(sixMonthsAgo, now),
+          completedAt: status === 'COMPLETED' ? randomDate(sixMonthsAgo, now) : null,
+          metadata: { channel: 'sms', templateId: 'post-appointment-feedback' },
+        },
+      });
+      feedbackCount++;
+    }
+    console.log(`   ✓ Created ${feedbackCount} feedback collections\n`);
+  } catch (e: unknown) {
+    if ((e as { code?: string })?.code === 'P2021') {
+      console.log('   ⚠️  FeedbackCollection table missing - skipped\n');
+    } else throw e;
   }
-  console.log(`   ✓ Created ${feedbackCount} feedback collections\n`);
 
   // ─── 5. BrandScan (1–2) + BrandMention (5–10) ───────────────────────────────
   console.log('🔍 Creating brand scans and mentions...');
-  const scan = await prisma.brandScan.create({
-    data: {
-      userId: user.id,
-      status: 'COMPLETED',
-      businessName: 'Montreal Orthodontics',
-      location: 'Montreal, QC',
-      sources: ['GOOGLE', 'YELP', 'FACEBOOK', 'TRUSTPILOT'],
-      reviewsFound: 20,
-      mentionsFound: 8,
-      startedAt: randomDate(sixMonthsAgo, now),
-      completedAt: randomDate(sixMonthsAgo, now),
-    },
-  });
+  let mentionCount = 0;
+  try {
+    const scan = await prisma.brandScan.create({
+      data: {
+        userId: user.id,
+        status: 'COMPLETED',
+        businessName: 'Montreal Orthodontics',
+        location: 'Montreal, QC',
+        sources: ['GOOGLE', 'YELP', 'FACEBOOK', 'TRUSTPILOT'],
+        reviewsFound: 20,
+        mentionsFound: 8,
+        startedAt: randomDate(sixMonthsAgo, now),
+        completedAt: randomDate(sixMonthsAgo, now),
+      },
+    });
 
   const mentionSnippets = [
     'Montreal Orthodontics offers excellent Invisalign treatment. Highly recommend!',
@@ -226,7 +248,6 @@ async function main() {
     'Clean office, friendly staff. My kids love coming for adjustments.',
     'Referred by a friend. Very happy with the consultation and treatment plan.',
   ];
-  let mentionCount = 0;
   for (let i = 0; i < 8; i++) {
     const sentiment = randomElement(['POSITIVE', 'POSITIVE', 'NEUTRAL']);
     const sentimentScore = sentiment === 'POSITIVE' ? 0.6 + Math.random() * 0.4 : sentiment === 'NEUTRAL' ? 0 : -0.3;
@@ -251,6 +272,11 @@ async function main() {
     mentionCount++;
   }
   console.log(`   ✓ Created 1 brand scan, ${mentionCount} brand mentions\n`);
+  } catch (e: unknown) {
+    if ((e as { code?: string })?.code === 'P2021') {
+      console.log('   ⚠️  BrandScan/BrandMention tables missing - skipped\n');
+    } else throw e;
+  }
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✅ Phase 6 complete!');

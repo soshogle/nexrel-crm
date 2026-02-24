@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getCrmDb } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { reviewFeedbackService } from '@/lib/review-feedback-service'
 import { processServiceCompletedTriggers } from '@/lib/service-completed-triggers'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
@@ -22,10 +23,13 @@ export async function GET(
       return apiErrors.unauthorized()
     }
 
-    const appointment = await prisma.bookingAppointment.findUnique({
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return apiErrors.unauthorized()
+    const db = getCrmDb(ctx)
+    const appointment = await db.bookingAppointment.findUnique({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         lead: true,
@@ -67,6 +71,10 @@ export async function PATCH(
       return apiErrors.unauthorized()
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return apiErrors.unauthorized()
+    const db = getCrmDb(ctx)
+
     const body = await request.json()
     const {
       status,
@@ -77,10 +85,10 @@ export async function PATCH(
     } = body
 
     // Verify ownership
-    const existingAppointment = await prisma.bookingAppointment.findUnique({
+    const existingAppointment = await db.bookingAppointment.findUnique({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     })
 
@@ -123,7 +131,7 @@ export async function PATCH(
       })
     }
 
-    const appointment = await prisma.bookingAppointment.update({
+    const appointment = await db.bookingAppointment.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -191,11 +199,15 @@ export async function DELETE(
       return apiErrors.unauthorized()
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return apiErrors.unauthorized()
+    const db = getCrmDb(ctx)
+
     // Verify ownership
-    const existingAppointment = await prisma.bookingAppointment.findUnique({
+    const existingAppointment = await db.bookingAppointment.findUnique({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     })
 
@@ -204,7 +216,7 @@ export async function DELETE(
     }
 
     // Soft delete by updating status to CANCELLED
-    const appointment = await prisma.bookingAppointment.update({
+    const appointment = await db.bookingAppointment.update({
       where: { id: params.id },
       data: { 
         status: 'CANCELLED',

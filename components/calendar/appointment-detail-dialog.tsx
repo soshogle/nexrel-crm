@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -104,6 +104,9 @@ export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }
     <>
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl bg-gray-900 border-purple-500/20">
+          <DialogDescription className="sr-only">
+            View and manage {config.bookingNoun.toLowerCase()} details, status, and actions.
+          </DialogDescription>
           <DialogHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3">

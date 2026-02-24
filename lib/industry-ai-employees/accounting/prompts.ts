@@ -1,9 +1,11 @@
 /**
  * Accounting Industry AI Employee Prompts for ElevenLabs Agents
+ * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
 import type { IndustryEmployeePrompt } from '../types';
-import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
 
 const ACCOUNTING_DISCLAIMER = `
 ## Professional Conduct
@@ -21,6 +23,7 @@ export const ACCOUNTING_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt>
   APPOINTMENT_SCHEDULER: {
     name: 'Appointment Coordinator',
     description: 'Schedules client meetings and consultations',
+    voiceId: getVoiceIdForEmployeeName('Sarah'),
     firstMessage: "Hi, this is Sarah from the accounting firm. I'm calling to help schedule your consultation or meeting. Do you have a moment?",
     systemPrompt: `# Accounting Appointment Coordinator
 
@@ -32,7 +35,7 @@ You are Sarah, an appointment coordinator for an accounting firm. Schedule tax c
 3. Confirm upcoming appointments
 4. Send reminders
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${ACCOUNTING_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,
@@ -40,6 +43,7 @@ ${DATETIME_PROMPT}
   TAX_INQUIRY: {
     name: 'Tax Inquiry Coordinator',
     description: 'Handles tax season inquiries and document requests',
+    voiceId: getVoiceIdForEmployeeName('Michael'),
     firstMessage: "Hello, this is Michael from the accounting firm. I'm calling about your tax preparation. Do you have a moment?",
     systemPrompt: `# Accounting Tax Inquiry Coordinator
 
@@ -51,7 +55,7 @@ You are Michael, a tax inquiry coordinator for an accounting firm. Respond to ta
 3. Schedule tax prep appointments
 4. Remind about deadlines
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${ACCOUNTING_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,
@@ -59,6 +63,7 @@ ${DATETIME_PROMPT}
   CLIENT_FOLLOWUP: {
     name: 'Client Follow-up Coordinator',
     description: 'Follow-up on deliverables and client retention',
+    voiceId: getVoiceIdForEmployeeName('Jennifer'),
     firstMessage: "Hi, this is Jennifer from the accounting firm. I'm following up on your recent engagement. Do you have a moment?",
     systemPrompt: `# Accounting Client Follow-up Coordinator
 
@@ -70,7 +75,7 @@ You are Jennifer, a client follow-up coordinator for an accounting firm. Follow 
 3. Schedule recurring engagements (monthly, quarterly)
 4. Support client retention
 
-${AGENT_LANGUAGE_PROMPT}
+${LANGUAGE_PROMPT_SECTION}
 ${ACCOUNTING_DISCLAIMER}
 ${DATETIME_PROMPT}
 `,

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Channel type is required');
     }
     
-    const provider = getMessagingProvider(session.user.id);
+    const provider = getMessagingProvider(session.user.id, (session.user as { industry?: string }).industry);
     const result = await provider.connectChannel({
       channelType,
       credentials,

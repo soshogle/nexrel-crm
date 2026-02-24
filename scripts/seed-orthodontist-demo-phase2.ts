@@ -1,11 +1,11 @@
 /**
  * Orthodontist Demo - Phase 2: Core CRM - Leads, Notes, Messages
  * Creates 50 leads with Quebec addresses, notes, and messages
+ * Uses orthodontist DB when DATABASE_URL_ORTHODONTIST is set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, findOrthodontistUser } from './seed-orthodontist-db-helper';
 
-const prisma = new PrismaClient();
 const USER_EMAIL = 'orthodontist@nexrel.com';
 
 // Quebec cities with sample addresses and postal codes
@@ -123,12 +123,11 @@ async function main() {
   console.log('🌱 Orthodontist Demo - Phase 2: Leads, Notes, Messages\n');
   console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  const user = await prisma.user.findUnique({ where: { email: USER_EMAIL } });
+  const user = await findOrthodontistUser().catch(() => null);
   if (!user) {
-    console.error(`❌ User not found: ${USER_EMAIL}`);
+    console.error(`❌ User not found: ${USER_EMAIL}. Run Phase 1 first.`);
     process.exit(1);
   }
-
   console.log(`✅ Found user: ${user.name}\n`);
 
   // Clean Phase 2 data - null out leadId on related records first, then delete
@@ -197,7 +196,16 @@ async function main() {
         nextAction: status !== 'CONVERTED' && status !== 'LOST' ? randomElement(nextActions) : null,
         nextActionDate: status !== 'CONVERTED' ? randomDate(now, new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)) : null,
         dentalHistory: dentalHist,
-        insuranceInfo: insurance.policyNumber ? { provider: insurance.provider, policyNumber: insurance.policyNumber + randomInt(100000, 999999), coverage: insurance.coverage } : null,
+        insuranceInfo: (() => {
+          const base: Record<string, unknown> = insurance.policyNumber ? { provider: insurance.provider, policyNumber: insurance.policyNumber + randomInt(100000, 999999), coverage: insurance.coverage } : {};
+          if (insurance.provider === 'RAMQ') {
+            base.ramqClaims = [
+              { id: `claim-${i}-1`, patientName: LEAD_NAMES[i], patientRAMQNumber: `QC${randomInt(1000000, 9999999)}`, procedureCode: 'D8080', procedureName: 'Ortho treatment', serviceDate: new Date().toISOString(), amount: randomInt(500, 2000), status: randomElement(['DRAFT', 'SUBMITTED', 'DRAFT'] as const), submissionDate: null, responseDate: null, rejectionReason: null, notes: null, createdAt: new Date().toISOString() },
+            ];
+            base.ramqNumber = `QC${randomInt(1000000, 9999999)}`;
+          }
+          return Object.keys(base).length ? base : null;
+        })(),
         familyGroupId: i < 5 ? 'family-1' : i < 10 ? 'family-2' : null,
         createdAt: randomDate(oneYearAgo, now),
         updatedAt: now,

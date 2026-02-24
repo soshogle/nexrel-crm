@@ -94,10 +94,24 @@ export function HITLApprovalPanel() {
     : [];
   const loading = isLoading;
 
-  const handleApprove = async (notificationId: string) => {
-    setProcessingId(notificationId);
+  const getApprovalEndpoint = (n: HITLNotification) => {
+    const executionId = n.taskExecution?.id ?? (n as any).executionId ?? n.id;
+    const base = (n as any).source === 'generic' ? '/api/workflows/hitl' : '/api/real-estate/workflows/hitl';
+    return `${base}/${executionId}/approve`;
+  };
+
+  const getRejectEndpoint = (n: HITLNotification) => {
+    const executionId = n.taskExecution?.id ?? (n as any).executionId ?? n.id;
+    const base = (n as any).source === 'generic' ? '/api/workflows/hitl' : '/api/real-estate/workflows/hitl';
+    return `${base}/${executionId}/reject`;
+  };
+
+  const handleApprove = async (notification: HITLNotification) => {
+    const executionId = notification.taskExecution?.id ?? (notification as any).executionId ?? notification.id;
+    setProcessingId(executionId);
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${notificationId}/approve`, {
+      const url = getApprovalEndpoint(notification);
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: notes || 'Approved' }),
@@ -119,15 +133,17 @@ export function HITLApprovalPanel() {
     }
   };
 
-  const handleReject = async (notificationId: string) => {
+  const handleReject = async (notification: HITLNotification) => {
     if (!rejectReason.trim()) {
       toast.error('Please provide a reason for rejection');
       return;
     }
 
-    setProcessingId(notificationId);
+    const executionId = notification.taskExecution?.id ?? (notification as any).executionId ?? notification.id;
+    setProcessingId(executionId);
     try {
-      const res = await fetch(`/api/real-estate/workflows/hitl/${notificationId}/reject`, {
+      const url = getRejectEndpoint(notification);
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: rejectReason }),
@@ -264,9 +280,9 @@ export function HITLApprovalPanel() {
                       className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleApprove(notification.id);
+                        handleApprove(notification);
                       }}
-                      disabled={processingId === notification.id}
+                      disabled={processingId === (notification.taskExecution?.id ?? notification.id)}
                     >
                       {processingId === notification.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -373,8 +389,8 @@ export function HITLApprovalPanel() {
               <div className="flex gap-3">
                 <Button
                   className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-md"
-                  onClick={() => handleApprove(selectedNotification.id)}
-                  disabled={processingId === selectedNotification.id}
+                  onClick={() => handleApprove(selectedNotification)}
+                  disabled={processingId === (selectedNotification.taskExecution?.id ?? selectedNotification.id)}
                 >
                   {processingId === selectedNotification.id ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -436,8 +452,8 @@ export function HITLApprovalPanel() {
             <Button
               variant="destructive"
               className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600"
-              onClick={() => selectedNotification && handleReject(selectedNotification.id)}
-              disabled={!rejectReason.trim() || processingId === selectedNotification?.id}
+              onClick={() => selectedNotification && handleReject(selectedNotification)}
+              disabled={!rejectReason.trim() || processingId === (selectedNotification?.taskExecution?.id ?? selectedNotification?.id)}
             >
               {processingId === selectedNotification?.id ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

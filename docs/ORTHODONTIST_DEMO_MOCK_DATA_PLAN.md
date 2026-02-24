@@ -2,6 +2,8 @@
 
 **Target:** orthodontist@nexrel.com | **Region:** Quebec, Canada | **Currency:** CAD
 
+**Data Fixes (v2):** Phase 2 adds `ramqClaims` to Lead.insuranceInfo for RAMQ patients (dental dashboard stats). Phase 5: odontogram toothData with treatments/conditions, periodontal measurements keyed by tooth 1-32, 5 today's appointments, RAMQ claims backfill for leads.
+
 ---
 
 ## Phase 1: Foundation & User Setup ✅
