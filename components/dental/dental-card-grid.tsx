@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
-import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
+import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
 import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
 import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
@@ -24,6 +24,7 @@ interface DentalCardGridProps {
   odontogramData: any;
   periodontalData: any;
   selectedXray: any;
+  selectedPatient?: { contactPerson?: string; businessName?: string; dentalHistory?: any };
   displayProcedures: any[];
   displayTreatmentPlans: any[];
   displayFormResponses: any[];
@@ -38,6 +39,7 @@ export function DentalCardGrid({
   odontogramData,
   periodontalData,
   selectedXray,
+  selectedPatient,
   displayProcedures,
   displayTreatmentPlans,
   displayFormResponses,
@@ -150,7 +152,26 @@ export function DentalCardGrid({
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <RedesignedPeriodontalChart measurements={periodontalData} />
+              <EnhancedPeriodontalChart
+                measurements={periodontalData}
+                patient={{
+                  name: selectedPatient?.contactPerson || selectedPatient?.businessName,
+                  provider: 'Provider',
+                  feeGuide: 'Standard UCR',
+                  allergies: (() => {
+                    const dh = selectedPatient?.dentalHistory as any;
+                    if (Array.isArray(dh?.allergies)) return dh.allergies;
+                    if (dh?.allergies) return [dh.allergies];
+                    return undefined;
+                  })(),
+                  medications: (() => {
+                    const dh = selectedPatient?.dentalHistory as any;
+                    if (Array.isArray(dh?.medications)) return dh.medications;
+                    if (dh?.medications) return [dh.medications];
+                    return undefined;
+                  })(),
+                }}
+              />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}

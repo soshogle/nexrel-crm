@@ -425,6 +425,7 @@ export default function DentalTestPage() {
         odontogramData={odontogramData}
         periodontalData={periodontalData}
         selectedXray={selectedXray}
+        selectedPatient={selectedPatient}
         displayProcedures={displayProcedures}
         displayTreatmentPlans={displayTreatmentPlans}
         displayFormResponses={displayFormResponses}
