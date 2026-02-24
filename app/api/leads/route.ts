@@ -43,6 +43,13 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    // Return mock leads when database is empty for demo purposes
+    if (leads.length === 0 && total === 0) {
+      const { MOCK_LEADS } = await import('@/lib/mock-data');
+      const mockLeads = MOCK_LEADS.slice(0, pagination.take);
+      return paginatedResponse(mockLeads, MOCK_LEADS.length, pagination, 'leads')
+    }
+
     return paginatedResponse(leads, total, pagination, 'leads')
   } catch (error) {
     console.error('Get leads error:', error)

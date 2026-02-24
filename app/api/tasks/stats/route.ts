@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
     // Calculate completion rate
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+    // Return mock task stats when database is empty for demo purposes
+    if (total === 0) {
+      const { MOCK_TASK_STATS } = await import('@/lib/mock-data');
+      return NextResponse.json(MOCK_TASK_STATS);
+    }
+
     return NextResponse.json({
       summary: {
         total,

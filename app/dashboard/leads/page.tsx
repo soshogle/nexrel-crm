@@ -76,6 +76,16 @@ export default async function LeadsPage() {
       }
     }
 
+    // Use mock leads when database is empty for demo purposes
+    if (Array.isArray(leadsData) && leadsData.length === 0) {
+      const { MOCK_LEADS } = await import('@/lib/mock-data');
+      leadsData = MOCK_LEADS.map((l) => ({
+        ...l,
+        notes: [],
+        messages: [],
+      })) as typeof leadsData;
+    }
+
     let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
     let messagesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
 

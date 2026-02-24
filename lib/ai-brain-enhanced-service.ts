@@ -452,6 +452,13 @@ export class AIBrainEnhancedService {
     const leads = getResult(results[0], 'leads');
     const deals = getResult(results[1], 'deals');
     const tasks = getResult(results[2], 'tasks');
+
+    // Return mock comprehensive data when database is empty for demo purposes
+    if (leads.length === 0 && deals.length === 0 && tasks.length === 0) {
+      const { MOCK_AI_BRAIN_COMPREHENSIVE } = await import('@/lib/mock-data');
+      this.setCache(cacheKey, MOCK_AI_BRAIN_COMPREHENSIVE as ComprehensiveBrainData);
+      return MOCK_AI_BRAIN_COMPREHENSIVE as ComprehensiveBrainData;
+    }
     const appointments = getResult(results[3], 'appointments');
     const callLogs = getResult(results[4], 'callLogs');
     const payments = getResult<{ amount: number }>(results[5], 'payments');

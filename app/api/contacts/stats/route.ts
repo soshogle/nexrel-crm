@@ -56,6 +56,12 @@ export async function GET(request: Request) {
     const engagementRate = total > 0 ? Math.round((totalWithActivity / total) * 100) : 0;
 
     console.log('Stats results - Total:', total, 'New this month:', newThisMonth);
+
+    // Return mock stats when database is empty for demo purposes
+    if (total === 0 && newThisMonth === 0) {
+      const { MOCK_CONTACT_STATS } = await import('@/lib/mock-data');
+      return NextResponse.json(MOCK_CONTACT_STATS);
+    }
     
     return NextResponse.json({
       total,

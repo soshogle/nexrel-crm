@@ -232,6 +232,17 @@ export async function GET(request: NextRequest) {
     console.log('Returning', parsedContacts.length, 'contacts after filtering');
 
     const total = await leadService.count(ctx, where);
+
+    // Return mock contacts when database is empty for demo purposes
+    if (parsedContacts.length === 0 && total === 0) {
+      const { MOCK_CONTACTS } = await import('@/lib/mock-data');
+      const mockContacts = MOCK_CONTACTS.map((c) => ({
+        ...c,
+        tags: Array.isArray(c.tags) ? c.tags : [],
+      }));
+      return paginatedResponse(mockContacts, mockContacts.length, pagination, 'contacts');
+    }
+
     return paginatedResponse(parsedContacts, total, pagination, 'contacts');
   } catch (error: any) {
     console.error('Error fetching contacts:', error);

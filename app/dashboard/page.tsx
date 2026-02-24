@@ -40,15 +40,35 @@ export default async function DashboardPage() {
       })
     ])
 
+    // Use mock data when database is empty for demo purposes
+    let leadsToUse = Array.isArray(leads) ? leads : []
+    let recentLeadsToUse = Array.isArray(recentLeadsRaw) ? recentLeadsRaw : []
+    if (leadsToUse.length === 0) {
+      const { MOCK_LEADS } = await import('@/lib/mock-data')
+      leadsToUse = MOCK_LEADS.map((l) => ({
+        id: l.id,
+        status: l.status,
+        createdAt: new Date(l.createdAt),
+      })) as any
+      recentLeadsToUse = MOCK_LEADS.slice(0, 5).map((l) => ({
+        id: l.id,
+        businessName: l.businessName,
+        status: l.status,
+        createdAt: new Date(l.createdAt),
+        email: l.email,
+        phone: l.phone,
+      })) as any
+    }
+
     // Serialize dates for client component
-    const recentLeads = (Array.isArray(recentLeadsRaw) ? recentLeadsRaw : []).map(lead => ({
+    const recentLeads = recentLeadsToUse.map((lead: any) => ({
       ...lead,
-      createdAt: lead.createdAt.toISOString(),
+      createdAt: lead.createdAt instanceof Date ? lead.createdAt.toISOString() : lead.createdAt,
     }))
 
     // Calculate stats
-    const totalLeads = leads.length
-    const statusCounts = (Array.isArray(leads) ? leads : []).reduce((acc, lead) => {
+    const totalLeads = leadsToUse.length
+    const statusCounts = leadsToUse.reduce((acc: Record<string, number>, lead: any) => {
       acc[lead.status] = (acc[lead.status] || 0) + 1
       return acc
     }, {} as Record<string, number>)

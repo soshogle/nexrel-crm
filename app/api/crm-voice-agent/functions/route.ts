@@ -280,6 +280,35 @@ async function getStatistics(userId: string, params: any = {}, industry: Industr
       campaignService.count(ctx, whereClause),
     ]);
 
+    // Return mock statistics when database is empty for demo purposes
+    if (leads === 0 && deals === 0 && campaigns === 0) {
+      const { MOCK_CRM_STATISTICS } = await import('@/lib/mock-data');
+      return {
+        success: true,
+        navigateTo: '/dashboard/business-ai?mode=voice',
+        statistics: {
+          totalLeads: MOCK_CRM_STATISTICS.leads,
+          totalDeals: MOCK_CRM_STATISTICS.deals,
+          totalContacts: MOCK_CRM_STATISTICS.leads,
+          totalCampaigns: MOCK_CRM_STATISTICS.campaigns,
+          openDeals: MOCK_CRM_STATISTICS.openDeals,
+          totalRevenue: MOCK_CRM_STATISTICS.totalRevenue,
+          monthlyRevenue: MOCK_CRM_STATISTICS.monthlyRevenue,
+          monthlyDeals: {},
+          comparisonData: null,
+          recentLeads: MOCK_CRM_STATISTICS.recentLeads.map((l: any) => ({
+            name: l.contactPerson || l.businessName || 'Unknown',
+            status: l.status,
+            createdAt: l.createdAt,
+          })),
+          charts: MOCK_CRM_STATISTICS.chartData,
+          dynamicCharts: [],
+          scenarioResult: null,
+        },
+        message: `You have ${MOCK_CRM_STATISTICS.leads} leads, ${MOCK_CRM_STATISTICS.deals} deals, ${MOCK_CRM_STATISTICS.openDeals} open deals worth $${MOCK_CRM_STATISTICS.totalRevenue.toLocaleString()}, and ${MOCK_CRM_STATISTICS.campaigns} campaigns.`,
+      };
+    }
+
     // Get all deals with dates for time-series analysis
     const allDeals = await db.deal.findMany({
       where: whereClause,

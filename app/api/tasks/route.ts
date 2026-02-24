@@ -120,6 +120,13 @@ export async function GET(request: NextRequest) {
 
     const total = await getCrmDb(ctx).task.count({ where } as any);
 
+    // Return mock tasks when database is empty for demo purposes
+    if (tasks.length === 0 && total === 0) {
+      const { MOCK_TASKS } = await import('@/lib/mock-data');
+      const mockTasks = MOCK_TASKS.slice(pagination.skip, pagination.skip + pagination.take);
+      return paginatedResponse(mockTasks, MOCK_TASKS.length, pagination, 'tasks');
+    }
+
     return paginatedResponse(tasks, total, pagination, 'tasks');
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
