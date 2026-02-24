@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { CalendarDays, Sparkles } from 'lucide-react'
+import { DateTimePicker } from '@/components/ui/datetime-picker'
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete'
 import { getIndustryBookingConfig } from '@/lib/industry-booking-config'
 import type { BookingField } from '@/lib/industry-booking-config'
 
@@ -245,24 +247,28 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
             {/* Start / End Time */}
             <div>
               <Label className="text-purple-200 text-sm">Start Time *</Label>
-              <Input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.startTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                onChange={(v) => setFormData(prev => ({ ...prev, startTime: v }))}
                 min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                required
-                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20"
+                placeholder="Select start date & time"
+                className="mt-1.5"
+                triggerClassName="bg-gray-800/50 border-gray-700/50 text-white hover:bg-gray-700/50 focus:ring-purple-500/20"
+                timeInputClassName="bg-gray-800/50 border-gray-700/50 text-white"
+                popoverClassName="bg-gray-900 border-gray-700"
               />
             </div>
             <div>
               <Label className="text-purple-200 text-sm">End Time *</Label>
-              <Input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.endTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                onChange={(v) => setFormData(prev => ({ ...prev, endTime: v }))}
                 min={formData.startTime || format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                required
-                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20"
+                placeholder="Select end date & time"
+                className="mt-1.5"
+                triggerClassName="bg-gray-800/50 border-gray-700/50 text-white hover:bg-gray-700/50 focus:ring-purple-500/20"
+                timeInputClassName="bg-gray-800/50 border-gray-700/50 text-white"
+                popoverClassName="bg-gray-900 border-gray-700"
               />
             </div>
 
@@ -283,11 +289,12 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
 
             {/* Location */}
             <div>
-              <Label className="text-purple-200 text-sm">Location</Label>
-              <Input
+              <Label className="text-purple-200 text-sm">Location / Address</Label>
+              <PlaceAutocomplete
                 value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Meeting location or link"
+                onChange={(val) => setFormData(prev => ({ ...prev, location: val }))}
+                placeholder="Search address or paste meeting link"
+                types="geocode"
                 className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>

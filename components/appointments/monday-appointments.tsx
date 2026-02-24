@@ -44,6 +44,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete';
 
 interface Appointment {
   id: string;
@@ -414,7 +416,20 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
       </div>
 
       {/* Create Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (open && !newAppointment.startTime) {
+          const now = new Date();
+          const start = new Date(now);
+          start.setHours(9, 0, 0, 0);
+          const end = new Date(start.getTime() + 60 * 60 * 1000);
+          setNewAppointment(prev => ({
+            ...prev,
+            startTime: start.toISOString().slice(0, 16),
+            endTime: end.toISOString().slice(0, 16),
+          }));
+        }
+      }}>
         <DialogContent className="bg-black/95 border-purple-500/20 text-white">
           <DialogHeader>
             <DialogTitle className="gradient-text">Create Appointment</DialogTitle>
@@ -432,20 +447,26 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-purple-300">Start Time *</Label>
-                <Input
-                  type="datetime-local"
+                <DateTimePicker
                   value={newAppointment.startTime}
-                  onChange={(e) => setNewAppointment(prev => ({ ...prev, startTime: e.target.value }))}
-                  className="bg-black/40 border-purple-500/20 text-white focus:border-purple-500/40"
+                  onChange={(v) => setNewAppointment(prev => ({ ...prev, startTime: v }))}
+                  min={new Date().toISOString().slice(0, 16)}
+                  placeholder="Select start date & time"
+                  triggerClassName="bg-black/40 border-purple-500/20 text-white hover:bg-purple-500/10 hover:border-purple-500/40"
+                  timeInputClassName="bg-black/40 border-purple-500/20 text-white"
+                  popoverClassName="bg-gray-900 border-purple-500/20"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-purple-300">End Time</Label>
-                <Input
-                  type="datetime-local"
+                <DateTimePicker
                   value={newAppointment.endTime}
-                  onChange={(e) => setNewAppointment(prev => ({ ...prev, endTime: e.target.value }))}
-                  className="bg-black/40 border-purple-500/20 text-white focus:border-purple-500/40"
+                  onChange={(v) => setNewAppointment(prev => ({ ...prev, endTime: v }))}
+                  min={newAppointment.startTime || new Date().toISOString().slice(0, 16)}
+                  placeholder="Select end date & time"
+                  triggerClassName="bg-black/40 border-purple-500/20 text-white hover:bg-purple-500/10 hover:border-purple-500/40"
+                  timeInputClassName="bg-black/40 border-purple-500/20 text-white"
+                  popoverClassName="bg-gray-900 border-purple-500/20"
                 />
               </div>
             </div>
@@ -462,11 +483,12 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
               </select>
             </div>
             <div className="space-y-2">
-              <Label className="text-purple-300">Location / Meeting URL</Label>
-              <Input
+              <Label className="text-purple-300">Location / Address</Label>
+              <PlaceAutocomplete
                 value={newAppointment.location}
-                onChange={(e) => setNewAppointment(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Zoom link or address"
+                onChange={(val) => setNewAppointment(prev => ({ ...prev, location: val }))}
+                placeholder="Search address or paste meeting link"
+                types="geocode"
                 className="bg-black/40 border-purple-500/20 text-white placeholder:text-purple-300/40 focus:border-purple-500/40"
               />
             </div>
