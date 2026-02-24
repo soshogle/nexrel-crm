@@ -36,28 +36,28 @@ export function RedesignedProceduresLog({ procedures = [] }: RedesignedProcedure
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 min-w-0 overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">
-        <div className="col-span-2">Time</div>
-        <div className="col-span-4">Patient</div>
-        <div className="col-span-4">Procedure</div>
-        <div className="col-span-2">Status</div>
+      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,1.2fr)] gap-2 text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">
+        <div className="min-w-0">Time</div>
+        <div className="min-w-0">Patient</div>
+        <div className="min-w-0">Procedure</div>
+        <div className="min-w-0">Status</div>
       </div>
 
-      {/* Table Rows */}
+      {/* Table Rows - min-w-0 prevents grid blowout, truncate prevents overlap */}
       {displayProcedures.slice(0, 4).map((proc, idx) => (
-        <div key={idx} className="grid grid-cols-12 gap-2 items-center text-xs border-b border-gray-100 pb-2">
-          <div className="col-span-2 text-gray-600 font-medium">{proc.time}</div>
-          <div className="col-span-4 flex items-center gap-2">
+        <div key={idx} className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,1.2fr)] gap-2 items-center text-xs border-b border-gray-100 pb-2 min-w-0">
+          <div className="text-gray-600 font-medium min-w-0 truncate">{proc.time}</div>
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
               <User className="w-3 h-3 text-purple-600" />
             </div>
-            <span className="font-medium text-gray-900 truncate">{proc.patient}</span>
+            <span className="font-medium text-gray-900 truncate min-w-0">{proc.patient}</span>
           </div>
-          <div className="col-span-4 text-gray-600 truncate">{proc.procedure}</div>
-          <div className="col-span-2">
-            <Badge className={`text-xs px-2 py-0.5 ${getStatusColor(proc.status)} border-0`}>
+          <div className="text-gray-600 truncate min-w-0" title={proc.procedure}>{proc.procedure}</div>
+          <div className="min-w-0 flex justify-end overflow-hidden">
+            <Badge className={`text-xs px-2 py-0.5 min-w-0 truncate ${getStatusColor(proc.status)} border-0`} title={proc.status}>
               {proc.status}
             </Badge>
           </div>

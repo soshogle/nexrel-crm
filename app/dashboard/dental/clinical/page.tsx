@@ -211,12 +211,14 @@ function ClinicalDashboardPageContent() {
     }
   }, [selectedLeadId, activeClinic?.id]);
 
-  // Fetch procedures
+  // Fetch procedures (all for clinic when no patient selected, or per-patient when selected)
   const fetchProcedures = useCallback(async () => {
-    if (!selectedLeadId) return;
     try {
-      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}${clinicIdParam}`);
+      const clinicIdParam = activeClinic?.id ? `clinicId=${activeClinic.id}` : '';
+      const leadIdParam = selectedLeadId ? `leadId=${selectedLeadId}` : '';
+      const params = [leadIdParam, clinicIdParam].filter(Boolean).join('&');
+      if (!params) return;
+      const response = await fetch(`/api/dental/procedures?${params}`);
       if (response.ok) {
         const data = await response.json();
         setProcedures(Array.isArray(data?.procedures) ? data.procedures : []);
@@ -287,47 +289,54 @@ function ClinicalDashboardPageContent() {
       fetchOdontogram();
       fetchPeriodontalChart();
       fetchTreatmentPlans();
-      fetchProcedures();
       fetchXrays();
     }
-  }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchProcedures, fetchXrays]);
+  }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchXrays]);
+
+  useEffect(() => {
+    fetchProcedures();
+  }, [fetchProcedures]);
 
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  // Display procedures with search and filter
+  // Display procedures with search and filter (use performedDate or scheduledDate from schema)
   const displayProcedures = procedures
     .filter((proc: any) => {
-      // Search filter
+      const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
+      if (!procDate) return false;
+
       const patientName = leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown';
       const procedureCode = proc.procedureCode || 'Procedure';
       const searchLower = procedureSearch.toLowerCase();
       if (procedureSearch && !patientName.toLowerCase().includes(searchLower) && !procedureCode.toLowerCase().includes(searchLower)) {
         return false;
       }
-      
-      // Date filter
+
       if (procedureFilter === 'today') {
-        const procDate = new Date(proc.datePerformed);
+        const d = new Date(procDate);
         const today = new Date();
-        return procDate.toDateString() === today.toDateString();
+        return d.toDateString() === today.toDateString();
       } else if (procedureFilter === 'week') {
-        const procDate = new Date(proc.datePerformed);
+        const d = new Date(procDate);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        return procDate >= weekAgo;
+        return d >= weekAgo;
       }
       return true;
     })
     .slice(0, 5)
-    .map((proc: any) => ({
-      time: new Date(proc.datePerformed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
-      procedure: proc.procedureCode || 'Procedure',
-      status: proc.status || 'Completed',
-      color: 'bg-green-100 text-green-700',
-    }));
+    .map((proc: any) => {
+      const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
+      return {
+        time: procDate ? new Date(procDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+        patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
+        procedure: proc.procedureCode || proc.procedureName || 'Procedure',
+        status: proc.status || 'Completed',
+        color: 'bg-green-100 text-green-700',
+      };
+    });
 
   // Display treatment plans
   const displayTreatmentPlans = treatmentPlans.slice(0, 4).map((plan: any) => ({

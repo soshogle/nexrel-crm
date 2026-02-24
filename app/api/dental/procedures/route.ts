@@ -25,26 +25,22 @@ export async function GET(request: NextRequest) {
     const treatmentPlanId = searchParams.get('treatmentPlanId');
     const clinicId = searchParams.get('clinicId');
 
-    if (!leadId) {
-      return apiErrors.badRequest('Lead ID required');
-    }
+    const where: any = { userId: session.user.id };
+    if (leadId) where.leadId = leadId;
+    if (treatmentPlanId) where.treatmentPlanId = treatmentPlanId;
+    if (clinicId) where.clinicId = clinicId;
 
-    const where: any = {
-      leadId,
-      userId: session.user.id,
-    };
-    if (treatmentPlanId) {
-      where.treatmentPlanId = treatmentPlanId;
-    }
-    if (clinicId) {
-      where.clinicId = clinicId;
+    // Require either leadId or clinicId for scoping
+    if (!leadId && !clinicId) {
+      return apiErrors.badRequest('Lead ID or Clinic ID required');
     }
 
     const procedures = await (prisma as any).dentalProcedure.findMany({
       where,
-      orderBy: {
-        scheduledDate: 'asc',
-      },
+      orderBy: [
+        { performedDate: 'desc' },
+        { scheduledDate: 'asc' },
+      ],
     });
 
     return NextResponse.json({ success: true, procedures });

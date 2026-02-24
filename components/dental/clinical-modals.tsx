@@ -182,12 +182,15 @@ export function ClinicalModals({
 
       <CardModal isOpen={openModal === 'procedures'} onClose={onCloseModal} title="Procedures Activity Log">
         <RedesignedProceduresLog
-          procedures={procedures.map((proc: any) => ({
-            time: new Date(proc.datePerformed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
-            procedure: proc.procedureCode || 'Procedure',
-            status: proc.status || 'Completed',
-          }))}
+          procedures={procedures.map((proc: any) => {
+            const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
+            return {
+              time: procDate ? new Date(procDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+              patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
+              procedure: proc.procedureCode || proc.procedureName || 'Procedure',
+              status: proc.status || 'Completed',
+            };
+          })}
         />
       </CardModal>
 

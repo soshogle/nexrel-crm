@@ -75,6 +75,7 @@ export default function AdministrativeDashboardPage() {
     monthlyRevenue: 0,
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
+  const [labOrders, setLabOrders] = useState<any[]>([]);
   const [formResponseSearch, setFormResponseSearch] = useState('');
   const [formResponseFilter, setFormResponseFilter] = useState('date');
   const [productionChartData, setProductionChartData] = useState({
@@ -139,11 +140,26 @@ export default function AdministrativeDashboardPage() {
     }
   }, [session?.user?.id]);
 
-  // Fetch form responses
-  const fetchFormResponses = useCallback(async () => {
-    if (!selectedLeadId) return;
+  // Fetch lab orders
+  const fetchLabOrders = useCallback(async () => {
     try {
-      const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
+      const params = selectedLeadId ? `leadId=${selectedLeadId}` : '';
+      const response = await fetch(`/api/dental/lab-orders${params ? `?${params}` : ''}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLabOrders(Array.isArray(data?.orders) ? data.orders : []);
+      }
+    } catch (error) {
+      console.error('Error fetching lab orders:', error);
+      setLabOrders([]);
+    }
+  }, [selectedLeadId]);
+
+  // Fetch form responses (all when no patient selected, or filtered by leadId)
+  const fetchFormResponses = useCallback(async () => {
+    try {
+      const leadParam = selectedLeadId ? `&leadId=${selectedLeadId}` : '';
+      const response = await fetch(`/api/dental/forms?type=responses${leadParam}`);
       if (response.ok) {
         const data = await response.json();
         setFormResponses(Array.isArray(data?.responses) ? data.responses : []);
@@ -279,10 +295,12 @@ export default function AdministrativeDashboardPage() {
   }, [fetchLeads, fetchAppointments, fetchClaims, fetchProductionMetrics]);
 
   useEffect(() => {
-    if (selectedLeadId) {
-      fetchFormResponses();
-    }
-  }, [selectedLeadId, fetchFormResponses]);
+    fetchFormResponses();
+  }, [fetchFormResponses]);
+
+  useEffect(() => {
+    fetchLabOrders();
+  }, [fetchLabOrders]);
 
   useEffect(() => {
     fetchStats();
@@ -307,12 +325,12 @@ export default function AdministrativeDashboardPage() {
     status: claim.status === 'APPROVED' ? 'Approved' : 'Pending',
   }));
 
-  // Display form responses with search
+  // Display form responses with search (form name from response.form.formName)
   const displayFormResponses = formResponses
     .filter((response: any) => {
       if (!formResponseSearch) return true;
       const patientName = leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown';
-      const formName = response.formName || 'Form';
+      const formName = response.form?.formName || response.formName || 'Form';
       const searchLower = formResponseSearch.toLowerCase();
       return patientName.toLowerCase().includes(searchLower) || formName.toLowerCase().includes(searchLower);
     })
@@ -320,7 +338,7 @@ export default function AdministrativeDashboardPage() {
     .map((response: any) => ({
       date: new Date(response.submittedAt).toLocaleDateString(),
       patient: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
-      form: response.formName || 'Form',
+      form: response.form?.formName || response.formName || 'Form',
     }));
 
   if (loading) {
@@ -525,11 +543,15 @@ export default function AdministrativeDashboardPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between p-2 border border-gray-200 rounded">
                 <span className="text-xs text-gray-700">Pending Orders</span>
-                <Badge variant="outline" className="text-xs">3</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {labOrders.filter((o: any) => o.status === 'PENDING' || o.status === 'SUBMITTED').length}
+                </Badge>
               </div>
               <div className="flex items-center justify-between p-2 border border-gray-200 rounded">
                 <span className="text-xs text-gray-700">In Progress</span>
-                <Badge variant="outline" className="text-xs">5</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {labOrders.filter((o: any) => o.status === 'IN_PROGRESS' || o.status === 'SENT').length}
+                </Badge>
               </div>
               <Button 
                 size="sm" 
