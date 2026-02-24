@@ -185,9 +185,9 @@ class DocpenAgentProvisioning {
       const agentConfig = convConfig.agent || {};
       const promptConfig = agentConfig.prompt || {};
 
-      // Carbon copy: use exact prompt from existing agent, but fix llm for English agent requirement
+      // Carbon copy: use exact prompt from existing agent, but strip invalid llm (English agents must use turbo/flash v2)
       const { llm: _invalidLlm, ...promptWithoutLlm } = promptConfig;
-      const fixedPrompt = { ...promptWithoutLlm, llm: 'gpt-4-turbo' };
+      const fixedPrompt = promptWithoutLlm; // Omit llm; ElevenLabs default satisfies requirement
 
       const medicalFunctions = this.buildMedicalFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
@@ -308,14 +308,14 @@ class DocpenAgentProvisioning {
         agent: {
           prompt: {
             prompt: systemPrompt,
-            llm: 'gpt-4-turbo', // English agents must use turbo or flash v2; gemini-2.5-flash fails
+            // No llm - match CRM/AI Employee agents; ElevenLabs default satisfies "turbo or flash v2"
           },
           first_message: `Hello${config.practitionerName ? ` ${config.practitionerName}` : ''}${userIndustry ? ` from the ${userIndustry.toLowerCase().replace(/_/g, ' ')} industry` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
           language: 'en', // API only accepts single codes. Multilingual via prompt.
         },
         tts: {
           voice_id: voiceId,
-          model_id: 'eleven_turbo_v2_5', // Required for multilingual
+          model_id: 'eleven_turbo_v2_5', // Matches CRM; omit llm for English agent requirement
           stability: 0.6, // Slightly higher for professional tone
           similarity_boost: 0.8,
           optimize_streaming_latency: 3,
@@ -515,7 +515,7 @@ class DocpenAgentProvisioning {
       const medicalFunctions = this.buildMedicalFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
       const agentPrompt = currentAgent.conversation_config?.agent?.prompt || {};
-      const hasInvalidLlm = agentPrompt.llm === 'gemini-2.5-flash' || agentPrompt.llm === 'gemini-2.5-flash-lite';
+      const hasInvalidLlm = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gpt-4-turbo'].includes(agentPrompt.llm);
       
       // Update if: tools need server_url fix, OR agent has invalid llm (English agents must use turbo/flash v2)
       const needsToolUpdate = currentTools.length === 0 || 
@@ -532,7 +532,7 @@ class DocpenAgentProvisioning {
       
       // Update with latest function configurations while preserving all existing settings
       // CRITICAL: Remove llm from prompt - English agents must use turbo or flash v2.
-      // gemini-2.5-flash fails; omitting llm lets ElevenLabs use a valid default.
+      // gemini-2.5-flash, gpt-4-turbo fail; omitting llm lets ElevenLabs use a valid default.
       const { llm: _removed, ...promptWithoutLlm } = agentPrompt;
 
       const updatePayload = {
