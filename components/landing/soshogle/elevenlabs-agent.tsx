@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { GeometricShapes } from "./geometric-shapes";
@@ -43,7 +43,11 @@ interface ElevenLabsAgentProps {
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
 
-export function ElevenLabsAgent({
+export interface ElevenLabsAgentHandle {
+  endSession: () => void;
+}
+
+export const ElevenLabsAgent = forwardRef<ElevenLabsAgentHandle, ElevenLabsAgentProps>(function ElevenLabsAgent({
   agentId: agentIdProp,
   signedUrl: signedUrlProp,
   onAudioLevel,
@@ -57,7 +61,7 @@ export function ElevenLabsAgent({
   variant = 'default',
   suppressUserDisconnectLog = false,
   autoStart = false,
-}: ElevenLabsAgentProps) {
+}, ref) {
   const isFrameless = variant === 'frameless';
   const agentId = agentIdProp ?? '';
   const [isConnected, setIsConnected] = useState(false);
@@ -327,6 +331,10 @@ export function ElevenLabsAgent({
     if (onAgentSpeakingChange) onAgentSpeakingChange(false);
   };
 
+  useImperativeHandle(ref, () => ({
+    endSession: stopConversation,
+  }), []);
+
   useEffect(() => {
     return () => stopConversation();
   }, []);
@@ -475,4 +483,4 @@ export function ElevenLabsAgent({
       )}
     </div>
   );
-}
+});

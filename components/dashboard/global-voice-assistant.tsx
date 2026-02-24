@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
+import { ElevenLabsAgent, type ElevenLabsAgentHandle } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
 import { getWebsiteBuilderContext, getWebsiteBuilderContextSummary } from '@/lib/website-builder-context';
@@ -35,6 +35,7 @@ export function GlobalVoiceAssistant() {
   const [isConnected, setIsConnected] = useState(false);
   const conversationRef = useRef<any>(null);
   const [conversationActive, setConversationActive] = useState(false);
+  const voiceAgentRef = useRef<ElevenLabsAgentHandle>(null);
 
   // Load persisted state from localStorage
   useEffect(() => {
@@ -216,6 +217,7 @@ export function GlobalVoiceAssistant() {
           },
           React.createElement('div', { className: 'absolute inset-0' },
             React.createElement(ElevenLabsAgent, {
+              ref: voiceAgentRef,
               agentId,
               onMessage: handleMessage,
               onConversationEnd: handleConversationEnd,
@@ -226,6 +228,7 @@ export function GlobalVoiceAssistant() {
           ),
           React.createElement('button', {
             onClick: () => {
+              voiceAgentRef.current?.endSession();
               setConversationActive(false);
               setIsOpen(false);
             },

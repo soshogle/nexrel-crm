@@ -22,7 +22,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
-import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
+import { ElevenLabsAgent, type ElevenLabsAgentHandle } from "@/components/landing/soshogle/elevenlabs-agent";
 import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
 import { extractScreenContext, getPageContext } from "@/lib/screen-context-extractor";
 import { EmailPreviewCard, type EmailDraft } from "@/components/dashboard/email-preview-card";
@@ -55,6 +55,7 @@ export function AIChatAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const voiceAgentRef = useRef<ElevenLabsAgentHandle>(null);
 
   // Fetch CRM voice agent ID for voice mode
   useEffect(() => {
@@ -414,7 +415,11 @@ export function AIChatAssistant() {
             <Minimize2 className="h-5 w-5 text-white" />
           </button>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              voiceAgentRef.current?.endSession();
+              setVoiceMode(false);
+              setIsOpen(false);
+            }}
             className="p-2 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 transition-colors"
             aria-label="Close"
           >
@@ -694,6 +699,7 @@ export function AIChatAssistant() {
               {voiceMode && crmAgentId && !isMinimized && (
                 <div className="mt-2 p-2 bg-black/30 rounded-lg border border-white/20">
                   <ElevenLabsAgent
+                    ref={voiceAgentRef}
                     agentId={crmAgentId}
                     autoStart={false}
                     onAudioLevel={() => {}}
