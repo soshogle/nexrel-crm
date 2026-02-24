@@ -249,6 +249,13 @@ export default function DentalTestPage() {
     if (session?.user?.id) { fetchAppointmentsData(); }
   }, [session?.user?.id]);
 
+  // Poll periodontal data when charting modal is open (probe may push new data)
+  useEffect(() => {
+    if (openModal !== 'periodontal' || !selectedLeadId) return;
+    const interval = setInterval(fetchPeriodontalChart, 5000);
+    return () => clearInterval(interval);
+  }, [openModal, selectedLeadId, fetchPeriodontalChart]);
+
   const handleSaveOdontogram = async (toothData: any) => {
     if (!selectedLeadId) { toast.error('Please select a patient first'); return; }
     try {
