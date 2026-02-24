@@ -64,9 +64,7 @@ export async function GET(req: NextRequest) {
     if (message.includes('not found')) {
       return apiErrors.notFound(message);
     }
-    return apiErrors.internal(
-      'Failed to generate suggestions',
-      process.env.NODE_ENV === 'development' ? { error: message } : undefined
-    );
+    // Return empty suggestions instead of 500 to prevent lead/dashboard crashes
+    return NextResponse.json({ suggestions: [] });
   }
 }

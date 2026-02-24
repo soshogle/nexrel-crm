@@ -38,7 +38,8 @@ export default async function DashboardLayout({
     }
   }
 
-  const isDentalUser = industry === 'DENTIST'
+  // ClinicProvider required for dental/orthodontist pages (SharedDashboardLayout, CustomDocumentUpload, etc.)
+  const isDentalUser = industry === 'DENTIST' || industry === 'ORTHODONTIST'
   
   const content = (
     <DashboardWrapper>

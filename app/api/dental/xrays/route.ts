@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(xrays);
   } catch (error) {
     console.error('Error fetching X-rays:', error);
-    return apiErrors.internal(await t('api.fetchXraysFailed'));
+    // Return empty array instead of 500 to prevent dashboard crashes
+    return NextResponse.json([]);
   }
 }
 

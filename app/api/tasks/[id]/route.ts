@@ -165,7 +165,8 @@ export async function PUT(
       return apiErrors.notFound('Task not found');
     }
 
-    if (existingTask.userId !== ctx.userId) {
+    // Allow owner or assignee to update
+    if (existingTask.userId !== ctx.userId && existingTask.assignedToId !== ctx.userId) {
       return apiErrors.forbidden('Unauthorized');
     }
 
@@ -241,7 +242,7 @@ export async function PUT(
     if (progressPercent !== undefined) updateData.progressPercent = progressPercent;
 
     const task = await getCrmDb(ctx).task.update({
-      where: { id: params.id, userId: ctx.userId },
+      where: { id: params.id },
       data: updateData,
       include: {
         assignedTo: {
@@ -274,17 +275,21 @@ export async function PUT(
       },
     } as any);
 
-    // Create activity logs for changes
+    // Create activity logs for changes (non-blocking - log but don't fail)
     for (const change of changes) {
-      await (getCrmDb(ctx) as any).taskActivity.create({
-        data: {
-          taskId: task.id,
-          userId: ctx.userId,
-          action: change.action,
-          oldValue: change.oldValue,
-          newValue: change.newValue,
-        },
-      });
+      try {
+        await (getCrmDb(ctx) as any).taskActivity.create({
+          data: {
+            taskId: task.id,
+            userId: ctx.userId,
+            action: change.action,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+          },
+        });
+      } catch (activityError) {
+        console.warn('Task activity log failed (non-blocking):', activityError);
+      }
     }
 
     return NextResponse.json({ task });

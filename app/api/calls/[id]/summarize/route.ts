@@ -35,6 +35,13 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Call summarize error:', error);
-    return apiErrors.internal(error.message || 'Failed to summarize call');
+    const message = error?.message || 'Failed to summarize call';
+    if (message.includes('not found') || message.includes('Call not found')) {
+      return apiErrors.notFound(message);
+    }
+    if (message.includes('no transcript')) {
+      return apiErrors.badRequest(message);
+    }
+    return apiErrors.internal(message);
   }
 }

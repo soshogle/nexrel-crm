@@ -26,24 +26,36 @@ export async function GET(request: NextRequest) {
     if (!ctx) return apiErrors.unauthorized();
 
     // Get user's industry
-    const user = await getCrmDb(ctx).user.findUnique({
-      where: { id: ctx.userId },
-      select: { industry: true }
-    });
+    let user: { industry: string | null } | null;
+    try {
+      user = await getCrmDb(ctx).user.findUnique({
+        where: { id: ctx.userId },
+        select: { industry: true }
+      });
+    } catch (dbError) {
+      console.warn('Workflows: user lookup failed, returning empty:', dbError);
+      return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: [] });
+    }
 
     if (!user?.industry || user.industry === 'REAL_ESTATE') {
-      return apiErrors.forbidden('This feature is not available for this industry');
+      return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: [] });
     }
 
     const industryConfig = getIndustryConfig(user.industry);
     if (!industryConfig) {
-      return apiErrors.forbidden('Workflow system not configured for this industry');
+      return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: [] });
     }
 
     // Get user's workflow templates
-    const workflows = await workflowTemplateService.findMany(ctx, {
-      industry: user.industry,
-    });
+    let workflows;
+    try {
+      workflows = await workflowTemplateService.findMany(ctx, {
+        industry: user.industry,
+      });
+    } catch (wfError) {
+      console.warn('Workflows: findMany failed, returning empty:', wfError);
+      return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: industryConfig.templates.map(t => ({ id: t.id, name: t.name, type: t.workflowType, description: t.description, taskCount: t.tasks.length })) });
+    }
 
     const workflowsWithCount = await Promise.all(
       workflows.map(async (w) => {
@@ -114,7 +126,12 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching workflows:', error);
-    return apiErrors.internal(error?.message || 'Failed to fetch workflows');
+    // Return empty workflows instead of 500 to prevent dashboard crashes
+    return NextResponse.json({
+      success: true,
+      workflows: [],
+      defaultTemplatesAvailable: [],
+    });
   }
 }
 
