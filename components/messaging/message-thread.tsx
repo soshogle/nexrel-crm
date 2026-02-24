@@ -46,6 +46,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [conversationLoadFailed, setConversationLoadFailed] = useState(false);
   const [sending, setSending] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [smartReplies, setSmartReplies] = useState<{ id: string; label: string; text: string }[]>([]);
@@ -56,6 +57,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
 
   useEffect(() => {
     if (conversationId) {
+      setConversationLoadFailed(false);
       loadConversation();
       loadMessages();
       markAsRead();
@@ -90,10 +92,21 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
         setConversation(null);
         return;
       }
+      if (!response.ok) {
+        setConversationLoadFailed(true);
+        toast.error('Failed to load conversation');
+        return;
+      }
       const data = await response.json();
+      if (!data?.conversation) {
+        setConversationLoadFailed(true);
+        return;
+      }
       setConversation(data.conversation);
     } catch (error) {
       console.error('Error loading conversation:', error);
+      setConversationLoadFailed(true);
+      toast.error('Failed to load conversation');
     }
   };
 
@@ -219,8 +232,24 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
 
   if (!conversation) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <div className="animate-pulse text-gray-500">Loading...</div>
+      <div className="flex flex-col items-center justify-center h-full bg-gray-50 gap-4">
+        {conversationLoadFailed ? (
+          <>
+            <p className="text-gray-600">Failed to load conversation</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConversationLoadFailed(false);
+                loadConversation();
+                loadMessages();
+              }}
+            >
+              Try again
+            </Button>
+          </>
+        ) : (
+          <div className="animate-pulse text-gray-500">Loading...</div>
+        )}
       </div>
     );
   }

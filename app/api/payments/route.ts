@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 // GET - Get all payments for the user
@@ -13,29 +14,24 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const paymentType = searchParams.get('paymentType');
     const provider = searchParams.get('provider');
 
-    const where: any = { userId: user.id };
+    const where: any = { userId: ctx.userId };
     if (status) where.status = status;
     if (paymentType) where.paymentType = paymentType;
     if (provider) where.provider = provider;
 
-    const payments = await prisma.payment.findMany({
+    const payments = await getCrmDb(ctx).payment.findMany({
       where,
       include: {
         lead: {

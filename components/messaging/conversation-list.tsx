@@ -84,12 +84,17 @@ export function ConversationList({
       if (channelFilter !== 'all') {
         params.set('channelType', channelFilter);
       }
-      
-      const response = await fetch(`/api/messaging/conversations?${params}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`/api/messaging/conversations?${params}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       const data = await response.json();
       setConversations(Array.isArray(data?.conversations) ? data.conversations : []);
     } catch (error) {
       console.error('Error loading conversations:', error);
+      setConversations([]);
     } finally {
       setLoading(false);
     }

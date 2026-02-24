@@ -23,11 +23,23 @@ export function TransactionHistory() {
   const loadTransactions = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/payments/soshogle/transactions?limit=50');
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
-      }
+      const [soshogleRes, crmRes] = await Promise.all([
+        fetch('/api/payments/soshogle/transactions?limit=50'),
+        fetch('/api/payments?limit=50'),
+      ]);
+      const soshogleData = soshogleRes.ok ? await soshogleRes.json() : [];
+      const crmData = crmRes.ok ? await crmRes.json() : [];
+      const soshogleTx = Array.isArray(soshogleData?.transactions) ? soshogleData.transactions : [];
+      const crmPayments = Array.isArray(crmData?.payments) ? crmData.payments : [];
+      const crmAsTx = crmPayments.map((p: any) => ({
+        id: p.id,
+        type: 'payment',
+        amount: Math.round((p.amount || 0) * 100),
+        currency: p.currency || 'CAD',
+        status: (p.status || '').toLowerCase().replace('succeeded', 'completed'),
+        createdAt: p.paidAt || p.createdAt,
+      }));
+      setTransactions(soshogleTx.length > 0 ? soshogleTx : crmAsTx);
     } catch (error) {
       toast.error('Failed to load transactions');
     } finally {

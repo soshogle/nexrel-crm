@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
@@ -45,13 +44,19 @@ export async function GET(request: NextRequest) {
     since.setHours(0, 0, 0, 0);
 
     const items: UnifiedActivityItem[] = [];
+    const db = getCrmDb(ctx);
 
-    // Industry AI executions
-    const industryExecs = await (prisma as any).industryAIEmployeeExecution.findMany({
-      where: { userId: ctx.userId, createdAt: { gte: since } },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
+    // Industry AI executions (use CRM DB for industry routing)
+    let industryExecs: any[] = [];
+    try {
+      industryExecs = await (db as any).industryAIEmployeeExecution.findMany({
+        where: { userId: ctx.userId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+    } catch {
+      // Table may not exist in some DBs
+    }
     for (const e of industryExecs) {
       const result = (e.result as any) || {};
       items.push({
@@ -67,12 +72,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // RE AI executions
-    const reExecs = await prisma.rEAIEmployeeExecution.findMany({
-      where: { userId: ctx.userId, createdAt: { gte: since } },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
+    // RE AI executions (use CRM DB)
+    let reExecs: any[] = [];
+    try {
+      reExecs = await (db as any).rEAIEmployeeExecution.findMany({
+        where: { userId: ctx.userId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+    } catch {
+      // Table may not exist in some DBs
+    }
     for (const e of reExecs) {
       const result = (e.result as any) || {};
       items.push({
@@ -89,7 +99,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Human tasks (completed)
-    const db = getCrmDb(ctx);
     const tasks = await db.task.findMany({
       where: {
         OR: [{ userId: ctx.userId }, { assignedToId: ctx.userId }],

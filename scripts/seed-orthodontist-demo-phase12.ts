@@ -98,7 +98,7 @@ async function main() {
   for (let i = 0; i < 50; i++) {
     const lead = leads[i % leads.length];
     const deal = deals[i % deals.length];
-    const status = randomElement(['TODO', 'IN_PROGRESS', 'COMPLETED', 'COMPLETED', 'COMPLETED'] as const);
+    const status = randomElement(['TODO', 'IN_PROGRESS', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED'] as const);
     await prisma.task.create({
       data: {
         userId: user.id,
