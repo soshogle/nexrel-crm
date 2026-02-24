@@ -35,6 +35,28 @@ export const formatCurrency = (amount: number, currencyCode: string = 'USD'): st
   return `${currency.symbol}${amount.toFixed(2)} ${currencyCode}`;
 };
 
+/**
+ * Safe Intl.NumberFormat for currency - never throws.
+ * Use when currency may be undefined/null/empty (e.g. from API/database).
+ */
+export const formatCurrencyIntl = (
+  amount: number,
+  currencyCode?: string | null,
+  options?: Intl.NumberFormatOptions
+): string => {
+  const code = (currencyCode?.trim?.() || 'USD').toUpperCase();
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code,
+      ...options,
+    }).format(safeAmount);
+  } catch {
+    return formatCurrency(safeAmount, code);
+  }
+};
+
 export const convertCurrency = (
   amount: number,
   fromCurrency: string,

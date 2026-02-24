@@ -121,11 +121,13 @@ export function ProductCatalog() {
     }
   };
 
-  const formatPrice = (cents: number, currency: string) => {
+  const formatPrice = (cents: number, currency?: string | null) => {
+    const currencyCode = currency?.trim() || 'USD';
+    const amount = Number.isFinite(cents) ? cents / 100 : 0;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency,
-    }).format(cents / 100);
+      currency: currencyCode,
+    }).format(amount);
   };
 
   if (loading) {

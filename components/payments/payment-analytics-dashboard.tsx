@@ -116,7 +116,9 @@ export function PaymentAnalyticsDashboard() {
     return new Intl.NumberFormat('en-US').format(num);
   };
 
-  const maxRevenue = Math.max(...analytics.revenueByDay.map((d) => d.revenue));
+  const maxRevenue = analytics.revenueByDay?.length
+    ? Math.max(...analytics.revenueByDay.map((d) => d.revenue), 0)
+    : 0;
 
   return (
     <div className="space-y-6">
