@@ -7,6 +7,7 @@ import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
+import { processOrthodontistWorkflowEnrollment } from '@/lib/orthodontist/workflow-enrollment-triggers';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
 import { apiErrors } from '@/lib/api-error';
 
@@ -161,6 +162,13 @@ export async function PATCH(
             triggerType: 'DEAL_WON',
             metadata: { dealId: params.id, newStatus: newStage?.name },
           }).catch(err => console.error('Deal won campaign trigger failed:', err));
+
+          // Orthodontist: TREATMENT_ACCEPTED triggers Financial Agreement workflow
+          if (user.industry === 'ORTHODONTIST') {
+            processOrthodontistWorkflowEnrollment(user.id, updatedDeal.leadId, 'TREATMENT_ACCEPTED', {
+              dealId: params.id,
+            }).catch(err => console.error('Orthodontist treatment-accepted trigger failed:', err));
+          }
         }
       }
     } else if (data.value && data.value !== existingDeal.value) {

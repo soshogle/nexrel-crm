@@ -5,6 +5,7 @@ import { getCrmDb } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { reviewFeedbackService } from '@/lib/review-feedback-service'
 import { processServiceCompletedTriggers } from '@/lib/service-completed-triggers'
+import { processOrthodontistWorkflowEnrollment } from '@/lib/orthodontist/workflow-enrollment-triggers'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 import { apiErrors } from '@/lib/api-error';
 
@@ -143,6 +144,17 @@ export async function PATCH(
 
     if (status === 'CANCELLED' && existingAppointment.status !== 'CANCELLED') {
       emitCRMEvent('appointment_cancelled', session.user.id, { entityId: params.id, entityType: 'Appointment' });
+    }
+
+    // Orthodontist: APPOINTMENT_CONFIRMED triggers Patient Admissions workflow (Law 25 & Consents)
+    if (status === 'CONFIRMED' && existingAppointment.status !== 'CONFIRMED' && appointment.leadId) {
+      try {
+        await processOrthodontistWorkflowEnrollment(session.user.id, appointment.leadId, 'APPOINTMENT_CONFIRMED', {
+          appointmentId: appointment.id,
+        });
+      } catch (triggerError) {
+        console.error('Orthodontist appointment-confirmed trigger failed:', triggerError);
+      }
     }
 
     // Trigger feedback collection and workflow/campaign enrollment if appointment was just completed

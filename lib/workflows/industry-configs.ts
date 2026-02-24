@@ -263,6 +263,35 @@ export const RETAIL_CONFIG: IndustryConfig = {
 };
 
 // ==========================================
+// ORTHODONTIST INDUSTRY CONFIG (Yul Smile)
+// ==========================================
+
+import { ORTHODONTIST_WORKFLOW_TEMPLATES } from '@/lib/orthodontist/workflow-templates';
+
+export const ORTHODONTIST_CONFIG: IndustryConfig = {
+  industry: 'ORTHODONTIST',
+  taskTypes: [
+    ...MEDICAL_CONFIG.taskTypes,
+    { value: 'CONSENT_LINK', label: 'Send Consent Link', icon: '📋', color: '#8B5CF6', description: 'Send Law 25 consent and forms link' },
+    { value: 'ORTHODONTIC_REPORT', label: 'Orthodontic Report', icon: '📄', color: '#06B6D4', description: 'Draft formal orthodontic report letter' },
+    { value: 'FINANCIAL_AGREEMENT', label: 'Financial Agreement', icon: '💰', color: '#10B981', description: 'Generate and send financial agreement' },
+  ],
+  aiAgents: [
+    { id: 'admissions_specialist', name: 'Admissions Specialist', role: 'Admissions (Law 25)', color: '#FF6B6B', description: 'Handles pre-visit forms and consents' },
+    { id: 'referrals_specialist', name: 'Referrals Specialist', role: 'Referrals & Clinical Reports', color: '#4ECDC4', description: 'Processes referrals and drafts reports' },
+    { id: 'treatment_coordinator', name: 'Treatment Coordinator', role: 'Treatment Coordinator', color: '#45B7D1', description: 'Financial agreements and signing' },
+    { id: 'conversion_specialist', name: 'Conversion Specialist', role: 'Treatment Conversion', color: '#96CEB4', description: 'Converts undecided patients' },
+    ...MEDICAL_CONFIG.aiAgents,
+  ],
+  templates: ORTHODONTIST_WORKFLOW_TEMPLATES,
+  fieldLabels: {
+    contact: 'Patient',
+    deal: 'Treatment Plan',
+  },
+  integrations: ['Docpen', 'Calendar', 'Law 25 Forms', 'Insurance APIs'],
+};
+
+// ==========================================
 // INDUSTRY CONFIG MAP
 // ==========================================
 
@@ -280,7 +309,7 @@ export const INDUSTRY_CONFIGS: Record<Industry, IndustryConfig> = {
   REAL_ESTATE: MEDICAL_CONFIG, // Placeholder - Real Estate has its own system
   HOSPITAL: MEDICAL_CONFIG, // Similar to Medical
   TECHNOLOGY: RESTAURANT_CONFIG, // Similar structure
-  ORTHODONTIST: MEDICAL_CONFIG, // Similar to Dental/Medical
+  ORTHODONTIST: ORTHODONTIST_CONFIG,
   RETAIL: RETAIL_CONFIG,
 };
 

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { getCrmDb, leadService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { processReferralTriggers } from '@/lib/referral-triggers'
+import { processOrthodontistWorkflowEnrollment } from '@/lib/orthodontist/workflow-enrollment-triggers'
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic'
@@ -70,6 +71,15 @@ export async function POST(
       await processReferralTriggers(ctx.userId, newLead.id, 'REFERRAL_CONVERTED')
     } catch (triggerError) {
       console.error('Referral convert trigger processing failed:', triggerError)
+    }
+
+    // Orthodontist: REFERRAL_CONVERTED triggers Referrals & Clinical Reports workflow
+    try {
+      await processOrthodontistWorkflowEnrollment(ctx.userId, newLead.id, 'REFERRAL_CONVERTED', {
+        referralId: params.id,
+      })
+    } catch (triggerError) {
+      console.error('Orthodontist referral-converted trigger failed:', triggerError)
     }
 
     return NextResponse.json({ referral: updatedReferral, lead: newLead })

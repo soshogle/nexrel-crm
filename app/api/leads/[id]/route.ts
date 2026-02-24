@@ -9,6 +9,7 @@ import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 import { apiErrors } from '@/lib/api-error';
 import { syncLeadStatusToPipeline } from '@/lib/lead-pipeline-sync';
+import { processOrthodontistWorkflowEnrollment } from '@/lib/orthodontist/workflow-enrollment-triggers';
 
 export async function GET(
   request: NextRequest,
@@ -75,6 +76,15 @@ export async function PUT(
       syncLeadStatusToPipeline(session.user.id, params.id, data.status).catch(err => {
         console.error('[LeadPipelineSync] Failed on status update:', err);
       });
+    }
+
+    // Orthodontist: CONSULTATION_PENDING triggers Treatment Conversion workflow (undecided patients)
+    if (data.status === 'PENDING') {
+      try {
+        await processOrthodontistWorkflowEnrollment(session.user.id, params.id, 'CONSULTATION_PENDING');
+      } catch (triggerError) {
+        console.error('Orthodontist consultation-pending trigger failed:', triggerError);
+      }
     }
 
     return NextResponse.json(updatedLead)

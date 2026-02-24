@@ -22,7 +22,7 @@ import { Clock, Plus, X, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnrollmentTrigger {
-  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL' | 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED' | 'SERVICE_COMPLETED' | 'FEEDBACK_POSITIVE' | 'FEEDBACK_NEGATIVE' | 'REVIEW_RECEIVED' | 'REVIEW_POSITIVE' | 'REVIEW_NEGATIVE' | 'WEBSITE_FORM_SUBMITTED' | 'WEBSITE_VISITOR' | 'WEBSITE_VISITOR_RETURNING' | 'WEBSITE_CTA_CLICKED' | 'WEBSITE_BOOKING_CREATED' | 'WEBSITE_VOICE_AI_LEAD';
+  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL' | 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED' | 'SERVICE_COMPLETED' | 'FEEDBACK_POSITIVE' | 'FEEDBACK_NEGATIVE' | 'REVIEW_RECEIVED' | 'REVIEW_POSITIVE' | 'REVIEW_NEGATIVE' | 'WEBSITE_FORM_SUBMITTED' | 'WEBSITE_VISITOR' | 'WEBSITE_VISITOR_RETURNING' | 'WEBSITE_CTA_CLICKED' | 'WEBSITE_BOOKING_CREATED' | 'WEBSITE_VOICE_AI_LEAD' | 'APPOINTMENT_CONFIRMED' | 'TREATMENT_ACCEPTED' | 'CONSULTATION_PENDING';
   conditions?: {
     status?: string[];
     tags?: string[];
@@ -179,6 +179,9 @@ export function EnrollmentPanel({
                             <SelectItem value="REFERRAL_CREATED">When a Referral is Created</SelectItem>
                             <SelectItem value="REFERRAL_CONVERTED">When a Referral is Converted to Lead</SelectItem>
                             <SelectItem value="SERVICE_COMPLETED">When Service/Appointment is Completed</SelectItem>
+                            <SelectItem value="APPOINTMENT_CONFIRMED">When Appointment is Confirmed (Orthodontist)</SelectItem>
+                            <SelectItem value="TREATMENT_ACCEPTED">When Treatment Plan is Accepted (Orthodontist)</SelectItem>
+                            <SelectItem value="CONSULTATION_PENDING">When Lead Status is Pending (Orthodontist)</SelectItem>
                             <SelectItem value="FEEDBACK_POSITIVE">When Feedback is Positive (Rating ≥ 4)</SelectItem>
                             <SelectItem value="FEEDBACK_NEGATIVE">When Feedback is Negative (Rating ≤ 2)</SelectItem>
                             <SelectItem value="REVIEW_RECEIVED">When a Review is Received</SelectItem>

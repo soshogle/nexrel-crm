@@ -170,6 +170,8 @@ async function executeIndustrySpecificAction(
         return await executeTechnologyAction(action, task, instance);
       case 'SPORTS_CLUB':
         return await executeSportsClubAction(action, task, instance);
+      case 'ORTHODONTIST':
+        return await executeOrthodontistAction(action, task, instance);
       default:
         return { success: false, error: `Unknown action: ${action} for industry: ${instance.industry}` };
     }
@@ -962,4 +964,16 @@ async function executeTechnologyAction(action: string, task: WorkflowTask, insta
 async function executeSportsClubAction(action: string, task: WorkflowTask, instance: WorkflowInstance): Promise<TaskResult> {
   const { executeSportsClubAction: executeSportsClub } = await import('./industry-executors/remaining-industries-executor');
   return executeSportsClub(action, task, instance);
+}
+
+async function executeOrthodontistAction(action: string, task: WorkflowTask, instance: WorkflowInstance): Promise<TaskResult> {
+  const { executeMedicalAction } = await import('./industry-executors/medical-executor');
+  const actionMap: Record<string, string> = {
+    appointment_booking: 'appointment_booking',
+    referral_coordination: 'referral_coordination',
+    send_consent_link: 'patient_onboarding',
+    draft_orthodontic_report: 'referral_coordination',
+  };
+  const mappedAction = actionMap[action] || action;
+  return executeMedicalAction(mappedAction, task, instance);
 }
