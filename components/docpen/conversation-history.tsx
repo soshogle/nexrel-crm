@@ -133,8 +133,8 @@ export function DocpenConversationHistory() {
     try {
       const url =
         selectedAgentId === 'all'
-          ? '/api/docpen/conversations?page_size=100'
-          : `/api/docpen/conversations?agent_id=${selectedAgentId}&page_size=100`;
+          ? '/api/docpen/conversations?page_size=50'
+          : `/api/docpen/conversations?agent_id=${selectedAgentId}&page_size=50`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -894,8 +894,8 @@ export function DocpenConversationHistory() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto">
+      {/* Table - min-h-0 ensures flex child scrolls properly */}
+      <div className="flex-1 min-h-0 overflow-auto">
         {filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <Phone className="h-12 w-12 text-gray-300 mb-4" />

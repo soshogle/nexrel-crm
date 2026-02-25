@@ -81,6 +81,7 @@ export function ConversationList({
     try {
       setLoading(true);
       const params = new URLSearchParams();
+      params.set('limit', '50');
       if (channelFilter !== 'all') {
         params.set('channelType', channelFilter);
       }

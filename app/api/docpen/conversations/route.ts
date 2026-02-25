@@ -15,6 +15,7 @@ import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60; // ElevenLabs API can be slow; match elevenlabs/conversations
 
 /**
  * GET /api/docpen/conversations
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
-    const pageSize = searchParams.get('page_size') ? parseInt(searchParams.get('page_size')!) : 100;
+    const pageSize = searchParams.get('page_size') ? parseInt(searchParams.get('page_size')!) : 50;
 
     console.log(`📞 [Docpen Conversations] Request details:`, {
       userId: session.user.id,
@@ -75,9 +76,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔒 [Docpen] User has ${userAgentIds.size} Docpen agents`);
 
-    // Get user's ElevenLabs API key
+    // Get user's ElevenLabs API key (Docpen agents are created with user's key - must use same key to list conversations)
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
-    if (!apiKey) {
+    const effectiveKey = apiKey || process.env.ELEVENLABS_API_KEY || '';
+    if (!effectiveKey) {
       return NextResponse.json({
         success: true,
         conversations: [],
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const elevenLabsService = new ElevenLabsService();
+    const elevenLabsService = new ElevenLabsService(effectiveKey);
 
     // Fetch conversations from ElevenLabs for the specific agent or all user's agents
     let allConversations: any[] = [];
@@ -106,14 +108,19 @@ export async function GET(request: NextRequest) {
         cursor = response.cursor || null;
       }
     } else {
-      // Fetch for all user's agents
+      // Fetch for all user's agents - use smaller per-agent page_size when multiple agents to avoid timeout
+      // (we merge and slice to pageSize anyway; fewer per agent = faster ElevenLabs responses)
+      const perAgentPageSize =
+        docpenAgents.length === 1
+          ? pageSize
+          : Math.min(30, Math.ceil(pageSize / docpenAgents.length));
       const conversationPromises = docpenAgents
         .filter(agent => agent.elevenLabsAgentId)
         .map(agent =>
           elevenLabsService
             .listConversations({
               agent_id: agent.elevenLabsAgentId!,
-              page_size: pageSize,
+              page_size: perAgentPageSize,
             })
             .then(response => ({
               conversations: response.conversations || [],

@@ -119,7 +119,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
         userEmail: session?.user?.email,
       });
 
-      const response = await fetch(`${apiBase}?page_size=100`);
+      const response = await fetch(`${apiBase}?page_size=50`);
       const text = await response.text();
 
       if (!response.ok) {
@@ -1089,8 +1089,8 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
         </div>
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto">
+      {/* Table - min-h-0 ensures flex child scrolls properly */}
+      <div className="flex-1 min-h-0 overflow-auto">
         {loadError ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <XCircle className="h-12 w-12 text-red-400 mb-4" />
