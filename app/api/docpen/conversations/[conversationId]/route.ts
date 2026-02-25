@@ -40,13 +40,14 @@ export async function GET(
       return apiErrors.notFound('No Docpen agents found');
     }
 
-    // Get user's ElevenLabs API key
+    // Get user's ElevenLabs API key (Docpen agents use user's key - must use same key for details)
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
-    if (!apiKey) {
+    const effectiveKey = apiKey || process.env.ELEVENLABS_API_KEY || '';
+    if (!effectiveKey) {
       return apiErrors.badRequest('Soshogle Voice AI API key not configured');
     }
 
-    const elevenLabsService = new ElevenLabsService();
+    const elevenLabsService = new ElevenLabsService(effectiveKey);
 
     // Fetch conversation details from ElevenLabs
     const conversation = await elevenLabsService.getConversationDetails(conversationId);

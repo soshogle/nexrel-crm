@@ -52,8 +52,9 @@ export class ElevenLabsService {
   private apiKey: string;
   private baseUrl = 'https://api.elevenlabs.io/v1';
 
-  constructor() {
-    this.apiKey = process.env.ELEVENLABS_API_KEY || '';
+  /** @param apiKeyOverride - Optional API key (e.g. user's key for Docpen). Falls back to ELEVENLABS_API_KEY env. */
+  constructor(apiKeyOverride?: string) {
+    this.apiKey = apiKeyOverride || process.env.ELEVENLABS_API_KEY || '';
   }
 
   /**
