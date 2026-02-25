@@ -20,7 +20,7 @@ import { prisma } from './db';
 import { voiceAIPlatform } from './voice-ai-platform';
 import { PLATFORM_SETTINGS_WITH_OVERRIDES } from './elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from './voice-time-context';
-import { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } from './voice-languages';
+import { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt, getElevenLabsLanguageCode } from './voice-languages';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -332,7 +332,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+            language: getElevenLabsLanguageCode(options.language || 'en'), // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
@@ -573,7 +573,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+            language: getElevenLabsLanguageCode(options.language || 'en'), // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL',
@@ -993,10 +993,8 @@ class ElevenLabsProvisioningService {
             ...(updates.greetingMessage && {
               first_message: updates.greetingMessage,
             }),
-            // API only accepts single codes (en, es, etc). Use updates.language if valid, else preserve.
-            language: (updates.language && updates.language !== 'multilingual')
-              ? updates.language
-              : (currentAgent.conversation_config?.agent?.language || 'en'),
+            // API only accepts ISO codes. Normalize all/none/multilingual to valid code.
+            language: getElevenLabsLanguageCode(updates.language || currentAgent.conversation_config?.agent?.language || 'en'),
           },
           ...(updates.voiceId && {
             tts: {

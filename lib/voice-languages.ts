@@ -99,6 +99,18 @@ export function getLanguageLabel(code: string | null | undefined): string {
 }
 
 /**
+ * Normalize language for ElevenLabs API - only accepts ISO 639-1 codes.
+ * VOICE_AGENT_LANGUAGES options like 'all', 'none', 'multilingual' must map to 'en'.
+ */
+export function getElevenLabsLanguageCode(code: string | null | undefined): string {
+  if (!code) return "en";
+  const invalid = ["all", "none", "multilingual"];
+  if (invalid.includes(code)) return "en";
+  const found = VOICE_LANGUAGES.find((l) => l.value === code);
+  return found?.value ?? "en";
+}
+
+/**
  * Ensures a prompt is multilingual by removing single-language locks and prepending LANGUAGE_PROMPT_SECTION.
  * Use when building prompts for any voice agent (new or existing).
  */

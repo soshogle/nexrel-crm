@@ -10,6 +10,7 @@ import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 // GET /api/voice-agents - List all voice agents for user
 export async function GET(request: NextRequest) {

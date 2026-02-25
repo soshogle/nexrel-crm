@@ -8,7 +8,7 @@
 import { getCrmDb } from '@/lib/dal'
 import { createDalContext } from '@/lib/context/industry-context';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
-import { ensureMultilingualPrompt } from '@/lib/voice-languages';
+import { ensureMultilingualPrompt, getElevenLabsLanguageCode } from '@/lib/voice-languages';
 import { VOICE_AGENT_PROMPTS } from './voice-prompts';
 import type { DocpenProfessionType } from './prompts';
 const db = getCrmDb({ userId: '', industry: null })
@@ -196,7 +196,7 @@ class DocpenAgentProvisioning {
           agent: {
             prompt: fixedPrompt,
             first_message: agentConfig.first_message || '',
-            language: agentConfig.language || 'en',
+            language: getElevenLabsLanguageCode(agentConfig.language || 'en'),
           },
           tts: convConfig.tts || {},
           conversation: convConfig.conversation || {},
@@ -542,7 +542,7 @@ class DocpenAgentProvisioning {
             ...currentAgent.conversation_config?.agent,
             prompt: promptWithoutLlm,
             first_message: currentAgent.conversation_config?.agent?.first_message,
-            language: currentAgent.conversation_config?.agent?.language || 'en',
+            language: getElevenLabsLanguageCode(currentAgent.conversation_config?.agent?.language || 'en'),
           },
           // Preserve TTS settings
           tts: currentAgent.conversation_config?.tts,

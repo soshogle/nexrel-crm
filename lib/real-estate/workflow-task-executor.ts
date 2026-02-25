@@ -133,7 +133,10 @@ async function executeVoiceCall(
           const lang = taskLang || employeeLang;
           if (lang || (vc && Object.keys(vc).length > 0)) {
             voiceOverride = {};
-            if (lang) voiceOverride.agent = { language: lang };
+            if (lang) {
+              const { getElevenLabsLanguageCode } = await import('@/lib/voice-languages');
+              voiceOverride.agent = { language: getElevenLabsLanguageCode(lang) };
+            }
             if (vc && (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null)) {
               voiceOverride.tts = voiceOverride.tts || {};
               if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
@@ -148,8 +151,9 @@ async function executeVoiceCall(
 
     // Per-task language override when no AI employee (RE industry agent)
     if (!voiceOverride?.agent?.language && actionConfig?.voiceLanguage) {
+      const { getElevenLabsLanguageCode } = await import('@/lib/voice-languages');
       voiceOverride = voiceOverride || {};
-      voiceOverride.agent = { ...voiceOverride.agent, language: actionConfig.voiceLanguage };
+      voiceOverride.agent = { ...voiceOverride.agent, language: getElevenLabsLanguageCode(actionConfig.voiceLanguage) };
     }
 
     // Fallback to user language when no override yet
@@ -160,8 +164,9 @@ async function executeVoiceCall(
       });
       const userLang = user?.language || 'en';
       if (userLang !== 'en') {
+        const { getElevenLabsLanguageCode } = await import('@/lib/voice-languages');
         voiceOverride = voiceOverride || {};
-        voiceOverride.agent = { ...voiceOverride.agent, language: userLang };
+        voiceOverride.agent = { ...voiceOverride.agent, language: getElevenLabsLanguageCode(userLang) };
       }
     }
 

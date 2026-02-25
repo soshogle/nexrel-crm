@@ -14,6 +14,8 @@ import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// ElevenLabs agent creation can take 30+ seconds
+export const maxDuration = 60;
 
 export async function POST(
   req: NextRequest,

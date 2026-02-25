@@ -20,6 +20,7 @@ const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 async function testApiKey(apiKey: string): Promise<{ valid: boolean; error?: string; userInfo?: any }> {
   if (!apiKey || apiKey.trim() === '') {

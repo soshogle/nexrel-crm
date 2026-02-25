@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
-import { ensureMultilingualPrompt } from '@/lib/voice-languages';
+import { ensureMultilingualPrompt, getElevenLabsLanguageCode } from '@/lib/voice-languages';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
 import { apiErrors } from '@/lib/api-error';
 
@@ -220,7 +220,7 @@ ${
                   prompt: promptWithGuard,
                 },
                 first_message: agent.greetingMessage || agent.firstMessage || currentConfig.conversation_config?.agent?.first_message,
-                language: currentConfig.conversation_config?.agent?.language || 'en',
+                language: getElevenLabsLanguageCode(currentConfig.conversation_config?.agent?.language || 'en'),
               },
             },
             platform_settings: {

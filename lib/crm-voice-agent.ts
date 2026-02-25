@@ -7,7 +7,7 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { PLATFORM_SETTINGS_WITH_OVERRIDES } from '@/lib/elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
-import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
+import { LANGUAGE_PROMPT_SECTION, getElevenLabsLanguageCode } from '@/lib/voice-languages';
 
 export interface CrmVoiceAgentConfig {
   userId: string;
@@ -963,7 +963,7 @@ ${getConfidentialityGuard()}`;
         where: { id: userId },
         select: { language: true },
       });
-      const language = user?.language || 'en';
+      const language = getElevenLabsLanguageCode(user?.language || 'en');
 
       // Get current agent config from ElevenLabs
       const getResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
@@ -1003,7 +1003,7 @@ ${getConfidentialityGuard()}`;
             ...currentAgent.conversation_config?.agent,
             prompt: { prompt: newPrompt },
             first_message: this.getGreetingMessage(language),
-            language: currentAgent.conversation_config?.agent?.language || language,
+            language: getElevenLabsLanguageCode(currentAgent.conversation_config?.agent?.language || language),
           },
           // TTS: use eleven_multilingual_v2 for accent-free multilingual (matches landing page)
           tts: {

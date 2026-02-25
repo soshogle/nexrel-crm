@@ -1,0 +1,44 @@
+---
+description: ElevenLabs voice agent creation and provisioning standards
+globs: "**/elevenlabs*.ts,**/voice-agent*.ts,**/agent-provisioning*.ts,**/crm-voice-agent*.ts,app/api/**/provision/**/*.ts,app/api/**/voice-agent*/**/*.ts"
+alwaysApply: false
+---
+
+# ElevenLabs Voice Agent Standards
+
+When creating or updating ElevenLabs conversational AI agents:
+
+## 1. Language Code Normalization
+
+**Always** use `getElevenLabsLanguageCode()` from `@/lib/voice-languages` when passing `language` to the ElevenLabs API. The API only accepts ISO 639-1 codes (en, fr, es, etc.). Values like `all`, `none`, `multilingual` from `VOICE_AGENT_LANGUAGES` must be normalized.
+
+```typescript
+// ❌ BAD - can pass invalid codes
+language: user?.language || 'en'
+language: updates.language || currentAgent.conversation_config?.agent?.language || 'en'
+
+// ✅ GOOD
+import { getElevenLabsLanguageCode } from '@/lib/voice-languages';
+language: getElevenLabsLanguageCode(user?.language || 'en')
+language: getElevenLabsLanguageCode(updates.language || currentAgent.conversation_config?.agent?.language || 'en')
+```
+
+## 2. API Route Timeout
+
+API routes that create or provision ElevenLabs agents must set `maxDuration = 60` because agent creation/verification can take 30+ seconds and exceeds Vercel's default 30s limit.
+
+```typescript
+// Add to route files that call ElevenLabs convai/agents/create
+export const maxDuration = 60;
+```
+
+Routes: crm-voice-agent, docpen/voice-agent, voice-agents (POST), voice-agents/[id]/auto-configure, industry-ai-employees/provision, real-estate/ai-employees/provision, professional-ai-employees/provision.
+
+## 3. Per-Call Overrides
+
+When building `voiceOverride.agent = { language: lang }` for workflow calls or dynamic variables, normalize the language:
+
+```typescript
+const { getElevenLabsLanguageCode } = await import('@/lib/voice-languages');
+voiceOverride.agent = { language: getElevenLabsLanguageCode(lang) };
+```

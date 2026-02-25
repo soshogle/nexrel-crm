@@ -4,6 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
+// ElevenLabs agent creation/verification can take 30+ seconds
+export const maxDuration = 60;
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { crmVoiceAgentService } from '@/lib/crm-voice-agent';

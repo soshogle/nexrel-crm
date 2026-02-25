@@ -19,6 +19,7 @@ const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 // Simple health check - test if route is accessible
 export async function HEAD() {
