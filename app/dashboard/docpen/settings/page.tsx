@@ -113,7 +113,7 @@ export default function DocpenSettingsPage() {
           <TabsContent value="agents">
             <DocpenAgentSettings />
           </TabsContent>
-          <TabsContent value="history" className="mt-0">
+          <TabsContent value="history" className="mt-0" forceMount>
             <CallHistoryPanel source="docpen" />
           </TabsContent>
           <TabsContent value="training">

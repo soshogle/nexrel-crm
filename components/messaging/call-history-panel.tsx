@@ -60,7 +60,7 @@ interface CallHistoryPanelProps {
 
 export default function CallHistoryPanel({ selectedConversationId, source = 'elevenlabs' }: CallHistoryPanelProps) {
   // Session and auth
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   
   // Check if user is SUPER_ADMIN (either directly or the original user when impersonating)
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' || 
@@ -104,10 +104,13 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
   const apiBase = source === 'docpen' ? '/api/docpen/conversations' : '/api/elevenlabs/conversations';
 
   useEffect(() => {
-    if (session) {
+    if (sessionStatus === 'authenticated' && session) {
       fetchConversations();
+    } else if (sessionStatus === 'unauthenticated') {
+      setIsLoading(false);
+      setLoadError('Please sign in to view call history');
     }
-  }, [session?.user?.id, session?.user?.isImpersonating, source]); // Refetch when user changes or impersonation status changes
+  }, [sessionStatus, session?.user?.id, session?.user?.isImpersonating, source]); // Refetch when session/auth changes
 
   const fetchConversations = async () => {
     setIsLoading(true);
