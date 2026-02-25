@@ -81,6 +81,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
   // Main list state
   const [conversations, setConversations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAgent, setSelectedAgent] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -110,6 +111,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
 
   const fetchConversations = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       console.log('🔍 [CallHistoryPanel] Fetching conversations...', {
         source,
@@ -118,21 +120,40 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
       });
 
       const response = await fetch(`${apiBase}?page_size=100`);
+      const text = await response.text();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ [CallHistoryPanel] API error:', errorData);
-        throw new Error(errorData.error || 'Failed to fetch conversations');
+        let errorMessage = 'Failed to fetch conversations';
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          if (response.status === 504) {
+            errorMessage = 'Request timed out. The server took too long to respond. Please try again.';
+          } else if (text && text.length < 200) {
+            errorMessage = text;
+          }
+        }
+        console.error('❌ [CallHistoryPanel] API error:', response.status, errorMessage);
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data: { conversations?: unknown[]; has_more?: boolean };
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid response from server');
+      }
       console.log('📊 [CallHistoryPanel] Conversations received:', {
         totalCount: data.conversations?.length || 0,
         hasMore: data.has_more || false,
       });
       setConversations(Array.isArray(data?.conversations) ? data.conversations : []);
     } catch (error: any) {
+      const msg = error?.message || 'Failed to load call history';
       console.error('❌ [CallHistoryPanel] Error fetching conversations:', error);
-      toast.error('Failed to load call history');
+      setLoadError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -142,14 +163,23 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
     setIsLoadingDetails(true);
     try {
       const response = await fetch(`${apiBase}/${conversationId}`);
-      if (!response.ok) throw new Error('Failed to fetch conversation details');
-
-      const data = await response.json();
+      const text = await response.text();
+      if (!response.ok) {
+        let msg = 'Failed to fetch conversation details';
+        try {
+          const err = JSON.parse(text);
+          msg = err.error || err.message || msg;
+        } catch {
+          if (response.status === 504) msg = 'Request timed out. Please try again.';
+        }
+        throw new Error(msg);
+      }
+      const data = JSON.parse(text);
       console.log('📝 Conversation details:', data);
       setConversationDetails(data.conversation);
     } catch (error: any) {
       console.error('Error fetching conversation details:', error);
-      toast.error('Failed to load conversation details');
+      toast.error(error?.message || 'Failed to load conversation details');
     } finally {
       setIsLoadingDetails(false);
     }
@@ -341,11 +371,17 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
         method: 'DELETE',
       });
 
-      const data = await response.json();
-      
+      const text = await response.text();
+      let data: { error?: string };
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
+
       if (!response.ok) {
         console.error('❌ Delete failed:', data);
-        throw new Error(data.error || 'Failed to delete call');
+        throw new Error(data.error || (response.status === 504 ? 'Request timed out' : 'Failed to delete call'));
       }
 
       console.log('✅ Call deleted successfully:', data);
@@ -1055,7 +1091,23 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        {filteredConversations.length === 0 ? (
+        {loadError ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <XCircle className="h-12 w-12 text-red-400 mb-4" />
+            <p className="text-gray-900 font-medium">Failed to load call history</p>
+            <p className="text-sm text-gray-600 mt-1 max-w-md">{loadError}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchConversations()}
+              disabled={isLoading}
+              className="mt-4"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Try again
+            </Button>
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <Phone className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-600 font-medium">No calls found</p>

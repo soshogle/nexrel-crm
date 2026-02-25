@@ -88,18 +88,31 @@ export class ElevenLabsService {
     if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
 
     const url = `${this.baseUrl}/convai/conversations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'xi-api-key': this.apiKey,
-      },
-    });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch conversations from ElevenLabs: ${response.statusText}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'xi-api-key': this.apiKey,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch conversations from ElevenLabs: ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('ElevenLabs API request timed out. Please try again.');
+      }
+      throw err;
     }
-
-    return response.json();
   }
 
   /**

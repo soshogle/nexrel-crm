@@ -8,6 +8,7 @@ import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60; // Allow up to 60s for ElevenLabs API + DB queries
 
 /**
  * Fetch conversations directly from ElevenLabs API
@@ -37,75 +38,79 @@ export async function GET(request: NextRequest) {
 
     const elevenLabsService = new ElevenLabsService();
 
-    // Fetch conversations from ElevenLabs
-    const response = await elevenLabsService.listConversations({
-      agent_id: agentId || undefined,
-      page_size: pageSize,
-    });
+    // Run ElevenLabs fetch and DB queries in parallel to reduce total latency
+    const [response, { voiceAgents, callLogs }] = await Promise.all([
+      elevenLabsService.listConversations({
+        agent_id: agentId || undefined,
+        page_size: pageSize,
+      }),
+      (async () => {
+        // Get user's voice agents to map agent IDs to names
+        // NOTE: session.user.id is the IMPERSONATED user's ID when impersonating
+        const voiceAgents = await prisma.voiceAgent.findMany({
+          where: { userId: session.user.id },
+          select: {
+            id: true,
+            name: true,
+            elevenLabsAgentId: true,
+          },
+        });
+
+        // Include CRM Voice Assistant and AI employee agents
+        const userRecord = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { name: true, crmVoiceAgentId: true },
+        });
+        const crmAgentId = userRecord?.crmVoiceAgentId;
+        if (crmAgentId) {
+          voiceAgents.push({
+            id: 'crm-assistant',
+            name: `${userRecord?.name || 'Your Business'} CRM Assistant`,
+            elevenLabsAgentId: crmAgentId,
+          } as any);
+        }
+        const [reAgents, profAgents, industryAgents] = await Promise.all([
+          (prisma as any).rEAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
+          (prisma as any).professionalAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
+          (prisma as any).industryAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
+        ]);
+        [...reAgents, ...profAgents, ...industryAgents].forEach((a: any) => {
+          if (a.elevenLabsAgentId) {
+            voiceAgents.push({ id: a.id, name: a.name, elevenLabsAgentId: a.elevenLabsAgentId } as any);
+          }
+        });
+
+        // Also get CallLog entries for this user (in case they have calls but no voice agents)
+        const callLogs = await prisma.callLog.findMany({
+          where: {
+            userId: session.user.id,
+            elevenLabsConversationId: { not: null },
+          },
+          select: {
+            elevenLabsConversationId: true,
+            id: true,
+            fromNumber: true,
+            toNumber: true,
+            duration: true,
+            status: true,
+            createdAt: true,
+            transcription: true,
+            recordingUrl: true,
+            voiceAgentId: true,
+            voiceAgent: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+        });
+        return { voiceAgents, callLogs };
+      })(),
+    ]);
 
     console.log(`📞 [ElevenLabs Conversations] Fetched ${response.conversations?.length || 0} conversations from ElevenLabs API`);
-
-    // Get user's voice agents to map agent IDs to names
-    // NOTE: session.user.id is the IMPERSONATED user's ID when impersonating
-    const voiceAgents = await prisma.voiceAgent.findMany({
-      where: { userId: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        elevenLabsAgentId: true,
-      },
-    });
-
-    // Include CRM Voice Assistant and AI employee agents
-    const userRecord = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, crmVoiceAgentId: true },
-    });
-    const crmAgentId = userRecord?.crmVoiceAgentId;
-    if (crmAgentId) {
-      voiceAgents.push({
-        id: 'crm-assistant',
-        name: `${userRecord?.name || 'Your Business'} CRM Assistant`,
-        elevenLabsAgentId: crmAgentId,
-      } as any);
-    }
-    const [reAgents, profAgents, industryAgents] = await Promise.all([
-      (prisma as any).rEAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
-      (prisma as any).professionalAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
-      (prisma as any).industryAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
-    ]);
-    [...reAgents, ...profAgents, ...industryAgents].forEach((a: any) => {
-      if (a.elevenLabsAgentId) {
-        voiceAgents.push({ id: a.id, name: a.name, elevenLabsAgentId: a.elevenLabsAgentId } as any);
-      }
-    });
-
-    // Also get CallLog entries for this user (in case they have calls but no voice agents)
-    const callLogs = await prisma.callLog.findMany({
-      where: {
-        userId: session.user.id,
-        elevenLabsConversationId: { not: null },
-      },
-      select: {
-        elevenLabsConversationId: true,
-        id: true,
-        fromNumber: true,
-        toNumber: true,
-        duration: true,
-        status: true,
-        createdAt: true,
-        transcription: true,
-        recordingUrl: true,
-        voiceAgentId: true,
-        voiceAgent: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
 
     // Create map of agent IDs to names
     const agentMap = new Map(
