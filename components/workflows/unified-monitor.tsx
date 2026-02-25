@@ -347,22 +347,22 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         <CardContent>
           <div className="flex flex-wrap gap-4">
             <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-              <TabsList className="bg-gray-800/80">
-                <TabsTrigger value="all" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Types</TabsTrigger>
-                <TabsTrigger value="ai_job" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">AI Jobs</TabsTrigger>
-                <TabsTrigger value="workflow_instance" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Workflows</TabsTrigger>
-                <TabsTrigger value="task_execution" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Tasks</TabsTrigger>
-                <TabsTrigger value="drip_enrollment" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Drip Campaigns</TabsTrigger>
+              <TabsList className="bg-white">
+                <TabsTrigger value="all" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Types</TabsTrigger>
+                <TabsTrigger value="ai_job" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">AI Jobs</TabsTrigger>
+                <TabsTrigger value="workflow_instance" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Workflows</TabsTrigger>
+                <TabsTrigger value="task_execution" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Tasks</TabsTrigger>
+                <TabsTrigger value="drip_enrollment" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Drip Campaigns</TabsTrigger>
               </TabsList>
             </Tabs>
             
             <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-              <TabsList className="bg-gray-800/80">
-                <TabsTrigger value="all" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Status</TabsTrigger>
-                <TabsTrigger value="active" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Active</TabsTrigger>
-                <TabsTrigger value="pending" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Pending</TabsTrigger>
-                <TabsTrigger value="running" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Running</TabsTrigger>
-                <TabsTrigger value="completed" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Completed</TabsTrigger>
+              <TabsList className="bg-white">
+                <TabsTrigger value="all" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Status</TabsTrigger>
+                <TabsTrigger value="active" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Active</TabsTrigger>
+                <TabsTrigger value="pending" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Pending</TabsTrigger>
+                <TabsTrigger value="running" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Running</TabsTrigger>
+                <TabsTrigger value="completed" className="text-black data-[state=inactive]:hover:text-gray-700 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Completed</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
