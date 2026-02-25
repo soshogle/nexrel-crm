@@ -144,20 +144,20 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                     {/* Description */}
                     {apt.description && (
-                      <p className="text-sm text-gray-400 mb-3 line-clamp-2">{apt.description}</p>
+                      <p className="text-sm text-white mb-3 line-clamp-2">{apt.description}</p>
                     )}
 
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {/* Date & Time */}
-                      <div className="flex items-center gap-2 text-purple-300/80">
+                      <div className="flex items-center gap-2 text-white">
                         <Clock className="h-4 w-4 text-purple-400" />
                         <span>{format(startDate, 'MMM d, yyyy • h:mm a')}</span>
                       </div>
 
                       {/* Lead/Contact */}
                       {apt.lead && (
-                        <div className="flex items-center gap-2 text-purple-300/80">
+                        <div className="flex items-center gap-2 text-white">
                           <User className="h-4 w-4 text-purple-400" />
                           <span className="truncate">{apt.lead.contactPerson}</span>
                         </div>
@@ -165,7 +165,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                       {/* Location */}
                       {apt.location && apt.meetingType === 'IN_PERSON' && (
-                        <div className="flex items-center gap-2 text-purple-300/80">
+                        <div className="flex items-center gap-2 text-white">
                           <MapPin className="h-4 w-4 text-purple-400" />
                           <span className="truncate">{apt.location}</span>
                         </div>
@@ -173,8 +173,8 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                       {/* Payment Info */}
                       {apt.requiresPayment && apt.paymentAmount && (
-                        <div className="flex items-center gap-2 text-purple-300/80">
-                          <span className="text-purple-400 font-medium">
+                        <div className="flex items-center gap-2 text-white">
+                          <span className="text-white font-medium">
                             ${(apt.paymentAmount / 100).toFixed(2)}
                           </span>
                           {apt.payments && apt.payments.length > 0 ? (
