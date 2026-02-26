@@ -120,7 +120,7 @@ export default function CalendarPage() {
         <Card className="glass-effect border-purple-500/20 hover:border-purple-500/30 transition-colors">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-white">Today</CardTitle>
+              <CardTitle className="text-sm font-bold text-purple-400">Today</CardTitle>
               <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
                 <Clock className="h-4 w-4 text-purple-400" />
               </div>
@@ -128,14 +128,14 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold gradient-text">{stats.today}</div>
-            <p className="text-xs font-bold text-white mt-1">{config.bookingPluralNoun.toLowerCase()} today</p>
+            <p className="text-xs font-bold text-purple-400 mt-1">{config.bookingPluralNoun.toLowerCase()} today</p>
           </CardContent>
         </Card>
 
         <Card className="glass-effect border-purple-500/20 hover:border-purple-500/30 transition-colors">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-white">Upcoming</CardTitle>
+              <CardTitle className="text-sm font-bold text-purple-400">Upcoming</CardTitle>
               <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-green-400" />
               </div>
@@ -143,14 +143,14 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-400">{stats.upcoming}</div>
-            <p className="text-xs font-bold text-white mt-1">scheduled ahead</p>
+            <p className="text-xs font-bold text-purple-400 mt-1">scheduled ahead</p>
           </CardContent>
         </Card>
 
         <Card className="glass-effect border-purple-500/20 hover:border-purple-500/30 transition-colors">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-white">Total</CardTitle>
+              <CardTitle className="text-sm font-bold text-purple-400">Total</CardTitle>
               <div className="h-8 w-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-pink-400" />
               </div>
@@ -158,7 +158,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-pink-400">{stats.total}</div>
-            <p className="text-xs font-bold text-white mt-1">all {config.bookingPluralNoun.toLowerCase()}</p>
+            <p className="text-xs font-bold text-purple-400 mt-1">all {config.bookingPluralNoun.toLowerCase()}</p>
           </CardContent>
         </Card>
       </div>

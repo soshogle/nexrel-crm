@@ -28,7 +28,7 @@ interface CalendarViewProps {
 }
 
 // Draggable Appointment Component
-function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onClick }: any) {
+function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons, onClick }: any) {
   // Validate appointment data
   if (!appointment || !appointment.id) {
     console.warn('⚠️ Invalid appointment data in DraggableAppointment:', appointment)
@@ -36,7 +36,11 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
   }
 
   // Voice AI reservations can't be moved via PATCH - only booking appointments
-  const isDraggable = appointment.source !== 'VOICE_AI'
+  // Past appointments cannot be moved
+  const now = new Date()
+  const startTime = appointment.startTime ? new Date(appointment.startTime) : null
+  const isPast = startTime && !isNaN(startTime.getTime()) && startTime < now
+  const isDraggable = appointment.source !== 'VOICE_AI' && !isPast
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: appointment.id,
@@ -71,8 +75,9 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
   // Get the title with fallback
   const title = appointment.title || 'Untitled Appointment'
   
-  // Get the status color with fallback
-  const statusColor = appointment.status ? statusColors[appointment.status] : statusColors['SCHEDULED']
+  // Color by meeting type for visibility
+  const meetingType = appointment.meetingType || 'PHONE_CALL'
+  const typeColor = meetingTypeColors[meetingType] || meetingTypeColors['PHONE_CALL']
 
   return (
     <div
@@ -81,7 +86,7 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
       {...(isDraggable ? { ...listeners, ...attributes } : {})}
       className={`
         text-xs px-2 py-1 rounded-lg border shadow-sm antialiased
-        ${statusColor || 'gradient-primary text-white border-purple-500/30'}
+        ${typeColor}
         ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
         ${isDragging ? 'opacity-50' : 'hover:shadow-md hover:shadow-purple-500/20'}
       `}
@@ -176,6 +181,13 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
     if (!over) return
 
     const appointment = active.data.current as Appointment
+    if (!appointment?.startTime) return
+    const aptStart = new Date(appointment.startTime)
+    if (aptStart < new Date()) {
+      toast.error('Cannot move past appointments')
+      return
+    }
+
     const targetDateCell = over.data.current
 
     if (!targetDateCell?.date) return
@@ -284,18 +296,21 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
   const startDayOfWeek = monthStart.getDay()
   const paddingDays = Array(startDayOfWeek).fill(null)
 
-  const statusColors: Record<string, string> = {
-    SCHEDULED: 'bg-blue-500/25 text-blue-700 border-blue-500/40 font-medium',
-    CONFIRMED: 'bg-green-500/25 text-green-700 border-green-500/40 font-medium',
-    COMPLETED: 'gradient-primary text-white border-purple-500/30 font-semibold',
-    NO_SHOW: 'bg-red-500/25 text-red-700 border-red-500/40 font-medium',
-    CANCELLED: 'bg-orange-500/25 text-orange-700 border-orange-500/40 font-medium',
+  // Colors by meeting type - dark text for visibility on purple gradient
+  const meetingTypeColors: Record<string, string> = {
+    IN_PERSON: 'bg-blue-500/35 text-blue-900 border-blue-600/50 font-semibold',
+    VIDEO_CALL: 'bg-green-500/35 text-green-900 border-green-600/50 font-semibold',
+    VIDEO: 'bg-green-500/35 text-green-900 border-green-600/50 font-semibold',
+    PHONE_CALL: 'bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold',
+    PHONE: 'bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold',
   }
 
   const meetingTypeIcons: Record<string, any> = {
     IN_PERSON: MapPin,
     VIDEO_CALL: Video,
+    VIDEO: Video,
     PHONE_CALL: Phone,
+    PHONE: Phone,
   }
 
   return (
@@ -355,7 +370,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                         <DraggableAppointment
                           key={apt.id}
                           appointment={apt}
-                          statusColors={statusColors}
+                          meetingTypeColors={meetingTypeColors}
                           meetingTypeIcons={meetingTypeIcons}
                           onClick={handleAppointmentClick}
                         />
@@ -384,6 +399,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
           onUpdate={() => {
             onAppointmentUpdated()
           }}
+          isPast={selectedAppointment?.startTime ? new Date(selectedAppointment.startTime) < new Date() : false}
         />
       </div>
 
@@ -393,7 +409,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
           <div
             className={`
               text-xs px-2 py-1 rounded-lg border opacity-95 shadow-xl shadow-purple-500/30 antialiased font-semibold
-              ${statusColors[activeAppointment.status] || 'gradient-primary text-white border-purple-500/30'}
+              ${meetingTypeColors[activeAppointment.meetingType] || meetingTypeColors['PHONE_CALL']}
             `}
           >
             <div className="flex items-center gap-1">

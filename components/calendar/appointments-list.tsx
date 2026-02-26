@@ -41,7 +41,18 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
   const meetingTypeIcons: Record<string, any> = {
     IN_PERSON: MapPin,
     VIDEO_CALL: Video,
+    VIDEO: Video,
     PHONE_CALL: Phone,
+    PHONE: Phone,
+  };
+
+  // Text colors by meeting type - visible on dark glass-effect cards
+  const meetingTypeTextColors: Record<string, string> = {
+    IN_PERSON: 'text-blue-300',
+    VIDEO_CALL: 'text-green-300',
+    VIDEO: 'text-green-300',
+    PHONE_CALL: 'text-amber-300',
+    PHONE: 'text-amber-300',
   };
 
   const handleAppointmentClick = (appointment: Appointment) => {
@@ -108,6 +119,8 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
         const MeetingIcon = meetingTypeIcons[apt.meetingType] || MapPin;
         const startDate = new Date(apt.startTime);
         const isPast = startDate < new Date();
+        const typeKey = apt.meetingType || 'PHONE_CALL';
+        const textColor = meetingTypeTextColors[typeKey] || meetingTypeTextColors['PHONE_CALL'];
 
         return (
           <Card
@@ -123,15 +136,15 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                 {/* Left Section - Icon & Details */}
                 <div className="flex items-start gap-4 flex-1">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="bg-purple-500/20 p-3 rounded-lg border border-purple-500/30">
-                      <MeetingIcon className="h-5 w-5 text-purple-400" />
+                    <div className={`p-3 rounded-lg border ${typeKey === 'IN_PERSON' ? 'bg-blue-500/20 border-blue-500/30' : typeKey === 'VIDEO_CALL' || typeKey === 'VIDEO' ? 'bg-green-500/20 border-green-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
+                      <MeetingIcon className={`h-5 w-5 ${typeKey === 'IN_PERSON' ? 'text-blue-400' : typeKey === 'VIDEO_CALL' || typeKey === 'VIDEO' ? 'text-green-400' : 'text-amber-400'}`} />
                     </div>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     {/* Title & Status */}
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-white truncate">{apt.title}</h3>
+                      <h3 className={`font-semibold truncate ${textColor}`}>{apt.title}</h3>
                       <Badge className={`${statusColors[apt.status]} border`}>
                         {apt.status.replace('_', ' ')}
                       </Badge>
@@ -144,37 +157,37 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                     {/* Description */}
                     {apt.description && (
-                      <p className="text-sm text-white mb-3 line-clamp-2">{apt.description}</p>
+                      <p className={`text-sm mb-3 line-clamp-2 ${textColor}`}>{apt.description}</p>
                     )}
 
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {/* Date & Time */}
-                      <div className="flex items-center gap-2 text-white">
-                        <Clock className="h-4 w-4 text-purple-400" />
+                      <div className={`flex items-center gap-2 ${textColor}`}>
+                        <Clock className={`h-4 w-4 ${typeKey === 'IN_PERSON' ? 'text-blue-400' : typeKey === 'VIDEO_CALL' || typeKey === 'VIDEO' ? 'text-green-400' : 'text-amber-400'}`} />
                         <span>{format(startDate, 'MMM d, yyyy • h:mm a')}</span>
                       </div>
 
                       {/* Lead/Contact */}
                       {apt.lead && (
-                        <div className="flex items-center gap-2 text-white">
-                          <User className="h-4 w-4 text-purple-400" />
+                        <div className={`flex items-center gap-2 ${textColor}`}>
+                          <User className={`h-4 w-4 ${typeKey === 'IN_PERSON' ? 'text-blue-400' : typeKey === 'VIDEO_CALL' || typeKey === 'VIDEO' ? 'text-green-400' : 'text-amber-400'}`} />
                           <span className="truncate">{apt.lead.contactPerson}</span>
                         </div>
                       )}
 
                       {/* Location */}
                       {apt.location && apt.meetingType === 'IN_PERSON' && (
-                        <div className="flex items-center gap-2 text-white">
-                          <MapPin className="h-4 w-4 text-purple-400" />
+                        <div className={`flex items-center gap-2 ${textColor}`}>
+                          <MapPin className={`h-4 w-4 ${typeKey === 'IN_PERSON' ? 'text-blue-400' : typeKey === 'VIDEO_CALL' || typeKey === 'VIDEO' ? 'text-green-400' : 'text-amber-400'}`} />
                           <span className="truncate">{apt.location}</span>
                         </div>
                       )}
 
                       {/* Payment Info */}
                       {apt.requiresPayment && apt.paymentAmount && (
-                        <div className="flex items-center gap-2 text-white">
-                          <span className="text-white font-medium">
+                        <div className={`flex items-center gap-2 ${textColor}`}>
+                          <span className={`font-medium ${textColor}`}>
                             ${(apt.paymentAmount / 100).toFixed(2)}
                           </span>
                           {apt.payments && apt.payments.length > 0 ? (
@@ -201,7 +214,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                       <Phone className="h-4 w-4" />
                     </Button>
                   )}
-                  {apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
+                  {!isPast && apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -229,6 +242,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
         onUpdate={() => {
           onAppointmentUpdated();
         }}
+        isPast={selectedAppointment?.startTime ? new Date(selectedAppointment.startTime) < new Date() : false}
       />
 
       {/* Voice AI Call Dialog */}

@@ -27,9 +27,10 @@ interface AppointmentDetailDialogProps {
   onClose: () => void
   appointment: any
   onUpdate: () => void
+  isPast?: boolean
 }
 
-export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }: AppointmentDetailDialogProps) {
+export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate, isPast = false }: AppointmentDetailDialogProps) {
   const { data: session } = useSession() || {}
   const industry = (session?.user as any)?.industry || null
   const config = getIndustryBookingConfig(industry)
@@ -128,7 +129,7 @@ export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }
                   size="icon"
                   variant="outline"
                   onClick={() => setShowDeleteDialog(true)}
-                  disabled={loading}
+                  disabled={loading || isPast}
                   className="border-red-500/20 text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -237,8 +238,8 @@ export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }
               </Card>
             )}
 
-            {/* Status Actions */}
-            {appointment.status === 'SCHEDULED' && (
+            {/* Status Actions - only for future appointments */}
+            {!isPast && appointment.status === 'SCHEDULED' && (
               <div className="flex gap-3">
                 <Button
                   className="flex-1 gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30"
@@ -259,7 +260,7 @@ export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }
               </div>
             )}
 
-            {appointment.status === 'CONFIRMED' && (
+            {!isPast && appointment.status === 'CONFIRMED' && (
               <Button
                 className="w-full gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30"
                 onClick={() => handleUpdateStatus('COMPLETED')}
