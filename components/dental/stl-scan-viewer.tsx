@@ -9,7 +9,7 @@
 
 import { useState, useCallback, useRef, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stage, useProgress, Html } from '@react-three/drei';
+import { OrbitControls, Center, useProgress, Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -99,9 +99,9 @@ function StlModel({ url, color }: { url: string; color: string }) {
 
 function SceneContent({ url, color }: { url: string; color: string }) {
   return (
-    <Stage adjustCamera intensity={0.5} environment="city">
+    <Center>
       <StlModel url={url} color={color} />
-    </Stage>
+    </Center>
   );
 }
 
@@ -206,9 +206,10 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
   const Viewer = ({ scan, height }: { scan: ScanRecord; height: string }) => (
     <div style={{ height }} className="w-full rounded-lg overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800 relative">
       <Canvas shadows camera={{ position: [0, 0, 5], fov: 50 }}>
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[5, 5, 5]} intensity={0.8} castShadow />
-        <directionalLight position={[-3, -3, 2]} intensity={0.3} />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 5, 5]} intensity={1.0} castShadow />
+        <directionalLight position={[-3, -3, 2]} intensity={0.4} />
+        <directionalLight position={[0, -5, 3]} intensity={0.3} />
         <Suspense fallback={<Loader />}>
           <SceneContent url={scan.url} color={modelColor} />
         </Suspense>
