@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useCallback, useRef, Suspense } from 'react';
+import { useState, useCallback, useRef, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, useProgress, Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,10 @@ function StlModel({ url, color }: { url: string; color: string }) {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [error, setError] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
+    if (!url) return;
+    setGeometry(null);
+    setError(false);
     const loader = new STLLoader();
     loader.load(
       url,
@@ -70,7 +73,7 @@ function StlModel({ url, color }: { url: string; color: string }) {
       undefined,
       () => setError(true)
     );
-  });
+  }, [url]);
 
   if (error) {
     return (
@@ -145,7 +148,7 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
             scanType: d.tags || 'full-arch-upper',
           }));
         setScans(mapped);
-        if (mapped.length > 0 && !selectedScan) setSelectedScan(mapped[0]);
+        if (mapped.length > 0) setSelectedScan(mapped[0]);
       }
     } catch (err) {
       console.error('Error fetching scans:', err);
@@ -154,7 +157,7 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
     }
   }, [leadId, activeClinic?.id]);
 
-  useState(() => { fetchScans(); });
+  useEffect(() => { fetchScans(); }, [fetchScans]);
 
   const handleUpload = async (file: File) => {
     if (!session?.user?.id) { toast.error('Please sign in'); return; }

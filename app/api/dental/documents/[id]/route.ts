@@ -9,8 +9,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { AccessAuditService } from '@/lib/storage/access-audit-service';
-import { decryptData } from '@/lib/docpen/security';
 import { t } from '@/lib/i18n-server';
+import * as fs from 'fs';
+import * as path from 'path';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -56,15 +57,22 @@ export async function GET(
       return apiErrors.notFound(await t('api.notFound'));
     }
 
-    // Get encryption key (in production, retrieve from secure key management)
-    // For now, we'll need to store the key securely - this is a placeholder
-    const encryptionKey = process.env.DOCUMENT_ENCRYPTION_KEY || '';
+    let fileBuffer: Buffer;
 
-    // Download and decrypt
-    const fileBuffer = await storageService.downloadDocument(
-      document.encryptedStoragePath,
-      encryptionKey
-    );
+    // Test-assets: serve from local public folder (no S3)
+    if (document.encryptedStoragePath?.startsWith('/test-assets/')) {
+      const publicPath = path.join(process.cwd(), 'public', document.encryptedStoragePath);
+      if (!fs.existsSync(publicPath)) {
+        return apiErrors.notFound(await t('api.notFound'));
+      }
+      fileBuffer = fs.readFileSync(publicPath);
+    } else {
+      const encryptionKey = process.env.DOCUMENT_ENCRYPTION_KEY || '';
+      fileBuffer = await storageService.downloadDocument(
+        document.encryptedStoragePath,
+        encryptionKey
+      );
+    }
 
     // Log access
     await auditService.logAccess(

@@ -165,6 +165,11 @@ export async function GET(request: NextRequest) {
       where.clinicId = clinicId;
     }
 
+    const documentType = searchParams.get('documentType');
+    const category = searchParams.get('category');
+    if (documentType) where.documentType = documentType;
+    if (category) where.category = category;
+
     const documents = await prisma.patientDocument.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -180,12 +185,23 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         createdBy: true,
         accessLevel: true,
+        encryptedStoragePath: true,
       },
+    });
+
+    const documentsWithUrl = documents.map((doc: any) => {
+      const isTestAsset = doc.encryptedStoragePath?.startsWith('/test-assets/');
+      return {
+        ...doc,
+        fileUrl: isTestAsset ? doc.encryptedStoragePath : `/api/dental/documents/${doc.id}`,
+        url: isTestAsset ? doc.encryptedStoragePath : `/api/dental/documents/${doc.id}`,
+        encryptedStoragePath: undefined,
+      };
     });
 
     return NextResponse.json({
       success: true,
-      documents,
+      documents: documentsWithUrl,
     });
   } catch (error: any) {
     console.error('Error fetching documents:', error);
