@@ -358,23 +358,61 @@ async function main() {
     console.log(`   ✅ Created odontogram for lead ${leadId}`);
   }
 
-  // Create periodontal charts
+  // Create periodontal charts — Record<string, ToothData> format for all 32 teeth
+  // Each patient gets a different clinical profile for realistic testing
   console.log('\n📊 Creating periodontal charts...');
-  for (const leadId of createdLeads) {
-    const measurements: any[] = [];
-    
-    // Create measurements for teeth 1-16 (upper arch)
-    for (let tooth = 1; tooth <= 16; tooth++) {
-      if (Math.random() > 0.3) {
-        measurements.push({
-          tooth: tooth.toString(),
-          mesial: { pd: Math.floor(Math.random() * 5) + 1, bop: Math.random() > 0.7, recession: Math.random() > 0.8 ? Math.floor(Math.random() * 3) : 0 },
-          buccal: { pd: Math.floor(Math.random() * 5) + 1, bop: Math.random() > 0.7, recession: Math.random() > 0.8 ? Math.floor(Math.random() * 3) : 0 },
-          distal: { pd: Math.floor(Math.random() * 5) + 1, bop: Math.random() > 0.7, recession: Math.random() > 0.8 ? Math.floor(Math.random() * 3) : 0 },
-          lingual: { pd: Math.floor(Math.random() * 5) + 1, bop: Math.random() > 0.7, recession: Math.random() > 0.8 ? Math.floor(Math.random() * 3) : 0 },
-          mobility: Math.random() > 0.9 ? Math.floor(Math.random() * 3) + 1 : 0,
-        });
-      }
+
+  const perioProfiles = [
+    // Profile 0: Localized severe (teeth 14,15,30 are bad, rest healthy)
+    (tooth: number) => {
+      const severe = [14, 15, 30].includes(tooth);
+      const moderate = [2, 3, 18, 19].includes(tooth);
+      const basePd = severe ? 7 : moderate ? 4 : 2;
+      const variation = () => Math.floor(Math.random() * 2);
+      return {
+        mesial:  { pd: basePd + variation(), bop: severe || (moderate && Math.random() > 0.5) },
+        buccal:  { pd: Math.max(basePd - 1, 1) + variation(), bop: severe },
+        distal:  { pd: basePd + variation(), bop: severe },
+        lingual: { pd: basePd + 1 + variation(), bop: severe },
+      };
+    },
+    // Profile 1: Generalized moderate (most teeth 4-5mm)
+    (tooth: number) => {
+      const basePd = 4 + Math.floor(Math.random() * 2);
+      return {
+        mesial:  { pd: basePd, bop: Math.random() > 0.5 },
+        buccal:  { pd: basePd - 1, bop: Math.random() > 0.6 },
+        distal:  { pd: basePd, bop: Math.random() > 0.5 },
+        lingual: { pd: basePd, bop: Math.random() > 0.6 },
+      };
+    },
+    // Profile 2: Mostly healthy with a couple problem spots
+    (tooth: number) => {
+      const problem = [19, 30].includes(tooth);
+      const pd = problem ? 6 + Math.floor(Math.random() * 3) : 2 + Math.floor(Math.random() * 2);
+      return {
+        mesial:  { pd, bop: problem },
+        buccal:  { pd: Math.max(pd - 1, 1), bop: false },
+        distal:  { pd, bop: problem },
+        lingual: { pd, bop: problem && Math.random() > 0.3 },
+      };
+    },
+    // Profile 3: Healthy patient (all ≤3mm, minimal BOP)
+    (_tooth: number) => ({
+      mesial:  { pd: 2 + Math.floor(Math.random() * 2), bop: Math.random() > 0.9 },
+      buccal:  { pd: 1 + Math.floor(Math.random() * 2), bop: false },
+      distal:  { pd: 2 + Math.floor(Math.random() * 2), bop: Math.random() > 0.9 },
+      lingual: { pd: 2 + Math.floor(Math.random() * 2), bop: false },
+    }),
+  ];
+
+  for (let idx = 0; idx < createdLeads.length; idx++) {
+    const leadId = createdLeads[idx];
+    const profile = perioProfiles[idx % perioProfiles.length];
+    const measurements: Record<string, any> = {};
+
+    for (let tooth = 1; tooth <= 32; tooth++) {
+      measurements[tooth.toString()] = profile(tooth);
     }
 
     await prisma.dentalPeriodontalChart.create({
@@ -388,7 +426,32 @@ async function main() {
         notes: `Mock periodontal chart - ${MOCK_DATA_TAG}`,
       },
     });
-    console.log(`   ✅ Created periodontal chart for lead ${leadId}`);
+
+    // Also create an older exam (3 months ago) for history comparison
+    const olderMeasurements: Record<string, any> = {};
+    for (let tooth = 1; tooth <= 32; tooth++) {
+      const current = measurements[tooth.toString()];
+      olderMeasurements[tooth.toString()] = {
+        mesial:  { pd: Math.max(current.mesial.pd + Math.floor(Math.random() * 2) - 1, 1), bop: current.mesial.bop },
+        buccal:  { pd: Math.max(current.buccal.pd + Math.floor(Math.random() * 2) - 1, 1), bop: current.buccal.bop },
+        distal:  { pd: Math.max(current.distal.pd + Math.floor(Math.random() * 2) - 1, 1), bop: current.distal.bop },
+        lingual: { pd: Math.max(current.lingual.pd + Math.floor(Math.random() * 2) - 1, 1), bop: current.lingual.bop },
+      };
+    }
+
+    await prisma.dentalPeriodontalChart.create({
+      data: {
+        leadId,
+        userId,
+        clinicId,
+        measurements: olderMeasurements,
+        chartDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+        chartedBy: orthodontistUser.name || 'Mock Data',
+        notes: `Mock periodontal chart (3 months prior) - ${MOCK_DATA_TAG}`,
+      },
+    });
+
+    console.log(`   ✅ Created 2 periodontal charts for lead ${leadId} (current + 3mo history)`);
   }
 
   // Create treatment plans
@@ -573,32 +636,31 @@ async function main() {
 
       const hasAI = Math.random() > 0.2; // 80% have AI analysis for better testing
       
-      // Create more varied AI analysis
       const analysisTemplates = [
         {
-          findings: 'No significant abnormalities detected. Normal bone structure and tooth alignment.',
-          confidence: 0.92,
-          recommendations: 'Continue regular monitoring. No immediate treatment required.',
+          findings: 'Tooth #14: Significant horizontal bone loss observed on the mesial and distal aspects, approximately 40% reduction from normal alveolar crest height. Tooth #15: Advanced bone loss with Grade II furcation involvement visible in the buccal furcation area. Widened periodontal ligament space noted. Tooth #30: Moderate bone loss on mesial aspect with a vertical (angular) defect extending approximately 5mm from the alveolar crest. Remaining teeth show normal bone levels and no periapical pathology.',
+          confidence: 0.87,
+          recommendations: 'Periodontal evaluation recommended for teeth 14, 15, and 30. Consider scaling and root planing in affected quadrants. Re-evaluate furcation involvement on tooth 15 for possible surgical intervention.',
         },
         {
-          findings: 'Mild crowding observed in anterior region. Consider orthodontic evaluation.',
-          confidence: 0.88,
-          recommendations: 'Schedule consultation for orthodontic treatment options.',
-        },
-        {
-          findings: 'Early signs of periodontal bone loss detected in posterior region.',
+          findings: 'Generalized mild to moderate horizontal bone loss (20-30%) observed across posterior teeth. Teeth #2 and #3: Interproximal caries detected on the distal surface of tooth 2 and mesial surface of tooth 3. Tooth #19: Periapical radiolucency (~3mm diameter) at root apex, suggesting chronic periapical pathology. Tooth #18: Existing amalgam restoration appears intact. No root fractures detected.',
           confidence: 0.85,
-          recommendations: 'Recommend periodontal treatment and regular monitoring.',
+          recommendations: 'Address caries on teeth 2 and 3 promptly. Endodontic evaluation for tooth 19. Periodontal maintenance recommended given generalized bone loss pattern.',
         },
         {
-          findings: 'Impacted third molar detected. No immediate intervention required.',
-          confidence: 0.90,
-          recommendations: 'Monitor for symptoms. Consider extraction if symptomatic.',
+          findings: 'Overall excellent bone levels with normal alveolar crest height throughout. Tooth #30: Small periapical radiolucency (2mm) noted; correlate clinically with vitality testing. No caries detected. All existing restorations appear intact. Third molars fully erupted and well-positioned.',
+          confidence: 0.92,
+          recommendations: 'Continue regular monitoring. Vitality test recommended for tooth 30. No immediate treatment required.',
         },
         {
-          findings: 'Excellent bone density and root structure. No concerns identified.',
+          findings: 'Teeth #14 and #15: Severe bone loss with loss of lamina dura on mesial and distal aspects. Tooth #15 shows Grade II furcation involvement. Calculus deposits visible subgingivally on teeth 14-15. Tooth #3: Recurrent caries under existing MOD composite restoration. Teeth #18 and #19: Moderate bone loss (30-35%) with widened periodontal ligament space.',
+          confidence: 0.84,
+          recommendations: 'Urgent periodontal treatment for teeth 14-15. Replacement of restoration on tooth 3. Deep scaling in lower left quadrant for teeth 18-19. Full periodontal charting recommended.',
+        },
+        {
+          findings: 'No significant pathology detected. Normal bone density and alveolar crest height. All teeth present with intact root structures. No periapical lesions or carious lesions identified. Mild calculus accumulation in lower anterior region.',
           confidence: 0.95,
-          recommendations: 'Continue excellent oral hygiene practices.',
+          recommendations: 'Prophylaxis recommended. Continue excellent oral hygiene practices.',
         },
       ];
       
@@ -606,8 +668,9 @@ async function main() {
       
       await prisma.dentalXRay.create({
         data: {
-          leadId,
-          userId,
+          lead: { connect: { id: leadId } },
+          user: { connect: { id: userId } },
+          clinic: { connect: { id: clinicId } },
           dicomFile: `mock/dicom/${leadId}-${i}.dcm`,
           imageFile: `mock/images/${leadId}-${i}.jpg`,
           imageUrl: MOCK_XRAY_IMAGE_URLS[Math.floor(Math.random() * MOCK_XRAY_IMAGE_URLS.length)],

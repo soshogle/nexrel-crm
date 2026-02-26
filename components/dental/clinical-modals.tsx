@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CardModal } from '@/components/dental/card-modal';
 import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
 import { TreatmentPlanBuilder } from '@/components/dental/treatment-plan-builder';
-import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
+import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { DicomViewer } from '@/components/dental/dicom-viewer';
 import { ChevronLeft, ChevronRight, Brain } from 'lucide-react';
@@ -174,7 +174,7 @@ export function ClinicalModals({
 
       <CardModal isOpen={openModal === 'periodontal'} onClose={onCloseModal} title="Periodontal Charting">
         {selectedLeadId ? (
-          <div className="space-y-4"><RedesignedPeriodontalChart measurements={periodontalData} /></div>
+          <div className="space-y-4"><EnhancedPeriodontalChart measurements={periodontalData} /></div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
         )}

@@ -144,13 +144,13 @@ export function DentalCardGrid({
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 4. Periodontal Charting */}
         <Card
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
           onClick={() => onOpenModal('periodontal')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900">Periodontal Charting</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-2 pb-4 overflow-x-auto min-w-0">
             {selectedLeadId ? (
               <EnhancedPeriodontalChart
                 measurements={periodontalData}

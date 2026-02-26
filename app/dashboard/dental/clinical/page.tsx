@@ -13,7 +13,7 @@ import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
 import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
-import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
+import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
 import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
 import { DentalWorkflowTemplatesBrowser } from '@/components/dental/workflow-templates-browser';
 import { ClinicalModals } from '@/components/dental/clinical-modals';
@@ -538,7 +538,7 @@ function ClinicalDashboardPageContent() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <RedesignedPeriodontalChart measurements={periodontalData} />
+              <EnhancedPeriodontalChart measurements={periodontalData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}

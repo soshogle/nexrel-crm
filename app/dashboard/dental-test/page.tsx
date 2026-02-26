@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { DentalCardGrid } from '@/components/dental/dental-card-grid';
 import { DentalModals } from '@/components/dental/dental-modals';
+import { NeuralPerioChart } from '@/components/dental/neural-perio-chart';
+import { PerioAiSidePanel } from '@/components/dental/perio-ai-side-panel';
 
 function PanableCanvas({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -447,6 +449,30 @@ export default function DentalTestPage() {
         displayMultiChairAppointments={displayMultiChairAppointments}
         onOpenModal={setOpenModal}
       />
+
+      {/* ── Next-Gen Concept Preview ─────────────────────────────────── */}
+      <div className="mt-6 mb-2">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/30 to-transparent" />
+          <span className="text-xs font-mono text-indigo-400 uppercase tracking-widest px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10">
+            ◈ Neural Perio — Next-Gen Design Concept
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-l from-indigo-500/30 to-transparent" />
+        </div>
+        <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <NeuralPerioChart
+              measurements={periodontalData ?? undefined}
+              leadId={selectedLeadId ?? undefined}
+              onSave={handleSavePeriodontalChart}
+            />
+          </div>
+          <PerioAiSidePanel
+            leadId={selectedLeadId ?? undefined}
+            measurements={periodontalData ?? undefined}
+          />
+        </div>
+      </div>
 
       <DentalModals
         openModal={openModal}
