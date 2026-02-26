@@ -37,10 +37,12 @@ async function main() {
   const clinicId = membership.clinicId;
   console.log(`✅ Clinic: ${(membership as any).clinic?.name || clinicId}`);
 
+  // Sort newest first — matches /api/leads order so the selected lead in the UI is the same
   const leads = await prisma.lead.findMany({
     where: { userId: user.id },
     select: { id: true, contactPerson: true },
-    take: 10,
+    orderBy: { createdAt: 'desc' },
+    take: 50,
   });
   if (leads.length === 0) {
     console.error('❌ No leads for orthodontist');
