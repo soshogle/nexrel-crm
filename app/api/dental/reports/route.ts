@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subDays, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { apiErrors } from '@/lib/api-error';
 
@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const reportType = (searchParams.get('reportType') || 'comprehensive') as ReportParams['reportType'];
@@ -212,7 +213,7 @@ export async function GET(request: NextRequest) {
       // If clinicId is provided, we'll filter invoices by checking if the lead has appointments/procedures with that clinic
       if (clinicId) {
         // Get lead IDs that have appointments or procedures with this clinic
-        const clinicLeadIds = await prisma.bookingAppointment.findMany({
+        const clinicLeadIds = await db.bookingAppointment.findMany({
           where: {
             userId: session.user.id,
             clinicId,
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const invoices = await prisma.invoice.findMany({
+      const invoices = await db.invoice.findMany({
         where: invoiceWhere,
         select: {
           totalAmount: true,
@@ -249,7 +250,7 @@ export async function GET(request: NextRequest) {
       };
 
       if (clinicId) {
-        const clinicLeadIds = await prisma.bookingAppointment.findMany({
+        const clinicLeadIds = await db.bookingAppointment.findMany({
           where: {
             userId: session.user.id,
             clinicId,
@@ -266,7 +267,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const payments = await prisma.payment.findMany({
+      const payments = await db.payment.findMany({
         where: paymentWhere,
         select: {
           amount: true,
@@ -292,7 +293,7 @@ export async function GET(request: NextRequest) {
 
       if (clinicId) {
         // Get lead IDs that have procedures with this clinic
-        const clinicProcedures = await (prisma as any).dentalProcedure.findMany({
+        const clinicProcedures = await (db as any).dentalProcedure.findMany({
           where: {
             userId: session.user.id,
             clinicId,
@@ -314,7 +315,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const appointments = await prisma.bookingAppointment.findMany({
+      const appointments = await db.bookingAppointment.findMany({
         where: appointmentWhere,
         select: {
           leadId: true,
@@ -325,7 +326,7 @@ export async function GET(request: NextRequest) {
       });
 
       // From procedures
-      const procedures = await (prisma as any).dentalProcedure.findMany({
+      const procedures = await (db as any).dentalProcedure.findMany({
         where: {
           userId: session.user.id,
           performedDate: {
@@ -394,7 +395,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (clinicId) {
-      const clinicProcedures = await (prisma as any).dentalProcedure.findMany({
+      const clinicProcedures = await (db as any).dentalProcedure.findMany({
         where: {
           userId: session.user.id,
           clinicId,
@@ -415,7 +416,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const allAppointments = await prisma.bookingAppointment.findMany({
+    const allAppointments = await db.bookingAppointment.findMany({
       where: allAppointmentsWhere,
       select: {
         leadId: true,
@@ -425,7 +426,7 @@ export async function GET(request: NextRequest) {
       if (apt.leadId) totalPatients.add(apt.leadId);
     });
 
-    const allProcedures = await (prisma as any).dentalProcedure.findMany({
+    const allProcedures = await (db as any).dentalProcedure.findMany({
       where: {
         userId: session.user.id,
         performedDate: {

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { VnaManager } from '@/lib/dental/vna-integration';
 import { encryptJSON, decryptJSON } from '@/lib/encryption';
 import { apiErrors } from '@/lib/api-error';
@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
-    const vnas = await (prisma as any).vnaConfiguration.findMany({
+    const vnas = await (db as any).vnaConfiguration.findMany({
       where: {
         userId: session.user.id,
       },
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const {
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, unset other defaults
     if (isDefault) {
-      await (prisma as any).vnaConfiguration.updateMany({
+      await (db as any).vnaConfiguration.updateMany({
         where: {
           userId: session.user.id,
           isDefault: true,
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const vna = await (prisma as any).vnaConfiguration.create({
+    const vna = await (db as any).vnaConfiguration.create({
       data: {
         userId: session.user.id,
         name,
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update test status
-    await (prisma as any).vnaConfiguration.update({
+    await (db as any).vnaConfiguration.update({
       where: { id: vna.id },
       data: {
         lastTestedAt: new Date(),
@@ -162,6 +164,7 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -171,7 +174,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify ownership
-    const existing = await (prisma as any).vnaConfiguration.findUnique({
+    const existing = await (db as any).vnaConfiguration.findUnique({
       where: { id },
     });
 
@@ -186,7 +189,7 @@ export async function PUT(request: NextRequest) {
 
     // Handle default VNA
     if (updateData.isDefault) {
-      await (prisma as any).vnaConfiguration.updateMany({
+      await (db as any).vnaConfiguration.updateMany({
         where: {
           userId: session.user.id,
           isDefault: true,
@@ -198,7 +201,7 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const updated = await (prisma as any).vnaConfiguration.update({
+    const updated = await (db as any).vnaConfiguration.update({
       where: { id },
       data: {
         ...updateData,
@@ -226,6 +229,7 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -235,7 +239,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify ownership
-    const existing = await (prisma as any).vnaConfiguration.findUnique({
+    const existing = await (db as any).vnaConfiguration.findUnique({
       where: { id },
     });
 
@@ -243,7 +247,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('VNA not found');
     }
 
-    await (prisma as any).vnaConfiguration.delete({
+    await (db as any).vnaConfiguration.delete({
       where: { id },
     });
 

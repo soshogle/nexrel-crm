@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       return apiErrors.badRequest('Lead ID or Clinic ID required');
     }
 
-    const procedures = await (prisma as any).dentalProcedure.findMany({
+    const procedures = await (db as any).dentalProcedure.findMany({
       where,
       orderBy: [
         { performedDate: 'desc' },

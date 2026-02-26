@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { chatCompletion } from '@/lib/openai-client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized('Authentication required');
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { leadId, measurements } = body;
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Fetch any existing x-ray AI analyses for this patient
     let xrayFindings: string[] = [];
     try {
-      const xrays = await (prisma as any).dentalXRay.findMany({
+      const xrays = await (db as any).dentalXRay.findMany({
         where: { leadId, userId: session.user.id, aiAnalysis: { not: null } },
         orderBy: { dateTaken: 'desc' },
         take: 5,
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Fetch patient info for context
     let patientName = 'Unknown Patient';
     try {
-      const lead = await prisma.lead.findUnique({
+      const lead = await db.lead.findUnique({
         where: { id: leadId },
         select: { name: true },
       });

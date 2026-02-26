@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { VnaManager } from '@/lib/dental/vna-integration';
 import crypto from 'crypto';
 import { apiErrors } from '@/lib/api-error';
@@ -36,8 +36,9 @@ export async function POST(
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
-    const vna = await (prisma as any).vnaConfiguration.findUnique({
+    const vna = await (db as any).vnaConfiguration.findUnique({
       where: { id: params.id },
     });
 
@@ -68,7 +69,7 @@ export async function POST(
     });
 
     // Update test status
-    await (prisma as any).vnaConfiguration.update({
+    await (db as any).vnaConfiguration.update({
       where: { id: params.id },
       data: {
         lastTestedAt: new Date(),

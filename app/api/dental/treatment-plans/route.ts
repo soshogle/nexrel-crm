@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { TreatmentPlanStatus } from '@prisma/client';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       where.clinicId = clinicId;
     }
 
-    const plans = await prisma.dentalTreatmentPlan.findMany({
+    const plans = await db.dentalTreatmentPlan.findMany({
       where,
       orderBy: { createdDate: 'desc' },
       include: {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const {
@@ -114,13 +116,13 @@ export async function POST(request: NextRequest) {
     let plan;
     if (id) {
       // Update existing
-      plan = await prisma.dentalTreatmentPlan.update({
+      plan = await db.dentalTreatmentPlan.update({
         where: { id },
         data,
       });
     } else {
       // Create new
-      plan = await prisma.dentalTreatmentPlan.create({
+      plan = await db.dentalTreatmentPlan.create({
         data,
       });
     }
@@ -142,6 +144,7 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { id, status, patientConsent } = body;
@@ -166,7 +169,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const plan = await prisma.dentalTreatmentPlan.update({
+    const plan = await db.dentalTreatmentPlan.update({
       where: { id },
       data: updateData,
     });

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { chromium } from 'playwright';
 import { apiErrors } from '@/lib/api-error';
 
@@ -225,6 +225,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { invoiceId } = body;
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch invoice
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await db.invoice.findUnique({
       where: { id: invoiceId },
     });
 
@@ -248,7 +249,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get practice info
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: {
         name: true,

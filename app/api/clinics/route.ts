@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    // Get user's clinics
-    const userClinics = await prisma.userClinic.findMany({
+    const db = getRouteDb(session);
+    const userClinics = await db.userClinic.findMany({
       where: { userId: session.user.id },
       include: {
         clinic: true,
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Clinic name is required');
     }
 
-    // Create clinic
-    const clinic = await prisma.clinic.create({
+    const db = getRouteDb(session);
+    const clinic = await db.clinic.create({
       data: {
         name,
         address,
@@ -102,8 +102,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Add user as owner
-    const userClinic = await prisma.userClinic.create({
+    const userClinic = await db.userClinic.create({
       data: {
         userId: session.user.id,
         clinicId: clinic.id,

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
 
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all periodontal charts for this patient, ordered by date
-    const charts = await prisma.dentalPeriodontalChart.findMany({
+    const charts = await db.dentalPeriodontalChart.findMany({
       where,
       orderBy: { chartDate: 'desc' },
     });
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { leadId, measurements, notes, chartDate, clinicId } = body;
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
       createData.clinicId = clinicId;
     }
 
-    const chart = await prisma.dentalPeriodontalChart.create({
+    const chart = await db.dentalPeriodontalChart.create({
       data: createData,
     });
 

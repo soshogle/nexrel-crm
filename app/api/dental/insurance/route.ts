@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { insuranceManager } from '@/lib/dental/insurance-integration';
 import { apiErrors } from '@/lib/api-error';
 
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    const claims = await (prisma as any).dentalInsuranceClaim.findMany({
+    const claims = await (db as any).dentalInsuranceClaim.findMany({
       where,
       include: {
         lead: {
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const {
@@ -132,13 +134,13 @@ export async function POST(request: NextRequest) {
     let claim;
     if (id) {
       // Update existing claim
-      claim = await (prisma as any).dentalInsuranceClaim.update({
+      claim = await (db as any).dentalInsuranceClaim.update({
         where: { id },
         data,
       });
     } else {
       // Create new claim
-      claim = await (prisma as any).dentalInsuranceClaim.create({
+      claim = await (db as any).dentalInsuranceClaim.create({
         data,
       });
     }

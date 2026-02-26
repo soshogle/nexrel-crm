@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import OpenAI from 'openai';
 import {
   validateToothData,
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    const db = getRouteDb(session);
 
     const effectiveUserId = session?.user?.id || bodyUserId;
     if (!effectiveUserId) {
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     let finalToothData: ToothData = toothData;
     if (merge) {
-      const existing = await prisma.dentalOdontogram.findFirst({
+      const existing = await db.dentalOdontogram.findFirst({
         where: { leadId: lead.id, userId: effectiveUserId },
         orderBy: { chartDate: 'desc' },
       });

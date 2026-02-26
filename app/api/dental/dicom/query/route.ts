@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DicomServerService } from '@/lib/dental/dicom-server';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
 
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { serverId, patientId, patientName, studyDate, modality } = body;

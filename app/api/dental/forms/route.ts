@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
 
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'templates' or 'responses'
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       if (leadId) where.leadId = leadId;
       if (formId) where.formId = formId;
 
-      const responses = await prisma.dentalFormResponse.findMany({
+      const responses = await db.dentalFormResponse.findMany({
         where,
         include: {
           form: {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, responses });
     } else {
       // Get form templates
-      const forms = await prisma.dentalForm.findMany({
+      const forms = await db.dentalForm.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: 'desc' },
       });
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { type, formId, leadId, formData, formName, formSchema, isTemplate, clinicId } = body;
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Get clinicId from request or user's primary clinic
     let finalClinicId = clinicId;
     if (!finalClinicId) {
-      const primaryClinic = await prisma.userClinic.findFirst({
+      const primaryClinic = await db.userClinic.findFirst({
         where: {
           userId: session.user.id,
           isPrimary: true,
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
         finalClinicId = primaryClinic.clinicId;
       } else {
         // If no primary clinic, get first clinic
-        const firstClinic = await prisma.userClinic.findFirst({
+        const firstClinic = await db.userClinic.findFirst({
           where: {
             userId: session.user.id,
           },
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
         return apiErrors.badRequest(await t('api.formNameSchemaRequired'));
       }
 
-      const form = await prisma.dentalForm.create({
+      const form = await db.dentalForm.create({
         data: {
           userId: session.user.id,
           clinicId: finalClinicId,
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
       // Get clinicId from the form if not provided
       let responseClinicId = clinicId;
       if (!responseClinicId) {
-        const form = await prisma.dentalForm.findUnique({
+        const form = await db.dentalForm.findUnique({
           where: { id: formId },
           select: { clinicId: true },
         });
@@ -145,7 +147,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const response = await prisma.dentalFormResponse.create({
+      const response = await db.dentalFormResponse.create({
         data: {
           formId,
           leadId,

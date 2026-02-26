@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
@@ -24,9 +24,10 @@ export async function GET(
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     // Find X-ray
-    const xray = await (prisma as any).dentalXRay.findUnique({
+    const xray = await (db as any).dentalXRay.findUnique({
       where: {
         id: params.id,
         userId: session.user.id,

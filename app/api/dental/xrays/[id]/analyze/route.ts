@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { DicomParser } from '@/lib/dental/dicom-parser';
 import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
@@ -45,9 +45,10 @@ export async function POST(
     if (!session?.user?.id) {
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
+    const db = getRouteDb(session);
 
     // Get user's language preference
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: { language: true },
     });
@@ -64,7 +65,7 @@ export async function POST(
 
     // Find X-ray
     // Note: Model name will be available after running: npx prisma generate
-    const xray = await (prisma as any).dentalXRay.findUnique({
+    const xray = await (db as any).dentalXRay.findUnique({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -212,7 +213,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
     };
 
     // Update X-ray with analysis
-    const updatedXray = await (prisma as any).dentalXRay.update({
+    const updatedXray = await (db as any).dentalXRay.update({
       where: { id: params.id },
       data: {
         aiAnalysis,
@@ -223,7 +224,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
 
     // Parse findings and update odontogram (X-ray AI → odontogram)
     try {
-      const existingOdontogram = await prisma.dentalOdontogram.findFirst({
+      const existingOdontogram = await db.dentalOdontogram.findFirst({
         where: { leadId: xray.leadId, userId: session.user.id },
         orderBy: { chartDate: 'desc' },
       });

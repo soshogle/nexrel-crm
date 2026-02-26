@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     const treatmentPlanId = searchParams.get('treatmentPlanId');
 
     // Get user's clinics for filtering
-    const userClinics = await prisma.userClinic.findMany({
+    const userClinics = await db.userClinic.findMany({
       where: { userId: session.user.id },
       select: { clinicId: true },
     });
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       where.treatmentPlanId = treatmentPlanId;
     }
 
-    const orders = await prisma.dentalLabOrder.findMany({
+    const orders = await db.dentalLabOrder.findMany({
       where,
       include: {
         lead: {
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const {
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
       : generateOrderNumber();
 
     // Get user's primary clinic for clinicId
-    const userClinic = await prisma.userClinic.findFirst({
+    const userClinic = await db.userClinic.findFirst({
       where: {
         userId: session.user.id,
         isPrimary: true,
@@ -182,13 +184,13 @@ export async function POST(request: NextRequest) {
     let order;
     if (id) {
       // Update existing order
-      order = await prisma.dentalLabOrder.update({
+      order = await db.dentalLabOrder.update({
         where: { id },
         data,
       });
     } else {
       // Create new order
-      order = await prisma.dentalLabOrder.create({
+      order = await db.dentalLabOrder.create({
         data,
       });
     }
@@ -210,6 +212,7 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
     const body = await request.json();
     const { id, status, trackingNumber, shippingMethod } = body;
@@ -249,7 +252,7 @@ export async function PATCH(request: NextRequest) {
       updateData.shippingMethod = shippingMethod;
     }
 
-    const order = await prisma.dentalLabOrder.update({
+    const order = await db.dentalLabOrder.update({
       where: { id },
       data: updateData,
     });
