@@ -87,9 +87,9 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
       setLoading(true);
       setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const url = `/api/dental/documents?leadId=${leadId}&documentType=PHOTO${clinicParam}`;
+      let url = `/api/dental/documents?leadId=${leadId}&documentType=PHOTO${clinicParam}`;
       console.log('🔍 [PhotoGallery] Fetching:', url);
-      const res = await fetch(url);
+      let res = await fetch(url);
       console.log('🔍 [PhotoGallery] Response status:', res.status);
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
@@ -97,9 +97,22 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
         setFetchError(`Failed to load photos (${res.status})`);
         return;
       }
-      const data = await res.json();
-      const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
-      console.log('🔍 [PhotoGallery] Received', docs.length, 'documents', docs.map((d: any) => d.fileName));
+      let data = await res.json();
+      let docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+
+      // Retry without clinicId if 0 documents returned (handles stale clinic context)
+      if (docs.length === 0 && activeClinic?.id) {
+        const fallbackUrl = `/api/dental/documents?leadId=${leadId}&documentType=PHOTO`;
+        console.log('🔍 [PhotoGallery] 0 docs with clinicId, retrying without:', fallbackUrl);
+        res = await fetch(fallbackUrl);
+        if (res.ok) {
+          data = await res.json();
+          docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+          console.log('🔍 [PhotoGallery] Fallback returned', docs.length, 'documents');
+        }
+      }
+
+      console.log('🔍 [PhotoGallery] Received', docs.length, 'documents', docs.map((d: any) => ({ name: d.fileName, url: d.fileUrl || d.url })));
       const mapped: PhotoRecord[] = docs.map((d: any) => {
         const tags = typeof d.tags === 'string' ? d.tags.split(',').map((t: string) => t.trim()) : Array.isArray(d.tags) ? d.tags : [];
         const viewType = tags.find((t: string) =>
@@ -243,7 +256,22 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
                 className="aspect-square rounded border border-gray-200 overflow-hidden cursor-pointer hover:border-purple-400 transition-colors relative group"
                 onClick={() => setSelectedPhoto(p)}
               >
-                <img src={p.url} alt={p.viewType} className="w-full h-full object-cover" />
+                <img
+                  src={p.url}
+                  alt={p.viewType || p.fileName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('❌ [PhotoGallery] Image failed to load:', p.url, p.fileName);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                  <div className="text-center">
+                    <ImageIcon className="w-4 h-4 text-gray-400 mx-auto" />
+                    <span className="text-[8px] text-gray-400 block mt-0.5">{p.fileName}</span>
+                  </div>
+                </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <ZoomIn className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -386,7 +414,26 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
                 }}
               >
                 {photo ? (
-                  <img src={photo.url} alt={view.label} className="w-full h-full object-cover" />
+                  <>
+                    <img
+                      src={photo.url}
+                      alt={view.label}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('❌ [PhotoGallery] Grid image failed:', photo.url);
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                        const fallback = img.parentElement?.querySelector('.img-fallback');
+                        if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                      }}
+                    />
+                    <div className="img-fallback hidden w-full h-full items-center justify-center bg-gray-100">
+                      <div className="text-center">
+                        <ImageIcon className="w-5 h-5 text-gray-400 mx-auto" />
+                        <span className="text-[8px] text-gray-400 block mt-0.5">{view.label}</span>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center p-2">
                     <Upload className="w-5 h-5 text-gray-300 mx-auto mb-1" />

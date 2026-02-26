@@ -131,9 +131,9 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
       setLoading(true);
       setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const url = `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan${clinicParam}`;
+      let url = `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan${clinicParam}`;
       console.log('🔍 [StlScanViewer] Fetching:', url);
-      const res = await fetch(url);
+      let res = await fetch(url);
       console.log('🔍 [StlScanViewer] Response status:', res.status);
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
@@ -141,8 +141,20 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
         setFetchError(`Failed to load scans (${res.status})`);
         return;
       }
-      const data = await res.json();
-      const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+      let data = await res.json();
+      let docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+
+      if (docs.length === 0 && activeClinic?.id) {
+        const fallbackUrl = `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan`;
+        console.log('🔍 [StlScanViewer] 0 docs with clinicId, retrying without:', fallbackUrl);
+        res = await fetch(fallbackUrl);
+        if (res.ok) {
+          data = await res.json();
+          docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+          console.log('🔍 [StlScanViewer] Fallback returned', docs.length, 'documents');
+        }
+      }
+
       console.log('🔍 [StlScanViewer] Received', docs.length, 'documents', docs.map((d: any) => d.fileName));
       const mapped: ScanRecord[] = docs
         .filter((d: any) => {
