@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { ConsentService } from '@/lib/storage/consent-service';
 import { AccessAuditService } from '@/lib/storage/access-audit-service';
@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
     if (clinicId) {
       createData.clinicId = clinicId;
     }
-    const document = await prisma.patientDocument.create({
+    const db = getRouteDb(session);
+    const document = await db.patientDocument.create({
       data: createData,
     });
 
@@ -170,7 +171,8 @@ export async function GET(request: NextRequest) {
     if (documentType) where.documentType = documentType;
     if (category) where.category = category;
 
-    const documents = await prisma.patientDocument.findMany({
+    const db = getRouteDb(session);
+    const documents = await db.patientDocument.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       select: {

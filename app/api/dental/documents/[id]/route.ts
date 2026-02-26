@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { AccessAuditService } from '@/lib/storage/access-audit-service';
 import { t } from '@/lib/i18n-server';
@@ -31,7 +31,8 @@ export async function GET(
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
-    const document = await prisma.patientDocument.findUnique({
+    const db = getRouteDb(session);
+    const document = await db.patientDocument.findUnique({
       where: { id: params.id },
     });
 
@@ -84,7 +85,7 @@ export async function GET(
     );
 
     // Update last accessed
-    await prisma.patientDocument.update({
+    await db.patientDocument.update({
       where: { id: document.id },
       data: {
         lastAccessedBy: session.user.id,
@@ -117,7 +118,8 @@ export async function DELETE(
       return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
-    const document = await prisma.patientDocument.findUnique({
+    const db = getRouteDb(session);
+    const document = await db.patientDocument.findUnique({
       where: { id: params.id },
     });
 
@@ -137,8 +139,7 @@ export async function DELETE(
 
     // Check retention policy
     if (document.retentionExpiry > new Date()) {
-      // Mark for deletion but don't delete yet
-      await prisma.patientDocument.update({
+      await db.patientDocument.update({
         where: { id: document.id },
         data: {
           deletionRequested: true,
@@ -157,7 +158,7 @@ export async function DELETE(
     // Retention expired - can delete
     await storageService.deleteDocument(document.encryptedStoragePath);
 
-    await prisma.patientDocument.update({
+    await db.patientDocument.update({
       where: { id: document.id },
       data: { deletedAt: new Date() },
     });
