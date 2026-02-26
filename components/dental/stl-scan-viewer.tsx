@@ -132,17 +132,18 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
       setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
       const url = `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan${clinicParam}`;
-      console.debug('[StlScanViewer] Fetching:', url);
+      console.log('🔍 [StlScanViewer] Fetching:', url);
       const res = await fetch(url);
+      console.log('🔍 [StlScanViewer] Response status:', res.status);
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
-        console.error('[StlScanViewer] API error:', res.status, errText);
+        console.error('❌ [StlScanViewer] API error:', res.status, errText);
         setFetchError(`Failed to load scans (${res.status})`);
         return;
       }
       const data = await res.json();
       const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
-      console.debug('[StlScanViewer] Received', docs.length, 'documents');
+      console.log('🔍 [StlScanViewer] Received', docs.length, 'documents', docs.map((d: any) => d.fileName));
       const mapped: ScanRecord[] = docs
         .filter((d: any) => {
           const name = (d.fileName || d.originalName || '').toLowerCase();
@@ -155,7 +156,7 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
           dateTaken: d.createdAt || d.uploadedAt || new Date().toISOString(),
           scanType: d.tags || 'full-arch-upper',
         }));
-      console.debug('[StlScanViewer] Mapped', mapped.length, 'scans');
+      console.log('🔍 [StlScanViewer] Mapped', mapped.length, 'scans, URLs:', mapped.map(s => s.url));
       setScans(mapped);
       if (mapped.length > 0) setSelectedScan(mapped[0]);
     } catch (err) {

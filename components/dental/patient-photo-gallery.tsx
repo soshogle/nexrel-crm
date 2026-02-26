@@ -88,17 +88,18 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
       setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
       const url = `/api/dental/documents?leadId=${leadId}&documentType=PHOTO${clinicParam}`;
-      console.debug('[PhotoGallery] Fetching:', url);
+      console.log('🔍 [PhotoGallery] Fetching:', url);
       const res = await fetch(url);
+      console.log('🔍 [PhotoGallery] Response status:', res.status);
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
-        console.error('[PhotoGallery] API error:', res.status, errText);
+        console.error('❌ [PhotoGallery] API error:', res.status, errText);
         setFetchError(`Failed to load photos (${res.status})`);
         return;
       }
       const data = await res.json();
       const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
-      console.debug('[PhotoGallery] Received', docs.length, 'documents');
+      console.log('🔍 [PhotoGallery] Received', docs.length, 'documents', docs.map((d: any) => d.fileName));
       const mapped: PhotoRecord[] = docs.map((d: any) => {
         const tags = typeof d.tags === 'string' ? d.tags.split(',').map((t: string) => t.trim()) : Array.isArray(d.tags) ? d.tags : [];
         const viewType = tags.find((t: string) =>
