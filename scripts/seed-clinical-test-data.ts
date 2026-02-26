@@ -207,6 +207,13 @@ async function main() {
   console.log(`✅ Found ${leads.length} patients (all under orthodontist@nexrel.com)\n`);
   if (leads.length === 0) { console.error('❌ No leads found for orthodontist@nexrel.com'); process.exit(1); }
 
+  // Prefer Marie Tremblay as primary patient (for demo consistency)
+  const primaryLead = leads.find((l) =>
+    (l.contactPerson || '').toLowerCase().includes('tremblay') ||
+    (l.contactPerson || '').toLowerCase().includes('marie')
+  ) || leads[0];
+  console.log(`📋 Primary patient for seeded data: ${primaryLead.contactPerson || primaryLead.email || primaryLead.id}\n`);
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 1. STL FILES — Use real downloaded files (run download-dental-test-files.ts first)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -280,11 +287,40 @@ async function main() {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // 2b. SEED DOCUMENT CONSENT (required for uploads — fixes 403)
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log('\n📜 Seeding document consent (for uploads)...');
+  try {
+    const existing = await prisma.documentConsent.findFirst({
+      where: { leadId: primaryLead.id, userId: user.id, consentType: 'DATA_COLLECTION', granted: true },
+    });
+    if (!existing) {
+      await prisma.documentConsent.create({
+        data: {
+          leadId: primaryLead.id,
+          userId: user.id,
+          consentType: 'DATA_COLLECTION',
+          purpose: 'Clinical document collection for treatment',
+          legalBasis: 'Consent',
+          consentMethod: 'Written',
+          granted: true,
+          grantedAt: new Date(),
+          grantedBy: user.id,
+        },
+      });
+      console.log('   ✅ Document consent created for primary patient');
+    } else {
+      console.log('   ⏭️  Consent already exists');
+    }
+  } catch (err: any) {
+    console.log(`   ⚠️  Consent skip: ${err.message?.substring(0, 60)}`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // 3. SEED PATIENT DOCUMENT RECORDS (photos + scans)
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('\n📁 Seeding document records...');
   let docCount = 0;
-  const primaryLead = leads[0];
   const retentionExpiry = new Date();
   retentionExpiry.setFullYear(retentionExpiry.getFullYear() + 7);
 

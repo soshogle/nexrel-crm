@@ -38,3 +38,19 @@ All mock data is **strictly scoped to `orthodontist@nexrel.com`**. No test data 
 | DTU 3Shape | [3Shape FDI 16 Meshes](https://data.dtu.dk/articles/dataset/3Shape_FDI_16_Meshes_from_Intraoral_Scans/23626650) | 6.67 GB PLY files; registration may be required |
 
 Place manually downloaded files in `public/test-assets/dental/3d-scans/`.
+
+## Troubleshooting
+
+### 403 on document upload
+The documents API requires **DocumentConsent** (Law 25) before upload. The seed script now creates consent for the primary patient. Re-run the seed if you see 403 on upload:
+```bash
+npx ts-node --skip-project scripts/seed-clinical-test-data.ts
+```
+
+### Scans not populating when selecting a patient
+1. **Log in as** `orthodontist@nexrel.com` — documents are owned by this user.
+2. **Select the patient with seeded data** — the seed prefers "Marie Tremblay" in the patient list; otherwise it uses the first lead. Check the seed output for "Primary patient for seeded data".
+3. **Clinic filter** — ensure the active clinic matches the orthodontist's clinic (the one used in the seed).
+
+### Document upload — what does it upload?
+Upload picks a file **from your local computer** (e.g. from a scanner export folder). It does not "find" files already in the system. Seeded scans appear in the list below when you select the correct patient; you don't upload those — they're already stored.
