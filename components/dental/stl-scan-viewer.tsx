@@ -111,11 +111,12 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [scans, setScans] = useState<ScanRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [modelColor, setModelColor] = useState('#e8dcc8');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const SCAN_TYPES = [
     { id: 'full-arch-upper', label: 'Full Arch (Upper)' },
@@ -128,30 +129,38 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
   const fetchScans = useCallback(async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const res = await fetch(
-        `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan${clinicParam}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
-        const mapped: ScanRecord[] = docs
-          .filter((d: any) => {
-            const name = (d.fileName || d.originalName || '').toLowerCase();
-            return name.endsWith('.stl') || name.endsWith('.ply') || name.endsWith('.obj');
-          })
-          .map((d: any) => ({
-            id: d.id,
-            url: d.fileUrl || d.url || `/api/dental/documents/${d.id}/download`,
-            fileName: d.fileName || d.originalName || 'scan.stl',
-            dateTaken: d.createdAt || d.uploadedAt || new Date().toISOString(),
-            scanType: d.tags || 'full-arch-upper',
-          }));
-        setScans(mapped);
-        if (mapped.length > 0) setSelectedScan(mapped[0]);
+      const url = `/api/dental/documents?leadId=${leadId}&documentType=OTHER&category=3d-scan${clinicParam}`;
+      console.debug('[StlScanViewer] Fetching:', url);
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error('[StlScanViewer] API error:', res.status, errText);
+        setFetchError(`Failed to load scans (${res.status})`);
+        return;
       }
+      const data = await res.json();
+      const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+      console.debug('[StlScanViewer] Received', docs.length, 'documents');
+      const mapped: ScanRecord[] = docs
+        .filter((d: any) => {
+          const name = (d.fileName || d.originalName || '').toLowerCase();
+          return name.endsWith('.stl') || name.endsWith('.ply') || name.endsWith('.obj');
+        })
+        .map((d: any) => ({
+          id: d.id,
+          url: d.fileUrl || d.url || `/api/dental/documents/${d.id}/download`,
+          fileName: d.fileName || d.originalName || 'scan.stl',
+          dateTaken: d.createdAt || d.uploadedAt || new Date().toISOString(),
+          scanType: d.tags || 'full-arch-upper',
+        }));
+      console.debug('[StlScanViewer] Mapped', mapped.length, 'scans');
+      setScans(mapped);
+      if (mapped.length > 0) setSelectedScan(mapped[0]);
     } catch (err) {
-      console.error('Error fetching scans:', err);
+      console.error('[StlScanViewer] Error fetching scans:', err);
+      setFetchError('Failed to load scans');
     } finally {
       setLoading(false);
     }
@@ -240,7 +249,17 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
           <span className="text-[10px] font-medium text-gray-500">3D Scans</span>
           <Badge variant="outline" className="text-[10px]">{scans.length} scans</Badge>
         </div>
-        {selectedScan ? (
+        {loading ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 text-purple-400 animate-spin mx-auto mb-1" />
+            <p className="text-[10px] text-gray-400">Loading scans...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-4">
+            <p className="text-[10px] text-red-500">{fetchError}</p>
+            <button onClick={() => fetchScans()} className="text-[10px] text-purple-600 underline mt-1">Retry</button>
+          </div>
+        ) : selectedScan ? (
           <Viewer scan={selectedScan} height="120px" />
         ) : (
           <div className="text-center py-4">

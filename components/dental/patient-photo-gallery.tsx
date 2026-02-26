@@ -73,6 +73,7 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadViewType, setUploadViewType] = useState<string>('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoRecord | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [compareLeft, setCompareLeft] = useState<PhotoRecord | null>(null);
@@ -84,34 +85,41 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
   const fetchPhotos = useCallback(async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const clinicParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const res = await fetch(
-        `/api/dental/documents?leadId=${leadId}&documentType=PHOTO${clinicParam}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
-        const mapped: PhotoRecord[] = docs.map((d: any) => {
-          const tags = typeof d.tags === 'string' ? d.tags.split(',').map((t: string) => t.trim()) : Array.isArray(d.tags) ? d.tags : [];
-          const viewType = tags.find((t: string) =>
-            [...INTRAORAL_VIEWS, ...EXTRAORAL_VIEWS].some(v => v.id === t)
-          ) || '';
-          const category: PhotoCategory = EXTRAORAL_VIEWS.some(v => v.id === viewType) ? 'extraoral' : 'intraoral';
-          const dateTaken = d.createdAt || d.uploadedAt || new Date().toISOString();
-          return {
-            id: d.id,
-            url: d.fileUrl || d.url || `/api/dental/documents/${d.id}/download`,
-            viewType,
-            dateTaken,
-            seriesDate: new Date(dateTaken).toISOString().split('T')[0],
-            category,
-            fileName: d.fileName || d.originalName || 'photo',
-          };
-        });
-        setPhotos(mapped);
+      const url = `/api/dental/documents?leadId=${leadId}&documentType=PHOTO${clinicParam}`;
+      console.debug('[PhotoGallery] Fetching:', url);
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error('[PhotoGallery] API error:', res.status, errText);
+        setFetchError(`Failed to load photos (${res.status})`);
+        return;
       }
+      const data = await res.json();
+      const docs = Array.isArray(data?.documents) ? data.documents : Array.isArray(data) ? data : [];
+      console.debug('[PhotoGallery] Received', docs.length, 'documents');
+      const mapped: PhotoRecord[] = docs.map((d: any) => {
+        const tags = typeof d.tags === 'string' ? d.tags.split(',').map((t: string) => t.trim()) : Array.isArray(d.tags) ? d.tags : [];
+        const viewType = tags.find((t: string) =>
+          [...INTRAORAL_VIEWS, ...EXTRAORAL_VIEWS].some(v => v.id === t)
+        ) || '';
+        const category: PhotoCategory = EXTRAORAL_VIEWS.some(v => v.id === viewType) ? 'extraoral' : 'intraoral';
+        const dateTaken = d.createdAt || d.uploadedAt || new Date().toISOString();
+        return {
+          id: d.id,
+          url: d.fileUrl || d.url || `/api/dental/documents/${d.id}/download`,
+          viewType,
+          dateTaken,
+          seriesDate: new Date(dateTaken).toISOString().split('T')[0],
+          category,
+          fileName: d.fileName || d.originalName || 'photo',
+        };
+      });
+      setPhotos(mapped);
     } catch (err) {
-      console.error('Error fetching photos:', err);
+      console.error('[PhotoGallery] Error fetching photos:', err);
+      setFetchError('Failed to load photos');
     } finally {
       setLoading(false);
     }
@@ -211,7 +219,17 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
           <Badge variant="outline" className="text-[10px]">{filteredPhotos.length} photos</Badge>
         </div>
 
-        {filteredPhotos.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 text-purple-400 animate-spin mx-auto mb-1" />
+            <p className="text-[10px] text-gray-400">Loading photos...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-4">
+            <p className="text-[10px] text-red-500">{fetchError}</p>
+            <button onClick={() => fetchPhotos()} className="text-[10px] text-purple-600 underline mt-1">Retry</button>
+          </div>
+        ) : filteredPhotos.length === 0 ? (
           <div className="text-center py-4">
             <Camera className="w-6 h-6 text-gray-300 mx-auto mb-1" />
             <p className="text-[10px] text-gray-400">No {tab} photos yet</p>

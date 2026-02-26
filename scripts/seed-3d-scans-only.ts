@@ -134,7 +134,75 @@ async function main() {
   }
 
   console.log(`\n✅ Created ${created} 3D scan document(s) for ${primaryLead.contactPerson}`);
-  console.log('   Refresh the dental page and select this patient to see scans.\n');
+
+  // ── Photos ────────────────────────────────────────────────
+  console.log('\n📸 Seeding patient photos...\n');
+
+  const intraPhotos = [
+    { file: 'intraoral-frontal.png', view: 'frontal' },
+    { file: 'intraoral-left-buccal.png', view: 'left-buccal' },
+    { file: 'intraoral-right-buccal.png', view: 'right-buccal' },
+    { file: 'intraoral-upper-occlusal.png', view: 'upper-occlusal' },
+    { file: 'intraoral-lower-occlusal.png', view: 'lower-occlusal' },
+  ];
+  const extraPhotos = [
+    { file: 'extraoral-frontal.png', view: 'face-frontal' },
+    { file: 'extraoral-profile.png', view: 'face-profile' },
+    { file: 'extraoral-smile.png', view: 'face-smile' },
+  ];
+
+  let photosCreated = 0;
+  for (const p of intraPhotos) {
+    const storagePath = `/test-assets/dental/intraoral/${p.file}`;
+    const fullPath = path.join(process.cwd(), 'public', storagePath);
+    if (!fs.existsSync(fullPath)) { console.log(`   ⏭️  ${p.file} not on disk`); continue; }
+    const existing = await prisma.patientDocument.findFirst({
+      where: { leadId: primaryLead.id, userId: user.id, encryptedStoragePath: storagePath },
+    });
+    if (existing) { console.log(`   ⏭️  ${p.file} already exists`); continue; }
+    await prisma.patientDocument.create({
+      data: {
+        userId: user.id, clinicId, leadId: primaryLead.id,
+        documentType: 'PHOTO', category: 'intraoral',
+        fileName: p.file, fileType: 'image/png',
+        fileSize: fs.statSync(fullPath).size,
+        encryptedStoragePath: storagePath,
+        encryptionKeyId: 'test-key-001',
+        retentionExpiry, accessLevel: 'RESTRICTED',
+        createdBy: user.id, tags: [p.view],
+        description: `Clinical photo — ${p.view}`,
+      },
+    });
+    photosCreated++;
+    console.log(`   ✅ ${p.file}`);
+  }
+  for (const p of extraPhotos) {
+    const storagePath = `/test-assets/dental/extraoral/${p.file}`;
+    const fullPath = path.join(process.cwd(), 'public', storagePath);
+    if (!fs.existsSync(fullPath)) { console.log(`   ⏭️  ${p.file} not on disk`); continue; }
+    const existing = await prisma.patientDocument.findFirst({
+      where: { leadId: primaryLead.id, userId: user.id, encryptedStoragePath: storagePath },
+    });
+    if (existing) { console.log(`   ⏭️  ${p.file} already exists`); continue; }
+    await prisma.patientDocument.create({
+      data: {
+        userId: user.id, clinicId, leadId: primaryLead.id,
+        documentType: 'PHOTO', category: 'extraoral',
+        fileName: p.file, fileType: 'image/png',
+        fileSize: fs.statSync(fullPath).size,
+        encryptedStoragePath: storagePath,
+        encryptionKeyId: 'test-key-001',
+        retentionExpiry, accessLevel: 'RESTRICTED',
+        createdBy: user.id, tags: [p.view],
+        description: `Clinical photo — ${p.view}`,
+      },
+    });
+    photosCreated++;
+    console.log(`   ✅ ${p.file}`);
+  }
+
+  console.log(`\n✅ Created ${photosCreated} photo document(s) for ${primaryLead.contactPerson}`);
+  console.log('   Refresh the dental clinical page and select this patient.\n');
 }
 
 main()
