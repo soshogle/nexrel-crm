@@ -19,6 +19,9 @@ import { RedesignedFormResponses } from '@/components/dental/redesigned-form-res
 import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { AdminModals } from '@/components/dental/admin-modals';
 import { CustomSignature } from '@/components/dental/custom-signature';
+import { ReferralManagement } from '@/components/dental/referral-management';
+import { InsurancePreAuth } from '@/components/dental/insurance-preauth';
+import { LabCommunication } from '@/components/dental/lab-communication';
 import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -447,6 +450,48 @@ export default function AdministrativeDashboardPage() {
                 status: claim.status === 'Approved' ? 'Approved' : 'Funding',
               }))}
             />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* PRE-AUTH + REFERRALS ROW */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Insurance Pre-Authorization */}
+        <Card 
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('preauth')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Pre-Authorization</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <InsurancePreAuth leadId={selectedLeadId || undefined} compact />
+          </CardContent>
+        </Card>
+
+        {/* Referral Management */}
+        <Card 
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('referrals')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Referrals</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <ReferralManagement leadId={selectedLeadId || undefined} compact />
+          </CardContent>
+        </Card>
+
+        {/* Lab Communication */}
+        <Card 
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('lab-communication')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Lab Communication</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <LabCommunication leadId={selectedLeadId || undefined} compact />
           </CardContent>
         </Card>
       </div>

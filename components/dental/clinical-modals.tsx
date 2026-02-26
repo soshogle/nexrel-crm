@@ -9,6 +9,8 @@ import { TreatmentPlanBuilder } from '@/components/dental/treatment-plan-builder
 import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { DicomViewer } from '@/components/dental/dicom-viewer';
+import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
+import { StlScanViewer } from '@/components/dental/stl-scan-viewer';
 import { ChevronLeft, ChevronRight, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -192,6 +194,22 @@ export function ClinicalModals({
             };
           })}
         />
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'photo-gallery'} onClose={onCloseModal} title="Patient Photos">
+        {selectedLeadId ? (
+          <PatientPhotoGallery leadId={selectedLeadId} />
+        ) : (
+          <div className="text-center py-16 text-gray-400">Select a patient</div>
+        )}
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'stl-viewer'} onClose={onCloseModal} title="3D Intraoral Scans">
+        {selectedLeadId ? (
+          <StlScanViewer leadId={selectedLeadId} />
+        ) : (
+          <div className="text-center py-16 text-gray-400">Select a patient</div>
+        )}
       </CardModal>
 
       <CardModal isOpen={openModal === 'clinical-notes'} onClose={onCloseModal} title="Clinical Notes">

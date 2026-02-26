@@ -32,6 +32,8 @@ import {
   PenTool,
 } from 'lucide-react';
 import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
+import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
+import { StlScanViewer } from '@/components/dental/stl-scan-viewer';
 
 // Clinical Notes Editor Component
 function ClinicalNotesEditor({ leadId }: { leadId: string }) {
@@ -624,9 +626,46 @@ function ClinicalDashboardPageContent() {
         />
       </div>
 
+      {/* IMAGING ROW - Photos + 3D Scans */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Patient Photo Gallery */}
+        <Card 
+          className="col-span-2 bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('photo-gallery')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Patient Photos</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {selectedLeadId ? (
+              <PatientPhotoGallery leadId={selectedLeadId} compact />
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 3D Intraoral Scans */}
+        <Card 
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('stl-viewer')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">3D Scans</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {selectedLeadId ? (
+              <StlScanViewer leadId={selectedLeadId} compact />
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* BOTTOM ROW - Document Upload */}
       <div className="grid grid-cols-3 gap-4">
-        {/* 7. Document Upload */}
+        {/* Document Upload */}
         <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>

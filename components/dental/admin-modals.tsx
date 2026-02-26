@@ -13,6 +13,9 @@ import { VnaConfigurationWithRouting } from '@/components/dental/vna-configurati
 import { PatientInfoUpdateForm } from '@/components/dental/patient-info-update-form';
 import { LabOrderForm } from '@/components/dental/lab-order-form';
 import { ProductionCharts } from '@/components/dental/production-charts';
+import { ReferralManagement } from '@/components/dental/referral-management';
+import { InsurancePreAuth } from '@/components/dental/insurance-preauth';
+import { LabCommunication } from '@/components/dental/lab-communication';
 import { DollarSign, Building2, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -191,6 +194,18 @@ export function AdminModals({
 
       <CardModal isOpen={openModal === 'signature'} onClose={onCloseModal} title="Electronic Signature Capture">
         <CustomSignature />
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'preauth'} onClose={onCloseModal} title="Insurance Pre-Authorization">
+        <InsurancePreAuth leadId={selectedLeadId || undefined} />
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'referrals'} onClose={onCloseModal} title="Referral Management">
+        <ReferralManagement leadId={selectedLeadId || undefined} />
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'lab-communication'} onClose={onCloseModal} title="Lab Communication">
+        <LabCommunication leadId={selectedLeadId || undefined} />
       </CardModal>
 
       <CardModal isOpen={openModal === 'production-charts'} onClose={onCloseModal} title="Production Analytics">
