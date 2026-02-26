@@ -8,7 +8,7 @@
 
 import { useState, useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Text, Center, Html } from '@react-three/drei';
+import { OrbitControls, Center, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,16 +210,22 @@ function ToothMesh({
       )}
 
       {/* Tooth number label */}
-      <Text
+      <Html
         position={[0, isUpper ? dims.h / 2 + dims.rootH + 0.25 : -(dims.h / 2 + dims.rootH + 0.25), 0]}
-        fontSize={0.18}
-        color={hovered ? '#9333ea' : '#64748b'}
-        anchorX="center"
-        anchorY="middle"
-        font={undefined}
+        center
+        distanceFactor={8}
+        style={{ pointerEvents: 'none' }}
       >
-        {String(toothNumber)}
-      </Text>
+        <span style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          color: hovered ? '#9333ea' : '#94a3b8',
+          userSelect: 'none',
+          whiteSpace: 'nowrap',
+        }}>
+          {toothNumber}
+        </span>
+      </Html>
     </group>
   );
 }
@@ -247,20 +253,30 @@ function GumLine({ isUpper }: { isUpper: boolean }) {
 }
 
 function ArchLabels() {
+  const labelStyle = (size: number, color: string): React.CSSProperties => ({
+    fontSize: `${size}px`,
+    fontWeight: 600,
+    color,
+    userSelect: 'none',
+    whiteSpace: 'nowrap',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const,
+  });
+
   return (
     <>
-      <Text position={[0, 1.8, 1]} fontSize={0.25} color="#94a3b8" anchorX="center" font={undefined}>
-        Upper Arch
-      </Text>
-      <Text position={[0, -1.8, 1]} fontSize={0.25} color="#94a3b8" anchorX="center" font={undefined}>
-        Lower Arch
-      </Text>
-      <Text position={[-4.2, 0, 0.5]} fontSize={0.18} color="#cbd5e1" anchorX="center" font={undefined}>
-        Right
-      </Text>
-      <Text position={[4.2, 0, 0.5]} fontSize={0.18} color="#cbd5e1" anchorX="center" font={undefined}>
-        Left
-      </Text>
+      <Html position={[0, 1.8, 1]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+        <span style={labelStyle(13, '#94a3b8')}>Upper Arch</span>
+      </Html>
+      <Html position={[0, -1.8, 1]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+        <span style={labelStyle(13, '#94a3b8')}>Lower Arch</span>
+      </Html>
+      <Html position={[-4.2, 0, 0.5]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+        <span style={labelStyle(11, '#cbd5e1')}>Right</span>
+      </Html>
+      <Html position={[4.2, 0, 0.5]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+        <span style={labelStyle(11, '#cbd5e1')}>Left</span>
+      </Html>
     </>
   );
 }
