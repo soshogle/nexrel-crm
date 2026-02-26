@@ -48,9 +48,10 @@ npx ts-node --skip-project scripts/seed-clinical-test-data.ts
 ```
 
 ### Scans not populating when selecting a patient
-1. **Log in as** `orthodontist@nexrel.com` — documents are owned by this user.
-2. **Select the patient with seeded data** — the seed prefers "Marie Tremblay" in the patient list; otherwise it uses the first lead. Check the seed output for "Primary patient for seeded data".
-3. **Clinic filter** — ensure the active clinic matches the orthodontist's clinic (the one used in the seed).
+1. **Verify 3d-scan documents exist** — run `npx tsx scripts/seed-3d-scans-only.ts` to create scan documents if none exist.
+2. **Log in as** `orthodontist@nexrel.com` — documents are owned by this user.
+3. **Select the patient with seeded data** — the seed prefers "Marie Tremblay" in the patient list; otherwise it uses the first lead. Check the seed output for "Primary patient for seeded data".
+4. **Clinic filter** — ensure the active clinic matches the orthodontist's clinic (the one used in the seed).
 
 ### Document upload — what does it upload?
 Upload picks a file **from your local computer** (e.g. from a scanner export folder). It does not "find" files already in the system. Seeded scans appear in the list below when you select the correct patient; you don't upload those — they're already stored.
