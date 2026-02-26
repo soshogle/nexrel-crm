@@ -49,10 +49,6 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
 
   const getToothInfo = (toothNum: number): ToothInfo => {
     if (toothData?.[toothNum.toString()]) return toothData[toothNum.toString()];
-    if (toothNum === 3)  return { condition: 'filling',  treatment: 'Filling',  completed: false };
-    if (toothNum === 14 || toothNum === 15) return { condition: 'filling', treatment: 'Filling', completed: false };
-    if (toothNum === 18 || toothNum === 19 || toothNum === 31) return { condition: 'filling', treatment: 'Filling', completed: false };
-    if (toothNum === 29 || toothNum === 30) return { condition: 'implant', treatment: 'Implant', completed: true };
     return { condition: 'healthy' };
   };
 
@@ -65,24 +61,26 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
   };
 
   /** Returns one of the COLORS presets based on tooth condition */
-  const getToothColors = (toothNum: number, info: ToothInfo) => {
-    if (!shouldHighlightTooth(toothNum, info)) return COLORS.normal;
+  const getToothColors = (_toothNum: number, info: ToothInfo) => {
+    if (!shouldHighlightTooth(_toothNum, info)) return COLORS.normal;
     if (info.condition === 'implant') return COLORS.green;
     if (info.condition === 'missing') return { fill: 'rgba(156,163,175,0.5)', stroke: '#9CA3AF', glow: '#9CA3AF' };
     if (info.condition === 'caries')  return COLORS.orange;
     if (info.condition === 'crown')   return COLORS.purple;
-    // fillings on 14/15 = orange, others = blue
-    if ((toothNum === 14 || toothNum === 15) && info.condition === 'filling') return COLORS.orange;
+    if (info.condition === 'filling') return COLORS.blue;
+    if (info.condition === 'root_canal') return COLORS.purple;
+    if (info.condition === 'extraction') return COLORS.orange;
     return COLORS.blue;
   };
 
   const getToothTooltip = (toothNum: number, info: ToothInfo): string => {
-    if (info.condition === 'implant') return 'Implant';
-    if (info.condition === 'filling') return 'Filling';
-    if (info.condition === 'caries')  return 'Cavities';
-    if (info.condition === 'crown')   return 'Crown';
-    if (info.treatment)               return info.treatment;
-    return '';
+    if (info.condition === 'healthy') return '';
+    const label = {
+      implant: 'Implant', filling: 'Restoration', caries: 'Caries',
+      crown: 'Crown', missing: 'Missing', extraction: 'Extraction',
+      root_canal: 'Root Canal',
+    }[info.condition || ''] || info.treatment || '';
+    return label;
   };
 
   const ToothItem = ({ toothNum, isUpper }: { toothNum: number; isUpper: boolean }) => {
