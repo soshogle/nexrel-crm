@@ -76,7 +76,11 @@ export function MakeCallDialog({
       if (response.ok) {
         const json = await response.json();
         const arr = Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? []);
-        const outboundAgents = arr.filter((a: any) => a.type === 'OUTBOUND' || a.type === 'BOTH');
+        // Include all VoiceAgent records (INBOUND, OUTBOUND, BOTH) - outbound-calls API works with any type.
+        // Exclude industry/re/professional/crm agents (no type field) - they use different tables.
+        const outboundAgents = arr.filter((a: any) =>
+          a.type && ['INBOUND', 'OUTBOUND', 'BOTH'].includes(a.type)
+        );
         setAgents(outboundAgents);
         
         // Auto-select first agent if only one available
