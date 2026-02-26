@@ -75,15 +75,8 @@ export function CustomXRayAnalysis({ xrayData }: XRayAnalysisProps) {
           {/* Pulp chamber - dark central area */}
           <ellipse cx="50" cy="45" rx="6" ry="10" fill="url(#pulp-gradient)"/>
           
-          {/* Caries detection - darker area (radiolucent) */}
-          <ellipse cx="62" cy="38" rx="4" ry="5" fill="#2a2a2a" opacity="0.7">
-            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite"/>
-          </ellipse>
-          
-          {/* Periapical lesion - dark area at root tip */}
-          <ellipse cx="50" cy="108" rx="6" ry="8" fill="#1a1a1a" opacity="0.6">
-            <animate attributeName="opacity" values="0.4;0.7;0.4" dur="2.5s" repeatCount="indefinite"/>
-          </ellipse>
+          {/* Restoration — radiopaque composite fill on occlusal surface */}
+          <ellipse cx="50" cy="32" rx="6" ry="3" fill="#c8c8c8" opacity="0.85"/>
           
           {/* Anatomical details - enamel-dentin junction */}
           <ellipse cx="50" cy="50" rx="12" ry="18" fill="none" stroke="#6b6b6b" strokeWidth="0.5" opacity="0.4"/>
@@ -94,51 +87,41 @@ export function CustomXRayAnalysis({ xrayData }: XRayAnalysisProps) {
           <ellipse cx="50" cy="28" rx="2.5" ry="3" fill="#e5e5e5" opacity="0.7"/>
         </svg>
 
-        {/* Diagnostic Overlays - positioned around X-ray */}
-        {/* Top Left */}
+        {/* Diagnostic Overlays */}
         <div className="absolute top-2 left-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm z-10">
-          <div className="text-[10px] font-medium text-gray-900">Caries Detected: Distal-Occlusal</div>
-          <div className="text-[10px] text-gray-600">Severity: Moderate (1.5mm)</div>
+          <div className="text-[10px] font-medium text-gray-900">Existing Restoration</div>
+          <div className="text-[10px] text-blue-600">Composite — Occlusal Surface</div>
         </div>
 
-        {/* Top Right */}
         <div className="absolute top-2 right-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm z-10">
-          <div className="text-[10px] font-medium text-gray-900">Diagnostic</div>
-          <div className="text-[10px] text-gray-600">D: 1.5mm, M: 4.23mm</div>
+          <div className="text-[10px] font-medium text-gray-900">Bone Level</div>
+          <div className="text-[10px] text-green-600 font-semibold">Normal — No bone loss</div>
         </div>
 
-        {/* Bottom Left */}
         <div className="absolute bottom-2 left-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm z-10">
-          <div className="text-[10px] font-medium text-gray-900">Periapical Lesions</div>
-          <div className="text-[10px] text-gray-600">Tooth #30</div>
-          <div className="text-[10px] text-red-600">Requires Endodontic Evaluation</div>
+          <div className="text-[10px] font-medium text-gray-900">Periapical Status</div>
+          <div className="text-[10px] text-green-600">No pathology detected</div>
         </div>
 
-        {/* Bottom Right */}
         <div className="absolute bottom-2 right-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm z-10">
           <div className="text-[10px] font-medium text-gray-900">Bone Density</div>
-          <div className="text-[10px] text-green-600 font-semibold">90% (Healthy)</div>
+          <div className="text-[10px] text-green-600 font-semibold">92% (Healthy)</div>
         </div>
 
-        {/* Connecting lines pointing to specific areas */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-          {/* Line to caries */}
-          <line x1="20%" y1="15%" x2="65%" y2="32%" stroke="#9333ea" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
-          {/* Line to periapical lesion */}
-          <line x1="20%" y1="85%" x2="50%" y2="90%" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
-          {/* Line to diagnostic measurement */}
-          <line x1="75%" y1="15%" x2="65%" y2="32%" stroke="#9333ea" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
-          {/* Line to bone density */}
+          <line x1="20%" y1="15%" x2="55%" y2="30%" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
+          <line x1="75%" y1="15%" x2="50%" y2="55%" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
+          <line x1="20%" y1="85%" x2="50%" y2="90%" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
           <line x1="75%" y1="85%" x2="50%" y2="75%" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
         </svg>
       </div>
 
       {/* Text Details */}
       <div className="space-y-1 text-xs text-gray-600 mt-2">
-        <div>Caries Detected: Stage 2: Severity: Moderate</div>
-        <div>Periodontal Mucositis: Tooth #3: Referral: Endodontic Evaluation</div>
-        <div>Diagnostic: ... 4.23 mm</div>
-        <div>Bone Density: 80% (healthy)</div>
+        <div>Tooth #3: Existing composite restoration — intact, no secondary caries</div>
+        <div>Tooth #14: Existing composite restoration — intact, margins sealed</div>
+        <div>Periodontal: Bone levels within normal limits, no attachment loss</div>
+        <div>Overall: No pathology detected — routine follow-up recommended</div>
       </div>
     </div>
   );
