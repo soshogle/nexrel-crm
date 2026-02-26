@@ -76,7 +76,6 @@ function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons
   const title = appointment.title || 'Untitled Appointment'
   
   // Color by meeting type for visibility
-  const meetingType = appointment.meetingType || 'PHONE_CALL'
   const typeColor = meetingTypeColors[meetingType] || meetingTypeColors['PHONE_CALL']
 
   return (
