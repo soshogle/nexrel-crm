@@ -54,12 +54,13 @@ export function RedesignedTreatmentPlan({ treatments }: RedesignedTreatmentPlanP
     },
   ];
 
-  const displayTreatments = treatments && treatments.length > 0 ? treatments : defaultTreatments;
+  const displayTreatments = treatments && treatments.length > 0 ? treatments.filter(Boolean) : defaultTreatments;
 
   return (
     <div className="space-y-3">
       {displayTreatments.map((treatment, idx) => {
-        const IconComponent = treatment.icon;
+        if (!treatment) return null;
+        const IconComponent = treatment.icon || ClipboardList;
         return (
           <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-white">
             <div className="flex items-start gap-3">

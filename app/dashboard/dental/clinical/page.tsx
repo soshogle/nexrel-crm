@@ -519,14 +519,14 @@ function ClinicalDashboardPageContent() {
           onClick={() => setOpenModal('treatment-plan')}
         >
           <RedesignedTreatmentPlan
-            treatments={displayTreatmentPlans.map((plan: any) => ({
-              code: plan.code,
-              name: plan.name,
-              cost: plan.cost,
-              timeline: plan.timeline,
-              costColor: plan.costColor,
-              icon: plan.icon,
-              progress: 50, // Default progress
+            treatments={displayTreatmentPlans.filter(Boolean).map((plan: any) => ({
+              code: plan?.code || '',
+              name: plan?.name || 'Treatment',
+              cost: plan?.cost || 0,
+              timeline: plan?.timeline || 'N/A',
+              costColor: plan?.costColor || 'bg-blue-100 text-blue-700',
+              icon: plan?.icon || ClipboardList,
+              progress: 50,
             }))}
           />
         </div>
