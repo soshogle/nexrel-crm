@@ -119,54 +119,38 @@ export class DicomParser {
         throw new Error('Pixel data not found in DICOM file');
       }
 
-      // Extract pixel data
+      // Extract pixel data — dcmjs returns Value as [ArrayBuffer] for bulk data
       let pixelData: Uint16Array | Uint8Array;
-      
-      if (pixelDataElement.Value) {
-        // Pixel data is in the Value array
-        if (bitsAllocated === 16) {
-          // 16-bit data
-          const pixelArray = new Uint16Array(rows * columns * samplesPerPixel);
-          const valueArray = pixelDataElement.Value;
-          
-          // Handle different data formats
-          if (valueArray instanceof Uint16Array) {
-            pixelData = valueArray;
-          } else if (valueArray instanceof ArrayBuffer) {
-            pixelData = new Uint16Array(valueArray);
-          } else if (Array.isArray(valueArray)) {
-            // Convert array to Uint16Array
-            pixelData = new Uint16Array(valueArray.length);
-            for (let i = 0; i < valueArray.length; i++) {
-              pixelData[i] = valueArray[i];
-            }
-          } else {
-            // Try to extract from buffer
-            const offset = pixelDataElement.offset || 0;
-            const pixelBuffer = buffer.slice(offset);
-            pixelData = new Uint16Array(pixelBuffer.buffer, pixelBuffer.byteOffset, rows * columns * samplesPerPixel);
-          }
-        } else {
-          // 8-bit data
-          const pixelArray = new Uint8Array(rows * columns * samplesPerPixel);
-          const valueArray = pixelDataElement.Value;
-          
-          if (valueArray instanceof Uint8Array) {
-            pixelData = valueArray;
-          } else if (valueArray instanceof ArrayBuffer) {
-            pixelData = new Uint8Array(valueArray);
-          } else if (Array.isArray(valueArray)) {
-            pixelData = new Uint8Array(valueArray);
-          } else {
-            const offset = pixelDataElement.offset || 0;
-            const pixelBuffer = buffer.slice(offset);
-            pixelData = new Uint8Array(pixelBuffer.buffer, pixelBuffer.byteOffset, rows * columns * samplesPerPixel);
-          }
-        }
+      const expectedPixels = rows * columns * samplesPerPixel;
+
+      const rawValue = pixelDataElement.Value
+        ?? pixelDataElement.InlineBinary
+        ?? null;
+
+      if (!rawValue) {
+        throw new Error('Pixel data not found in DICOM element');
+      }
+
+      // Unwrap: dcmjs typically wraps bulk data as [ArrayBuffer]
+      let ab: ArrayBuffer | null = null;
+      if (rawValue instanceof ArrayBuffer) {
+        ab = rawValue;
+      } else if (Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0] instanceof ArrayBuffer) {
+        ab = rawValue[0];
+      } else if (ArrayBuffer.isView(rawValue)) {
+        ab = rawValue.buffer.slice(rawValue.byteOffset, rawValue.byteOffset + rawValue.byteLength);
+      }
+
+      if (ab) {
+        pixelData = bitsAllocated === 16
+          ? new Uint16Array(ab, 0, Math.min(ab.byteLength / 2, expectedPixels))
+          : new Uint8Array(ab, 0, Math.min(ab.byteLength, expectedPixels));
+      } else if (Array.isArray(rawValue)) {
+        pixelData = bitsAllocated === 16
+          ? Uint16Array.from(rawValue)
+          : Uint8Array.from(rawValue);
       } else {
-        // Pixel data might be in a separate buffer
-        // Try to find it in the buffer
-        throw new Error('Pixel data extraction from buffer not yet implemented');
+        throw new Error('Unsupported pixel data format');
       }
 
       return {
