@@ -3,15 +3,14 @@
  *
  * 3D visualization showing progressive tooth deterioration over time.
  * Timeline slider morphs teeth between Today → 6 Months → 12 Months.
- * Integrates data from the trajectory engine (personal rates, AI x-ray
- * findings, declined treatment consequences, cost comparison).
+ * Uses anatomically-shaped tooth geometry with realistic gum tissue.
  */
 
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
-import { Canvas, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Center, Html } from '@react-three/drei';
+import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
+import { OrbitControls, Center, Html, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ import {
   AlertTriangle, TrendingUp, DollarSign, Activity, Play, Pause,
   RotateCcw, Loader2, ChevronRight, Clock, Shield, X,
 } from 'lucide-react';
-import type { TrajectoryResult, ToothProjection, ToothCondition, ConfidenceLevel } from '@/lib/dental/trajectory-engine';
+import type { TrajectoryResult, ToothProjection, ToothCondition } from '@/lib/dental/trajectory-engine';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,25 +28,21 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
+
 function lerpColor(a: string, b: string, t: number): string {
   const parse = (hex: string) => {
     const h = hex.replace('#', '');
     return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
   };
-  const [r1, g1, b1] = parse(a);
-  const [r2, g2, b2] = parse(b);
+  const [r1, g1, b1c] = parse(a);
+  const [r2, g2, b2c] = parse(b);
   const r = Math.round(lerp(r1, r2, t));
   const g = Math.round(lerp(g1, g2, t));
-  const bl = Math.round(lerp(b1, b2, t));
+  const bl = Math.round(lerp(b1c, b2c, t));
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
-}
-
-function conditionColor(c: ToothCondition): string {
-  const map: Record<string, string> = {
-    healthy: '#f0ece0', caries: '#8B4513', crown: '#3b82f6', filling: '#2563eb',
-    missing: '#4b5563', extraction: '#7c3aed', implant: '#6366f1', root_canal: '#f97316',
-  };
-  return map[c] || '#f0ece0';
 }
 
 function riskBadgeColor(risk: string): string {
@@ -88,158 +83,271 @@ function getToothRotation(n: number): number {
   return (t - 0.5) * Math.PI;
 }
 
-// ─── 3D Tooth with deterioration ────────────────────────────────────────────────
+// ─── Anatomical tooth crown profiles (LatheGeometry) ────────────────────────
 
-function DeterioratingTooth({
+function createToothCrownGeometry(type: ToothType, scale: number = 1): THREE.LatheGeometry {
+  const pts: THREE.Vector2[] = [];
+  const s = scale;
+
+  switch (type) {
+    case 'molar': {
+      // Broad, flat crown with bulging sides and cusped top
+      pts.push(new THREE.Vector2(0, -0.22 * s));
+      pts.push(new THREE.Vector2(0.16 * s, -0.20 * s));
+      pts.push(new THREE.Vector2(0.24 * s, -0.12 * s));
+      pts.push(new THREE.Vector2(0.26 * s, 0));
+      pts.push(new THREE.Vector2(0.25 * s, 0.08 * s));
+      pts.push(new THREE.Vector2(0.22 * s, 0.14 * s));
+      pts.push(new THREE.Vector2(0.18 * s, 0.18 * s));
+      pts.push(new THREE.Vector2(0.12 * s, 0.19 * s));
+      pts.push(new THREE.Vector2(0.06 * s, 0.17 * s));
+      pts.push(new THREE.Vector2(0, 0.20 * s));
+      break;
+    }
+    case 'premolar': {
+      pts.push(new THREE.Vector2(0, -0.20 * s));
+      pts.push(new THREE.Vector2(0.12 * s, -0.18 * s));
+      pts.push(new THREE.Vector2(0.19 * s, -0.10 * s));
+      pts.push(new THREE.Vector2(0.20 * s, 0));
+      pts.push(new THREE.Vector2(0.19 * s, 0.10 * s));
+      pts.push(new THREE.Vector2(0.15 * s, 0.16 * s));
+      pts.push(new THREE.Vector2(0.08 * s, 0.20 * s));
+      pts.push(new THREE.Vector2(0, 0.22 * s));
+      break;
+    }
+    case 'canine': {
+      // Pointed tip, conical crown
+      pts.push(new THREE.Vector2(0, -0.22 * s));
+      pts.push(new THREE.Vector2(0.10 * s, -0.18 * s));
+      pts.push(new THREE.Vector2(0.16 * s, -0.08 * s));
+      pts.push(new THREE.Vector2(0.17 * s, 0));
+      pts.push(new THREE.Vector2(0.15 * s, 0.10 * s));
+      pts.push(new THREE.Vector2(0.10 * s, 0.20 * s));
+      pts.push(new THREE.Vector2(0.04 * s, 0.26 * s));
+      pts.push(new THREE.Vector2(0, 0.28 * s));
+      break;
+    }
+    case 'incisor': {
+      // Thin, flat, shovel-shaped
+      pts.push(new THREE.Vector2(0, -0.18 * s));
+      pts.push(new THREE.Vector2(0.08 * s, -0.16 * s));
+      pts.push(new THREE.Vector2(0.14 * s, -0.08 * s));
+      pts.push(new THREE.Vector2(0.15 * s, 0));
+      pts.push(new THREE.Vector2(0.14 * s, 0.08 * s));
+      pts.push(new THREE.Vector2(0.12 * s, 0.14 * s));
+      pts.push(new THREE.Vector2(0.10 * s, 0.20 * s));
+      pts.push(new THREE.Vector2(0.08 * s, 0.24 * s));
+      pts.push(new THREE.Vector2(0, 0.26 * s));
+      break;
+    }
+  }
+
+  return new THREE.LatheGeometry(pts, 16);
+}
+
+function createRootGeometry(type: ToothType, scale: number = 1): THREE.ConeGeometry {
+  const s = scale;
+  switch (type) {
+    case 'molar':    return new THREE.ConeGeometry(0.16 * s, 0.55 * s, 12);
+    case 'premolar': return new THREE.ConeGeometry(0.13 * s, 0.50 * s, 10);
+    case 'canine':   return new THREE.ConeGeometry(0.10 * s, 0.60 * s, 10);
+    case 'incisor':  return new THREE.ConeGeometry(0.09 * s, 0.48 * s, 10);
+  }
+}
+
+// ─── Enamel material helpers ────────────────────────────────────────────────
+
+const ENAMEL_HEALTHY = '#e8e0d0';
+const ENAMEL_SLIGHT = '#d4c8a8';
+const ENAMEL_MODERATE = '#c4a87c';
+const ENAMEL_SEVERE = '#9e7c50';
+const ENAMEL_CARIES = '#6b4423';
+const DENTIN_COLOR = '#c8a878';
+const ROOT_COLOR = '#d4c098';
+const GUM_HEALTHY = '#e8a0a0';
+const GUM_INFLAMED = '#c84040';
+const FILLING_COLOR = '#b0b8c8';
+const CROWN_METAL = '#d8dce8';
+
+// ─── Realistic Tooth ────────────────────────────────────────────────────────────
+
+function RealisticTooth({
   toothNumber, projection, timelineT, onClick, isSelected,
 }: {
   toothNumber: number;
   projection: ToothProjection;
-  timelineT: number; // 0 = today, 0.5 = 6mo, 1.0 = 12mo
+  timelineT: number;
   onClick?: () => void;
   isSelected?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const meshRef = useRef<THREE.Group>(null);
   const type = getToothType(toothNumber);
   const pos = getArchPosition(toothNumber);
   const rot = getToothRotation(toothNumber);
   const isUpper = toothNumber <= 16;
 
-  const dims = useMemo(() => {
-    switch (type) {
-      case 'molar':    return { w: 0.45, h: 0.35, d: 0.5, rootH: 0.55 };
-      case 'premolar': return { w: 0.35, h: 0.35, d: 0.4, rootH: 0.5 };
-      case 'canine':   return { w: 0.28, h: 0.4,  d: 0.35, rootH: 0.6 };
-      case 'incisor':  return { w: 0.3,  h: 0.38, d: 0.25, rootH: 0.5 };
-    }
-  }, [type]);
+  const crownGeo = useMemo(() => createToothCrownGeometry(type, 1), [type]);
+  const rootGeo = useMemo(() => createRootGeometry(type, 1), [type]);
 
-  // Interpolate condition between timepoints
-  const currentCondition = projection.currentCondition;
-  const condition6 = projection.projectedCondition6mo;
-  const condition12 = projection.projectedCondition12mo;
-
-  const activeCondition = timelineT < 0.5 ? currentCondition : timelineT < 1 ? condition6 : condition12;
+  const activeCondition = timelineT < 0.5
+    ? projection.currentCondition
+    : timelineT < 1 ? projection.projectedCondition6mo : projection.projectedCondition12mo;
   const isMissing = activeCondition === 'missing' || activeCondition === 'extraction';
 
-  // Interpolate PD-based deterioration
+  // PD interpolation
   const worstPd = timelineT < 0.5
     ? lerp(projection.worstCurrentPd, projection.worstPd6mo, timelineT * 2)
     : lerp(projection.worstPd6mo, projection.worstPd12mo, (timelineT - 0.5) * 2);
 
-  // Visual degradation parameters
-  const healthyColor = '#f0ece0';
-  const damagedColor = worstPd >= 7 ? '#654321' : worstPd >= 5 ? '#8B7355' : worstPd >= 4 ? '#C4A882' : healthyColor;
-  const toothColor = lerpColor(healthyColor, damagedColor, Math.min(timelineT * (worstPd > 3 ? 1.5 : 0.3), 1));
+  // Enamel color based on deterioration
+  const enamelColor = useMemo(() => {
+    if (activeCondition === 'caries') return ENAMEL_CARIES;
+    if (activeCondition === 'crown') return CROWN_METAL;
+    if (activeCondition === 'filling') return FILLING_COLOR;
+    if (activeCondition === 'implant') return '#a0a8b8';
 
-  // Roughness increases with damage
-  const roughness = lerp(0.4, 0.9, Math.min(timelineT * (worstPd > 3 ? 1 : 0), 1));
+    const degradation = clamp(timelineT * (worstPd > 3 ? 1.5 : 0.2), 0, 1);
+    if (degradation > 0.7) return ENAMEL_SEVERE;
+    if (degradation > 0.4) return ENAMEL_MODERATE;
+    if (degradation > 0.15) return ENAMEL_SLIGHT;
+    return ENAMEL_HEALTHY;
+  }, [activeCondition, timelineT, worstPd]);
 
-  // Gum recession (lower gum line)
-  const recessionMm = worstPd > 3 ? (worstPd - 3) * 0.08 * timelineT : 0;
+  // Surface properties
+  const roughness = activeCondition === 'crown' ? 0.15
+    : activeCondition === 'filling' ? 0.3
+    : lerp(0.25, 0.75, clamp(timelineT * (worstPd > 3 ? 1 : 0.2), 0, 1));
+  const metalness = activeCondition === 'crown' ? 0.4
+    : activeCondition === 'filling' ? 0.2
+    : 0.05;
 
-  // Tooth geometry erosion for caries
-  const hasActiveCaries = activeCondition === 'caries';
-  const erosionScale = hasActiveCaries ? lerp(1, 0.85, timelineT) : 1;
+  // Gum recession
+  const recessionMm = worstPd > 3 ? (worstPd - 3) * 0.06 * timelineT : 0;
 
+  // Gum color per tooth
+  const gumIntensity = clamp(worstPd > 3 ? (worstPd - 3) * 0.25 * timelineT : 0, 0, 1);
+  const gumColor = lerpColor(GUM_HEALTHY, GUM_INFLAMED, gumIntensity);
+
+  // Root dimensions
+  const rootHeight = type === 'molar' ? 0.55 : type === 'canine' ? 0.6 : 0.5;
+  const crownHeight = type === 'molar' ? 0.20 : type === 'canine' ? 0.28 : 0.22;
   const rootDir = isUpper ? 1 : -1;
 
-  // Gum severity color
-  const gumColor = worstPd >= 6 ? '#c0392b' : worstPd >= 4 ? '#e67e22' : '#f4a0a0';
-  const interpolatedGumColor = lerpColor('#f4a0a0', gumColor, Math.min(timelineT * 2, 1));
+  // Cavity size for caries
+  const cavitySize = activeCondition === 'caries' ? 0.04 + timelineT * 0.08 : 0;
 
-  // Mobility wiggle for severe cases
+  // Mobility wobble
   const mobilityRisk = timelineT < 0.5 ? projection.mobilityRisk6mo : projection.mobilityRisk12mo;
-  const wobble = mobilityRisk >= 2 ? Math.sin(Date.now() * 0.003) * 0.03 * mobilityRisk : 0;
+
+  useFrame(({ clock }) => {
+    if (meshRef.current && mobilityRisk >= 2) {
+      meshRef.current.rotation.z = Math.sin(clock.elapsedTime * 2) * 0.02 * mobilityRisk;
+    }
+  });
 
   return (
     <group
-      position={[pos[0] + wobble, pos[1], pos[2]]}
+      position={pos}
       rotation={[0, rot, 0]}
-      scale={(hovered || isSelected ? 1.12 : 1)}
       onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onClick?.(); }}
       onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
     >
-      {!isMissing ? (
-        <>
-          {/* Crown — degrades over time */}
-          <mesh
-            position={[0, isUpper ? -recessionMm : recessionMm, 0]}
-            scale={[erosionScale, erosionScale, erosionScale]}
-            castShadow
-          >
-            <boxGeometry args={[dims.w, dims.h, dims.d]} />
-            <meshStandardMaterial
-              color={hasActiveCaries ? conditionColor('caries') : toothColor}
-              roughness={roughness}
-              metalness={0.02}
-              emissive={isSelected ? '#818cf8' : hovered ? '#a855f7' : '#000000'}
-              emissiveIntensity={isSelected ? 0.4 : hovered ? 0.25 : 0}
-            />
-          </mesh>
-
-          {/* Cavity dark spot for caries */}
-          {hasActiveCaries && (
-            <mesh position={[0, isUpper ? -dims.h / 2 + 0.02 - recessionMm : dims.h / 2 - 0.02 + recessionMm, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <circleGeometry args={[dims.w * 0.2 * (0.5 + timelineT * 0.5), 12]} />
-              <meshStandardMaterial color="#2c1810" roughness={1} />
+      <group ref={meshRef} scale={hovered || isSelected ? 1.08 : 1}>
+        {!isMissing ? (
+          <>
+            {/* Crown — anatomical lathe shape */}
+            <mesh
+              geometry={crownGeo}
+              position={[0, isUpper ? -recessionMm : recessionMm, 0]}
+              rotation={[isUpper ? 0 : Math.PI, 0, 0]}
+              castShadow receiveShadow
+            >
+              <meshPhysicalMaterial
+                color={enamelColor}
+                roughness={roughness}
+                metalness={metalness}
+                clearcoat={activeCondition === 'crown' ? 0.8 : 0.3}
+                clearcoatRoughness={0.2}
+                envMapIntensity={0.6}
+                emissive={isSelected ? '#6366f1' : hovered ? '#8b5cf6' : '#000000'}
+                emissiveIntensity={isSelected ? 0.3 : hovered ? 0.15 : 0}
+              />
             </mesh>
-          )}
 
-          {/* Root — exposed more as gum recedes */}
-          <mesh
-            position={[0, rootDir * (dims.h / 2 + dims.rootH / 2) + (isUpper ? -recessionMm : recessionMm), 0]}
-            castShadow
-          >
-            <coneGeometry args={[dims.w * 0.35, dims.rootH, 8]} />
-            <meshStandardMaterial
-              color={lerp(0, 1, recessionMm * 3) > 0.3 ? '#b8956a' : '#e8dcc8'}
-              roughness={0.6}
-            />
+            {/* Cavity dark spot */}
+            {cavitySize > 0 && (
+              <mesh
+                position={[0, (isUpper ? crownHeight - 0.02 : -(crownHeight - 0.02)) + (isUpper ? -recessionMm : recessionMm), 0]}
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                <circleGeometry args={[cavitySize, 12]} />
+                <meshStandardMaterial color="#1a0e08" roughness={1} />
+              </mesh>
+            )}
+
+            {/* Root */}
+            <mesh
+              geometry={rootGeo}
+              position={[0, rootDir * (crownHeight + rootHeight / 2) + (isUpper ? -recessionMm : recessionMm), 0]}
+              rotation={[isUpper ? Math.PI : 0, 0, 0]}
+              castShadow
+            >
+              <meshStandardMaterial
+                color={recessionMm > 0.08 ? DENTIN_COLOR : ROOT_COLOR}
+                roughness={0.6}
+                metalness={0.02}
+              />
+            </mesh>
+
+            {/* Gum cuff — thicker, anatomical ring with tissue look */}
+            <mesh
+              position={[0, (isUpper ? -(crownHeight * 0.5) : crownHeight * 0.5) + (isUpper ? -recessionMm : recessionMm), 0]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              <torusGeometry args={[type === 'molar' ? 0.18 : type === 'premolar' ? 0.14 : 0.11, 0.04, 8, 16]} />
+              <meshStandardMaterial
+                color={gumColor}
+                roughness={0.75}
+                metalness={0}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+
+            {/* Risk glow */}
+            {projection.riskLevel !== 'low' && timelineT > 0.15 && (
+              <pointLight
+                position={[0, 0, 0.25]}
+                color={projection.riskLevel === 'critical' ? '#ef4444' : projection.riskLevel === 'high' ? '#f97316' : '#eab308'}
+                intensity={timelineT * 1.5}
+                distance={0.8}
+              />
+            )}
+          </>
+        ) : (
+          // Ghost for missing teeth
+          <mesh position={[0, 0, 0]}>
+            <mesh geometry={crownGeo} rotation={[isUpper ? 0 : Math.PI, 0, 0]}>
+              <meshStandardMaterial color="#64748b" roughness={0.8} transparent opacity={0.1} wireframe />
+            </mesh>
           </mesh>
-
-          {/* Gingival margin ring — reddens with inflammation */}
-          <mesh
-            position={[0, isUpper ? -dims.h / 2 - 0.02 - recessionMm : dims.h / 2 + 0.02 + recessionMm, 0]}
-            rotation={[Math.PI / 2, 0, 0]}
-          >
-            <ringGeometry args={[dims.w * 0.35, dims.w * 0.55, 16]} />
-            <meshBasicMaterial
-              color={interpolatedGumColor}
-              side={THREE.DoubleSide}
-              transparent
-              opacity={0.7}
-            />
-          </mesh>
-
-          {/* Risk indicator — red glow for at-risk teeth */}
-          {projection.riskLevel !== 'low' && timelineT > 0.1 && (
-            <pointLight
-              position={[0, 0, dims.d * 0.6]}
-              color={projection.riskLevel === 'critical' ? '#ef4444' : projection.riskLevel === 'high' ? '#f97316' : '#eab308'}
-              intensity={timelineT * 2}
-              distance={1}
-            />
-          )}
-        </>
-      ) : (
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[dims.w, dims.h, dims.d]} />
-          <meshStandardMaterial color="#94a3b8" roughness={0.8} transparent opacity={0.15} wireframe />
-        </mesh>
-      )}
+        )}
+      </group>
 
       {/* Tooth number */}
       <Html
-        position={[0, isUpper ? dims.h / 2 + dims.rootH + 0.25 : -(dims.h / 2 + dims.rootH + 0.25), 0]}
+        position={[0, isUpper ? crownHeight + rootHeight + 0.2 : -(crownHeight + rootHeight + 0.2), 0]}
         center distanceFactor={8} style={{ pointerEvents: 'none' }}
       >
         <span style={{
-          fontSize: 11, fontWeight: 600, userSelect: 'none', whiteSpace: 'nowrap',
+          fontSize: 10, fontWeight: 700, userSelect: 'none', whiteSpace: 'nowrap',
           color: projection.riskLevel === 'critical' ? '#ef4444'
             : projection.riskLevel === 'high' ? '#f97316'
-            : isSelected ? '#818cf8' : hovered ? '#9333ea' : '#94a3b8',
+            : isSelected ? '#818cf8' : hovered ? '#9333ea' : '#6b7280',
+          textShadow: '0 1px 4px rgba(0,0,0,0.6)',
         }}>
           {toothNumber}
         </span>
@@ -248,29 +356,52 @@ function DeterioratingTooth({
   );
 }
 
-// ─── Gum line ───────────────────────────────────────────────────────────────────
+// ─── Gum tissue band ────────────────────────────────────────────────────────────
 
-function GumLine({ isUpper, timelineT }: { isUpper: boolean; timelineT: number }) {
-  const points = useMemo(() => {
-    const pts: THREE.Vector3[] = [];
-    for (let i = 0; i <= 15; i++) {
-      const n = isUpper ? i + 1 : i + 17;
-      const [x, , z] = getArchPosition(n);
-      const recession = timelineT * 0.1; // slight overall recession
-      const y = isUpper ? 0.35 - recession : -0.35 + recession;
-      pts.push(new THREE.Vector3(x, y, z));
+function GumTissue({ isUpper, timelineT }: { isUpper: boolean; timelineT: number }) {
+  const geo = useMemo(() => {
+    const shape = new THREE.Shape();
+    const pts: Array<[number, number]> = [];
+
+    for (let i = 0; i <= 30; i++) {
+      const n = isUpper ? 1 + (i / 30) * 15 : 17 + (i / 30) * 15;
+      const intN = Math.round(n);
+      const [x, , z] = getArchPosition(intN);
+      pts.push([x, z]);
     }
-    return pts;
-  }, [isUpper, timelineT]);
 
-  const curve = useMemo(() => new THREE.CatmullRomCurve3(points), [points]);
-  const tubeGeo = useMemo(() => new THREE.TubeGeometry(curve, 64, 0.08, 8, false), [curve]);
+    if (pts.length > 0) {
+      shape.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) {
+        shape.lineTo(pts[i][0], pts[i][1]);
+      }
+      // Close with inner contour (narrower arch)
+      for (let i = pts.length - 1; i >= 0; i--) {
+        shape.lineTo(pts[i][0] * 0.6, pts[i][1] * 0.6 + (isUpper ? 0.3 : -0.3));
+      }
+      shape.closePath();
+    }
 
-  const gumColor = lerpColor('#f4a0a0', '#c0392b', Math.min(timelineT * 0.8, 1));
+    const extrudeSettings = { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 3 };
+    return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  }, [isUpper]);
+
+  const recession = timelineT * 0.08;
+  const y = isUpper ? 0.12 - recession : -0.24 + recession;
+
+  const gumColor = lerpColor('#d88888', '#b84040', clamp(timelineT * 0.6, 0, 1));
 
   return (
-    <mesh geometry={tubeGeo}>
-      <meshStandardMaterial color={gumColor} roughness={0.7} transparent opacity={0.5 + timelineT * 0.2} />
+    <mesh geometry={geo} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <meshPhysicalMaterial
+        color={gumColor}
+        roughness={0.7}
+        metalness={0}
+        clearcoat={0.1}
+        transparent
+        opacity={0.55}
+        side={THREE.DoubleSide}
+      />
     </mesh>
   );
 }
@@ -289,10 +420,12 @@ function PredictiveScene({
 
   return (
     <>
-      <ambientLight intensity={0.45} />
-      <directionalLight position={[5, 8, 8]} intensity={0.8} castShadow />
-      <directionalLight position={[-5, -4, 6]} intensity={0.3} />
-      <pointLight position={[0, 0, 6]} intensity={0.3} />
+      {/* Dental-clinic lighting */}
+      <ambientLight intensity={0.35} color="#f5f0e8" />
+      <directionalLight position={[4, 6, 8]} intensity={0.9} color="#ffffff" castShadow />
+      <directionalLight position={[-3, -2, 6]} intensity={0.25} color="#e0e8ff" />
+      <pointLight position={[0, 0, 5]} intensity={0.4} color="#ffffff" />
+      <hemisphereLight args={['#dce8f0', '#2a1810', 0.3]} />
 
       <Center>
         <group>
@@ -300,7 +433,7 @@ function PredictiveScene({
             const proj = trajectory.teeth[String(n)];
             if (!proj) return null;
             return (
-              <DeterioratingTooth
+              <RealisticTooth
                 key={n}
                 toothNumber={n}
                 projection={proj}
@@ -310,23 +443,31 @@ function PredictiveScene({
               />
             );
           })}
-          <GumLine isUpper timelineT={timelineT} />
-          <GumLine isUpper={false} timelineT={timelineT} />
+
+          <GumTissue isUpper timelineT={timelineT} />
+          <GumTissue isUpper={false} timelineT={timelineT} />
 
           {/* Time label */}
           <Html position={[0, 2.2, 1]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
-            <span style={{
-              fontSize: 14, fontWeight: 700, userSelect: 'none',
-              color: timelineT > 0.5 ? '#ef4444' : timelineT > 0 ? '#f59e0b' : '#10b981',
-              textShadow: '0 0 10px rgba(0,0,0,0.5)',
+            <div style={{
+              fontSize: 13, fontWeight: 700, userSelect: 'none', letterSpacing: '0.1em',
+              color: timelineT > 0.5 ? '#ef4444' : timelineT > 0.05 ? '#f59e0b' : '#10b981',
+              textShadow: '0 2px 12px rgba(0,0,0,0.7)',
+              background: 'rgba(0,0,0,0.4)', padding: '3px 10px', borderRadius: 6,
             }}>
-              {timelineT === 0 ? 'TODAY' : timelineT <= 0.5 ? '6 MONTHS' : '12 MONTHS'}
-            </span>
+              {timelineT <= 0.05 ? 'TODAY' : timelineT <= 0.5 ? '6 MONTHS' : '12 MONTHS'}
+            </div>
           </Html>
         </group>
       </Center>
 
-      <OrbitControls enableZoom enablePan enableRotate minDistance={4} maxDistance={18} makeDefault />
+      <OrbitControls
+        enableZoom enablePan enableRotate
+        minDistance={4} maxDistance={18}
+        minPolarAngle={Math.PI * 0.15}
+        maxPolarAngle={Math.PI * 0.85}
+        makeDefault
+      />
     </>
   );
 }
@@ -352,39 +493,19 @@ function TrendSparkline({ data }: { data: Array<{ date: string; pd: number; type
 
   return (
     <svg width={w} height={h} className="rounded bg-gray-900/50">
-      {/* Danger zone */}
       <rect x={pad} y={pad} width={chartW} height={(1 - 4 / maxPd) * chartH} fill="rgba(239,68,68,0.08)" />
       <line x1={pad} y1={pad + chartH - (4 / maxPd) * chartH} x2={w - pad} y2={pad + chartH - (4 / maxPd) * chartH} stroke="rgba(239,68,68,0.3)" strokeWidth={0.5} strokeDasharray="3,3" />
-
-      {/* Measured line */}
       {measuredPoints.length > 1 && (
-        <polyline
-          points={measuredPoints.map(p => `${p.x},${p.y}`).join(' ')}
-          fill="none" stroke="#10b981" strokeWidth={1.5}
-        />
+        <polyline points={measuredPoints.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#10b981" strokeWidth={1.5} />
       )}
-
-      {/* Projected line */}
       {lastMeasured && projectedPoints.length > 0 && (
-        <polyline
-          points={[lastMeasured, ...projectedPoints].map(p => `${p.x},${p.y}`).join(' ')}
-          fill="none" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4,3"
-        />
+        <polyline points={[lastMeasured, ...projectedPoints].map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4,3" />
       )}
-
-      {/* Dots */}
       {points.map((p, i) => (
-        <circle
-          key={i} cx={p.x} cy={p.y} r={2.5}
-          fill={p.type === 'measured' ? '#10b981' : '#ef4444'}
-        />
+        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={p.type === 'measured' ? '#10b981' : '#ef4444'} />
       ))}
-
-      {/* Labels */}
       {projectedPoints.map((p, i) => (
-        <text key={i} x={p.x} y={p.y - 6} textAnchor="middle" fontSize={7} fill="#94a3b8" fontFamily="monospace">
-          {p.pd}mm
-        </text>
+        <text key={i} x={p.x} y={p.y - 6} textAnchor="middle" fontSize={7} fill="#94a3b8" fontFamily="monospace">{p.pd}mm</text>
       ))}
     </svg>
   );
@@ -410,12 +531,10 @@ function ToothDetailPanel({
         </button>
       </div>
 
-      {/* Risk badge */}
       <Badge variant="outline" className={`text-[10px] mb-3 ${riskBadgeColor(projection.riskLevel)}`}>
         {projection.riskLevel.toUpperCase()} RISK
       </Badge>
 
-      {/* Condition timeline */}
       <div className="mb-3 space-y-1">
         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Condition Progression</div>
         <div className="flex items-center gap-1 text-xs">
@@ -427,7 +546,6 @@ function ToothDetailPanel({
         </div>
       </div>
 
-      {/* PD by site */}
       <div className="mb-3">
         <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Pocket Depths</div>
         <div className="grid grid-cols-4 gap-1 text-center">
@@ -450,7 +568,6 @@ function ToothDetailPanel({
         </div>
       </div>
 
-      {/* Trend sparkline */}
       {trendData && trendData.length > 0 && (
         <div className="mb-3">
           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Your Trend</div>
@@ -458,7 +575,6 @@ function ToothDetailPanel({
         </div>
       )}
 
-      {/* Cost comparison */}
       {(projection.treatNowCost > 0 || projection.treatLaterCost12mo > 0) && (
         <div className="mb-3 p-2 rounded-lg bg-gray-900/50 border border-gray-800">
           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Cost Impact</div>
@@ -478,16 +594,13 @@ function ToothDetailPanel({
             {projection.treatLaterCost12mo > projection.treatNowCost && (
               <div className="pt-1 border-t border-gray-800 flex justify-between">
                 <span className="text-red-300 text-[10px]">Additional cost if you wait</span>
-                <span className="text-red-400 font-mono font-bold">
-                  +{formatCurrency(projection.treatLaterCost12mo - projection.treatNowCost)}
-                </span>
+                <span className="text-red-400 font-mono font-bold">+{formatCurrency(projection.treatLaterCost12mo - projection.treatNowCost)}</span>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Alerts */}
       {projection.alerts.length > 0 && (
         <div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Findings & Alerts</div>
@@ -521,7 +634,6 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
   const animRef = useRef<number | null>(null);
 
-  // Fetch trajectory data
   useEffect(() => {
     if (!leadId) return;
     setLoading(true);
@@ -543,7 +655,7 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
       .finally(() => setLoading(false));
   }, [leadId, clinicId]);
 
-  // Animation loop
+  // Animation — 20 seconds total, with easing for dramatic effect
   useEffect(() => {
     if (!isPlaying) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
@@ -551,15 +663,19 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
     }
 
     let start: number | null = null;
-    const duration = 6000; // 6 seconds for full animation
+    const duration = 20000;
 
     const step = (timestamp: number) => {
       if (!start) start = timestamp;
       const elapsed = timestamp - start;
-      const progress = Math.min(elapsed / duration, 1);
-      setTimelineT(progress);
+      const linear = Math.min(elapsed / duration, 1);
+      // Ease-in-out for dramatic pacing: slow start, speed up mid, slow at end
+      const eased = linear < 0.5
+        ? 2 * linear * linear
+        : 1 - Math.pow(-2 * linear + 2, 2) / 2;
+      setTimelineT(eased);
 
-      if (progress < 1) {
+      if (linear < 1) {
         animRef.current = requestAnimationFrame(step);
       } else {
         setIsPlaying(false);
@@ -573,6 +689,11 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
   const handlePlay = useCallback(() => {
     setTimelineT(0);
     setIsPlaying(true);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setIsPlaying(false);
+    setTimelineT(0);
   }, []);
 
   if (loading) {
@@ -599,7 +720,8 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
 
   const { summary } = trajectory;
   const selectedProj = selectedTooth ? trajectory.teeth[selectedTooth] : null;
-  const timeLabel = timelineT === 0 ? 'Today' : timelineT <= 0.5 ? `${Math.round(timelineT * 12)} months` : `${Math.round(timelineT * 12)} months`;
+  const monthsShown = Math.round(timelineT * 12);
+  const timeLabel = monthsShown === 0 ? 'Today' : `${monthsShown} months`;
 
   return (
     <Card className="bg-gray-950 border-indigo-500/20 overflow-hidden">
@@ -635,15 +757,24 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
 
       <CardContent className="space-y-4">
         {/* Timeline controls */}
-        <div className="flex items-center gap-4 px-2">
-          <Button
-            variant="outline" size="sm"
-            className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
-            onClick={isPlaying ? () => setIsPlaying(false) : handlePlay}
-          >
-            {isPlaying ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-            {isPlaying ? 'Pause' : 'Play'}
-          </Button>
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex gap-1">
+            <Button
+              variant="outline" size="sm"
+              className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 h-8"
+              onClick={isPlaying ? () => setIsPlaying(false) : handlePlay}
+            >
+              {isPlaying ? <Pause className="h-3.5 w-3.5 mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+              {isPlaying ? 'Pause' : 'Play'}
+            </Button>
+            <Button
+              variant="outline" size="sm"
+              className="border-gray-700 text-gray-400 hover:bg-gray-800 h-8 px-2"
+              onClick={handleReset}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
 
           <div className="flex-1 space-y-1">
             <Slider
@@ -654,15 +785,15 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
               className="w-full"
             />
             <div className="flex justify-between text-[10px] text-gray-500 px-1">
-              <span className={timelineT === 0 ? 'text-green-400 font-bold' : ''}>Today</span>
+              <span className={timelineT <= 0.05 ? 'text-green-400 font-bold' : ''}>Today</span>
               <span className={timelineT > 0.2 && timelineT <= 0.6 ? 'text-amber-400 font-bold' : ''}>6 Months</span>
               <span className={timelineT > 0.8 ? 'text-red-400 font-bold' : ''}>12 Months</span>
             </div>
           </div>
 
           <div className="text-right min-w-[80px]">
-            <div className="text-xs font-mono font-bold" style={{
-              color: timelineT > 0.5 ? '#ef4444' : timelineT > 0 ? '#f59e0b' : '#10b981',
+            <div className="text-sm font-mono font-bold" style={{
+              color: timelineT > 0.5 ? '#ef4444' : timelineT > 0.05 ? '#f59e0b' : '#10b981',
             }}>
               {timeLabel}
             </div>
@@ -670,8 +801,8 @@ export function PredictiveOutcomeViewer({ leadId, clinicId }: PredictiveOutcomeV
         </div>
 
         {/* 3D View */}
-        <div className="relative w-full h-[500px] border border-indigo-500/20 rounded-lg bg-gradient-to-b from-gray-900 to-gray-800 overflow-hidden">
-          <Canvas shadows camera={{ position: [0, 2, 10], fov: 45 }}>
+        <div className="relative w-full h-[500px] border border-indigo-500/20 rounded-lg bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] overflow-hidden">
+          <Canvas shadows camera={{ position: [0, 3, 10], fov: 40 }}>
             <Suspense fallback={
               <Html center>
                 <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />

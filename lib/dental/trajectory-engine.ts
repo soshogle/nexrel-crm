@@ -234,12 +234,12 @@ function getCostsForTooth(
     return { now: base.now, at6mo: base.escalated6mo, at12mo: base.escalated12mo };
   }
 
-  // Periodontal costs
+  // Periodontal costs — only flag PD >= 5 as clinically significant
   if (worstPd >= 7 || projectedPd12mo >= 8) {
     const base = PROCEDURE_COSTS.perio_severe;
     return { now: base.now, at6mo: base.escalated6mo, at12mo: base.escalated12mo };
   }
-  if (worstPd >= 4 || projectedPd6mo >= 5) {
+  if (worstPd >= 5 || projectedPd6mo >= 6) {
     const base = PROCEDURE_COSTS.perio_moderate;
     return { now: base.now, at6mo: base.escalated6mo, at12mo: base.escalated12mo };
   }
@@ -587,11 +587,11 @@ export function computeTrajectory(input: PatientHistoryInput): TrajectoryResult 
     // Extraction risk
     const extractionRisk = worst12 >= 9 || projCondition12 === 'extraction';
 
-    // Risk level
+    // Risk level — only flag teeth with clear clinical concern
     let riskLevel: 'low' | 'moderate' | 'high' | 'critical' = 'low';
     if (extractionRisk) riskLevel = 'critical';
-    else if (worst12 >= 6 || projCondition12 !== currentCondition) riskLevel = 'high';
-    else if (worst6 >= 4 || hasBopAnywhere) riskLevel = 'moderate';
+    else if (worst12 >= 7 || projCondition12 !== currentCondition) riskLevel = 'high';
+    else if (worstCurrent >= 5 || (worst6 >= 5 && hasBopAnywhere)) riskLevel = 'moderate';
 
     // Alerts
     const alerts: string[] = [];
