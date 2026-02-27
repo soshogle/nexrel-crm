@@ -56,6 +56,31 @@ function Loader() {
   );
 }
 
+function isValidGeometry(geo: THREE.BufferGeometry): boolean {
+  const posAttr = geo.getAttribute('position');
+  if (!posAttr || posAttr.count < 9) return false; // need at least 3 triangles
+
+  // Check for degenerate geometry (all vertices in a tiny volume or NaN)
+  const arr = posAttr.array as Float32Array;
+  let hasNaN = false;
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+  for (let i = 0; i < arr.length; i += 3) {
+    if (isNaN(arr[i]) || isNaN(arr[i + 1]) || isNaN(arr[i + 2])) { hasNaN = true; break; }
+    minX = Math.min(minX, arr[i]);   maxX = Math.max(maxX, arr[i]);
+    minY = Math.min(minY, arr[i+1]); maxY = Math.max(maxY, arr[i+1]);
+    minZ = Math.min(minZ, arr[i+2]); maxZ = Math.max(maxZ, arr[i+2]);
+  }
+  if (hasNaN) return false;
+
+  const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+  // Reject geometry with extreme extents (parsed garbage) or near-zero size
+  if (extent > 10000 || extent < 0.001) return false;
+
+  return true;
+}
+
 function ScanModel({ url, color, fileName }: { url: string; color: string; fileName?: string }) {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [objGroup, setObjGroup] = useState<THREE.Group | null>(null);
@@ -69,46 +94,81 @@ function ScanModel({ url, color, fileName }: { url: string; color: string; fileN
     setError(null);
     setHasVertexColors(false);
 
-    const ext = (fileName || url).split('.').pop()?.toLowerCase() || 'stl';
+    // Pre-check: fetch as text first to detect HTML error pages
+    fetch(url)
+      .then(res => {
+        if (!res.ok) {
+          setError(`File not found (${res.status}). Upload a real STL/PLY/OBJ scan file.`);
+          return;
+        }
+        const contentType = res.headers.get('content-type') || '';
+        // If server returned HTML instead of binary, it's an error page
+        if (contentType.includes('text/html')) {
+          setError('Server returned an HTML page instead of a 3D model file. Upload a real STL scan.');
+          return;
+        }
+        // Now load with proper loader
+        loadModel();
+      })
+      .catch(() => {
+        setError('Cannot reach file server. Upload a real STL scan.');
+      });
 
-    if (ext === 'ply') {
-      const loader = new PLYLoader();
-      loader.load(
-        url,
-        (geo) => {
-          geo.computeVertexNormals();
-          geo.center();
-          setHasVertexColors(geo.hasAttribute('color'));
-          setGeometry(geo);
-        },
-        undefined,
-        (err) => setError(`Failed to load PLY: ${err instanceof Error ? err.message : 'unknown error'}`)
-      );
-    } else if (ext === 'obj') {
-      const loader = new OBJLoader();
-      loader.load(
-        url,
-        (group) => {
-          const box = new THREE.Box3().setFromObject(group);
-          const center = box.getCenter(new THREE.Vector3());
-          group.position.sub(center);
-          setObjGroup(group);
-        },
-        undefined,
-        (err) => setError(`Failed to load OBJ: ${err instanceof Error ? err.message : 'unknown error'}`)
-      );
-    } else {
-      const loader = new STLLoader();
-      loader.load(
-        url,
-        (geo) => {
-          geo.computeVertexNormals();
-          geo.center();
-          setGeometry(geo);
-        },
-        undefined,
-        (err) => setError(`Failed to load STL: ${err instanceof Error ? err.message : 'unknown error'}`)
-      );
+    function loadModel() {
+      const ext = (fileName || url).split('.').pop()?.toLowerCase() || 'stl';
+
+      if (ext === 'ply') {
+        const loader = new PLYLoader();
+        loader.load(
+          url,
+          (geo) => {
+            if (!isValidGeometry(geo)) {
+              setError('File is not a valid PLY 3D model. Upload a real intraoral scan.');
+              return;
+            }
+            geo.computeVertexNormals();
+            geo.center();
+            setHasVertexColors(geo.hasAttribute('color'));
+            setGeometry(geo);
+          },
+          undefined,
+          () => setError('Failed to parse PLY file. Upload a valid 3D scan.')
+        );
+      } else if (ext === 'obj') {
+        const loader = new OBJLoader();
+        loader.load(
+          url,
+          (group) => {
+            const box = new THREE.Box3().setFromObject(group);
+            const size = box.getSize(new THREE.Vector3());
+            if (size.length() < 0.001 || size.length() > 10000) {
+              setError('File is not a valid OBJ 3D model. Upload a real intraoral scan.');
+              return;
+            }
+            const center = box.getCenter(new THREE.Vector3());
+            group.position.sub(center);
+            setObjGroup(group);
+          },
+          undefined,
+          () => setError('Failed to parse OBJ file. Upload a valid 3D scan.')
+        );
+      } else {
+        const loader = new STLLoader();
+        loader.load(
+          url,
+          (geo) => {
+            if (!isValidGeometry(geo)) {
+              setError('File is not a valid STL 3D model. Upload a real intraoral scan.');
+              return;
+            }
+            geo.computeVertexNormals();
+            geo.center();
+            setGeometry(geo);
+          },
+          undefined,
+          () => setError('Failed to parse STL file. Upload a valid 3D scan.')
+        );
+      }
     }
   }, [url, fileName]);
 

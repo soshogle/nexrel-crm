@@ -83,76 +83,107 @@ function getToothRotation(n: number): number {
   return (t - 0.5) * Math.PI;
 }
 
-// ─── Anatomical tooth crown profiles (LatheGeometry) ────────────────────────
+// ─── Anatomical tooth shapes (ExtrudeGeometry with proper cross-sections) ────
 
-function createToothCrownGeometry(type: ToothType, scale: number = 1): THREE.LatheGeometry {
-  const pts: THREE.Vector2[] = [];
-  const s = scale;
+function createToothCrownGeometry(type: ToothType): THREE.ExtrudeGeometry {
+  const shape = new THREE.Shape();
 
   switch (type) {
     case 'molar': {
-      // Broad, flat crown with bulging sides and cusped top
-      pts.push(new THREE.Vector2(0, -0.22 * s));
-      pts.push(new THREE.Vector2(0.16 * s, -0.20 * s));
-      pts.push(new THREE.Vector2(0.24 * s, -0.12 * s));
-      pts.push(new THREE.Vector2(0.26 * s, 0));
-      pts.push(new THREE.Vector2(0.25 * s, 0.08 * s));
-      pts.push(new THREE.Vector2(0.22 * s, 0.14 * s));
-      pts.push(new THREE.Vector2(0.18 * s, 0.18 * s));
-      pts.push(new THREE.Vector2(0.12 * s, 0.19 * s));
-      pts.push(new THREE.Vector2(0.06 * s, 0.17 * s));
-      pts.push(new THREE.Vector2(0, 0.20 * s));
+      // Rectangular with rounded corners and cusp bumps — wider buccolingually
+      shape.moveTo(-0.18, -0.20);
+      shape.quadraticCurveTo(-0.22, -0.20, -0.22, -0.14);
+      shape.lineTo(-0.22, 0.14);
+      shape.quadraticCurveTo(-0.22, 0.20, -0.16, 0.20);
+      // Cusp dip
+      shape.quadraticCurveTo(-0.08, 0.18, 0, 0.20);
+      shape.quadraticCurveTo(0.08, 0.18, 0.16, 0.20);
+      shape.quadraticCurveTo(0.22, 0.20, 0.22, 0.14);
+      shape.lineTo(0.22, -0.14);
+      shape.quadraticCurveTo(0.22, -0.20, 0.16, -0.20);
+      shape.quadraticCurveTo(0.08, -0.18, 0, -0.20);
+      shape.quadraticCurveTo(-0.08, -0.18, -0.18, -0.20);
       break;
     }
     case 'premolar': {
-      pts.push(new THREE.Vector2(0, -0.20 * s));
-      pts.push(new THREE.Vector2(0.12 * s, -0.18 * s));
-      pts.push(new THREE.Vector2(0.19 * s, -0.10 * s));
-      pts.push(new THREE.Vector2(0.20 * s, 0));
-      pts.push(new THREE.Vector2(0.19 * s, 0.10 * s));
-      pts.push(new THREE.Vector2(0.15 * s, 0.16 * s));
-      pts.push(new THREE.Vector2(0.08 * s, 0.20 * s));
-      pts.push(new THREE.Vector2(0, 0.22 * s));
+      // Oval with two cusp bumps
+      shape.moveTo(-0.14, -0.16);
+      shape.quadraticCurveTo(-0.18, -0.16, -0.18, -0.08);
+      shape.lineTo(-0.18, 0.08);
+      shape.quadraticCurveTo(-0.18, 0.16, -0.10, 0.18);
+      shape.quadraticCurveTo(0, 0.15, 0.10, 0.18);
+      shape.quadraticCurveTo(0.18, 0.16, 0.18, 0.08);
+      shape.lineTo(0.18, -0.08);
+      shape.quadraticCurveTo(0.18, -0.16, 0.10, -0.18);
+      shape.quadraticCurveTo(0, -0.15, -0.10, -0.18);
+      shape.quadraticCurveTo(-0.18, -0.16, -0.14, -0.16);
       break;
     }
     case 'canine': {
-      // Pointed tip, conical crown
-      pts.push(new THREE.Vector2(0, -0.22 * s));
-      pts.push(new THREE.Vector2(0.10 * s, -0.18 * s));
-      pts.push(new THREE.Vector2(0.16 * s, -0.08 * s));
-      pts.push(new THREE.Vector2(0.17 * s, 0));
-      pts.push(new THREE.Vector2(0.15 * s, 0.10 * s));
-      pts.push(new THREE.Vector2(0.10 * s, 0.20 * s));
-      pts.push(new THREE.Vector2(0.04 * s, 0.26 * s));
-      pts.push(new THREE.Vector2(0, 0.28 * s));
+      // Pointed diamond — laterally compressed, tall
+      shape.moveTo(0, -0.12);
+      shape.quadraticCurveTo(-0.12, -0.10, -0.14, 0);
+      shape.quadraticCurveTo(-0.12, 0.10, 0, 0.12);
+      shape.quadraticCurveTo(0.12, 0.10, 0.14, 0);
+      shape.quadraticCurveTo(0.12, -0.10, 0, -0.12);
       break;
     }
     case 'incisor': {
-      // Thin, flat, shovel-shaped
-      pts.push(new THREE.Vector2(0, -0.18 * s));
-      pts.push(new THREE.Vector2(0.08 * s, -0.16 * s));
-      pts.push(new THREE.Vector2(0.14 * s, -0.08 * s));
-      pts.push(new THREE.Vector2(0.15 * s, 0));
-      pts.push(new THREE.Vector2(0.14 * s, 0.08 * s));
-      pts.push(new THREE.Vector2(0.12 * s, 0.14 * s));
-      pts.push(new THREE.Vector2(0.10 * s, 0.20 * s));
-      pts.push(new THREE.Vector2(0.08 * s, 0.24 * s));
-      pts.push(new THREE.Vector2(0, 0.26 * s));
+      // Wide and thin — shovel-shaped
+      shape.moveTo(-0.15, -0.06);
+      shape.quadraticCurveTo(-0.16, -0.06, -0.16, 0);
+      shape.quadraticCurveTo(-0.16, 0.06, -0.14, 0.06);
+      shape.lineTo(0.14, 0.06);
+      shape.quadraticCurveTo(0.16, 0.06, 0.16, 0);
+      shape.quadraticCurveTo(0.16, -0.06, 0.14, -0.06);
+      shape.lineTo(-0.15, -0.06);
       break;
     }
   }
 
-  return new THREE.LatheGeometry(pts, 16);
+  // Crown heights differ per type
+  const crownHeight = type === 'molar' ? 0.30 : type === 'premolar' ? 0.32 : type === 'canine' ? 0.40 : 0.36;
+
+  return new THREE.ExtrudeGeometry(shape, {
+    depth: crownHeight,
+    bevelEnabled: true,
+    bevelThickness: 0.04,
+    bevelSize: 0.03,
+    bevelOffset: 0,
+    bevelSegments: 4,
+  });
 }
 
-function createRootGeometry(type: ToothType, scale: number = 1): THREE.ConeGeometry {
-  const s = scale;
-  switch (type) {
-    case 'molar':    return new THREE.ConeGeometry(0.16 * s, 0.55 * s, 12);
-    case 'premolar': return new THREE.ConeGeometry(0.13 * s, 0.50 * s, 10);
-    case 'canine':   return new THREE.ConeGeometry(0.10 * s, 0.60 * s, 10);
-    case 'incisor':  return new THREE.ConeGeometry(0.09 * s, 0.48 * s, 10);
-  }
+function createRootGeometry(type: ToothType): THREE.ExtrudeGeometry {
+  // Roots are tapered versions of the crown cross-section
+  const shape = new THREE.Shape();
+  const rootW = type === 'molar' ? 0.12 : type === 'premolar' ? 0.09 : type === 'canine' ? 0.07 : 0.06;
+  const rootD = type === 'molar' ? 0.12 : type === 'premolar' ? 0.08 : type === 'canine' ? 0.06 : 0.04;
+
+  // Rounded taper
+  shape.moveTo(-rootW, -rootD);
+  shape.quadraticCurveTo(-rootW, rootD, 0, rootD * 0.6);
+  shape.quadraticCurveTo(rootW, rootD, rootW, -rootD);
+  shape.quadraticCurveTo(rootW * 0.5, -rootD * 0.3, 0, -rootD * 0.5);
+  shape.quadraticCurveTo(-rootW * 0.5, -rootD * 0.3, -rootW, -rootD);
+
+  const rootH = type === 'molar' ? 0.45 : type === 'canine' ? 0.55 : 0.42;
+
+  return new THREE.ExtrudeGeometry(shape, {
+    depth: rootH,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.02,
+    bevelSegments: 3,
+  });
+}
+
+function getCrownHeight(type: ToothType): number {
+  return type === 'molar' ? 0.30 : type === 'premolar' ? 0.32 : type === 'canine' ? 0.40 : 0.36;
+}
+
+function getRootHeight(type: ToothType): number {
+  return type === 'molar' ? 0.45 : type === 'canine' ? 0.55 : 0.42;
 }
 
 // ─── Enamel material helpers ────────────────────────────────────────────────
@@ -187,20 +218,18 @@ function RealisticTooth({
   const rot = getToothRotation(toothNumber);
   const isUpper = toothNumber <= 16;
 
-  const crownGeo = useMemo(() => createToothCrownGeometry(type, 1), [type]);
-  const rootGeo = useMemo(() => createRootGeometry(type, 1), [type]);
+  const crownGeo = useMemo(() => createToothCrownGeometry(type), [type]);
+  const rootGeo = useMemo(() => createRootGeometry(type), [type]);
 
   const activeCondition = timelineT < 0.5
     ? projection.currentCondition
     : timelineT < 1 ? projection.projectedCondition6mo : projection.projectedCondition12mo;
   const isMissing = activeCondition === 'missing' || activeCondition === 'extraction';
 
-  // PD interpolation
   const worstPd = timelineT < 0.5
     ? lerp(projection.worstCurrentPd, projection.worstPd6mo, timelineT * 2)
     : lerp(projection.worstPd6mo, projection.worstPd12mo, (timelineT - 0.5) * 2);
 
-  // Enamel color based on deterioration
   const enamelColor = useMemo(() => {
     if (activeCondition === 'caries') return ENAMEL_CARIES;
     if (activeCondition === 'crown') return CROWN_METAL;
@@ -214,7 +243,6 @@ function RealisticTooth({
     return ENAMEL_HEALTHY;
   }, [activeCondition, timelineT, worstPd]);
 
-  // Surface properties
   const roughness = activeCondition === 'crown' ? 0.15
     : activeCondition === 'filling' ? 0.3
     : lerp(0.25, 0.75, clamp(timelineT * (worstPd > 3 ? 1 : 0.2), 0, 1));
@@ -222,29 +250,31 @@ function RealisticTooth({
     : activeCondition === 'filling' ? 0.2
     : 0.05;
 
-  // Gum recession
   const recessionMm = worstPd > 3 ? (worstPd - 3) * 0.06 * timelineT : 0;
-
-  // Gum color per tooth
   const gumIntensity = clamp(worstPd > 3 ? (worstPd - 3) * 0.25 * timelineT : 0, 0, 1);
   const gumColor = lerpColor(GUM_HEALTHY, GUM_INFLAMED, gumIntensity);
 
-  // Root dimensions
-  const rootHeight = type === 'molar' ? 0.55 : type === 'canine' ? 0.6 : 0.5;
-  const crownHeight = type === 'molar' ? 0.20 : type === 'canine' ? 0.28 : 0.22;
+  const crownH = getCrownHeight(type);
+  const rootH = getRootHeight(type);
   const rootDir = isUpper ? 1 : -1;
-
-  // Cavity size for caries
   const cavitySize = activeCondition === 'caries' ? 0.04 + timelineT * 0.08 : 0;
-
-  // Mobility wobble
   const mobilityRisk = timelineT < 0.5 ? projection.mobilityRisk6mo : projection.mobilityRisk12mo;
+
+  // Gum cuff radius matches tooth width
+  const gumR = type === 'molar' ? 0.20 : type === 'premolar' ? 0.16 : type === 'canine' ? 0.12 : 0.14;
 
   useFrame(({ clock }) => {
     if (meshRef.current && mobilityRisk >= 2) {
       meshRef.current.rotation.z = Math.sin(clock.elapsedTime * 2) * 0.02 * mobilityRisk;
     }
   });
+
+  // ExtrudeGeometry extrudes along Z. We rotate -PI/2 on X to make it go along Y (upward).
+  // For upper teeth the crown points down (toward mouth), roots up; lower teeth opposite.
+  const crownRotX = isUpper ? -Math.PI / 2 : Math.PI / 2;
+  const rootRotX = isUpper ? Math.PI / 2 : -Math.PI / 2;
+  const crownOffsetY = isUpper ? -recessionMm : recessionMm;
+  const rootOffsetY = rootDir * (crownH / 2 + rootH / 2) + (isUpper ? -recessionMm : recessionMm);
 
   return (
     <group
@@ -257,29 +287,29 @@ function RealisticTooth({
       <group ref={meshRef} scale={hovered || isSelected ? 1.08 : 1}>
         {!isMissing ? (
           <>
-            {/* Crown — anatomical lathe shape */}
+            {/* Crown — proper extruded anatomical shape */}
             <mesh
               geometry={crownGeo}
-              position={[0, isUpper ? -recessionMm : recessionMm, 0]}
-              rotation={[isUpper ? 0 : Math.PI, 0, 0]}
+              position={[0, crownOffsetY - (isUpper ? crownH / 2 : -crownH / 2), 0]}
+              rotation={[crownRotX, 0, 0]}
               castShadow receiveShadow
             >
               <meshPhysicalMaterial
                 color={enamelColor}
                 roughness={roughness}
                 metalness={metalness}
-                clearcoat={activeCondition === 'crown' ? 0.8 : 0.3}
-                clearcoatRoughness={0.2}
-                envMapIntensity={0.6}
+                clearcoat={activeCondition === 'crown' ? 0.8 : 0.4}
+                clearcoatRoughness={0.15}
+                envMapIntensity={0.5}
                 emissive={isSelected ? '#6366f1' : hovered ? '#8b5cf6' : '#000000'}
                 emissiveIntensity={isSelected ? 0.3 : hovered ? 0.15 : 0}
               />
             </mesh>
 
-            {/* Cavity dark spot */}
+            {/* Cavity dark spot on occlusal surface */}
             {cavitySize > 0 && (
               <mesh
-                position={[0, (isUpper ? crownHeight - 0.02 : -(crownHeight - 0.02)) + (isUpper ? -recessionMm : recessionMm), 0]}
+                position={[0, (isUpper ? -crownH / 2 + 0.02 : crownH / 2 - 0.02) + crownOffsetY, 0]}
                 rotation={[Math.PI / 2, 0, 0]}
               >
                 <circleGeometry args={[cavitySize, 12]} />
@@ -287,29 +317,29 @@ function RealisticTooth({
               </mesh>
             )}
 
-            {/* Root */}
+            {/* Root — tapered extrusion */}
             <mesh
               geometry={rootGeo}
-              position={[0, rootDir * (crownHeight + rootHeight / 2) + (isUpper ? -recessionMm : recessionMm), 0]}
-              rotation={[isUpper ? Math.PI : 0, 0, 0]}
+              position={[0, rootOffsetY - (isUpper ? -rootH / 2 : rootH / 2), 0]}
+              rotation={[rootRotX, 0, 0]}
               castShadow
             >
               <meshStandardMaterial
                 color={recessionMm > 0.08 ? DENTIN_COLOR : ROOT_COLOR}
-                roughness={0.6}
+                roughness={0.55}
                 metalness={0.02}
               />
             </mesh>
 
-            {/* Gum cuff — thicker, anatomical ring with tissue look */}
+            {/* Gum cuff — tissue ring around CEJ */}
             <mesh
-              position={[0, (isUpper ? -(crownHeight * 0.5) : crownHeight * 0.5) + (isUpper ? -recessionMm : recessionMm), 0]}
+              position={[0, (isUpper ? -(crownH * 0.4) : crownH * 0.4) + crownOffsetY, 0]}
               rotation={[Math.PI / 2, 0, 0]}
             >
-              <torusGeometry args={[type === 'molar' ? 0.18 : type === 'premolar' ? 0.14 : 0.11, 0.04, 8, 16]} />
+              <torusGeometry args={[gumR, 0.045, 10, 20]} />
               <meshStandardMaterial
                 color={gumColor}
-                roughness={0.75}
+                roughness={0.7}
                 metalness={0}
                 transparent
                 opacity={0.85}
@@ -329,17 +359,19 @@ function RealisticTooth({
           </>
         ) : (
           // Ghost for missing teeth
-          <mesh position={[0, 0, 0]}>
-            <mesh geometry={crownGeo} rotation={[isUpper ? 0 : Math.PI, 0, 0]}>
-              <meshStandardMaterial color="#64748b" roughness={0.8} transparent opacity={0.1} wireframe />
-            </mesh>
+          <mesh
+            geometry={crownGeo}
+            position={[0, -(isUpper ? crownH / 2 : -crownH / 2), 0]}
+            rotation={[crownRotX, 0, 0]}
+          >
+            <meshStandardMaterial color="#64748b" roughness={0.8} transparent opacity={0.1} wireframe />
           </mesh>
         )}
       </group>
 
       {/* Tooth number */}
       <Html
-        position={[0, isUpper ? crownHeight + rootHeight + 0.2 : -(crownHeight + rootHeight + 0.2), 0]}
+        position={[0, isUpper ? crownH / 2 + rootH + 0.2 : -(crownH / 2 + rootH + 0.2), 0]}
         center distanceFactor={8} style={{ pointerEvents: 'none' }}
       >
         <span style={{
