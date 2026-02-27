@@ -145,9 +145,12 @@ export function DicomViewer({
 
   // ─── Draw ─────────────────────────────────────────────────────────────────
 
+  // Use a ref so requestDraw always calls the latest draw function
+  const drawFnRef = useRef<() => void>(() => {});
+
   const requestDraw = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
-    animFrameRef.current = requestAnimationFrame(() => draw());
+    animFrameRef.current = requestAnimationFrame(() => drawFnRef.current());
   }, []);
 
   const draw = useCallback(() => {
@@ -215,9 +218,12 @@ export function DicomViewer({
     ctx.restore();
   }, [scale, panX, panY, rotation, brightness, contrast, measurements, annotations, isDrawing, drawStart, drawEnd, activeTool, mmPerPixel]);
 
+  // Keep the ref in sync so requestDraw always calls the current draw
+  drawFnRef.current = draw;
+
   useEffect(() => {
     requestDraw();
-  }, [draw]);
+  }, [draw, requestDraw]);
 
   // Resize observer
   useEffect(() => {
