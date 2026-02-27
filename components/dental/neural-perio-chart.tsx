@@ -29,40 +29,25 @@ interface NeuralPerioChartProps {
 
 // ─── Demo data (all 32 teeth, now with lingual) ───────────────────────────────
 
-const DEMO: Record<string, ToothData> = {
-  '1':  { mesial:{pd:3},          buccal:{pd:2},           distal:{pd:3},          lingual:{pd:3} },
-  '2':  { mesial:{pd:4,bop:true}, buccal:{pd:3},           distal:{pd:4},          lingual:{pd:4,bop:true} },
-  '3':  { mesial:{pd:5},          buccal:{pd:4},           distal:{pd:5,bop:true}, lingual:{pd:5} },
-  '4':  { mesial:{pd:3},          buccal:{pd:2},           distal:{pd:3},          lingual:{pd:2} },
-  '5':  { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '6':  { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:3},          lingual:{pd:3} },
-  '7':  { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '8':  { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '9':  { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '10': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '11': { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:3},          lingual:{pd:3} },
-  '12': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '13': { mesial:{pd:3},          buccal:{pd:2},           distal:{pd:3},          lingual:{pd:3} },
-  '14': { mesial:{pd:7,bop:true}, buccal:{pd:6},           distal:{pd:7,bop:true}, lingual:{pd:8,bop:true} },
-  '15': { mesial:{pd:8,bop:true}, buccal:{pd:7,bop:true},  distal:{pd:8,bop:true}, lingual:{pd:9,bop:true} },
-  '16': { mesial:{pd:4},          buccal:{pd:3},           distal:{pd:4},          lingual:{pd:4} },
-  '17': { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:4},          lingual:{pd:3} },
-  '18': { mesial:{pd:5,bop:true}, buccal:{pd:4},           distal:{pd:5},          lingual:{pd:5,bop:true} },
-  '19': { mesial:{pd:4},          buccal:{pd:3},           distal:{pd:4},          lingual:{pd:4} },
-  '20': { mesial:{pd:3},          buccal:{pd:2},           distal:{pd:3},          lingual:{pd:3} },
-  '21': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '22': { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:3},          lingual:{pd:3} },
-  '23': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '24': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '25': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '26': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '27': { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:3},          lingual:{pd:3} },
-  '28': { mesial:{pd:2},          buccal:{pd:2},           distal:{pd:2},          lingual:{pd:2} },
-  '29': { mesial:{pd:3},          buccal:{pd:2},           distal:{pd:3},          lingual:{pd:3} },
-  '30': { mesial:{pd:6,bop:true}, buccal:{pd:5},           distal:{pd:6},          lingual:{pd:7,bop:true} },
-  '31': { mesial:{pd:4},          buccal:{pd:3},           distal:{pd:4},          lingual:{pd:4} },
-  '32': { mesial:{pd:3},          buccal:{pd:3},           distal:{pd:3},          lingual:{pd:3} },
-};
+// Realistic healthy-adult fallback — matches DB seed for orthodontic patients.
+// PD 2-3mm throughout, isolated BOP on teeth 6M, 11M, 22B, 27B (mild gingivitis).
+const DEMO: Record<string, ToothData> = (() => {
+  const m: Record<string, ToothData> = {};
+  const bopSites: Record<number, (keyof ToothData)[]> = {
+    6: ['mesial'], 11: ['mesial'], 22: ['buccal'], 27: ['buccal'],
+  };
+  for (let t = 1; t <= 32; t++) {
+    const pd = (t % 4 === 0) ? 3 : 2;
+    const bops = bopSites[t] || [];
+    m[String(t)] = {
+      mesial:  { pd, bop: bops.includes('mesial') },
+      buccal:  { pd, bop: bops.includes('buccal') },
+      distal:  { pd: pd === 3 ? 3 : 2, bop: false },
+      lingual: { pd: 2, bop: false },
+    };
+  }
+  return m;
+})();
 
 const UPPER = Array.from({length:16},(_,i)=>i+1);
 const LOWER = Array.from({length:16},(_,i)=>i+17);

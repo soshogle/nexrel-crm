@@ -1,0 +1,85 @@
+{
+  "_comment": "Simulated DICOM metadata from a Planmeca ProMax 3D panoramic x-ray. Real DICOM uses binary tags; this JSON mirrors the standard tag structure for testing.",
+  "FileMetaInformation": {
+    "MediaStorageSOPClassUID": "1.2.840.10008.5.1.4.1.1.1.1",
+    "MediaStorageSOPInstanceUID": "1.2.826.0.1.3680043.8.498.11111111.22222",
+    "TransferSyntaxUID": "1.2.840.10008.1.2.1",
+    "ImplementationClassUID": "1.2.826.0.1.3680043.2.1545"
+  },
+  "PatientModule": {
+    "PatientName": "Tremblay^Marie",
+    "PatientID": "MT-2024-001",
+    "PatientBirthDate": "19920315",
+    "PatientSex": "F"
+  },
+  "GeneralStudyModule": {
+    "StudyDate": "20260225",
+    "StudyTime": "091530",
+    "StudyInstanceUID": "1.2.826.0.1.3680043.8.498.33333333.44444",
+    "ReferringPhysicianName": "Bhatt^Priya^Dr.",
+    "StudyID": "STUDY-2026-0225-001",
+    "StudyDescription": "Panoramic Radiograph"
+  },
+  "GeneralSeriesModule": {
+    "Modality": "PX",
+    "SeriesInstanceUID": "1.2.826.0.1.3680043.8.498.55555555.66666",
+    "SeriesNumber": 1,
+    "SeriesDescription": "Panoramic"
+  },
+  "GeneralEquipmentModule": {
+    "Manufacturer": "Planmeca",
+    "InstitutionName": "Clinique Dentaire Nexrel",
+    "InstitutionAddress": "1234 Rue Sainte-Catherine, Montreal, QC H3B 1A7",
+    "StationName": "PLANMECA-PROMAX-01",
+    "ManufacturerModelName": "ProMax 3D Mid",
+    "SoftwareVersions": "6.4.2.1",
+    "DetectorID": "DET-PM3D-001",
+    "DetectorManufacturerName": "Planmeca"
+  },
+  "GeneralImageModule": {
+    "InstanceNumber": 1,
+    "ContentDate": "20260225",
+    "ContentTime": "091545",
+    "ImageType": ["ORIGINAL", "PRIMARY"],
+    "AcquisitionDate": "20260225",
+    "AcquisitionTime": "091530"
+  },
+  "ImagePixelModule": {
+    "SamplesPerPixel": 1,
+    "PhotometricInterpretation": "MONOCHROME2",
+    "Rows": 1536,
+    "Columns": 2944,
+    "BitsAllocated": 16,
+    "BitsStored": 14,
+    "HighBit": 13,
+    "PixelRepresentation": 0,
+    "WindowCenter": 8192,
+    "WindowWidth": 16384
+  },
+  "DXPositioningModule": {
+    "PositionerType": "NONE",
+    "DistanceSourceToDetector": 500,
+    "DistanceSourceToPatient": 350,
+    "ExposureTime": 16000,
+    "XRayTubeCurrent": 8,
+    "KVP": 66,
+    "FilterType": "STRIP",
+    "FilterMaterial": "COPPER",
+    "FocalSpots": [0.5],
+    "AnodeTargetMaterial": "TUNGSTEN"
+  },
+  "DentalFindings": {
+    "_comment": "AI-derived findings to import into DentalXRay.aiAnalysis. These match the odontogram (fillings #3 and #14) and perio data (healthy, PD 2-3mm).",
+    "findings": [
+      "Tooth #3 (upper right 1st molar): Existing composite restoration on occlusal surface — intact, no secondary caries",
+      "Tooth #14 (upper left 1st premolar): Existing composite restoration on occlusal surface — intact, margins sealed",
+      "All remaining teeth: No carious lesions, no periapical pathology",
+      "Bone levels: Within normal limits bilaterally, no evidence of horizontal or vertical bone loss",
+      "TMJ: Condyles appear normal, no joint space abnormalities"
+    ],
+    "boneLevel": "Normal — No bone loss",
+    "periapical": "No pathology detected",
+    "boneDensity": "92% (Healthy)",
+    "teethIncluded": ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32"]
+  }
+}

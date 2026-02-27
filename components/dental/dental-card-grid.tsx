@@ -79,6 +79,7 @@ export function DentalCardGrid({
             {selectedLeadId ? (
               <ExactArchOdontogram
                 toothData={odontogramData}
+                periodontalData={periodontalData}
                 scanTeethIncluded={selectedXray?.teethIncluded}
               />
             ) : (
@@ -325,7 +326,7 @@ export function DentalCardGrid({
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {selectedLeadId && sessionUserId ? (
-                <CustomXRayAnalysis xrayData={selectedXray} />
+                <CustomXRayAnalysis xrayData={selectedXray} toothData={odontogramData} />
               ) : (
                 <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
               )}

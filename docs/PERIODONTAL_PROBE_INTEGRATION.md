@@ -83,9 +83,52 @@ Provide at least one of:
 
 When the Periodontal Charting modal is open, the UI polls every 5 seconds for new data. Probe data pushed via this endpoint will appear automatically.
 
-## Sample File
+## CSV File Upload (Florida Probe Export)
 
-See `docs/samples/periodontal-import-sample.json` for a full example. Replace `userId` and `patientName` with real values before testing.
+Probe systems typically export CSV files with 6-site measurements. Upload the CSV directly:
+
+```
+POST /api/dental/periodontal/import/csv
+Content-Type: multipart/form-data
+Authorization: Bearer <PERIODONTAL_PROBE_API_KEY>
+```
+
+### Form fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `file` | Yes | The CSV file from your probe system |
+| `leadId` | No | CRM patient ID (if known) |
+| `patientName` | No | Falls back to CSV PatientFirstName/PatientLastName columns |
+| `userId` | No | Required if using API key auth (not needed with session) |
+| `clinicId` | No | Clinic ID |
+
+### Example with curl:
+
+```bash
+curl -X POST https://your-domain.com/api/dental/periodontal/import/csv \
+  -H "Authorization: Bearer $PERIODONTAL_PROBE_API_KEY" \
+  -F "file=@florida-probe-export.csv" \
+  -F "userId=YOUR_USER_ID" \
+  -F "patientName=Marie Tremblay"
+```
+
+### Supported CSV format:
+
+The parser expects these columns (Florida Probe standard):
+
+```
+ExamDate,PatientID,PatientLastName,PatientFirstName,ToothNumber,Surface,ProbingDepth,GingivalMargin,CAL,Bleeding,...
+```
+
+Surfaces: MB, B, DB, ML, L, DL — automatically collapsed to our 4-site model (M, B, D, L).
+
+## Sample Files
+
+- `docs/samples/periodontal-import-sample.json` — JSON format
+- `docs/samples/florida-probe-export.csv` — CSV format (6-site, 32 teeth)
+
+Replace `userId` and `patientName` with real values before testing.
 
 ## Related
 

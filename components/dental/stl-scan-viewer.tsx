@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 interface StlScanViewerProps {
   leadId: string;
@@ -54,32 +56,91 @@ function Loader() {
   );
 }
 
-function StlModel({ url, color }: { url: string; color: string }) {
+function ScanModel({ url, color, fileName }: { url: string; color: string; fileName?: string }) {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
-  const [error, setError] = useState(false);
+  const [objGroup, setObjGroup] = useState<THREE.Group | null>(null);
+  const [hasVertexColors, setHasVertexColors] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!url) return;
     setGeometry(null);
-    setError(false);
-    const loader = new STLLoader();
-    loader.load(
-      url,
-      (geo) => {
-        geo.computeVertexNormals();
-        geo.center();
-        setGeometry(geo);
-      },
-      undefined,
-      () => setError(true)
-    );
-  }, [url]);
+    setObjGroup(null);
+    setError(null);
+    setHasVertexColors(false);
+
+    const ext = (fileName || url).split('.').pop()?.toLowerCase() || 'stl';
+
+    if (ext === 'ply') {
+      const loader = new PLYLoader();
+      loader.load(
+        url,
+        (geo) => {
+          geo.computeVertexNormals();
+          geo.center();
+          setHasVertexColors(geo.hasAttribute('color'));
+          setGeometry(geo);
+        },
+        undefined,
+        (err) => setError(`Failed to load PLY: ${err instanceof Error ? err.message : 'unknown error'}`)
+      );
+    } else if (ext === 'obj') {
+      const loader = new OBJLoader();
+      loader.load(
+        url,
+        (group) => {
+          const box = new THREE.Box3().setFromObject(group);
+          const center = box.getCenter(new THREE.Vector3());
+          group.position.sub(center);
+          setObjGroup(group);
+        },
+        undefined,
+        (err) => setError(`Failed to load OBJ: ${err instanceof Error ? err.message : 'unknown error'}`)
+      );
+    } else {
+      const loader = new STLLoader();
+      loader.load(
+        url,
+        (geo) => {
+          geo.computeVertexNormals();
+          geo.center();
+          setGeometry(geo);
+        },
+        undefined,
+        (err) => setError(`Failed to load STL: ${err instanceof Error ? err.message : 'unknown error'}`)
+      );
+    }
+  }, [url, fileName]);
 
   if (error) {
     return (
       <Html center>
-        <p className="text-xs text-red-500">Failed to load model</p>
+        <div className="text-center px-4">
+          <p className="text-xs text-red-400 font-medium">Load Error</p>
+          <p className="text-[10px] text-red-300 mt-1">{error}</p>
+        </div>
       </Html>
+    );
+  }
+
+  if (objGroup) {
+    return (
+      <primitive object={objGroup}>
+        {objGroup.children.map((child, i) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            if (!mesh.material || (mesh.material as THREE.MeshStandardMaterial).type === 'MeshBasicMaterial') {
+              mesh.material = new THREE.MeshStandardMaterial({
+                color,
+                roughness: 0.3,
+                metalness: 0.1,
+                side: THREE.DoubleSide,
+              });
+            }
+          }
+          return null;
+        })}
+      </primitive>
     );
   }
 
@@ -88,7 +149,8 @@ function StlModel({ url, color }: { url: string; color: string }) {
   return (
     <mesh geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial
-        color={color}
+        color={hasVertexColors ? '#ffffff' : color}
+        vertexColors={hasVertexColors}
         roughness={0.3}
         metalness={0.1}
         side={THREE.DoubleSide}
@@ -97,10 +159,10 @@ function StlModel({ url, color }: { url: string; color: string }) {
   );
 }
 
-function SceneContent({ url, color }: { url: string; color: string }) {
+function SceneContent({ url, color, fileName }: { url: string; color: string; fileName?: string }) {
   return (
     <Center>
-      <StlModel url={url} color={color} />
+      <ScanModel url={url} color={color} fileName={fileName} />
     </Center>
   );
 }
@@ -223,7 +285,7 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
         <directionalLight position={[-3, -3, 2]} intensity={0.4} />
         <directionalLight position={[0, -5, 3]} intensity={0.3} />
         <Suspense fallback={<Loader />}>
-          <SceneContent url={scan.url} color={modelColor} />
+          <SceneContent url={scan.url} color={modelColor} fileName={scan.fileName} />
         </Suspense>
         <OrbitControls
           enablePan

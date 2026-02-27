@@ -145,7 +145,7 @@ function ClinicalDashboardPageContent() {
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [procedureSearch, setProcedureSearch] = useState('');
   const [procedureFilter, setProcedureFilter] = useState('today');
-  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('treatment');
+  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('wisely');
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -483,7 +483,8 @@ function ClinicalDashboardPageContent() {
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <ExactArchOdontogram 
-                toothData={odontogramData} 
+                toothData={odontogramData}
+                periodontalData={periodontalData}
                 initialViewMode={odontogramViewMode === 'treatment' ? 'treatments' : odontogramViewMode === 'caries' ? 'conditions' : odontogramViewMode === 'completed' ? 'completed' : 'all'}
               />
             ) : (
@@ -502,7 +503,7 @@ function ClinicalDashboardPageContent() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId && session?.user?.id ? (
-              <CustomXRayAnalysis xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)} />
+              <CustomXRayAnalysis xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)} toothData={odontogramData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}

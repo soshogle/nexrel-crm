@@ -1,6 +1,8 @@
 /**
  * X-Ray Image Download API
- * Serves X-ray images for display and AI analysis
+ * Serves X-ray images for display and AI analysis.
+ * Prefers cloud URLs (fullUrl/previewUrl/thumbnailUrl), falls back to
+ * downloading and decrypting from Canadian storage.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,7 +16,6 @@ import { apiErrors } from '@/lib/api-error';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// GET /api/dental/xrays/[id]/image - Get X-ray image
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -26,7 +27,6 @@ export async function GET(
     }
     const db = getRouteDb(session);
 
-    // Find X-ray
     const xray = await (db as any).dentalXRay.findUnique({
       where: {
         id: params.id,
@@ -38,20 +38,50 @@ export async function GET(
       return apiErrors.notFound(await t('api.xrayNotFound'));
     }
 
-    // If imageUrl is already available, redirect to it
-    if (xray.imageUrl) {
-      return NextResponse.redirect(xray.imageUrl);
+    // Prefer cloud-hosted compressed images (fastest)
+    const cloudUrl = xray.fullUrl || xray.previewUrl || xray.thumbnailUrl || xray.imageUrl;
+    if (cloudUrl) {
+      return NextResponse.redirect(cloudUrl);
     }
 
-    // Otherwise, download from storage and serve
-    if (xray.imageFile) {
-      const storageService = new CanadianStorageService();
-      // Note: This would need encryption key - for now, return error
-      // In production, you'd store the encryption key with the X-ray record
-      return NextResponse.json(
-        { error: await t('api.imageDownloadNotImplemented') },
-        { status: 501 }
-      );
+    // Fall back to decrypting from Canadian storage
+    if (xray.imageFile || xray.dicomFile) {
+      const storagePath = xray.imageFile || xray.dicomFile;
+      const encryptionKey = process.env.DENTAL_STORAGE_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || '';
+
+      if (!encryptionKey) {
+        console.error('[X-Ray Image] No encryption key configured — set DENTAL_STORAGE_ENCRYPTION_KEY');
+        return NextResponse.json(
+          { error: 'Storage encryption key not configured. Set DENTAL_STORAGE_ENCRYPTION_KEY in .env' },
+          { status: 500 }
+        );
+      }
+
+      try {
+        const storageService = new CanadianStorageService();
+        const imageBuffer = await storageService.downloadDocument(storagePath, encryptionKey);
+
+        const contentType = storagePath.endsWith('.dcm')
+          ? 'application/dicom'
+          : storagePath.endsWith('.tiff') || storagePath.endsWith('.tif')
+          ? 'image/tiff'
+          : 'image/jpeg';
+
+        return new NextResponse(imageBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': String(imageBuffer.length),
+            'Cache-Control': 'private, max-age=3600',
+          },
+        });
+      } catch (storageError: any) {
+        console.error('[X-Ray Image] Storage download failed:', storageError.message);
+        return NextResponse.json(
+          { error: 'Failed to retrieve image from storage: ' + storageError.message },
+          { status: 500 }
+        );
+      }
     }
 
     return apiErrors.notFound(await t('api.noImageAvailable'));

@@ -2,12 +2,15 @@
  * Exact Arch Odontogram - matches reference futuristic dashboard image
  * Lavender/purple glassmorphism background, glow-outlined highlighted teeth,
  * type-based tooth shapes (molar/premolar/canine/incisor), click-to-select.
- * All props/connectivity/viewMode logic unchanged.
+ *
+ * Always shows existing conditions (fillings, crowns, etc.) with subtle color.
+ * View mode controls which teeth get the GLOW emphasis.
+ * Integrates optional periodontal data to show BOP dots and PD severity.
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CrownRootToothShape, getToothTypeFromNum, TOOTH_WIDTH, TOOTH_HEIGHT } from '@/components/dental/crown-root-tooth-shape';
 
@@ -19,24 +22,56 @@ interface ToothInfo {
   notes?: string;
 }
 
+interface PerioSite {
+  pd?: number;
+  bop?: boolean;
+  recession?: number;
+}
+
+interface PerioToothData {
+  mesial?: PerioSite;
+  buccal?: PerioSite;
+  distal?: PerioSite;
+  lingual?: PerioSite;
+}
+
 type ViewMode = 'treatments' | 'conditions' | 'completed' | 'all';
 
 interface ExactArchOdontogramProps {
   toothData?: Record<string, ToothInfo | any>;
+  periodontalData?: Record<string, PerioToothData>;
   initialViewMode?: ViewMode;
   scanTeethIncluded?: string[];
 }
 
-// Glow + fill colors matching reference image
-const COLORS = {
-  blue:   { fill: 'rgba(96,165,250,0.35)',   stroke: '#60A5FA', glow: '#60A5FA' },
-  orange: { fill: 'rgba(251,146,60,0.45)',   stroke: '#F97316', glow: '#F97316' },
-  green:  { fill: 'rgba(52,211,153,0.45)',   stroke: '#34D399', glow: '#34D399' },
-  purple: { fill: 'rgba(192,132,252,0.35)',  stroke: '#A855F7', glow: '#A855F7' },
-  normal: { fill: 'normal',                  stroke: '#c4b8d0', glow: undefined as string | undefined },
+const CONDITION_COLORS: Record<string, { fill: string; stroke: string; glow: string }> = {
+  filling:     { fill: 'rgba(96,165,250,0.35)',   stroke: '#60A5FA', glow: '#60A5FA' },
+  caries:      { fill: 'rgba(251,146,60,0.45)',   stroke: '#F97316', glow: '#F97316' },
+  crown:       { fill: 'rgba(192,132,252,0.35)',  stroke: '#A855F7', glow: '#A855F7' },
+  root_canal:  { fill: 'rgba(192,132,252,0.35)',  stroke: '#A855F7', glow: '#A855F7' },
+  implant:     { fill: 'rgba(52,211,153,0.45)',   stroke: '#34D399', glow: '#34D399' },
+  missing:     { fill: 'rgba(156,163,175,0.5)',   stroke: '#9CA3AF', glow: '#9CA3AF' },
+  extraction:  { fill: 'rgba(251,146,60,0.45)',   stroke: '#F97316', glow: '#F97316' },
 };
 
-export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions', scanTeethIncluded }: ExactArchOdontogramProps) {
+const NORMAL_COLORS = { fill: 'normal', stroke: '#c4b8d0', glow: undefined as string | undefined };
+
+function getPerioWorstPd(perio?: PerioToothData): number {
+  if (!perio) return 0;
+  return Math.max(
+    perio.mesial?.pd ?? 0,
+    perio.buccal?.pd ?? 0,
+    perio.distal?.pd ?? 0,
+    perio.lingual?.pd ?? 0,
+  );
+}
+
+function hasAnyBop(perio?: PerioToothData): boolean {
+  if (!perio) return false;
+  return !!(perio.mesial?.bop || perio.buccal?.bop || perio.distal?.bop || perio.lingual?.bop);
+}
+
+export function ExactArchOdontogram({ toothData, periodontalData, initialViewMode = 'all', scanTeethIncluded }: ExactArchOdontogramProps) {
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
   const [hoveredTooth,  setHoveredTooth]  = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
@@ -44,47 +79,93 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
   const upperTeeth = Array.from({ length: 16 }, (_, i) => i + 1);
   const lowerTeeth = Array.from({ length: 16 }, (_, i) => i + 17);
 
-  const isInScan = (toothNum: number) =>
-    scanTeethIncluded?.some((t) => parseInt(t, 10) === toothNum);
-
   const getToothInfo = (toothNum: number): ToothInfo => {
     if (toothData?.[toothNum.toString()]) return toothData[toothNum.toString()];
     return { condition: 'healthy' };
   };
 
-  const shouldHighlightTooth = (toothNum: number, info: ToothInfo): boolean => {
-    if (viewMode === 'all') return info.condition !== 'healthy';
+  const getPerioData = (toothNum: number): PerioToothData | undefined => {
+    return periodontalData?.[toothNum.toString()];
+  };
+
+  // Whether this tooth gets the GLOW emphasis (controlled by view mode filter)
+  const shouldGlow = (info: ToothInfo): boolean => {
+    if (info.condition === 'healthy' || !info.condition) return false;
+    if (viewMode === 'all') return true;
     if (viewMode === 'treatments') return !!info.treatment && !info.completed;
-    if (viewMode === 'conditions') return info.condition === 'caries' || info.condition === 'crown';
+    if (viewMode === 'conditions') return true;
     if (viewMode === 'completed') return info.completed === true || info.condition === 'implant';
     return false;
   };
 
-  /** Returns one of the COLORS presets based on tooth condition */
-  const getToothColors = (_toothNum: number, info: ToothInfo) => {
-    if (!shouldHighlightTooth(_toothNum, info)) return COLORS.normal;
-    if (info.condition === 'implant') return COLORS.green;
-    if (info.condition === 'missing') return { fill: 'rgba(156,163,175,0.5)', stroke: '#9CA3AF', glow: '#9CA3AF' };
-    if (info.condition === 'caries')  return COLORS.orange;
-    if (info.condition === 'crown')   return COLORS.purple;
-    if (info.condition === 'filling') return COLORS.blue;
-    if (info.condition === 'root_canal') return COLORS.purple;
-    if (info.condition === 'extraction') return COLORS.orange;
-    return COLORS.blue;
+  // Always return condition-specific colors for non-healthy teeth (subtle fill + stroke)
+  // Glow is only applied when shouldGlow is true
+  const getToothColors = (toothNum: number, info: ToothInfo) => {
+    const isHealthy = !info.condition || info.condition === 'healthy';
+    if (isHealthy) return NORMAL_COLORS;
+
+    const condColors = CONDITION_COLORS[info.condition!] || CONDITION_COLORS.filling;
+    const glowActive = shouldGlow(info);
+
+    return {
+      fill: condColors.fill,
+      stroke: condColors.stroke,
+      glow: glowActive ? condColors.glow : undefined,
+    };
   };
 
   const getToothTooltip = (toothNum: number, info: ToothInfo): string => {
-    if (info.condition === 'healthy') return '';
-    const label = {
-      implant: 'Implant', filling: 'Restoration', caries: 'Caries',
-      crown: 'Crown', missing: 'Missing', extraction: 'Extraction',
-      root_canal: 'Root Canal',
-    }[info.condition || ''] || info.treatment || '';
-    return label;
+    const parts: string[] = [];
+
+    if (info.condition && info.condition !== 'healthy') {
+      const label = {
+        implant: 'Implant', filling: 'Restoration', caries: 'Caries',
+        crown: 'Crown', missing: 'Missing', extraction: 'Extraction',
+        root_canal: 'Root Canal',
+      }[info.condition] || info.treatment || '';
+      parts.push(label);
+      if (info.completed) parts.push('(completed)');
+    }
+
+    const perio = getPerioData(toothNum);
+    if (perio) {
+      const worstPd = getPerioWorstPd(perio);
+      const bop = hasAnyBop(perio);
+      if (worstPd > 3) parts.push(`PD ${worstPd}mm`);
+      if (bop) parts.push('BOP');
+    }
+
+    return parts.join(' · ');
   };
 
+  // Summary stats for the legend
+  const stats = useMemo(() => {
+    const conditions: string[] = [];
+    let bopCount = 0;
+    let elevatedPdCount = 0;
+    for (let t = 1; t <= 32; t++) {
+      const info = getToothInfo(t);
+      if (info.condition && info.condition !== 'healthy') {
+        conditions.push(info.condition);
+      }
+      const perio = getPerioData(t);
+      if (hasAnyBop(perio)) bopCount++;
+      if (getPerioWorstPd(perio) > 3) elevatedPdCount++;
+    }
+    return {
+      fillings: conditions.filter(c => c === 'filling').length,
+      crowns: conditions.filter(c => c === 'crown').length,
+      caries: conditions.filter(c => c === 'caries').length,
+      implants: conditions.filter(c => c === 'implant').length,
+      missing: conditions.filter(c => c === 'missing' || c === 'extraction').length,
+      bopCount,
+      elevatedPdCount,
+    };
+  }, [toothData, periodontalData]);
+
   const ToothItem = ({ toothNum, isUpper }: { toothNum: number; isUpper: boolean }) => {
-    const info = toothData ? getToothInfo(toothNum) : getToothInfo(toothNum);
+    const info = getToothInfo(toothNum);
+    const perio = getPerioData(toothNum);
     const colors = getToothColors(toothNum, info);
     const tooltip = getToothTooltip(toothNum, info);
     const isSelected = selectedTooth === toothNum;
@@ -94,6 +175,10 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
     const fillColor   = colors.fill === 'normal' ? '#f8f6fc' : colors.fill;
     const strokeColor = isSelected ? '#3B82F6' : colors.stroke;
     const glowColor   = isSelected ? '#60A5FA' : colors.glow;
+
+    const hasBop = hasAnyBop(perio);
+    const worstPd = getPerioWorstPd(perio);
+    const pdSeverity = worstPd <= 3 ? 'healthy' : worstPd <= 6 ? 'moderate' : 'severe';
 
     return (
       <div
@@ -111,16 +196,49 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
           </span>
         )}
 
-        <CrownRootToothShape
-          isUpper={isUpper}
-          toothNum={toothNum}
-          toothType={toothType}
-          fillColor={fillColor}
-          strokeColor={strokeColor}
-          glowColor={glowColor}
-          showImplantLines={info.condition === 'implant'}
-          isSelected={isSelected}
-        />
+        <div className="relative">
+          <CrownRootToothShape
+            isUpper={isUpper}
+            toothNum={toothNum}
+            toothType={toothType}
+            fillColor={fillColor}
+            strokeColor={strokeColor}
+            glowColor={glowColor}
+            showImplantLines={info.condition === 'implant'}
+            isSelected={isSelected}
+          />
+
+          {/* BOP indicator — small red dot at the gingival margin */}
+          {hasBop && (
+            <div
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{
+                [isUpper ? 'bottom' : 'top']: -1,
+                width: 5, height: 5,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, #ef4444 40%, #dc2626 100%)',
+                boxShadow: '0 0 4px rgba(239,68,68,0.8)',
+                zIndex: 5,
+              }}
+            />
+          )}
+
+          {/* Elevated PD indicator — thin amber/red bar under tooth */}
+          {pdSeverity !== 'healthy' && (
+            <div
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{
+                [isUpper ? 'bottom' : 'top']: -4,
+                width: '80%',
+                height: 2,
+                borderRadius: 1,
+                background: pdSeverity === 'moderate' ? '#f59e0b' : '#ef4444',
+                boxShadow: `0 0 3px ${pdSeverity === 'moderate' ? 'rgba(245,158,11,0.6)' : 'rgba(239,68,68,0.6)'}`,
+                zIndex: 4,
+              }}
+            />
+          )}
+        </div>
 
         {!isUpper && (
           <span className={`text-[9px] font-medium mt-0.5 ${glowColor ? 'text-gray-700' : 'text-gray-500'}`}>
@@ -145,7 +263,7 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
       className="relative rounded-2xl overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #c8b4e0 0%, #b8a4d4 40%, #a898c8 100%)',
-        padding: '16px 28px',
+        padding: '16px 28px 10px',
       }}
     >
       {/* Left arrow */}
@@ -164,14 +282,51 @@ export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions',
         <ChevronRight className="h-4 w-4 text-gray-700" />
       </button>
 
-      {/* Upper arch – items align to bottom so crowns meet midline */}
+      {/* Upper arch */}
       <div className="flex justify-center items-end mb-3 gap-0.5">
         {upperTeeth.map(n => <ToothItem key={n} toothNum={n} isUpper />)}
       </div>
 
-      {/* Lower arch – items align to top */}
+      {/* Lower arch */}
       <div className="flex justify-center items-start gap-0.5">
         {lowerTeeth.map(n => <ToothItem key={n} toothNum={n} isUpper={false} />)}
+      </div>
+
+      {/* Inline legend — shows what's on the chart at a glance */}
+      <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
+        {stats.fillings > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm" style={{ background: 'rgba(96,165,250,0.7)' }} />
+            <span className="text-[8px] text-gray-600">{stats.fillings} Filling{stats.fillings > 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {stats.crowns > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm" style={{ background: 'rgba(192,132,252,0.7)' }} />
+            <span className="text-[8px] text-gray-600">{stats.crowns} Crown{stats.crowns > 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {stats.caries > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm" style={{ background: 'rgba(251,146,60,0.7)' }} />
+            <span className="text-[8px] text-gray-600">{stats.caries} Caries</span>
+          </div>
+        )}
+        {stats.implants > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm" style={{ background: 'rgba(52,211,153,0.7)' }} />
+            <span className="text-[8px] text-gray-600">{stats.implants} Implant{stats.implants > 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {stats.bopCount > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <span className="text-[8px] text-gray-600">{stats.bopCount} BOP</span>
+          </div>
+        )}
+        {stats.fillings === 0 && stats.crowns === 0 && stats.caries === 0 && stats.bopCount === 0 && (
+          <span className="text-[8px] text-gray-500">All teeth healthy</span>
+        )}
       </div>
     </div>
   );

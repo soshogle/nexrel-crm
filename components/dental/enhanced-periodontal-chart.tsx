@@ -39,15 +39,20 @@ interface EnhancedPeriodontalChartProps {
 const SITES = ['mesial', 'buccal', 'distal', 'lingual'] as const;
 const SITE_LABELS = { mesial: 'M', buccal: 'B', distal: 'D', lingual: 'L' };
 
+// Realistic healthy-adult fallback — mirrors DB seed (PD 2-3mm, isolated BOP on 6M, 11M, 22B, 27B)
 const DEMO_MEASUREMENTS: Record<string, ToothMeasurements> = (() => {
   const m: Record<string, ToothMeasurements> = {};
+  const bopSites: Record<number, string[]> = {
+    6: ['mesial'], 11: ['mesial'], 22: ['buccal'], 27: ['buccal'],
+  };
   for (let t = 1; t <= 32; t++) {
-    const pd = t <= 16 ? 2 + (t % 3) : 2 + ((t - 17) % 3);
+    const pd = (t % 4 === 0) ? 3 : 2;
+    const bops = bopSites[t] || [];
     m[String(t)] = {
-      mesial: { pd, bop: t % 5 === 0 },
-      buccal: { pd, bop: false },
-      distal: { pd, bop: t % 7 === 0 },
-      lingual: { pd, bop: false },
+      mesial:  { pd, bop: bops.includes('mesial'), recession: 0 },
+      buccal:  { pd, bop: bops.includes('buccal'), recession: 0 },
+      distal:  { pd: pd === 3 ? 3 : 2, bop: false, recession: 0 },
+      lingual: { pd: 2, bop: false, recession: 0 },
     };
   }
   return m;

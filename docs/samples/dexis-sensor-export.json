@@ -1,0 +1,104 @@
+{
+  "_comment": "Simulated DEXIS Platinum sensor periapical x-ray export. DEXIS outputs 16-bit TIFF images with this metadata sidecar. Use this JSON to test x-ray import pipeline.",
+  "sensorInfo": {
+    "manufacturer": "DEXIS",
+    "model": "Platinum",
+    "serialNumber": "DEXIS-PT-2024-003",
+    "sensorSize": "Size 2 (Adult)",
+    "sensorDimensions": {
+      "width": 30.7,
+      "height": 40.7,
+      "unit": "mm"
+    },
+    "resolution": {
+      "x": 33,
+      "y": 33,
+      "unit": "lp/mm"
+    },
+    "bitDepth": 14,
+    "maxGrayscaleLevels": 16384,
+    "softwareVersion": "DEXIS 11.0.6"
+  },
+  "acquisition": {
+    "acquisitionDate": "2026-02-25T10:05:00Z",
+    "exposureTime": 0.16,
+    "exposureTimeUnit": "seconds",
+    "tubeCurrent": 7,
+    "tubeCurrentUnit": "mA",
+    "kvp": 63,
+    "focalSpotSize": 0.4,
+    "focalSpotUnit": "mm",
+    "sourceToSensorDistance": 305,
+    "distanceUnit": "mm",
+    "technique": "BISECTING_ANGLE",
+    "region": "PERIAPICAL"
+  },
+  "patient": {
+    "patientId": "MT-2024-001",
+    "firstName": "Marie",
+    "lastName": "Tremblay",
+    "dateOfBirth": "1992-03-15"
+  },
+  "images": [
+    {
+      "fileName": "pa-tooth3-occlusal.tiff",
+      "imageType": "PERIAPICAL",
+      "teethIncluded": ["2", "3", "4"],
+      "width": 1370,
+      "height": 1846,
+      "bitsPerPixel": 14,
+      "fileSizeBytes": 5058440,
+      "mountPosition": "UR_MOLAR",
+      "orientation": "STANDARD",
+      "notes": "Periapical #3 — composite restoration visible on occlusal surface, no periapical radiolucency"
+    },
+    {
+      "fileName": "pa-tooth14-occlusal.tiff",
+      "imageType": "PERIAPICAL",
+      "teethIncluded": ["13", "14", "15"],
+      "width": 1370,
+      "height": 1846,
+      "bitsPerPixel": 14,
+      "fileSizeBytes": 5058440,
+      "mountPosition": "UL_PREMOLAR",
+      "orientation": "STANDARD",
+      "notes": "Periapical #14 — composite restoration visible, intact margins, no caries recurrence"
+    },
+    {
+      "fileName": "bw-right-premolar-molar.tiff",
+      "imageType": "BITEWING",
+      "teethIncluded": ["3", "4", "5", "28", "29", "30"],
+      "width": 1846,
+      "height": 1370,
+      "bitsPerPixel": 14,
+      "fileSizeBytes": 5058440,
+      "mountPosition": "RIGHT_BW",
+      "orientation": "STANDARD",
+      "notes": "Right bitewing — normal bone levels, no interproximal caries"
+    },
+    {
+      "fileName": "bw-left-premolar-molar.tiff",
+      "imageType": "BITEWING",
+      "teethIncluded": ["12", "13", "14", "19", "20", "21"],
+      "width": 1846,
+      "height": 1370,
+      "bitsPerPixel": 14,
+      "fileSizeBytes": 5058440,
+      "mountPosition": "LEFT_BW",
+      "orientation": "STANDARD",
+      "notes": "Left bitewing — composite on #14 visible, normal bone levels"
+    }
+  ],
+  "aiAnalysis": {
+    "findings": [
+      "Tooth #3: Existing composite restoration — occlusal, intact, no secondary caries",
+      "Tooth #14: Existing composite restoration — occlusal, intact, margins sealed",
+      "Interproximal surfaces: No carious lesions detected",
+      "Bone levels: Crestal bone at normal height bilaterally",
+      "Periapical: No radiolucencies, no pathology"
+    ],
+    "boneLevel": "Normal — No bone loss",
+    "periapical": "No pathology detected",
+    "boneDensity": "92% (Healthy)"
+  }
+}

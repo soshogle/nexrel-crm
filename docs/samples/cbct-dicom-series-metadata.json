@@ -1,0 +1,82 @@
+{
+  "_comment": "Simulated Carestream CS 8200 3D CBCT scan metadata. A real CBCT scan produces 250-300 DICOM slices; this represents the series-level metadata you'd get from the scanner.",
+  "FileMetaInformation": {
+    "MediaStorageSOPClassUID": "1.2.840.10008.5.1.4.1.1.2",
+    "TransferSyntaxUID": "1.2.840.10008.1.2.1"
+  },
+  "PatientModule": {
+    "PatientName": "Tremblay^Marie",
+    "PatientID": "MT-2024-001",
+    "PatientBirthDate": "19920315",
+    "PatientSex": "F"
+  },
+  "GeneralStudyModule": {
+    "StudyDate": "20260225",
+    "StudyTime": "093000",
+    "StudyDescription": "CBCT - Full FOV Maxillomandibular",
+    "ReferringPhysicianName": "Bhatt^Priya^Dr."
+  },
+  "GeneralSeriesModule": {
+    "Modality": "CT",
+    "SeriesDescription": "CBCT Axial",
+    "SeriesNumber": 1
+  },
+  "GeneralEquipmentModule": {
+    "Manufacturer": "Carestream Dental",
+    "ManufacturerModelName": "CS 8200 3D",
+    "SoftwareVersions": "3.10.2",
+    "InstitutionName": "Clinique Dentaire Nexrel"
+  },
+  "CTImageModule": {
+    "KVP": 90,
+    "XRayTubeCurrent": 4,
+    "ExposureTime": 15000,
+    "SliceThickness": 0.3,
+    "SpacingBetweenSlices": 0.3,
+    "ReconstructionDiameter": 120,
+    "FieldOfView": {
+      "width": 120,
+      "height": 90,
+      "unit": "mm",
+      "description": "12x9 cm FOV — full maxillomandibular"
+    },
+    "VoxelSize": {
+      "x": 0.3,
+      "y": 0.3,
+      "z": 0.3,
+      "unit": "mm"
+    },
+    "NumberOfSlices": 300,
+    "RotationAngle": 360,
+    "RotationTime": 15,
+    "DoseAreaProduct": 725,
+    "DoseUnit": "mGy.cm2"
+  },
+  "ImagePixelModule": {
+    "Rows": 400,
+    "Columns": 400,
+    "BitsAllocated": 16,
+    "BitsStored": 12,
+    "HighBit": 11,
+    "PixelRepresentation": 0,
+    "SamplesPerPixel": 1,
+    "PhotometricInterpretation": "MONOCHROME2"
+  },
+  "sliceFiles": [
+    { "fileName": "slice_001.dcm", "instanceNumber": 1, "sliceLocation": -45.0 },
+    { "fileName": "slice_002.dcm", "instanceNumber": 2, "sliceLocation": -44.7 },
+    { "fileName": "...", "instanceNumber": "...", "sliceLocation": "..." },
+    { "fileName": "slice_300.dcm", "instanceNumber": 300, "sliceLocation": 44.7 }
+  ],
+  "dentalFindings": {
+    "_comment": "AI-derived findings consistent with odontogram and perio data",
+    "findings": [
+      "3D volume confirms existing composite restorations on teeth #3 and #14 — no secondary caries",
+      "Alveolar bone levels normal throughout, no signs of horizontal or vertical bone loss",
+      "TMJ: Bilateral condylar morphology within normal limits",
+      "Maxillary sinus: Clear bilaterally, no mucosal thickening",
+      "Nasal septum: Midline, no significant deviation",
+      "Root morphology: All roots intact, no periapical radiolucencies"
+    ]
+  }
+}

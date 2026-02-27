@@ -90,14 +90,10 @@ export async function POST(
       // Convert DICOM to image for analysis
       try {
         const storageService = new CanadianStorageService();
-        // Note: Encryption key retrieval would need to be implemented
-        // For now, we'll try to download without decryption if possible
-        // In production, store encryption key ID with X-ray record
-        
-        // TODO: Retrieve encryption key from database
-        // For now, we'll need to handle this differently
-        // This is a placeholder - actual implementation would retrieve the key
-        const encryptionKey = ''; // Would come from database
+        // Retrieve encryption key: use the key stored in env (per-clinic keys
+        // can be added later via a KeyManagement table). The storage service
+        // encrypted the file with this same key at upload time.
+        const encryptionKey = process.env.DENTAL_STORAGE_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || '';
         
         // Download DICOM file from storage
         const dicomBuffer = await storageService.downloadDocument(
@@ -155,7 +151,7 @@ export async function POST(
 
     // Analyze with GPT-4 Vision
     const completion = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4-vision-preview',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -207,7 +203,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
       findings: analysisText,
       confidence: 0.85, // GPT-4 Vision doesn't provide confidence, using default
       recommendations: extractRecommendations(analysisText),
-      model: 'gpt-4-vision-preview',
+      model: 'gpt-4o',
       analyzedAt: new Date().toISOString(),
       disclaimer: 'AI analysis is for information purposes only. Not for diagnostic use. Requires professional interpretation. Not a substitute for professional judgment.',
     };
@@ -218,7 +214,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
       data: {
         aiAnalysis,
         aiAnalyzedAt: new Date(),
-        aiModel: 'gpt-4-vision-preview',
+        aiModel: 'gpt-4o',
       },
     });
 

@@ -47,7 +47,7 @@ export function ClinicalModals({
   onXrayRefresh,
   clinicalNotesEditor,
 }: ClinicalModalsProps) {
-  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('treatment');
+  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('wisely');
 
   return (
     <>
@@ -106,6 +106,7 @@ export function ClinicalModals({
             </div>
             <ExactArchOdontogram
               toothData={odontogramData}
+              periodontalData={periodontalData}
               initialViewMode={odontogramViewMode === 'treatment' ? 'treatments' : odontogramViewMode === 'caries' ? 'conditions' : odontogramViewMode === 'completed' ? 'completed' : 'all'}
             />
           </div>

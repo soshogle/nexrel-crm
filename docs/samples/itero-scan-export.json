@@ -1,0 +1,111 @@
+{
+  "_comment": "Simulated iTero Element 5D intraoral scanner export metadata. Real iTero exports a .zip containing STL/PLY meshes plus this manifest. This JSON matches the structure output by iTero's REST API.",
+  "exportInfo": {
+    "softwareVersion": "2.18.0.2",
+    "exportDate": "2026-02-25T09:30:00Z",
+    "scannerModel": "iTero Element 5D",
+    "serialNumber": "ITERO-5D-2024-MTL-001",
+    "operatorName": "Hygienist Lavoie"
+  },
+  "patient": {
+    "patientId": "MT-2024-001",
+    "firstName": "Marie",
+    "lastName": "Tremblay",
+    "dateOfBirth": "1992-03-15",
+    "sex": "F"
+  },
+  "practice": {
+    "name": "Clinique Dentaire Nexrel",
+    "address": "1234 Rue Sainte-Catherine, Montreal, QC H3B 1A7",
+    "practitionerName": "Dr. Priya Bhatt"
+  },
+  "scanSession": {
+    "scanDate": "2026-02-25T09:15:00Z",
+    "scanDuration": "PT4M32S",
+    "scanType": "FULL_ARCH",
+    "archesScanned": ["MAXILLARY", "MANDIBULAR"],
+    "biteRegistration": true,
+    "niriEnabled": true,
+    "colorEnabled": true
+  },
+  "meshFiles": [
+    {
+      "fileName": "maxillary-arch.stl",
+      "arch": "MAXILLARY",
+      "format": "STL_BINARY",
+      "fileSizeBytes": 2987484,
+      "triangleCount": 124478,
+      "vertexCount": 62241,
+      "boundingBox": {
+        "minX": -32.4, "minY": -18.1, "minZ": -12.5,
+        "maxX": 33.8, "maxY": 22.3, "maxZ": 8.7
+      },
+      "unitOfMeasure": "mm",
+      "checksum": "sha256:a1b2c3d4e5f6..."
+    },
+    {
+      "fileName": "mandibular-arch.stl",
+      "arch": "MANDIBULAR",
+      "format": "STL_BINARY",
+      "fileSizeBytes": 3478284,
+      "triangleCount": 144928,
+      "vertexCount": 72466,
+      "boundingBox": {
+        "minX": -31.2, "minY": -16.9, "minZ": -10.8,
+        "maxX": 32.1, "maxY": 20.5, "maxZ": 7.4
+      },
+      "unitOfMeasure": "mm",
+      "checksum": "sha256:f6e5d4c3b2a1..."
+    },
+    {
+      "fileName": "bite-registration.stl",
+      "arch": "BITE",
+      "format": "STL_BINARY",
+      "fileSizeBytes": 25684,
+      "triangleCount": 1070,
+      "vertexCount": 537,
+      "unitOfMeasure": "mm"
+    },
+    {
+      "fileName": "maxillary-arch-color.ply",
+      "arch": "MAXILLARY",
+      "format": "PLY_BINARY",
+      "fileSizeBytes": 4125000,
+      "triangleCount": 124478,
+      "vertexCount": 62241,
+      "hasVertexColors": true,
+      "hasTexture": false,
+      "unitOfMeasure": "mm"
+    },
+    {
+      "fileName": "mandibular-arch-color.ply",
+      "arch": "MANDIBULAR",
+      "format": "PLY_BINARY",
+      "fileSizeBytes": 4890000,
+      "triangleCount": 144928,
+      "vertexCount": 72466,
+      "hasVertexColors": true,
+      "hasTexture": false,
+      "unitOfMeasure": "mm"
+    }
+  ],
+  "niriImages": [
+    {
+      "fileName": "niri-upper-right.png",
+      "region": "UPPER_RIGHT",
+      "teethIncluded": ["1", "2", "3", "4", "5"],
+      "resolutionX": 1920,
+      "resolutionY": 1080,
+      "description": "Near-infrared transillumination — upper right quadrant"
+    },
+    {
+      "fileName": "niri-upper-left.png",
+      "region": "UPPER_LEFT",
+      "teethIncluded": ["12", "13", "14", "15", "16"],
+      "resolutionX": 1920,
+      "resolutionY": 1080,
+      "description": "Near-infrared transillumination — upper left quadrant"
+    }
+  ],
+  "clinicalNotes": "Full arch scan for orthodontic monitoring. Patient compliant, good oral hygiene. Existing composite restorations on teeth #3 and #14 noted — intact."
+}
