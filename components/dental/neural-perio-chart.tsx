@@ -11,8 +11,10 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Activity, Download, History, X, Check, ArrowLeft } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { Activity, Download, History, X, Check, ArrowLeft, Box, Grid3x3 } from 'lucide-react';
+
+const Perio3D = lazy(() => import('./perio-3d').then(m => ({ default: m.Perio3D })));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -659,6 +661,9 @@ function ZoomedToothOverlay({
 export function NeuralPerioChart({ measurements, leadId, onSave }: NeuralPerioChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
+  // ── View mode (2D neural chart vs 3D) ──
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+
   // ── Local editable data ──
   const [localData, setLocalData]     = useState<Record<string, ToothData>>({});
 
@@ -807,7 +812,19 @@ export function NeuralPerioChart({ measurements, leadId, onSave }: NeuralPerioCh
           }}>{s.label}</span>
         ))}
 
-        {/* Action buttons */}
+        {/* View toggle + action buttons */}
+        <button
+          onClick={() => setViewMode('2d')}
+          style={{ ...btnBase, background: viewMode === '2d' ? 'rgba(99,102,241,0.35)' : btnBase.background, borderColor: viewMode === '2d' ? 'rgba(129,140,248,0.6)' : 'rgba(129,140,248,0.3)' }}
+        >
+          <Grid3x3 size={10} /> 2D
+        </button>
+        <button
+          onClick={() => setViewMode('3d')}
+          style={{ ...btnBase, background: viewMode === '3d' ? 'rgba(99,102,241,0.35)' : btnBase.background, borderColor: viewMode === '3d' ? 'rgba(129,140,248,0.6)' : 'rgba(129,140,248,0.3)' }}
+        >
+          <Box size={10} /> 3D
+        </button>
         <button
           onClick={() => setShowHistory(h => !h)}
           style={{ ...btnBase, background: showHistory ? 'rgba(99,102,241,0.25)' : btnBase.background }}
@@ -865,95 +882,113 @@ export function NeuralPerioChart({ measurements, leadId, onSave }: NeuralPerioCh
         </div>
       )}
 
-      {/* ── Hint ── */}
-      {!selectedTooth && (
-        <div style={{ textAlign:'center', marginBottom:6, position:'relative' }}>
-          <span style={{ fontSize:7.5, color:'rgba(99,102,241,0.4)', fontFamily:'monospace', letterSpacing:0.5 }}>
-            click any tooth to zoom in · M B D L = mesial buccal distal lingual
-          </span>
-        </div>
-      )}
-
-      {/* ── Upper arch ── */}
-      <div style={{ overflowX:'auto', padding:'0 8px' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', position:'relative' }}>
-          {UPPER.map(n=>(
-            <ToothColumn
-              key={n} num={n} isUpper
-              td={localData[n.toString()] ?? {}}
-              compareData={compareData?.[n.toString()]}
-              isSelected={selectedTooth === n}
-              onClick={() => handleToothClick(n)}
+      {viewMode === '3d' ? (
+        /* ── 3D View ── */
+        <div style={{ marginTop: 8, position: 'relative' }}>
+          <Suspense fallback={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+              <span style={{ color: '#818cf8', fontSize: 12, fontFamily: 'monospace' }}>Loading 3D…</span>
+            </div>
+          }>
+            <Perio3D
+              measurements={localData}
+              onToothClick={(num) => handleToothClick(parseInt(num))}
             />
-          ))}
+          </Suspense>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* ── Hint ── */}
+          {!selectedTooth && (
+            <div style={{ textAlign:'center', marginBottom:6, position:'relative' }}>
+              <span style={{ fontSize:7.5, color:'rgba(99,102,241,0.4)', fontFamily:'monospace', letterSpacing:0.5 }}>
+                click any tooth to zoom in · M B D L = mesial buccal distal lingual
+              </span>
+            </div>
+          )}
 
-      {/* ── Midline ── */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, margin:'14px 0', position:'relative' }}>
-        <div style={{ flex:1, height:1, background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.2),transparent)' }} />
-        <span style={{ fontSize:7, color:'rgba(99,102,241,0.45)', fontFamily:'monospace', whiteSpace:'nowrap' }}>
-          ── maxilla / mandible ──
-        </span>
-        <div style={{ flex:1, height:1, background:'linear-gradient(90deg,rgba(99,102,241,0.2),transparent)' }} />
-      </div>
-
-      {/* ── Lower arch ── */}
-      <div style={{ overflowX:'auto', padding:'0 8px' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', position:'relative' }}>
-          {LOWER.map(n=>(
-            <ToothColumn
-              key={n} num={n} isUpper={false}
-              td={localData[n.toString()] ?? {}}
-              compareData={compareData?.[n.toString()]}
-              isSelected={selectedTooth === n}
-              onClick={() => handleToothClick(n)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Zoomed single-tooth overlay ── */}
-      {selectedTooth && (
-        <ZoomedToothOverlay
-          num={selectedTooth}
-          td={localData[selectedTooth.toString()] ?? {}}
-          compareData={compareData?.[selectedTooth.toString()]}
-          editValues={editValues}
-          saving={saving}
-          onChange={handleSiteChange}
-          onSave={handleSaveEdit}
-          onClose={() => setSelectedTooth(null)}
-        />
-      )}
-
-      {/* ── Legend ── */}
-      <div style={{
-        display:'flex', gap:14, justifyContent:'center', alignItems:'center', flexWrap:'wrap',
-        marginTop:16, paddingTop:12, borderTop:'1px solid rgba(99,102,241,0.2)', position:'relative',
-      }}>
-        {[
-          { col:'#10b981', label:'1–3mm Healthy' },
-          { col:'#f59e0b', label:'4–6mm Moderate' },
-          { col:'#ef4444', label:'>6mm Problem' },
-        ].map(s=>(
-          <div key={s.label} style={{ display:'flex', alignItems:'center', gap:5 }}>
-            <div style={{ width:16, height:5, background:s.col, borderRadius:2, boxShadow:`0 0 6px ${s.col}80` }} />
-            <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>{s.label}</span>
+          {/* ── Upper arch ── */}
+          <div style={{ overflowX:'auto', padding:'0 8px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', position:'relative' }}>
+              {UPPER.map(n=>(
+                <ToothColumn
+                  key={n} num={n} isUpper
+                  td={localData[n.toString()] ?? {}}
+                  compareData={compareData?.[n.toString()]}
+                  isSelected={selectedTooth === n}
+                  onClick={() => handleToothClick(n)}
+                />
+              ))}
+            </div>
           </div>
-        ))}
-        <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-          <div style={{ width:7, height:9, background:'radial-gradient(ellipse at 50% 40%, #ff4444 40%, #cc0000 100%)', clipPath:'polygon(50% 100%, 0% 0%, 100% 0%)', filter:'drop-shadow(0 0 4px rgba(255,50,50,0.8))' }} />
-          <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>BOP</span>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-          <div style={{ width:10, height:7, border:'1.5px solid #f59e0b', borderRadius:2, opacity:0.5 }} />
-          <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>Ghost = prev exam</span>
-        </div>
-        <span style={{ fontSize:7.5, color:'rgba(99,102,241,0.45)', fontFamily:'monospace', fontStyle:'italic' }}>
-          L bar = lingual (palatal)
-        </span>
-      </div>
+
+          {/* ── Midline ── */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, margin:'14px 0', position:'relative' }}>
+            <div style={{ flex:1, height:1, background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.2),transparent)' }} />
+            <span style={{ fontSize:7, color:'rgba(99,102,241,0.45)', fontFamily:'monospace', whiteSpace:'nowrap' }}>
+              ── maxilla / mandible ──
+            </span>
+            <div style={{ flex:1, height:1, background:'linear-gradient(90deg,rgba(99,102,241,0.2),transparent)' }} />
+          </div>
+
+          {/* ── Lower arch ── */}
+          <div style={{ overflowX:'auto', padding:'0 8px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', position:'relative' }}>
+              {LOWER.map(n=>(
+                <ToothColumn
+                  key={n} num={n} isUpper={false}
+                  td={localData[n.toString()] ?? {}}
+                  compareData={compareData?.[n.toString()]}
+                  isSelected={selectedTooth === n}
+                  onClick={() => handleToothClick(n)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Zoomed single-tooth overlay ── */}
+          {selectedTooth && (
+            <ZoomedToothOverlay
+              num={selectedTooth}
+              td={localData[selectedTooth.toString()] ?? {}}
+              compareData={compareData?.[selectedTooth.toString()]}
+              editValues={editValues}
+              saving={saving}
+              onChange={handleSiteChange}
+              onSave={handleSaveEdit}
+              onClose={() => setSelectedTooth(null)}
+            />
+          )}
+
+          {/* ── Legend ── */}
+          <div style={{
+            display:'flex', gap:14, justifyContent:'center', alignItems:'center', flexWrap:'wrap',
+            marginTop:16, paddingTop:12, borderTop:'1px solid rgba(99,102,241,0.2)', position:'relative',
+          }}>
+            {[
+              { col:'#10b981', label:'1–3mm Healthy' },
+              { col:'#f59e0b', label:'4–6mm Moderate' },
+              { col:'#ef4444', label:'>6mm Problem' },
+            ].map(s=>(
+              <div key={s.label} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <div style={{ width:16, height:5, background:s.col, borderRadius:2, boxShadow:`0 0 6px ${s.col}80` }} />
+                <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>{s.label}</span>
+              </div>
+            ))}
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <div style={{ width:7, height:9, background:'radial-gradient(ellipse at 50% 40%, #ff4444 40%, #cc0000 100%)', clipPath:'polygon(50% 100%, 0% 0%, 100% 0%)', filter:'drop-shadow(0 0 4px rgba(255,50,50,0.8))' }} />
+              <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>BOP</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <div style={{ width:10, height:7, border:'1.5px solid #f59e0b', borderRadius:2, opacity:0.5 }} />
+              <span style={{ fontSize:8, color:'rgba(188,200,230,0.75)', fontFamily:'monospace' }}>Ghost = prev exam</span>
+            </div>
+            <span style={{ fontSize:7.5, color:'rgba(99,102,241,0.45)', fontFamily:'monospace', fontStyle:'italic' }}>
+              L bar = lingual (palatal)
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

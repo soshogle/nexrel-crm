@@ -6,8 +6,11 @@
 
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, lazy, Suspense } from 'react';
+import { ChevronLeft, ChevronRight, Box, Grid3x3, Loader2 } from 'lucide-react';
 import { CrownRootToothShape, getToothTypeFromNum } from '@/components/dental/crown-root-tooth-shape';
+
+const Perio3D = lazy(() => import('./perio-3d').then(m => ({ default: m.Perio3D })));
 
 interface SiteData {
   pd?: number;
@@ -59,6 +62,7 @@ const DEMO_MEASUREMENTS: Record<string, ToothMeasurements> = (() => {
 })();
 
 export function EnhancedPeriodontalChart({ measurements, patient: _patient }: EnhancedPeriodontalChartProps) {
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const data = measurements && Object.keys(measurements).length > 0 ? measurements : DEMO_MEASUREMENTS;
   const getToothData = (toothNum: number) => data?.[String(toothNum)] || {};
   const getPdBgColor = (pd: number, isPlaceholder = false) => {
@@ -163,48 +167,75 @@ export function EnhancedPeriodontalChart({ measurements, patient: _patient }: En
 
   return (
     <div className="w-full">
-      <div className="relative bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 rounded-lg p-2">
-        <div className="flex items-end mb-1">
-          {upperTeeth.map(n => <PerioTooth key={n} toothNum={n} isUpper />)}
+      {viewMode === '3d' ? (
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-64 bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 rounded-lg">
+            <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+          </div>
+        }>
+          <Perio3D measurements={data} />
+        </Suspense>
+      ) : (
+        <div className="relative bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 rounded-lg p-2">
+          <div className="flex items-end mb-1">
+            {upperTeeth.map(n => <PerioTooth key={n} toothNum={n} isUpper />)}
+          </div>
+          <div className="h-px bg-white/20 my-2" />
+          <div className="flex items-start">
+            {lowerTeeth.map(n => <PerioTooth key={n} toothNum={n} isUpper={false} />)}
+          </div>
         </div>
-        <div className="h-px bg-white/20 my-2" />
-        <div className="flex items-start">
-          {lowerTeeth.map(n => <PerioTooth key={n} toothNum={n} isUpper={false} />)}
-        </div>
-      </div>
+      )}
 
-        <div className="flex items-center justify-between py-2 mt-2 rounded-lg bg-slate-900/90 text-white text-[10px] px-3">
-          <button type="button" className="p-1.5 rounded hover:bg-white/10 text-white/90 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
+      <div className="flex items-center justify-between py-2 mt-2 rounded-lg bg-slate-900/90 text-white text-[10px] px-3">
+        <button type="button" className="p-1.5 rounded hover:bg-white/10 text-white/90 transition-colors">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="flex flex-wrap gap-4 justify-center items-center">
+          <button
+            type="button"
+            onClick={() => setViewMode('2d')}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-colors ${viewMode === '2d' ? 'bg-indigo-600/50 text-indigo-200' : 'hover:bg-white/10 text-white/60'}`}
+          >
+            <Grid3x3 className="h-3 w-3" /> 2D
           </button>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              <span>1-3mm Healthy</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span>4-6mm Moderate</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span>&gt;6mm Problem</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-red-400 text-xs">●</span>
-              <span>BOP</span>
-            </div>
+          <button
+            type="button"
+            onClick={() => setViewMode('3d')}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-colors ${viewMode === '3d' ? 'bg-indigo-600/50 text-indigo-200' : 'hover:bg-white/10 text-white/60'}`}
+          >
+            <Box className="h-3 w-3" /> 3D
+          </button>
+          <div className="w-px h-3 bg-white/20" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <span>1-3mm Healthy</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+            <span>4-6mm Moderate</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span>&gt;6mm Problem</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-red-400 text-xs">●</span>
+            <span>BOP</span>
+          </div>
+          {viewMode === '2d' && (
             <div className="flex items-center gap-1.5">
               <svg className="w-4 h-1.5" viewBox="0 0 24 6" preserveAspectRatio="none">
                 <path d="M0,3 Q6,1 12,3 T24,3" fill="none" stroke="rgba(147,51,234,0.8)" strokeWidth="1" strokeLinecap="round" />
               </svg>
               <span>Gingival margin</span>
             </div>
-          </div>
-          <button type="button" className="p-1.5 rounded hover:bg-white/10 text-white/90 transition-colors">
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          )}
         </div>
+        <button type="button" className="p-1.5 rounded hover:bg-white/10 text-white/90 transition-colors">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }
