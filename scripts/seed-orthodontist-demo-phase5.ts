@@ -237,29 +237,74 @@ async function main() {
   }
   console.log('   ✓ Created 20 odontograms, 20 periodontal charts\n');
 
-  // ─── 5. X-Rays (metadata only) ──────────────────────────────────────────────
-  console.log('📷 Creating X-ray records...');
-  const xrayTypes = ['PANORAMIC', 'BITEWING', 'PERIAPICAL', 'CEPHALOMETRIC'];
+  // ─── 5. X-Rays (with real radiograph images) ───────────────────────────────
+  console.log('📷 Creating X-ray records with real radiograph images...');
+
+  const realXrays = [
+    {
+      xrayType: 'PANORAMIC',
+      imageFile: '/test-assets/dental/xrays/panoramic-orthopantomogram.jpg',
+      teethIncluded: Array.from({ length: 32 }, (_, i) => String(i + 1)),
+      notes: 'Initial panoramic radiograph — CRANEX D digital system',
+      aiAnalysis: {
+        findings: 'Full dentition present. No significant bone loss. Fillings observed on #3 (MOD composite) and #14 (DO composite). All roots appear intact with normal periapical radiolucency. TMJ condyles symmetric.',
+        confidence: 0.94,
+        recommendations: 'Continue routine monitoring. No immediate intervention needed.',
+        model: 'gpt-4o',
+      },
+    },
+    {
+      xrayType: 'BITEWING',
+      imageFile: '/test-assets/dental/xrays/bitewing-xray-1.jpg',
+      teethIncluded: ['2', '3', '4', '5', '13', '14', '15', '16'],
+      notes: 'Right bitewing — Sirona XIOS Plus sensor',
+      aiAnalysis: {
+        findings: 'MOD composite filling on #3 appears well-adapted. Interproximal bone levels within normal limits. No recurrent caries detected. Crestal bone height normal between all examined teeth.',
+        confidence: 0.91,
+        recommendations: 'Filling on #3 in good condition. No intervention needed.',
+        model: 'gpt-4o',
+      },
+    },
+    {
+      xrayType: 'BITEWING',
+      imageFile: '/test-assets/dental/xrays/bitewing-xray-2.jpg',
+      teethIncluded: ['18', '19', '20', '21', '28', '29', '30', '31'],
+      notes: 'Left bitewing — Sirona XIOS Plus sensor',
+      aiAnalysis: {
+        findings: 'DO composite filling on #14 with adequate marginal seal. Alveolar bone levels normal. No interproximal caries. Periodontal ligament space uniform on all visible teeth.',
+        confidence: 0.89,
+        recommendations: 'All findings within normal limits for orthodontic patient.',
+        model: 'gpt-4o',
+      },
+    },
+  ];
+
   let xrayCount = 0;
   try {
     for (let i = 0; i < 15; i++) {
       const lead = leads[i % leads.length];
+      const template = realXrays[i % realXrays.length];
+      const imageUrl = template.imageFile;
       await prisma.dentalXRay.create({
         data: {
           leadId: lead.id,
           userId: user.id,
           clinicId: clinic.id,
-          xrayType: randomElement(xrayTypes),
-          teethIncluded: ['1', '2', '3', '14', '15', '16'],
+          xrayType: template.xrayType,
+          teethIncluded: template.teethIncluded,
           dateTaken: randomDate(sixMonthsAgo, now),
-          notes: 'Routine orthodontic records',
-          aiAnalysis: { findings: 'No significant pathology. Adequate bone support.', confidence: 0.92 },
+          notes: template.notes,
+          fullUrl: imageUrl,
+          previewUrl: imageUrl,
+          thumbnailUrl: imageUrl,
+          imageUrl: imageUrl,
+          aiAnalysis: template.aiAnalysis,
           aiAnalyzedAt: new Date(),
         },
       });
       xrayCount++;
     }
-    console.log(`   ✓ Created ${xrayCount} X-ray records\n`);
+    console.log(`   ✓ Created ${xrayCount} X-ray records with real images\n`);
   } catch (e: unknown) {
     const err = e as { meta?: { column?: string } };
     if (err?.meta?.column?.includes('thumbnailUrl') || err?.meta?.column?.includes('DentalXRay')) {

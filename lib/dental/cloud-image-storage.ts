@@ -1,10 +1,11 @@
 /**
  * Cloud Image Storage Service
- * Stores compressed images in external cloud storage (AWS S3, Azure Blob, etc.)
- * Returns URLs for thumbnail, preview, and full-resolution versions
+ * Stores compressed images in Vercel Blob, AWS S3, or Azure Blob.
+ * Auto-detects available provider: Vercel Blob (default) → AWS S3 → Azure.
  */
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { put, del } from '@vercel/blob';
 import crypto from 'crypto';
 import { getAzureBlobClient } from './azure-storage-helper';
 
@@ -20,16 +21,16 @@ export interface ImageStorageUrls {
 }
 
 export interface StorageConfig {
-  provider: 'aws' | 'azure' | 'gcp';
-  bucket?: string; // AWS/GCP
-  container?: string; // Azure
+  provider: 'vercel' | 'aws' | 'azure' | 'gcp';
+  bucket?: string;
+  container?: string;
   region?: string;
-  cdnUrl?: string; // Optional CDN URL prefix
+  cdnUrl?: string;
 }
 
 export class CloudImageStorageService {
   private s3Client: S3Client | null = null;
-  private azureClient: any = null; // BlobServiceClient | null, but optional
+  private azureClient: any = null;
   private config: StorageConfig;
   private bucket: string = '';
   private container: string = '';
@@ -37,7 +38,7 @@ export class CloudImageStorageService {
 
   constructor(config?: Partial<StorageConfig>) {
     this.config = {
-      provider: config?.provider || (process.env.CLOUD_STORAGE_PROVIDER as 'aws' | 'azure' | 'gcp') || 'aws',
+      provider: config?.provider || this.detectProvider(),
       bucket: config?.bucket || process.env.AWS_S3_BUCKET || process.env.CLOUD_STORAGE_BUCKET || '',
       container: config?.container || process.env.AZURE_STORAGE_CONTAINER || '',
       region: config?.region || process.env.AWS_REGION || process.env.AZURE_REGION || 'ca-central-1',
@@ -49,15 +50,32 @@ export class CloudImageStorageService {
   }
 
   /**
-   * Initialize storage client based on provider
+   * Auto-detect best available storage provider.
+   * Priority: explicit env → Vercel Blob → AWS S3 → Azure
    */
+  private detectProvider(): StorageConfig['provider'] {
+    const explicit = process.env.CLOUD_STORAGE_PROVIDER || process.env.IMAGE_STORAGE_PROVIDER;
+    if (explicit === 'vercel') return 'vercel';
+    if (explicit === 'aws') return 'aws';
+    if (explicit === 'azure') return 'azure';
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) return 'vercel';
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_S3_BUCKET) return 'aws';
+    if (process.env.AZURE_STORAGE_CONNECTION_STRING) return 'azure';
+
+    return 'vercel';
+  }
+
   private async initialize() {
+    if (this.config.provider === 'vercel') {
+      // Vercel Blob needs no client init — uses BLOB_READ_WRITE_TOKEN env var
+      return;
+    }
     if (this.config.provider === 'aws') {
       this.initializeAWS();
     } else if (this.config.provider === 'azure') {
       await this.initializeAzure();
     } else if (this.config.provider === 'gcp') {
-      // GCP implementation can be added later
       throw new Error('GCP storage not yet implemented');
     }
   }
@@ -97,7 +115,6 @@ export class CloudImageStorageService {
     try {
       this.azureClient = await getAzureBlobClient(connectionString);
     } catch (error: any) {
-      // If Azure package is not installed, throw a helpful error
       if (error?.code === 'MODULE_NOT_FOUND' || error?.message?.includes('Cannot find module') || error?.message?.includes('not installed')) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('Azure Storage Blob package not installed - Azure storage unavailable');
@@ -111,6 +128,9 @@ export class CloudImageStorageService {
 
   private async ensureInitialized() {
     await this.initialize();
+    if (this.config.provider === 'vercel' && !process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error('BLOB_READ_WRITE_TOKEN not configured for Vercel Blob storage');
+    }
     if (this.config.provider === 'aws' && !this.s3Client) {
       throw new Error('AWS S3 client not initialized');
     }
@@ -134,13 +154,56 @@ export class CloudImageStorageService {
     const timestamp = Date.now();
     const basePath = `dental/xrays/${xrayId}/${timestamp}`;
 
-    if (this.config.provider === 'aws') {
+    if (this.config.provider === 'vercel') {
+      return this.uploadToVercel(basePath, thumbnail, preview, full, contentType);
+    } else if (this.config.provider === 'aws') {
       return this.uploadToAWS(basePath, thumbnail, preview, full, contentType);
     } else if (this.config.provider === 'azure') {
       return this.uploadToAzure(basePath, thumbnail, preview, full, contentType);
     }
 
     throw new Error(`Unsupported storage provider: ${this.config.provider}`);
+  }
+
+  private async uploadToVercel(
+    basePath: string,
+    thumbnail: Buffer,
+    preview: Buffer,
+    full: Buffer,
+    contentType: string
+  ): Promise<ImageStorageUrls> {
+    const thumbnailPath = `${basePath}/thumbnail.jpg`;
+    const previewPath = `${basePath}/preview.jpg`;
+    const fullPath = `${basePath}/full.jpg`;
+
+    const [thumbBlob, prevBlob, fullBlob] = await Promise.all([
+      put(thumbnailPath, thumbnail, {
+        access: 'public',
+        contentType,
+        addRandomSuffix: false,
+      }),
+      put(previewPath, preview, {
+        access: 'public',
+        contentType,
+        addRandomSuffix: false,
+      }),
+      put(fullPath, full, {
+        access: 'public',
+        contentType,
+        addRandomSuffix: false,
+      }),
+    ]);
+
+    return {
+      thumbnailUrl: thumbBlob.url,
+      previewUrl: prevBlob.url,
+      fullUrl: fullBlob.url,
+      storagePaths: {
+        thumbnail: thumbnailPath,
+        preview: previewPath,
+        full: fullPath,
+      },
+    };
   }
 
   private async uploadToAWS(
@@ -291,7 +354,13 @@ export class CloudImageStorageService {
   async deleteImages(storagePaths: { thumbnail: string; preview: string; full: string }): Promise<void> {
     await this.ensureInitialized();
 
-    if (this.config.provider === 'aws') {
+    if (this.config.provider === 'vercel') {
+      await Promise.all([
+        del(storagePaths.thumbnail).catch(() => {}),
+        del(storagePaths.preview).catch(() => {}),
+        del(storagePaths.full).catch(() => {}),
+      ]);
+    } else if (this.config.provider === 'aws') {
       if (!this.s3Client) throw new Error('S3 client not initialized');
       
       await Promise.all([

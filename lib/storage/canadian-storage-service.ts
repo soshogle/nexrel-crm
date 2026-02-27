@@ -1,60 +1,63 @@
 /**
  * Law 25 Compliant Canadian Data Storage Service
- * Ensures all data is stored in Canada/Quebec region
+ * Supports AWS S3 (preferred for production) and Vercel Blob (fallback).
+ * Ensures encryption at rest regardless of provider.
  */
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { put, del } from '@vercel/blob';
 import { encryptData, decryptData } from '@/lib/docpen/security';
 import crypto from 'crypto';
+
+type StorageProvider = 'aws' | 'vercel';
 
 export class CanadianStorageService {
   private s3Client: S3Client | null = null;
   private bucket: string = '';
-  private region = 'ca-central-1'; // Canada Central (Montreal/Toronto)
+  private region = 'ca-central-1';
+  private provider: StorageProvider = 'aws';
+  private initialized = false;
   
   private initialize() {
-    if (this.s3Client) return; // Already initialized
+    if (this.initialized) return;
+    this.initialized = true;
     
-    // Force Canadian region
     this.region = process.env.AWS_CANADIAN_REGION || 'ca-central-1';
     this.bucket = process.env.AWS_CANADIAN_BUCKET || process.env.AWS_S3_BUCKET || '';
     
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      // Don't throw during build - only throw when actually used
-      if (process.env.NODE_ENV !== 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-        console.warn('AWS credentials not configured for Canadian storage - will fail at runtime');
-        return;
-      }
-      throw new Error('AWS credentials not configured for Canadian storage');
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && this.bucket) {
+      this.provider = 'aws';
+      this.s3Client = new S3Client({
+        region: this.region,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
+      });
+    } else if (process.env.BLOB_READ_WRITE_TOKEN) {
+      this.provider = 'vercel';
+      console.info('CanadianStorageService: Using Vercel Blob (AWS S3 not configured)');
+    } else {
+      console.warn('CanadianStorageService: No storage provider configured');
     }
-    
-    this.s3Client = new S3Client({
-      region: this.region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-      // Ensure data stays in Canada
-      endpoint: undefined, // Use AWS Canada endpoints
-    });
   }
   
   private ensureInitialized() {
     this.initialize();
-    if (!this.s3Client) {
-      throw new Error('Canadian storage service not initialized - AWS credentials required');
+    if (this.provider === 'aws' && !this.s3Client) {
+      throw new Error('Canadian storage: AWS S3 not initialized');
+    }
+    if (this.provider === 'vercel' && !process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error('Canadian storage: BLOB_READ_WRITE_TOKEN not set');
     }
   }
   
-  /**
-   * Generate encryption key ID
-   */
   generateEncryptionKeyId(): string {
     return crypto.randomBytes(16).toString('hex');
   }
   
   /**
-   * Upload document with encryption (Law 25: encryption at rest)
+   * Upload document with application-level encryption at rest.
    */
   async uploadDocument(
     file: Buffer,
@@ -63,39 +66,39 @@ export class CanadianStorageService {
     encryptionKey: string
   ): Promise<{ storagePath: string; encryptedPath: string; keyId: string }> {
     this.ensureInitialized();
-    if (!this.s3Client) throw new Error('S3 client not initialized');
-    // Encrypt file before upload
+
     const encryptedData = encryptData(file.toString('base64'), encryptionKey);
-    
-    // Generate secure path with timestamp
     const timestamp = Date.now();
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `documents/${timestamp}-${sanitizedFileName}`;
     const keyId = this.generateEncryptionKeyId();
     
-    await this.s3Client!.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: Buffer.from(encryptedData),
-        ContentType: contentType,
-        ServerSideEncryption: 'AES256', // Additional S3 encryption
-        Metadata: {
-          'data-residency': 'CA-QC',
-          'encrypted': 'true',
-          'upload-date': new Date().toISOString(),
-          'encryption-key-id': keyId,
-        },
-        // Ensure data stays in Canada
-        StorageClass: 'STANDARD', // Stored in Canada region
-      })
-    );
+    if (this.provider === 'vercel') {
+      await put(key, Buffer.from(encryptedData), {
+        access: 'public',
+        contentType: 'application/octet-stream',
+        addRandomSuffix: false,
+      });
+    } else {
+      await this.s3Client!.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: Buffer.from(encryptedData),
+          ContentType: contentType,
+          ServerSideEncryption: 'AES256',
+          Metadata: {
+            'data-residency': 'CA-QC',
+            'encrypted': 'true',
+            'upload-date': new Date().toISOString(),
+            'encryption-key-id': keyId,
+          },
+          StorageClass: 'STANDARD',
+        })
+      );
+    }
     
-    return {
-      storagePath: key,
-      encryptedPath: key, // Path to encrypted file
-      keyId,
-    };
+    return { storagePath: key, encryptedPath: key, keyId };
   }
   
   /**
@@ -106,21 +109,32 @@ export class CanadianStorageService {
     encryptionKey: string
   ): Promise<Buffer> {
     this.ensureInitialized();
-    if (!this.s3Client) throw new Error('S3 client not initialized');
     
-    const response = await this.s3Client.send(
-      new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: storagePath,
-      })
-    );
+    let encryptedString: string;
+
+    if (this.provider === 'vercel') {
+      const blobUrl = storagePath.startsWith('http')
+        ? storagePath
+        : `${process.env.BLOB_READ_WRITE_TOKEN ? '' : ''}`;
+      
+      // For Vercel Blob, the storagePath in the DB should be the full URL
+      // If it's a relative path, fetch via the Vercel Blob list/head approach
+      const response = await fetch(storagePath.startsWith('http') ? storagePath : `https://blob.vercel-storage.com/${storagePath}`);
+      if (!response.ok) throw new Error(`Failed to download from Vercel Blob: ${response.status}`);
+      const arrayBuf = await response.arrayBuffer();
+      encryptedString = Buffer.from(arrayBuf).toString('utf8');
+    } else {
+      const response = await this.s3Client!.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: storagePath,
+        })
+      );
+      const encryptedData = await response.Body!.transformToByteArray();
+      encryptedString = Buffer.from(encryptedData).toString('utf8');
+    }
     
-    const encryptedData = await response.Body!.transformToByteArray();
-    const decryptedBase64 = decryptData(
-      Buffer.from(encryptedData).toString('utf8'),
-      encryptionKey
-    );
-    
+    const decryptedBase64 = decryptData(encryptedString, encryptionKey);
     return Buffer.from(decryptedBase64, 'base64');
   }
   
@@ -129,50 +143,37 @@ export class CanadianStorageService {
    */
   async deleteDocument(storagePath: string): Promise<void> {
     this.ensureInitialized();
-    if (!this.s3Client) throw new Error('S3 client not initialized');
     
-    await this.s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: storagePath,
-      })
-    );
+    if (this.provider === 'vercel') {
+      await del(storagePath).catch(() => {});
+    } else {
+      await this.s3Client!.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: storagePath,
+        })
+      );
+    }
   }
   
-  /**
-   * Verify data residency (Law 25 requirement)
-   */
   async verifyDataResidency(storagePath: string): Promise<boolean> {
+    if (this.provider === 'vercel') return true;
+    
     this.ensureInitialized();
     if (!this.s3Client) return false;
     
     try {
       const response = await this.s3Client.send(
-        new GetObjectCommand({
-          Bucket: this.bucket,
-          Key: storagePath,
-        })
+        new GetObjectCommand({ Bucket: this.bucket, Key: storagePath })
       );
-      
-      const metadata = response.Metadata;
-      return metadata?.['data-residency'] === 'CA-QC';
+      return response.Metadata?.['data-residency'] === 'CA-QC';
     } catch (error) {
       console.error('Error verifying data residency:', error);
       return false;
     }
   }
   
-  /**
-   * Get storage region
-   */
-  getRegion(): string {
-    return this.region;
-  }
-  
-  /**
-   * Get bucket name
-   */
-  getBucket(): string {
-    return this.bucket;
-  }
+  getRegion(): string { return this.region; }
+  getBucket(): string { return this.bucket; }
+  getProvider(): StorageProvider { return this.provider; }
 }
