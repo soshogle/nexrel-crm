@@ -61,11 +61,9 @@ function getArchPosition(n: number): [number, number, number] {
   const archDepth = 3.5;
   const isUpper = n <= 16;
 
-  let t: number;
-  if (n <= 8) t = (8 - n) / 15;
-  else if (n <= 16) t = (n - 1) / 15;
-  else if (n <= 24) t = (n - 17) / 15;
-  else t = (32 - n) / 15;
+  // Upper: tooth 1 (right molar) at t=0 → tooth 16 (left molar) at t=1
+  // Lower: tooth 32 (right molar) at t=0 → tooth 17 (left molar) at t=1
+  const t = isUpper ? (n - 1) / 15 : (32 - n) / 15;
 
   const angle = (t - 0.5) * Math.PI;
   const x = Math.sin(angle) * archWidth * 0.5;
@@ -77,13 +75,8 @@ function getArchPosition(n: number): [number, number, number] {
 
 function getToothRotation(n: number): number {
   const isUpper = n <= 16;
-  let t: number;
-  if (n <= 8) t = (8 - n) / 15;
-  else if (n <= 16) t = (n - 1) / 15;
-  else if (n <= 24) t = (n - 17) / 15;
-  else t = (32 - n) / 15;
-  const angle = (t - 0.5) * Math.PI;
-  return isUpper ? angle : angle;
+  const t = isUpper ? (n - 1) / 15 : (32 - n) / 15;
+  return (t - 0.5) * Math.PI;
 }
 
 function ToothMesh({
