@@ -79,6 +79,8 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
   const [compareLeft, setCompareLeft] = useState<PhotoRecord | null>(null);
   const [compareRight, setCompareRight] = useState<PhotoRecord | null>(null);
   const [selectedSeriesIdx, setSelectedSeriesIdx] = useState(0);
+  const [timelineMode, setTimelineMode] = useState(false);
+  const [timelineView, setTimelineView] = useState<string>('frontal');
 
   const views = tab === 'intraoral' ? INTRAORAL_VIEWS : EXTRAORAL_VIEWS;
 
@@ -308,8 +310,17 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
         <div className="flex gap-2">
           <Button
             size="sm"
+            variant={timelineMode ? 'default' : 'outline'}
+            onClick={() => { setTimelineMode(!timelineMode); if (compareMode) resetCompare(); }}
+            className="text-xs h-7"
+          >
+            <ChevronRight className="w-3 h-3 mr-1" />
+            {timelineMode ? 'Exit Timeline' : 'Progress Timeline'}
+          </Button>
+          <Button
+            size="sm"
             variant={compareMode ? 'default' : 'outline'}
-            onClick={() => { if (compareMode) resetCompare(); else setCompareMode(true); }}
+            onClick={() => { if (compareMode) resetCompare(); else { setCompareMode(true); setTimelineMode(false); } }}
             className="text-xs h-7"
           >
             <Columns2 className="w-3 h-3 mr-1" />
@@ -373,6 +384,59 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Progress Timeline Mode — shows one view type across all dates */}
+      {timelineMode && series.length > 1 && (
+        <div className="border-2 border-purple-300 rounded-lg p-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-purple-700">Progress Timeline</span>
+            <div className="flex items-center gap-2">
+              <select
+                value={timelineView}
+                onChange={(e) => setTimelineView(e.target.value)}
+                className="text-[11px] border border-purple-200 rounded-md px-2 py-1 bg-white text-purple-700"
+              >
+                {views.map(v => (
+                  <option key={v.id} value={v.id}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {series.map((s) => {
+              const photo = s.photos.find(p => p.viewType === timelineView);
+              return (
+                <div key={s.date} className="flex-shrink-0 w-40 space-y-1">
+                  <div className="text-[10px] font-medium text-center text-gray-500">
+                    {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div
+                    className={`aspect-square rounded-lg border-2 overflow-hidden flex items-center justify-center ${photo ? 'border-purple-200 cursor-pointer hover:border-purple-400' : 'border-dashed border-gray-200 bg-gray-50'}`}
+                    onClick={() => { if (photo) setSelectedPhoto(photo); }}
+                  >
+                    {photo ? (
+                      <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] text-gray-300">No photo</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {series.length >= 2 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-0.5 flex-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full" />
+              <span className="text-[10px] text-gray-400">{series.length} sessions</span>
+            </div>
+          )}
+        </div>
+      )}
+      {timelineMode && series.length <= 1 && (
+        <div className="text-center py-4 text-xs text-gray-400 border border-dashed border-gray-200 rounded-lg">
+          Need at least 2 photo sessions to show progress timeline
         </div>
       )}
 

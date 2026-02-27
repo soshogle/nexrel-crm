@@ -34,6 +34,9 @@ import {
 import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
 import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
 import { StlScanViewer } from '@/components/dental/stl-scan-viewer';
+import { OrthoTreatmentTracker } from '@/components/dental/ortho-treatment-tracker';
+import { PaymentPlanManager } from '@/components/dental/payment-plan-manager';
+import { RecallManager } from '@/components/dental/recall-manager';
 
 // Clinical Notes Editor Component
 function ClinicalNotesEditor({ leadId }: { leadId: string }) {
@@ -529,8 +532,8 @@ function ClinicalDashboardPageContent() {
         </div>
       </div>
 
-      {/* MIDDLE ROW - 4 Equal Columns */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      {/* MIDDLE ROW - 5 Equal Columns */}
+      <div className="grid grid-cols-5 gap-4 mb-4">
         {/* 4. Periodontal Charting */}
         <Card 
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
@@ -625,6 +628,37 @@ function ClinicalDashboardPageContent() {
           patientName={selectedLeadId ? (leads.find((l) => l.id === selectedLeadId)?.contactPerson || undefined) : undefined}
           chiefComplaint={undefined}
         />
+
+        {/* 8. Ortho Treatment Tracker */}
+        <div onClick={(e) => e.stopPropagation()}>
+          <OrthoTreatmentTracker
+            leadId={selectedLeadId ?? ''}
+            clinicId={activeClinic?.id}
+            compact
+          />
+        </div>
+
+        {/* 9. Payment Plan */}
+        {selectedLeadId && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <PaymentPlanManager
+              leadId={selectedLeadId}
+              clinicId={activeClinic?.id}
+              compact
+            />
+          </div>
+        )}
+
+        {/* 10. Recall Schedule */}
+        {selectedLeadId && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <RecallManager
+              leadId={selectedLeadId}
+              clinicId={activeClinic?.id}
+              compact
+            />
+          </div>
+        )}
       </div>
 
       {/* IMAGING ROW - Photos + 3D Scans */}

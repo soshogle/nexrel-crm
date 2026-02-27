@@ -27,6 +27,9 @@ interface PatientPortalData {
   documents: any[];
   invoices: any[];
   xrays: any[];
+  orthoTreatments?: any[];
+  paymentPlans?: any[];
+  bookingUserId?: string;
 }
 
 export default function PatientPortalPage() {
@@ -144,6 +147,37 @@ export default function PatientPortalPage() {
               </Card>
             </div>
 
+            {/* Ortho Treatment Progress */}
+            {(data.orthoTreatments || []).filter(t => t.status === 'ACTIVE').map((tx) => (
+              <Card key={tx.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {tx.treatmentType === 'ALIGNER' ? '🦷' : '🔧'} Orthodontic Treatment
+                  </CardTitle>
+                  <CardDescription>{tx.alignerBrand || tx.bracketSystem || tx.retainerType || tx.treatmentType}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tx.treatmentType === 'ALIGNER' && tx.totalAligners && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Aligner Progress</span>
+                        <span className="font-bold">{tx.currentAligner} of {tx.totalAligners}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all"
+                          style={{ width: `${Math.round((tx.currentAligner / tx.totalAligners) * 100)}%` }}
+                        />
+                      </div>
+                      {tx.nextChangeDate && (
+                        <p className="text-sm text-gray-500">Next aligner change: {format(new Date(tx.nextChangeDate), 'MMM d, yyyy')}</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
             {data.treatmentPlans.length > 0 && (
               <Card>
                 <CardHeader>
@@ -188,6 +222,17 @@ export default function PatientPortalPage() {
           </TabsContent>
 
           <TabsContent value="appointments" className="space-y-6 mt-6">
+            {data.bookingUserId && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => window.open(`/booking/${data.bookingUserId}`, '_blank')}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Book New Appointment
+                </Button>
+              </div>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

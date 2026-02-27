@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Calendar, DollarSign, FileText, Search, User, Mic } from 'lucide-react';
+import { Users, Calendar, DollarSign, FileText, Search, User, Mic, BarChart3 } from 'lucide-react';
 import { RoleSwitcher } from './role-switcher';
 import { ClinicSelector } from './clinic-selector';
 
@@ -97,6 +97,16 @@ export function SharedDashboardLayout({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/dashboard/dental/reports">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 hover:text-white"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Reports
+              </Button>
+            </Link>
             {role === 'clinical' && (
               <Link href="/dashboard/docpen">
                 <Button

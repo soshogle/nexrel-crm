@@ -244,6 +244,9 @@ model User {
   dentalXRays                 DentalXRay[]
   dentalLabOrders             DentalLabOrder[]
   dentalInsuranceClaims       DentalInsuranceClaim[]
+  orthoTreatments             OrthoTreatment[]
+  dentalPaymentPlans          DentalPaymentPlan[]
+  dentalRecalls               DentalRecall[]
   vnaConfigurations           VnaConfiguration[]
   practiceDocuments           PatientDocument[]            @relation("PracticeDocuments")
   documentConsents            DocumentConsent[]
@@ -395,6 +398,9 @@ model Lead {
   dentalXRays                 DentalXRay[]
   dentalLabOrders             DentalLabOrder[]
   dentalInsuranceClaims       DentalInsuranceClaim[]
+  orthoTreatments             OrthoTreatment[]
+  dentalPaymentPlans          DentalPaymentPlan[]
+  dentalRecalls               DentalRecall[]
   patientDocuments            PatientDocument[]            @relation("PatientDocuments")
   documentConsents            DocumentConsent[]
   dataAccessRequests          DataAccessRequest[]
@@ -8820,6 +8826,9 @@ model Clinic {
   xrays             DentalXRay[]
   labOrders         DentalLabOrder[]
   insuranceClaims   DentalInsuranceClaim[]
+  orthoTreatments   OrthoTreatment[]
+  dentalPaymentPlans DentalPaymentPlan[]
+  dentalRecalls     DentalRecall[]
   vnaConfigurations VnaConfiguration[]
   documents         PatientDocument[]        @relation("ClinicDocuments")
 
@@ -8953,6 +8962,7 @@ model DentalTreatmentPlan {
   proceduresLog   DentalProcedure[]
   labOrders       DentalLabOrder[]
   insuranceClaims DentalInsuranceClaim[]
+  orthoTreatments OrthoTreatment[]
 
   @@index([leadId])
   @@index([userId])
@@ -9322,6 +9332,207 @@ enum InsuranceClaimStatus {
   PAID // Payment received
   APPEALED // Under appeal
   CANCELLED
+}
+
+// ─── Dental Recall System (recurring appointments) ──────────────────────────
+model DentalRecall {
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
+
+  recallType      String          // "Ortho Check", "Cleaning", "Perio Maintenance", "Retainer Check"
+  intervalWeeks   Int             // e.g., 6 (every 6 weeks), 26 (every 6 months)
+  status          RecallStatus    @default(ACTIVE)
+
+  lastVisitDate   DateTime?       // When the patient was last seen for this recall
+  nextDueDate     DateTime        // When the next appointment is due
+  daysOverdue     Int?            // Calculated: how many days past nextDueDate
+
+  // Auto-scheduling
+  autoSchedule    Boolean         @default(false) // Auto-create appointment when due
+  preferredDay    String?         // "Monday", "Tuesday", etc.
+  preferredTime   String?         // "09:00", "14:00"
+
+  // Notification tracking
+  remindersSent   Int             @default(0) // How many reminders sent for current due
+  lastReminderAt  DateTime?
+  appointmentId   String?         // Link to auto-created appointment
+
+  notes           String?         @db.Text
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  lead            Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic          Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([clinicId])
+  @@index([status])
+  @@index([nextDueDate])
+}
+
+enum RecallStatus {
+  ACTIVE     // Actively tracked
+  OVERDUE    // Past due date
+  SCHEDULED  // Appointment has been scheduled
+  COMPLETED  // Patient attended
+  INACTIVE   // Paused or removed
+}
+
+// ─── Dental Payment Plans (installments for ortho, implants, etc.) ───────────
+model DentalPaymentPlan {
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
+
+  planName          String          // "Invisalign Payment Plan"
+  totalAmount       Float           // Total treatment cost in dollars
+  downPayment       Float           @default(0)
+  numberOfPayments  Int             // e.g., 12
+  paymentAmount     Float           // Per-installment amount
+  paymentFrequency  PaymentFrequency @default(MONTHLY)
+  interestRate      Float           @default(0) // 0 = interest-free
+  currency          String          @default("CAD")
+
+  status            PaymentPlanStatus @default(ACTIVE)
+  startDate         DateTime
+  nextPaymentDate   DateTime?
+
+  // Stripe subscription / schedule
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  stripePaymentMethodId String?
+
+  // Link to treatment
+  treatmentPlanId   String?
+  orthoTreatmentId  String?
+
+  // Installment records (JSON array)
+  installments      Json? // [{number, dueDate, amount, status, paidAt, stripePaymentIntentId}]
+
+  notes             String? @db.Text
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([clinicId])
+  @@index([status])
+}
+
+enum PaymentFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum PaymentPlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  DEFAULTED
+  CANCELLED
+}
+
+// ─── Orthodontic Treatment Tracking ─────────────────────────────────────────
+// Covers Invisalign aligners, traditional braces, retainers, and appliances.
+model OrthoTreatment {
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
+
+  // Treatment type
+  treatmentType OrthoTreatmentType // ALIGNER, BRACES, RETAINER, APPLIANCE
+
+  // ── Shared fields ──
+  status    OrthoTreatmentStatus @default(ACTIVE)
+  startDate DateTime
+  estimatedEndDate DateTime?
+  actualEndDate    DateTime?
+  arch             OrthoArch       @default(BOTH) // UPPER, LOWER, BOTH
+  notes            String?         @db.Text
+
+  // ── Aligner-specific (Invisalign, ClearCorrect, SureSmile, etc.) ──
+  alignerBrand       String?   // "Invisalign", "ClearCorrect", "SureSmile"
+  alignerCaseNumber  String?   // e.g., "INV-2026-12345"
+  totalAligners      Int?      // Total aligners in set
+  currentAligner     Int?      // Current aligner number
+  wearSchedule       Int?      @default(22) // Hours/day expected wear
+  changeFrequency    Int?      @default(14) // Days per aligner
+  nextChangeDate     DateTime?
+  refinementNumber   Int?      @default(0)  // 0=initial, 1=first refinement, etc.
+  clinCheckUrl       String?   // Link to ClinCheck or treatment plan viewer
+  iprPlan            Json?     // {tooth: "12", mesial: 0.3, distal: 0.2} per tooth
+
+  // ── Braces-specific ──
+  bracketSystem      String?   // "Damon Q2", "3M Clarity", "American Orthodontics"
+  upperWire          String?   // "14 NiTi", "16x22 SS", "19x25 TMA"
+  lowerWire          String?   // "14 NiTi", "16x22 SS"
+  elasticConfig      String?   // "Class II right", "Triangle left"
+  ligatureType       String?   // "Steel", "Elastic", "Self-ligating"
+  bracketsPlaced     Json?     // ["3","5","7"...] tooth numbers with brackets
+
+  // ── Retainer-specific ──
+  retainerType       String?   // "Hawley", "Essix", "Fixed lingual"
+  wearInstructions   String?   // "Full time 3mo, then nights only"
+
+  // ── Appliance-specific ──
+  applianceType      String?   // "RPE", "Herbst", "Forsus", "Space maintainer"
+  applianceDetails   String?
+
+  // ── Visit log (JSON array of visit entries) ──
+  visits             Json?     // [{date, alignerNumber, wireChange, notes, photos}]
+
+  // Treatment plan link
+  treatmentPlanId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([clinicId])
+  @@index([treatmentType])
+  @@index([status])
+}
+
+enum OrthoTreatmentType {
+  ALIGNER    // Invisalign, ClearCorrect, SureSmile
+  BRACES     // Traditional brackets + wires
+  RETAINER   // Post-treatment retention
+  APPLIANCE  // RPE, Herbst, Forsus, space maintainers
+}
+
+enum OrthoTreatmentStatus {
+  PLANNED    // Not yet started
+  ACTIVE     // Currently in treatment
+  ON_HOLD    // Paused (compliance, medical, etc.)
+  COMPLETED  // Treatment finished
+  CANCELLED
+}
+
+enum OrthoArch {
+  UPPER
+  LOWER
+  BOTH
 }
 
 // Phase 2: Multi-VNA Support

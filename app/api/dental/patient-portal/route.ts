@@ -97,6 +97,28 @@ export async function GET(request: NextRequest) {
       take: 20,
     });
 
+    // Fetch ortho treatments
+    let orthoTreatments: any[] = [];
+    try {
+      orthoTreatments = await getCrmDb(ctx).orthoTreatment.findMany({
+        where: { leadId: lead.id },
+        orderBy: { startDate: 'desc' },
+      });
+    } catch {
+      // Table may not exist in all environments
+    }
+
+    // Fetch payment plans
+    let paymentPlans: any[] = [];
+    try {
+      paymentPlans = await getCrmDb(ctx).dentalPaymentPlan.findMany({
+        where: { leadId: lead.id },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch {
+      // Table may not exist in all environments
+    }
+
     return NextResponse.json({
       patient: {
         name: lead.businessName || lead.contactPerson || 'Patient',
@@ -142,6 +164,31 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: xray.thumbnailUrl || null,
         takenDate: xray.dateTaken,
       })),
+      orthoTreatments: orthoTreatments.map((t: any) => ({
+        id: t.id,
+        treatmentType: t.treatmentType,
+        status: t.status,
+        startDate: t.startDate,
+        estimatedEndDate: t.estimatedEndDate,
+        alignerBrand: t.alignerBrand,
+        totalAligners: t.totalAligners,
+        currentAligner: t.currentAligner,
+        nextChangeDate: t.nextChangeDate,
+        bracketSystem: t.bracketSystem,
+        retainerType: t.retainerType,
+        visits: t.visits,
+      })),
+      paymentPlans: paymentPlans.map((p: any) => ({
+        id: p.id,
+        planName: p.planName,
+        totalAmount: p.totalAmount,
+        paymentAmount: p.paymentAmount,
+        numberOfPayments: p.numberOfPayments,
+        status: p.status,
+        installments: p.installments,
+        nextPaymentDate: p.nextPaymentDate,
+      })),
+      bookingUserId: firstLead.userId,
     });
   } catch (error: any) {
     console.error('Error fetching patient portal data:', error);
