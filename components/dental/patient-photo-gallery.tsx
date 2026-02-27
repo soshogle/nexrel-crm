@@ -262,16 +262,18 @@ export function PatientPhotoGallery({ leadId, compact = false }: PatientPhotoGal
                   src={p.url}
                   alt={p.viewType || p.fileName}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                   onError={(e) => {
-                    console.error('❌ [PhotoGallery] Image failed to load:', p.url, p.fileName);
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    const fallback = img.nextElementSibling;
+                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
                   }}
                 />
-                <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                <div style={{ display: 'none' }} className="w-full h-full items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50">
                   <div className="text-center">
-                    <ImageIcon className="w-4 h-4 text-gray-400 mx-auto" />
-                    <span className="text-[8px] text-gray-400 block mt-0.5">{p.fileName}</span>
+                    <Camera className="w-5 h-5 text-purple-300 mx-auto" />
+                    <span className="text-[8px] text-purple-400 block mt-1 px-1 truncate max-w-[80px]">{p.viewType || p.fileName}</span>
                   </div>
                 </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">

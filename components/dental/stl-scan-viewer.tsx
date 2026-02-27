@@ -395,8 +395,23 @@ export function StlScanViewer({ leadId, compact = false }: StlScanViewerProps) {
             <p className="text-[10px] text-red-500">{fetchError}</p>
             <button onClick={() => fetchScans()} className="text-[10px] text-purple-600 underline mt-1">Retry</button>
           </div>
-        ) : selectedScan ? (
-          <Viewer scan={selectedScan} height="120px" />
+        ) : scans.length > 0 ? (
+          <div className="space-y-1.5">
+            {scans.slice(0, 3).map(scan => (
+              <div key={scan.id} className="flex items-center gap-2 p-1.5 rounded-lg bg-gradient-to-r from-gray-50 to-purple-50/30 border border-gray-100">
+                <div className="w-8 h-8 rounded bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <Box className="w-4 h-4 text-purple-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-medium text-gray-700 truncate">{scan.fileName}</p>
+                  <p className="text-[9px] text-gray-400">{new Date(scan.dateTaken).toLocaleDateString()}</p>
+                </div>
+              </div>
+            ))}
+            {scans.length > 3 && (
+              <p className="text-[9px] text-gray-400 text-center">+{scans.length - 3} more scans</p>
+            )}
+          </div>
         ) : (
           <div className="text-center py-4">
             <Box className="w-6 h-6 text-gray-300 mx-auto mb-1" />

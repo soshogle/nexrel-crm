@@ -93,12 +93,14 @@ export async function GET(
       },
     });
 
-    // Return file
+    // Return file — use inline for images so <img> tags render them
+    const isImage = document.fileType?.startsWith('image/');
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': document.fileType,
-        'Content-Disposition': `attachment; filename="${document.fileName}"`,
+        'Content-Disposition': `${isImage ? 'inline' : 'attachment'}; filename="${document.fileName}"`,
         'Content-Length': fileBuffer.length.toString(),
+        ...(isImage ? { 'Cache-Control': 'private, max-age=3600' } : {}),
       },
     });
   } catch (error: any) {

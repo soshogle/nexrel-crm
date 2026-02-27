@@ -14,6 +14,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RotateCcw, Loader2 } from 'lucide-react';
+import {
+  getToothType, getArchPosition, getToothRotation,
+  getCrownHeight, getRootHeight, getGumRadius,
+  createCrownGeometry, createOcclusalGeometry, createRootGeometry,
+  type ToothType,
+} from '@/lib/dental/tooth-geometry';
 
 interface ToothData {
   condition?: string;
@@ -35,8 +41,6 @@ interface Odontogram3DProps {
   readOnly?: boolean;
 }
 
-type ToothType = 'molar' | 'premolar' | 'canine' | 'incisor';
-
 const CONDITION_COLORS: Record<string, string> = {
   healthy:    '#f0ece0',
   caries:     '#dc2626',
@@ -47,37 +51,6 @@ const CONDITION_COLORS: Record<string, string> = {
   implant:    '#6366f1',
   root_canal: '#f97316',
 };
-
-function getToothType(n: number): ToothType {
-  const adj = n <= 16 ? n : (n <= 24 ? 33 - n : n - 16);
-  if (adj >= 1 && adj <= 3) return 'molar';
-  if (adj >= 4 && adj <= 5) return 'premolar';
-  if (adj === 6) return 'canine';
-  return 'incisor';
-}
-
-function getArchPosition(n: number): [number, number, number] {
-  const archWidth = 7;
-  const archDepth = 3.5;
-  const isUpper = n <= 16;
-
-  // Upper: tooth 1 (right molar) at t=0 → tooth 16 (left molar) at t=1
-  // Lower: tooth 32 (right molar) at t=0 → tooth 17 (left molar) at t=1
-  const t = isUpper ? (n - 1) / 15 : (32 - n) / 15;
-
-  const angle = (t - 0.5) * Math.PI;
-  const x = Math.sin(angle) * archWidth * 0.5;
-  const z = -Math.cos(angle) * archDepth + archDepth * 0.5;
-  const y = isUpper ? 0.7 : -0.7;
-
-  return [x, y, z];
-}
-
-function getToothRotation(n: number): number {
-  const isUpper = n <= 16;
-  const t = isUpper ? (n - 1) / 15 : (32 - n) / 15;
-  return (t - 0.5) * Math.PI;
-}
 
 function ToothMesh({
   toothNumber,
@@ -99,16 +72,20 @@ function ToothMesh({
   const baseColor = CONDITION_COLORS[condition] || CONDITION_COLORS.healthy;
   const isMissing = condition === 'missing' || condition === 'extraction';
 
-  const dims = useMemo(() => {
-    switch (type) {
-      case 'molar':    return { w: 0.45, h: 0.35, d: 0.5, rootH: 0.55 };
-      case 'premolar': return { w: 0.35, h: 0.35, d: 0.4, rootH: 0.5 };
-      case 'canine':   return { w: 0.28, h: 0.4,  d: 0.35, rootH: 0.6 };
-      case 'incisor':  return { w: 0.3,  h: 0.38, d: 0.25, rootH: 0.5 };
-    }
-  }, [type]);
-
+  const crownH = getCrownHeight(type);
+  const rootH = getRootHeight(type);
+  const gumR = getGumRadius(type);
   const rootDir = isUpper ? 1 : -1;
+
+  const crownGeo = useMemo(() => createCrownGeometry(type), [type]);
+  const occlGeo = useMemo(() => createOcclusalGeometry(type), [type]);
+  const rootGeo = useMemo(() => createRootGeometry(type), [type]);
+
+  // Crown loft is built Y-up from 0 (CEJ) to crownH (occlusal).
+  // Upper teeth: crown points down into the mouth, roots point up.
+  // Lower teeth: crown points up, roots point down.
+  // We flip the entire tooth group via scale.y for upper teeth.
+  const flipY = isUpper ? -1 : 1;
 
   return (
     <group
@@ -121,90 +98,84 @@ function ToothMesh({
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
     >
       {!isMissing ? (
-        <>
-          {/* Crown */}
-          <mesh position={[0, 0, 0]} castShadow>
-            <boxGeometry args={[dims.w, dims.h, dims.d]} />
-            <meshStandardMaterial
+        <group scale={[1, flipY, 1]}>
+          {/* Crown body — lofted from CEJ (y=0) to occlusal (y=crownH) */}
+          <mesh geometry={crownGeo} castShadow>
+            <meshPhysicalMaterial
               color={baseColor}
-              roughness={0.4}
+              roughness={0.35}
               metalness={0.05}
+              clearcoat={0.6}
+              clearcoatRoughness={0.2}
               emissive={hovered ? '#a855f7' : '#000000'}
               emissiveIntensity={hovered ? 0.3 : 0}
             />
           </mesh>
 
-          {/* Occlusal surface line */}
-          {(type === 'molar' || type === 'premolar') && (
-            <mesh position={[0, isUpper ? -dims.h / 2 + 0.02 : dims.h / 2 - 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[dims.w * 0.5, dims.d * 0.5]} />
-              <meshStandardMaterial
-                color={condition === 'filling' ? '#60a5fa' : '#d4cfc2'}
-                roughness={0.6}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )}
+          {/* Occlusal cap with cusps/incisal edge */}
+          <mesh geometry={occlGeo} castShadow>
+            <meshPhysicalMaterial
+              color={condition === 'filling' ? '#b0c4de' : baseColor}
+              roughness={0.30}
+              metalness={0.05}
+              clearcoat={0.7}
+              clearcoatRoughness={0.15}
+            />
+          </mesh>
 
-          {/* Root(s) */}
+          {/* Root(s) — extend downward from CEJ */}
           {type === 'molar' ? (
             <>
-              <mesh position={[-dims.w * 0.2, rootDir * (dims.h / 2 + dims.rootH / 2), -dims.d * 0.1]}>
-                <coneGeometry args={[0.07, dims.rootH, 8]} />
-                <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+              <mesh geometry={rootGeo} position={[-0.08, 0, -0.06]} rotation={[Math.PI, 0, 0]} castShadow>
+                <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
               </mesh>
-              <mesh position={[dims.w * 0.2, rootDir * (dims.h / 2 + dims.rootH / 2), -dims.d * 0.1]}>
-                <coneGeometry args={[0.07, dims.rootH, 8]} />
-                <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+              <mesh geometry={rootGeo} position={[0.08, 0, -0.06]} rotation={[Math.PI, 0, 0]} castShadow>
+                <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
               </mesh>
-              <mesh position={[0, rootDir * (dims.h / 2 + dims.rootH * 0.4), dims.d * 0.12]}>
-                <coneGeometry args={[0.06, dims.rootH * 0.8, 8]} />
-                <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+              <mesh geometry={rootGeo} position={[0, 0, 0.06]} rotation={[Math.PI, 0, 0]} castShadow>
+                <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
               </mesh>
             </>
           ) : type === 'premolar' ? (
             <>
-              <mesh position={[-0.06, rootDir * (dims.h / 2 + dims.rootH / 2), 0]}>
-                <coneGeometry args={[0.06, dims.rootH, 8]} />
-                <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+              <mesh geometry={rootGeo} position={[-0.04, 0, 0]} rotation={[Math.PI, 0, 0]} castShadow>
+                <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
               </mesh>
-              <mesh position={[0.06, rootDir * (dims.h / 2 + dims.rootH / 2), 0]}>
-                <coneGeometry args={[0.06, dims.rootH, 8]} />
-                <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+              <mesh geometry={rootGeo} position={[0.04, 0, 0]} rotation={[Math.PI, 0, 0]} castShadow>
+                <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
               </mesh>
             </>
           ) : (
-            <mesh position={[0, rootDir * (dims.h / 2 + dims.rootH / 2), 0]}>
-              <coneGeometry args={[0.07, dims.rootH, 8]} />
-              <meshStandardMaterial color="#c9b99a" roughness={0.6} />
+            <mesh geometry={rootGeo} position={[0, 0, 0]} rotation={[Math.PI, 0, 0]} castShadow>
+              <meshStandardMaterial color="#e0d3bc" roughness={0.55} />
             </mesh>
           )}
 
-          {/* Condition indicator ring */}
+          {/* Gum cuff at CEJ */}
+          <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[gumR, 0.04, 8, 24]} />
+            <meshStandardMaterial color="#e88a8a" roughness={0.65} transparent opacity={0.55} />
+          </mesh>
+
+          {/* Condition indicator glow ring */}
           {condition !== 'healthy' && (
-            <mesh position={[0, isUpper ? -dims.h / 2 - 0.04 : dims.h / 2 + 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[dims.w * 0.35, dims.w * 0.5, 16]} />
+            <mesh position={[0, crownH + 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[gumR - 0.02, gumR + 0.06, 24]} />
               <meshBasicMaterial color={baseColor} side={THREE.DoubleSide} transparent opacity={0.7} />
             </mesh>
           )}
-        </>
+        </group>
       ) : (
-        /* Missing / extracted tooth - show ghost outline */
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[dims.w, dims.h, dims.d]} />
-          <meshStandardMaterial
-            color="#94a3b8"
-            roughness={0.8}
-            transparent
-            opacity={0.2}
-            wireframe
-          />
-        </mesh>
+        <group scale={[1, flipY, 1]}>
+          <mesh geometry={crownGeo}>
+            <meshStandardMaterial color="#94a3b8" roughness={0.8} transparent opacity={0.2} wireframe />
+          </mesh>
+        </group>
       )}
 
       {/* Tooth number label */}
       <Html
-        position={[0, isUpper ? dims.h / 2 + dims.rootH + 0.25 : -(dims.h / 2 + dims.rootH + 0.25), 0]}
+        position={[0, isUpper ? crownH / 2 + rootH + 0.25 : -(crownH / 2 + rootH + 0.25), 0]}
         center
         distanceFactor={8}
         style={{ pointerEvents: 'none' }}
@@ -223,24 +194,41 @@ function ToothMesh({
   );
 }
 
-function GumLine({ isUpper }: { isUpper: boolean }) {
-  const points = useMemo(() => {
-    const pts: THREE.Vector3[] = [];
+function GumTissue({ isUpper }: { isUpper: boolean }) {
+  const geo = useMemo(() => {
+    const points: THREE.Vector3[] = [];
     for (let i = 0; i <= 15; i++) {
       const n = isUpper ? i + 1 : i + 17;
       const [x, , z] = getArchPosition(n);
-      const y = isUpper ? 0.35 : -0.35;
-      pts.push(new THREE.Vector3(x, y, z));
+      points.push(new THREE.Vector3(x, 0, z));
     }
-    return pts;
+    const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
+
+    const bandW = 0.18, bandH = 0.12;
+    const shape = new THREE.Shape();
+    shape.moveTo(-bandW, -bandH);
+    shape.quadraticCurveTo(-bandW, bandH, 0, bandH * 1.1);
+    shape.quadraticCurveTo(bandW, bandH, bandW, -bandH);
+    shape.lineTo(-bandW, -bandH);
+
+    return new THREE.ExtrudeGeometry(shape, {
+      steps: 80,
+      extrudePath: curve,
+      bevelEnabled: false,
+    });
   }, [isUpper]);
 
-  const curve = useMemo(() => new THREE.CatmullRomCurve3(points), [points]);
-  const tubeGeo = useMemo(() => new THREE.TubeGeometry(curve, 64, 0.08, 8, false), [curve]);
+  const y = isUpper ? 0.35 : -0.35;
 
   return (
-    <mesh geometry={tubeGeo}>
-      <meshStandardMaterial color="#f4a0a0" roughness={0.7} transparent opacity={0.5} />
+    <mesh geometry={geo} position={[0, y, 0]}>
+      <meshStandardMaterial
+        color="#e88a8a"
+        roughness={0.65}
+        transparent
+        opacity={0.55}
+        side={THREE.DoubleSide}
+      />
     </mesh>
   );
 }
@@ -285,10 +273,10 @@ function OdontogramScene({
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 8]} intensity={0.9} castShadow />
-      <directionalLight position={[-5, -4, 6]} intensity={0.3} />
-      <pointLight position={[0, 0, 6]} intensity={0.4} />
+      <hemisphereLight args={['#c8d8e8', '#3a2a1a', 0.4]} />
+      <directionalLight position={[5, 8, 8]} intensity={1.1} castShadow />
+      <directionalLight position={[-5, -4, 6]} intensity={0.35} />
+      <pointLight position={[0, 0, 6]} intensity={0.5} />
 
       <Center>
         <group>
@@ -301,8 +289,8 @@ function OdontogramScene({
             />
           ))}
 
-          <GumLine isUpper />
-          <GumLine isUpper={false} />
+          <GumTissue isUpper />
+          <GumTissue isUpper={false} />
           <ArchLabels />
         </group>
       </Center>

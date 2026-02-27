@@ -196,7 +196,7 @@ export function LabOrderForm({ leadId, orderId, onSuccess, onCancel }: LabOrderF
             <SelectValue placeholder="Select lab system (optional)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Manual Entry / Other Lab</SelectItem>
+            <SelectItem value="manual">Manual Entry / Other Lab</SelectItem>
             {labSystems.map((system) => (
               <SelectItem key={system.id} value={system.id}>
                 {system.name}
