@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   PenTool,
+  TrendingUp,
 } from 'lucide-react';
 import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
 import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
@@ -698,8 +699,39 @@ function ClinicalDashboardPageContent() {
         </Card>
       </div>
 
-      {/* BOTTOM ROW - Document Upload */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* PREDICTIVE OUTCOME ROW */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <Card
+          className="col-span-2 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('predictive-outcome')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-600" />
+              Predictive Outcome Simulator
+            </CardTitle>
+            <p className="text-[10px] text-gray-500">See projected tooth condition at 6 and 12 months</p>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {selectedLeadId ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">Click to view 3D predictive analysis</p>
+                    <p className="text-[10px] text-gray-500">Timeline slider · Cost comparison · AI findings</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-400 text-xs">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Document Upload */}
         <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
