@@ -173,7 +173,7 @@ export class CanadianStorageService {
     }
   }
   
-  getRegion(): string { return this.region; }
-  getBucket(): string { return this.bucket; }
-  getProvider(): StorageProvider { return this.provider; }
+  getRegion(): string { this.initialize(); return this.region; }
+  getBucket(): string { this.initialize(); return this.bucket; }
+  getProvider(): StorageProvider { this.initialize(); return this.provider; }
 }
