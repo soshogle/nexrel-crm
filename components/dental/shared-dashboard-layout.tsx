@@ -18,15 +18,15 @@ import { ClinicSelector } from './clinic-selector';
 
 interface SharedDashboardLayoutProps {
   role: 'clinical' | 'admin';
-  selectedLeadId: string | null;
-  leads: any[];
-  stats: {
+  selectedLeadId?: string | null;
+  leads?: any[];
+  stats?: {
     totalPatients: number;
     todayAppointments: number;
     pendingClaims: number;
     monthlyRevenue: number;
   };
-  onPatientSelect: (leadId: string | null) => void;
+  onPatientSelect?: (leadId: string | null) => void;
   children: React.ReactNode;
 }
 
@@ -73,13 +73,14 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
 
 export function SharedDashboardLayout({
   role,
-  selectedLeadId,
-  leads,
-  stats,
-  onPatientSelect,
+  selectedLeadId = null,
+  leads = [],
+  stats = { totalPatients: 0, todayAppointments: 0, pendingClaims: 0, monthlyRevenue: 0 },
+  onPatientSelect = () => {},
   children,
 }: SharedDashboardLayoutProps) {
-  const selectedPatient = leads.find((lead) => lead.id === selectedLeadId);
+  const safeLeads = leads || [];
+  const selectedPatient = safeLeads.find((lead) => lead.id === selectedLeadId);
 
   return (
     <PanableCanvas>
@@ -136,7 +137,7 @@ export function SharedDashboardLayout({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">No patient selected</SelectItem>
-                {leads.map((lead) => (
+                {safeLeads.map((lead) => (
                   <SelectItem key={lead.id} value={lead.id}>
                     {lead.contactPerson || lead.businessName || lead.email}
                   </SelectItem>

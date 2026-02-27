@@ -47,6 +47,9 @@ export function ClinicalModals({
   onXrayRefresh,
   clinicalNotesEditor,
 }: ClinicalModalsProps) {
+  const safeLeads = leads || [];
+  const safeXrays = xrays || [];
+  const safeProcedures = procedures || [];
   const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('wisely');
 
   return (
@@ -72,35 +75,35 @@ export function ClinicalModals({
                   variant="ghost" size="sm"
                   className="h-8 w-8 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={() => {
-                    if (selectedLeadId && leads.length > 0) {
-                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                    if (selectedLeadId && safeLeads.length > 0) {
+                      const currentIndex = safeLeads.findIndex(l => l.id === selectedLeadId);
                       if (currentIndex > 0) {
-                        const prevLead = leads[currentIndex - 1];
+                        const prevLead = safeLeads[currentIndex - 1];
                         onSelectLead(prevLead.id);
                         toast.success(`Switched to ${prevLead.contactPerson || 'patient'}`);
                       } else { toast.info('Already at first patient'); }
                     } else { toast.error('Please select a patient first'); }
                   }}
-                  disabled={!selectedLeadId || (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0)}
+                  disabled={!selectedLeadId || (safeLeads.length > 0 && safeLeads.findIndex(l => l.id === selectedLeadId) === 0)}
                 >
-                  <ChevronLeft className={`h-4 w-4 ${!selectedLeadId || (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <ChevronLeft className={`h-4 w-4 ${!selectedLeadId || (safeLeads.length > 0 && safeLeads.findIndex(l => l.id === selectedLeadId) === 0) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
                 <Button
                   variant="ghost" size="sm"
                   className="h-8 w-8 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={() => {
-                    if (selectedLeadId && leads.length > 0) {
-                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
-                      if (currentIndex < leads.length - 1) {
-                        const nextLead = leads[currentIndex + 1];
+                    if (selectedLeadId && safeLeads.length > 0) {
+                      const currentIndex = safeLeads.findIndex(l => l.id === selectedLeadId);
+                      if (currentIndex < safeLeads.length - 1) {
+                        const nextLead = safeLeads[currentIndex + 1];
                         onSelectLead(nextLead.id);
                         toast.success(`Switched to ${nextLead.contactPerson || 'patient'}`);
                       } else { toast.info('Already at last patient'); }
                     } else { toast.error('Please select a patient first'); }
                   }}
-                  disabled={!selectedLeadId || (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1)}
+                  disabled={!selectedLeadId || (safeLeads.length > 0 && safeLeads.findIndex(l => l.id === selectedLeadId) === safeLeads.length - 1)}
                 >
-                  <ChevronRight className={`h-4 w-4 ${!selectedLeadId || (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <ChevronRight className={`h-4 w-4 ${!selectedLeadId || (safeLeads.length > 0 && safeLeads.findIndex(l => l.id === selectedLeadId) === safeLeads.length - 1) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
               </div>
             </div>
@@ -128,7 +131,7 @@ export function ClinicalModals({
           <div className="text-center py-16 text-gray-400">Select a patient first</div>
         ) : !sessionUserId ? (
           <div className="text-center py-16 text-gray-400">Please sign in</div>
-        ) : xrays.length === 0 ? (
+        ) : safeXrays.length === 0 ? (
           <div className="text-center py-16 space-y-4">
             <p className="text-gray-400">No X-rays found for this patient</p>
             <p className="text-sm text-gray-500">Upload an X-ray to begin analysis</p>
@@ -136,9 +139,9 @@ export function ClinicalModals({
         ) : !selectedXray ? (
           <div className="text-center py-16 space-y-4">
             <p className="text-gray-400">Select an X-ray to analyze</p>
-            {xrays.length > 0 && (
+            {safeXrays.length > 0 && (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {xrays.map((xray: any) => (
+                {safeXrays.map((xray: any) => (
                   <button key={xray.id} onClick={() => onSelectXray(xray)} className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
                     <div className="font-medium text-sm">{xray.xrayType || 'X-Ray'}</div>
                     <div className="text-xs text-gray-500">{xray.dateTaken ? new Date(xray.dateTaken).toLocaleDateString() : 'No date'}</div>
@@ -149,12 +152,12 @@ export function ClinicalModals({
           </div>
         ) : (
           <div className="h-[calc(100vh-200px)]">
-            {xrays.length > 1 && (
+            {safeXrays.length > 1 && (
               <div className="mb-4 flex items-center gap-2">
-                <Select value={selectedXray.id} onValueChange={(value) => { const xray = xrays.find((x: any) => x.id === value); if (xray) onSelectXray(xray); }}>
+                <Select value={selectedXray?.id} onValueChange={(value) => { const xray = safeXrays.find((x: any) => x.id === value); if (xray) onSelectXray(xray); }}>
                   <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {xrays.map((xray: any) => (
+                    {safeXrays.map((xray: any) => (
                       <SelectItem key={xray.id} value={xray.id}>
                         {xray.xrayType || 'X-Ray'} - {xray.dateTaken ? new Date(xray.dateTaken).toLocaleDateString() : 'No date'}
                       </SelectItem>
@@ -164,11 +167,11 @@ export function ClinicalModals({
               </div>
             )}
             <DicomViewer
-              xrayId={selectedXray.id}
-              imageUrl={selectedXray.fullUrl || selectedXray.previewUrl || selectedXray.imageUrl || `/api/dental/xrays/${selectedXray.id}/image`}
-              dicomFile={selectedXray.dicomFile || undefined}
-              xrayType={selectedXray.xrayType}
-              initialAnalysis={selectedXray.aiAnalysis}
+              xrayId={selectedXray?.id}
+              imageUrl={selectedXray?.fullUrl || selectedXray?.previewUrl || selectedXray?.imageUrl || `/api/dental/xrays/${selectedXray?.id}/image`}
+              dicomFile={selectedXray?.dicomFile || undefined}
+              xrayType={selectedXray?.xrayType}
+              initialAnalysis={selectedXray?.aiAnalysis}
               onAnalysisComplete={() => { onXrayRefresh(); }}
             />
           </div>
@@ -185,11 +188,11 @@ export function ClinicalModals({
 
       <CardModal isOpen={openModal === 'procedures'} onClose={onCloseModal} title="Procedures Activity Log">
         <RedesignedProceduresLog
-          procedures={procedures.map((proc: any) => {
+          procedures={safeProcedures.map((proc: any) => {
             const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
             return {
               time: procDate ? new Date(procDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
-              patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
+              patient: safeLeads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
               procedure: proc.procedureCode || proc.procedureName || 'Procedure',
               status: proc.status || 'Completed',
             };
@@ -222,7 +225,7 @@ export function ClinicalModals({
                 onClick={() => {
                   const params = new URLSearchParams();
                   params.set('leadId', selectedLeadId);
-                  const patientName = leads.find((l) => l.id === selectedLeadId)?.contactPerson || leads.find((l) => l.id === selectedLeadId)?.businessName;
+                  const patientName = safeLeads.find((l) => l.id === selectedLeadId)?.contactPerson || safeLeads.find((l) => l.id === selectedLeadId)?.businessName;
                   if (patientName) params.set('patientName', patientName);
                   params.set('from', 'clinical');
                   window.location.href = `/dashboard/docpen?${params.toString()}`;
