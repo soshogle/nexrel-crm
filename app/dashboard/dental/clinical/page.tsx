@@ -31,6 +31,7 @@ import {
   ChevronRight,
   PenTool,
   TrendingUp,
+  Grid3x3,
 } from 'lucide-react';
 import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
 import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
@@ -732,7 +733,41 @@ function ClinicalDashboardPageContent() {
           </CardContent>
         </Card>
 
-        {/* Document Upload */}
+        {/* Multi-Angle X-Ray Viewer */}
+        <Card
+          className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 shadow-lg cursor-pointer hover:shadow-xl transition-all"
+          onClick={() => setOpenModal('xray-multi-view')}
+        >
+          <CardHeader className="pb-2 px-4 pt-3">
+            <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Grid3x3 className="h-4 w-4 text-blue-600" />
+              Multi-Angle X-Rays
+            </CardTitle>
+            <p className="text-[10px] text-gray-500">Film mount · By tooth · Timeline</p>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {selectedLeadId ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Grid3x3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">View all x-ray angles</p>
+                    <p className="text-[10px] text-gray-500">Cross-reference by tooth with AI analysis</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-400 text-xs">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* DOCUMENT UPLOAD ROW */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>

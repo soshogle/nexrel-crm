@@ -12,6 +12,7 @@ import { DicomViewer } from '@/components/dental/dicom-viewer';
 import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
 import { StlScanViewer } from '@/components/dental/stl-scan-viewer';
 import { PredictiveOutcomeViewer } from '@/components/dental/predictive-outcome-viewer';
+import { XRayMultiView } from '@/components/dental/xray-multi-view';
 import { ChevronLeft, ChevronRight, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -245,6 +246,24 @@ export function ClinicalModals({
       <CardModal isOpen={openModal === 'predictive-outcome'} onClose={onCloseModal} title="Predictive Outcome Simulator">
         {selectedLeadId ? (
           <PredictiveOutcomeViewer leadId={selectedLeadId} />
+        ) : (
+          <div className="text-center py-16 text-gray-400">Select a patient</div>
+        )}
+      </CardModal>
+
+      <CardModal isOpen={openModal === 'xray-multi-view'} onClose={onCloseModal} title="Multi-Angle X-Ray Viewer">
+        {selectedLeadId ? (
+          <XRayMultiView
+            leadId={selectedLeadId}
+            onOpenDicom={(xray) => {
+              onSelectXray(xray);
+              onCloseModal();
+              setTimeout(() => {
+                const event = new CustomEvent('openModal', { detail: 'xray-analysis' });
+                window.dispatchEvent(event);
+              }, 100);
+            }}
+          />
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
         )}
