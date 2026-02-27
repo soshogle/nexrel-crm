@@ -42,6 +42,8 @@ interface NewSessionDialogProps {
   defaultChiefComplaint?: string;
   defaultProfession?: string;
   defaultOpen?: boolean;
+  /** Called when the dialog is dismissed without creating a session */
+  onDismiss?: () => void;
   /** User's industry - filters specialties to those relevant to the practice */
   industry?: Industry | null;
 }
@@ -53,6 +55,7 @@ export function NewSessionDialog({
   defaultChiefComplaint,
   defaultProfession,
   defaultOpen = false,
+  onDismiss,
   industry,
 }: NewSessionDialogProps) {
   const tPlaceholders = useTranslations('placeholders');
@@ -201,14 +204,14 @@ export function NewSessionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { resetForm(); onDismiss?.(); } }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           New Session
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
           <DialogDescription>

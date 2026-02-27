@@ -88,6 +88,9 @@ export default function DocpenPage() {
   const chiefComplaintParam = searchParams.get('chiefComplaint');
   const fromParam = searchParams.get('from');
 
+  const isExternalOpen = !!(leadIdParam || patientNameParam);
+  const [externalDialogActive, setExternalDialogActive] = useState(isExternalOpen);
+
   const [activeView, setActiveView] = useState<'list' | 'session'>(sessionIdParam ? 'session' : 'list');
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
@@ -196,6 +199,7 @@ export default function DocpenPage() {
   };
 
   const handleSessionCreated = (sessionId: string) => {
+    setExternalDialogActive(false);
     router.push(`/dashboard/docpen?session=${sessionId}`);
   };
 
@@ -203,6 +207,13 @@ export default function DocpenPage() {
     router.push('/dashboard/docpen');
     setActiveSession(null);
     setActiveView('list');
+  };
+
+  const handleExternalDialogDismiss = () => {
+    setExternalDialogActive(false);
+    if (fromParam === 'clinical') {
+      router.back();
+    }
   };
 
   const handleRecordingComplete = () => {
@@ -262,6 +273,34 @@ export default function DocpenPage() {
     );
   }
 
+  if (externalDialogActive) {
+    return (
+      <DocpenErrorBoundary>
+        <div className="container mx-auto py-6 flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
+              <Brain className="h-7 w-7 text-purple-500" />
+              AI Docpen
+            </h1>
+            <p className="text-muted-foreground">
+              Ambient medical scribe & clinical assistant
+            </p>
+          </div>
+          <NewSessionDialog
+            onSessionCreated={handleSessionCreated}
+            defaultLeadId={leadIdParam || undefined}
+            defaultPatientName={patientNameParam || undefined}
+            defaultChiefComplaint={chiefComplaintParam || undefined}
+            defaultProfession={fromParam === 'clinical' ? 'DENTIST' : undefined}
+            defaultOpen={true}
+            onDismiss={handleExternalDialogDismiss}
+            industry={userIndustry}
+          />
+        </div>
+      </DocpenErrorBoundary>
+    );
+  }
+
   return (
     <DocpenErrorBoundary>
       <div className="container mx-auto py-6 space-y-6">
@@ -300,7 +339,7 @@ export default function DocpenPage() {
                 defaultPatientName={patientNameParam || undefined}
                 defaultChiefComplaint={chiefComplaintParam || undefined}
                 defaultProfession={fromParam === 'clinical' ? 'DENTIST' : undefined}
-                defaultOpen={!!(leadIdParam || patientNameParam)}
+                defaultOpen={false}
                 industry={userIndustry}
               />
             </>
