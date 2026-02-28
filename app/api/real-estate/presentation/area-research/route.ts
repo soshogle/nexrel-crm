@@ -6,79 +6,122 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { apiErrors } from '@/lib/api-error';
 
-function generateAreaResearch(address: string, city: string, state: string, propertyType: string) {
-  const cityName = city || 'the area';
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
-  const schoolTypes = ['Elementary', 'Middle', 'High'];
-  const schoolNames = ['Oakwood', 'Riverview', 'Lincoln', 'Hillcrest', 'Valley'];
-  const schools = schoolTypes.map((type, i) => ({
-    name: `${schoolNames[i % schoolNames.length]} ${type} School`,
-    type,
-    rating: `${Math.floor(Math.random() * 3) + 7}/10`,
-    distance: `${(Math.random() * 2 + 0.3).toFixed(1)} mi`,
-  }));
+/** Haversine formula: distance in miles between two lat/lng points */
+function haversineMiles(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 3959; // Earth radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
-  const transportation = [
-    { type: 'Bus', name: `${cityName} Metro Bus`, distance: '0.3 mi' },
-    { type: 'Highway', name: 'Interstate Access', distance: '1.2 mi' },
-    { type: 'Airport', name: `${cityName} Regional Airport`, distance: `${(Math.random() * 15 + 5).toFixed(0)} mi` },
-  ];
+/** Format distance for display */
+function formatDistance(miles: number): string {
+  if (miles < 0.1) return '< 0.1 mi';
+  if (miles < 10) return `${miles.toFixed(1)} mi`;
+  return `${Math.round(miles)} mi`;
+}
 
-  const shopping = [
-    { name: 'Town Center Mall', type: 'Shopping Center', distance: '1.5 mi' },
-    { name: 'Whole Foods Market', type: 'Grocery', distance: '0.8 mi' },
-    { name: 'Target', type: 'Department Store', distance: '2.1 mi' },
-    { name: 'Local Farmers Market', type: 'Market', distance: '0.5 mi' },
-  ];
+interface GeocodeResult {
+  lat: number;
+  lng: number;
+  formattedAddress?: string;
+}
 
-  const dining = [
-    { name: 'The Local Kitchen', type: 'American', distance: '0.4 mi' },
-    { name: 'Bella Italia', type: 'Italian', distance: '0.6 mi' },
-    { name: 'Sakura Sushi', type: 'Japanese', distance: '1.1 mi' },
-    { name: 'La Casa Mexicana', type: 'Mexican', distance: '0.9 mi' },
-  ];
+async function geocodeAddress(
+  address: string,
+  city: string,
+  state: string
+): Promise<GeocodeResult | null> {
+  const query = [address, city, state].filter(Boolean).join(', ');
+  if (!query.trim()) return null;
 
-  const parks = [
-    { name: `${cityName} Central Park`, features: 'Walking trails, playground, sports fields', distance: '0.7 mi' },
-    { name: 'Riverside Nature Preserve', features: 'Hiking, bird watching, picnic areas', distance: '1.8 mi' },
-    { name: 'Community Recreation Center', features: 'Pool, gym, tennis courts', distance: '1.2 mi' },
-  ];
-
-  const healthcare = [
-    { name: `${cityName} Medical Center`, type: 'Hospital', distance: '2.5 mi' },
-    { name: 'Family Care Clinic', type: 'Urgent Care', distance: '0.9 mi' },
-    { name: 'Walgreens Pharmacy', type: 'Pharmacy', distance: '0.4 mi' },
-  ];
-
-  const entertainment = [
-    { name: 'AMC Cinemas', type: 'Movie Theater', distance: '1.8 mi' },
-    { name: `${cityName} Library`, type: 'Library', distance: '1.0 mi' },
-    { name: 'Community Arts Center', type: 'Arts & Culture', distance: '1.5 mi' },
-  ];
-
-  const walkScore = Math.floor(Math.random() * 30) + 55;
-  const transitScore = Math.floor(Math.random() * 35) + 40;
-  const bikeScore = Math.floor(Math.random() * 30) + 45;
-
-  return {
-    schools,
-    transportation,
-    shopping,
-    dining,
-    parks,
-    healthcare,
-    entertainment,
-    demographics: {
-      population: `${(Math.random() * 150000 + 20000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`,
-      medianIncome: `$${(Math.random() * 50000 + 55000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`,
-      medianAge: `${Math.floor(Math.random() * 10) + 32}`,
-      crimeRate: 'Below Average',
-    },
-    walkScore,
-    bikeScore,
-    transitScore,
-    summary: `${cityName}, ${state} offers a well-balanced community with excellent schools, convenient shopping, and abundant outdoor recreation. The neighborhood around ${address || 'this property'} features walkable amenities, diverse dining options, and easy highway access. With a Walk Score of ${walkScore} and strong local infrastructure, this location appeals to families and professionals alike.`,
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as {
+    status: string;
+    results?: Array<{
+      geometry: { location: { lat: number; lng: number } };
+      formatted_address?: string;
+    }>;
   };
+
+  if (data.status !== 'OK' || !data.results?.[0]) return null;
+  const r = data.results[0];
+  return {
+    lat: r.geometry.location.lat,
+    lng: r.geometry.location.lng,
+    formattedAddress: r.formatted_address,
+  };
+}
+
+interface PlaceResult {
+  name: string;
+  lat: number;
+  lng: number;
+  rating?: number;
+  vicinity?: string;
+  types?: string[];
+}
+
+async function nearbySearch(
+  lat: number,
+  lng: number,
+  type: string,
+  radiusMeters = 8000
+): Promise<PlaceResult[]> {
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radiusMeters}&type=${encodeURIComponent(type)}&key=${GOOGLE_MAPS_API_KEY}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as {
+    status: string;
+    results?: Array<{
+      name: string;
+      geometry?: { location?: { lat: number; lng: number } };
+      rating?: number;
+      vicinity?: string;
+      types?: string[];
+    }>;
+  };
+
+  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+    console.warn('[area-research] Nearby search error:', data.status, (data as any).error_message);
+    return [];
+  }
+
+  return (data.results || []).map((r) => ({
+    name: r.name,
+    lat: r.geometry?.location?.lat ?? lat,
+    lng: r.geometry?.location?.lng ?? lng,
+    rating: r.rating,
+    vicinity: r.vicinity,
+    types: r.types,
+  }));
+}
+
+/** Infer place type from Google types for display */
+function inferType(types: string[] | undefined, fallback: string): string {
+  if (!types?.length) return fallback;
+  const t = types[0];
+  if (t.includes('school') || t.includes('university')) return 'School';
+  if (t.includes('restaurant') || t.includes('food')) return 'Restaurant';
+  if (t.includes('mall') || t.includes('store') || t.includes('grocery')) return 'Shopping';
+  if (t.includes('park')) return 'Park';
+  if (t.includes('hospital') || t.includes('pharmacy') || t.includes('doctor')) return 'Healthcare';
+  if (t.includes('transit') || t.includes('bus') || t.includes('airport')) return 'Transit';
+  return fallback;
 }
 
 export async function POST(request: NextRequest) {
@@ -88,6 +131,11 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error('GOOGLE_MAPS_API_KEY not configured');
+      return apiErrors.internal('Google Maps API not configured');
+    }
+
     const body = await request.json();
     const { address, city, state, propertyType } = body;
 
@@ -95,7 +143,128 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Address or city required');
     }
 
-    const research = generateAreaResearch(address || '', city || '', state || '', propertyType || 'Single Family');
+    const loc = await geocodeAddress(address || '', city || '', state || '');
+    if (!loc) {
+      return apiErrors.badRequest('Could not geocode address. Please check the address and try again.');
+    }
+
+    const { lat, lng } = loc;
+    const cityName = city || 'the area';
+    const addressDisplay = address || loc.formattedAddress || 'this property';
+
+    // Fetch real places in parallel (rate-limit friendly: one batch)
+    const [schoolsRaw, restaurantsRaw, shoppingRaw, parksRaw, healthcareRaw, transitRaw] =
+      await Promise.all([
+        nearbySearch(lat, lng, 'school'),
+        nearbySearch(lat, lng, 'restaurant'),
+        nearbySearch(lat, lng, 'shopping_mall'),
+        nearbySearch(lat, lng, 'park'),
+        nearbySearch(lat, lng, 'hospital'),
+        nearbySearch(lat, lng, 'transit_station'),
+      ]);
+
+    // Add grocery/pharmacy if shopping/healthcare are sparse
+    let shopping = shoppingRaw;
+    let healthcare = healthcareRaw;
+    if (shopping.length < 2) {
+      const grocery = await nearbySearch(lat, lng, 'grocery_or_supermarket');
+      shopping = [...shopping, ...grocery].slice(0, 6);
+    }
+    if (healthcare.length < 2) {
+      const pharmacy = await nearbySearch(lat, lng, 'pharmacy');
+      healthcare = [...healthcare, ...pharmacy].slice(0, 6);
+    }
+
+    const withDistance = <T extends { lat: number; lng: number }>(
+      items: T[],
+      limit: number
+    ): (T & { distanceMi: number })[] =>
+      items
+        .map((p) => ({ ...p, distanceMi: haversineMiles(lat, lng, p.lat, p.lng) }))
+        .sort((a, b) => a.distanceMi - b.distanceMi)
+        .slice(0, limit);
+
+    const schools = withDistance(schoolsRaw, 4).map((s) => ({
+      name: s.name,
+      type: inferType(s.types, 'School'),
+      rating: s.rating != null ? `${s.rating.toFixed(1)}/10` : undefined,
+      distance: formatDistance(s.distanceMi),
+    }));
+
+    const dining = withDistance(restaurantsRaw, 4).map((r) => ({
+      name: r.name,
+      type: inferType(r.types, 'Restaurant'),
+      distance: formatDistance(r.distanceMi),
+    }));
+
+    const shoppingList = withDistance(shopping, 4).map((s) => ({
+      name: s.name,
+      type: inferType(s.types, 'Shopping'),
+      distance: formatDistance(s.distanceMi),
+    }));
+
+    const parks = withDistance(parksRaw, 4).map((p) => ({
+      name: p.name,
+      features: undefined,
+      distance: formatDistance(p.distanceMi),
+    }));
+
+    const healthcareList = withDistance(healthcare, 4).map((h) => ({
+      name: h.name,
+      type: inferType(h.types, 'Healthcare'),
+      distance: formatDistance(h.distanceMi),
+    }));
+
+    const transportation = withDistance(transitRaw, 4).map((t) => ({
+      type: inferType(t.types, 'Transit'),
+      name: t.name,
+      distance: formatDistance(t.distanceMi),
+    }));
+
+    // Entertainment: libraries, movie theaters near the area
+    const [librariesRaw, movieRaw] = await Promise.all([
+      nearbySearch(lat, lng, 'library', 5000),
+      nearbySearch(lat, lng, 'movie_theater', 8000),
+    ]);
+    const entertainment = withDistance([...librariesRaw, ...movieRaw], 4).map((e) => ({
+      name: e.name,
+      type: inferType(e.types, 'Entertainment'),
+      distance: formatDistance(e.distanceMi),
+    }));
+
+    // Build summary from real data (no mock content)
+    const parts: string[] = [];
+    parts.push(`${cityName}${state ? `, ${state}` : ''} offers a variety of local amenities.`);
+    if (schools.length) {
+      parts.push(`Nearby schools include ${schools.slice(0, 2).map((s) => s.name).join(' and ')}.`);
+    }
+    if (shoppingList.length) {
+      parts.push(`Shopping options include ${shoppingList.slice(0, 2).map((s) => s.name).join(', ')}.`);
+    }
+    if (parks.length) {
+      parts.push(`Parks and recreation: ${parks.slice(0, 2).map((p) => p.name).join(', ')}.`);
+    }
+    if (transportation.length) {
+      parts.push(`Transit access: ${transportation.slice(0, 2).map((t) => t.name).join(', ')}.`);
+    }
+    parts.push(`The neighborhood around ${addressDisplay} provides convenient access to these amenities.`);
+
+    const summary = parts.join(' ');
+
+    const research = {
+      schools,
+      transportation,
+      shopping: shoppingList,
+      dining,
+      parks,
+      healthcare: healthcareList,
+      entertainment,
+      demographics: {} as Record<string, string>,
+      walkScore: undefined as number | undefined,
+      bikeScore: undefined as number | undefined,
+      transitScore: undefined as number | undefined,
+      summary,
+    };
 
     return NextResponse.json({ success: true, research });
   } catch (error) {

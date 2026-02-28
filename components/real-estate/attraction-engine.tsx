@@ -167,13 +167,15 @@ export function AttractionEngine() {
           selectedFeatures,
         }),
       });
-      if (!response.ok) throw new Error('Failed to generate report');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate report');
+      }
       setBuyerReport(data.report);
       toast.success('Buyer Opportunities Report generated!');
     } catch (error) {
       console.error('Error generating buyer report:', error);
-      toast.error('Failed to generate report');
+      toast.error((error as Error)?.message || 'Failed to generate report');
     } finally {
       setIsGenerating(false);
     }
@@ -202,13 +204,15 @@ export function AttractionEngine() {
           recentRenovations,
         }),
       });
-      if (!response.ok) throw new Error('Failed to generate report');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate report');
+      }
       setSellerReport(data.report);
       toast.success('Seller Demand Report generated!');
     } catch (error) {
       console.error('Error generating seller report:', error);
-      toast.error('Failed to generate report');
+      toast.error((error as Error)?.message || 'Failed to generate report');
     } finally {
       setIsGenerating(false);
     }

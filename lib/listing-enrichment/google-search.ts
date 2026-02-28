@@ -124,11 +124,20 @@ function pickBestResult(results: SearchResult[]): SearchResult | null {
   return reResults[0];
 }
 
+/** Extended data for CRM property creation */
+export interface PropertyLookupData extends EnrichedData {
+  listPrice?: number;
+  mlsNumber?: string;
+  virtualTourUrl?: string;
+  daysOnMarket?: number;
+  listingDate?: string;
+}
+
 /**
  * Scrape a generic real estate listing page for property data.
- * Works across multiple platforms by looking for common patterns.
+ * Extracts all fields needed for REProperty / REFSBOListing in the CRM.
  */
-async function scrapeGenericListingPage(url: string): Promise<EnrichedData | null> {
+async function scrapeGenericListingPage(url: string): Promise<PropertyLookupData | null> {
   const res = await fetch(url, {
     headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
     redirect: "follow",
@@ -137,7 +146,22 @@ async function scrapeGenericListingPage(url: string): Promise<EnrichedData | nul
   if (!res.ok) return null;
   const html = await res.text();
 
-  const data: EnrichedData = {};
+  const data: PropertyLookupData = {};
+
+  // MLS / Centris number — from URL or page
+  const mlsFromUrl = url.match(/(?:mls|centris|listing)[\/\-_]?(\d{6,12})/i) || url.match(/\/(\d{8,12})(?:\/|$|\?)/);
+  if (mlsFromUrl?.[1]) data.mlsNumber = mlsFromUrl[1];
+  const mlsFromPage = html.match(/(?:MLS#?|Centris|ID)\s*:?\s*(\d{6,12})/i) || html.match(/listing[^\d]*(\d{8,12})/i);
+  if (!data.mlsNumber && mlsFromPage?.[1]) data.mlsNumber = mlsFromPage[1];
+
+  // Virtual tour URL
+  const tourMatch = html.match(/(?:virtual\s*tour|visite\s*virtuelle|tour)[^"']*["'](https?:\/\/[^"']+)["']/i)
+    || html.match(/href=["'](https?:\/\/[^"']*(?:matterport|tour|virtual|360)[^"']*)["']/i);
+  if (tourMatch?.[1]) data.virtualTourUrl = tourMatch[1];
+
+  // Days on market
+  const domMatch = html.match(/(?:days?\s*on\s*market|DOM|jours?\s*sur\s*le\s*marché)\s*:?\s*(\d+)/i);
+  if (domMatch?.[1]) data.daysOnMarket = parseInt(domMatch[1], 10);
 
   // Description — look for common patterns
   const descPatterns = [
@@ -157,18 +181,104 @@ async function scrapeGenericListingPage(url: string): Promise<EnrichedData | nul
   const yearMatch = html.match(/(?:year\s*built|built\s*in|année)\s*:?\s*(\d{4})/i);
   if (yearMatch) data.yearBuilt = parseInt(yearMatch[1], 10);
 
-  // Area
-  const areaMatch = html.match(/([\d,]+)\s*(sq\.?\s*ft\.?|sqft|ft²|pi2|m²)/i);
+  // Area / sqft
+  const areaMatch = html.match(/([\d,]+)\s*(?:sq\.?\s*ft\.?|sqft|ft²|pi2|m²)/i);
   if (areaMatch) {
     data.area = areaMatch[1].replace(/,/g, "");
     data.areaUnit = areaMatch[2].includes("m") ? "m²" : "ft²";
   }
 
-  // Bedrooms / Bathrooms
+  // Lot size
+  const lotMatch = html.match(/(?:lot\s*(?:size|area)|terrain|lot)\s*:?\s*([\d,]+)\s*(?:sq\.?\s*ft\.?|sqft|ft²|m²|acres?)/i);
+  if (lotMatch?.[1]) data.lotArea = lotMatch[1].replace(/,/g, "");
+
+  // Price — $X,XXX,XXX or X XXX XXX $ or similar
+  const pricePatterns = [
+    /\$[\s]*([\d,]+)(?:\s*(?:CAD|USD|\.?\d{2})?)?/,
+    /(?:price|prix|asking)[^0-9]*\$?\s*([\d,]+)/i,
+    /([\d,]+)\s*(?:CAD|USD|\$)/,
+  ];
+  for (const p of pricePatterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const num = parseInt(m[1].replace(/,/g, ""), 10);
+      if (num > 10000 && num < 100_000_000) {
+        data.listPrice = num;
+        break;
+      }
+    }
+  }
+
+  // Bedrooms / Bathrooms / Rooms
   const bedMatch = html.match(/(\d+)\s*(?:bed(?:room)?s?|chambres?)/i);
   if (bedMatch) data.bedrooms = parseInt(bedMatch[1], 10);
   const bathMatch = html.match(/(\d+)\s*(?:bath(?:room)?s?|salles?\s*de\s*bain)/i);
   if (bathMatch) data.bathrooms = parseInt(bathMatch[1], 10);
+  const roomMatch = html.match(/(\d+)\s*(?:rooms?|pièces?)/i);
+  if (roomMatch) data.rooms = parseInt(roomMatch[1], 10);
+
+  // Property type / building style
+  const typePatterns = [
+    /(?:single\s*family|house|maison|detached)/i,
+    /(?:condo|condominium|condominium)/i,
+    /(?:townhouse|town\s*house|maison\s*de\s*ville)/i,
+    /(?:multi[\s-]?family|duplex|triplex)/i,
+    /(?:land|terrain)/i,
+    /(?:commercial)/i,
+  ];
+  const typeLabels: Record<string, string> = {
+    "single family": "SINGLE_FAMILY", house: "SINGLE_FAMILY", maison: "SINGLE_FAMILY", detached: "SINGLE_FAMILY",
+    condo: "CONDO", condominium: "CONDO",
+    townhouse: "TOWNHOUSE", "town house": "TOWNHOUSE", "maison de ville": "TOWNHOUSE",
+    "multi-family": "MULTI_FAMILY", duplex: "MULTI_FAMILY", triplex: "MULTI_FAMILY",
+    land: "LAND", terrain: "LAND",
+    commercial: "COMMERCIAL",
+  };
+  for (const p of typePatterns) {
+    const m = html.match(p);
+    if (m) {
+      const key = m[0].toLowerCase().replace(/\s+/g, " ");
+      data.buildingStyle = typeLabels[key] || data.buildingStyle || m[0];
+      break;
+    }
+  }
+
+  // Features — amenities, proximity, heating, etc.
+  const featureLists: string[] = [];
+  const amenityMatch = html.match(/(?:amenities?|features?|équipements?)[^>]*>([^<]{20,800})</i);
+  if (amenityMatch?.[1]) {
+    const items = amenityMatch[1].split(/[,;•·|]/).map((s) => s.trim()).filter((s) => s.length > 2 && s.length < 80);
+    featureLists.push(...items);
+  }
+  const proximityMatch = html.match(/(?:proximity|nearby|à\s*proximité)[^>]*>([^<]{20,500})</i);
+  if (proximityMatch?.[1]) {
+    const items = proximityMatch[1].split(/[,;•·|]/).map((s) => s.trim()).filter((s) => s.length > 2 && s.length < 80);
+    featureLists.push(...items);
+  }
+  const heatingMatch = html.match(/(?:heating|chauffage)\s*:?\s*([^<]{3,80})/i);
+  if (heatingMatch?.[1]) featureLists.push(`Heating: ${heatingMatch[1].trim()}`);
+  const parkingMatch = html.match(/(?:parking|garage)\s*:?\s*([^<]{3,80})/i);
+  if (parkingMatch?.[1]) {
+    data.parking = parkingMatch[1].trim();
+    featureLists.push(`Parking: ${data.parking}`);
+  }
+  if (featureLists.length > 0) {
+    data.features = {
+      ...data.features,
+      amenities: [...new Set(featureLists)].slice(0, 30),
+      proximity: data.features?.proximity || [],
+    };
+  }
+
+  // Addendum
+  const addendumMatch = html.match(/(?:addendum|additional\s*info|renseignements\s*supplémentaires)[^>]*>([^<]{30,1500})</i);
+  if (addendumMatch?.[1]) data.addendum = addendumMatch[1].replace(/&[^;]+;/g, " ").replace(/\s+/g, " ").trim();
+
+  // Taxes
+  const taxMatch = html.match(/(?:municipal\s*tax|taxes\s*municipales)\s*:?\s*\$?\s*([\d,]+)/i);
+  if (taxMatch?.[1]) data.municipalTax = taxMatch[1];
+  const schoolTaxMatch = html.match(/(?:school\s*tax|taxes\s*scolaires)\s*:?\s*\$?\s*([\d,]+)/i);
+  if (schoolTaxMatch?.[1]) data.schoolTax = schoolTaxMatch[1];
 
   // Images — gather high-quality image URLs
   const imgUrls: string[] = [];
@@ -186,8 +296,33 @@ async function scrapeGenericListingPage(url: string): Promise<EnrichedData | nul
     data.mainImageUrl = data.galleryImages[0];
   }
 
-  const hasData = data.description || data.yearBuilt || data.area;
+  const hasData = data.description || data.yearBuilt || data.area || data.listPrice || data.bedrooms || data.mlsNumber;
   return hasData ? data : null;
+}
+
+/**
+ * Search for real estate listings. Uses SerpAPI, Google Custom Search, or Playwright.
+ */
+async function searchForListings(query: string): Promise<SearchResult[]> {
+  const serpApiKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
+  const googleCSEKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_CSE_API_KEY;
+  const googleCSECx = process.env.GOOGLE_CUSTOM_SEARCH_CX || process.env.GOOGLE_CSE_CX;
+
+  if (serpApiKey) {
+    return searchViaSerpApi(query, serpApiKey);
+  }
+  if (googleCSEKey && googleCSECx) {
+    const params = new URLSearchParams({ q: query, key: googleCSEKey, cx: googleCSECx, num: "10" });
+    const res = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || []).map((r: { link: string; title?: string }) => ({
+      url: r.link,
+      title: r.title || "",
+      domain: new URL(r.link).hostname.replace("www.", ""),
+    }));
+  }
+  return searchViaPlaywright(query);
 }
 
 /**
@@ -201,21 +336,29 @@ export async function enrichViaGoogleSearch(
   city?: string,
   address?: string
 ): Promise<{ data: EnrichedData | null; sourceUrl?: string }> {
-  const serpApiKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
   const query = `${mlsNumber} ${city || ""} ${address || ""} real estate listing`.trim();
-
-  let results: SearchResult[];
-  if (serpApiKey) {
-    results = await searchViaSerpApi(query, serpApiKey);
-  } else {
-    results = await searchViaPlaywright(query);
-  }
-
+  const results = await searchForListings(query);
   if (results.length === 0) return { data: null };
-
   const best = pickBestResult(results);
   if (!best) return { data: null };
-
   const data = await scrapeGenericListingPage(best.url);
   return { data, sourceUrl: best.url };
+}
+
+/**
+ * Look up property by address — search online for listing data.
+ * Returns all fields needed for REProperty / REFSBOListing in the CRM.
+ */
+export async function lookupPropertyByAddress(
+  address: string,
+  city?: string,
+  state?: string
+): Promise<{ data: PropertyLookupData; sourceUrl: string } | null> {
+  const query = `${address} ${city || ""} ${state || ""} for sale real estate`.trim();
+  const results = await searchForListings(query);
+  if (results.length === 0) return null;
+  const best = pickBestResult(results);
+  if (!best) return null;
+  const data = await scrapeGenericListingPage(best.url);
+  return { data: data || {}, sourceUrl: best.url };
 }

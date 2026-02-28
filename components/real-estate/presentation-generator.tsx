@@ -37,6 +37,7 @@ import {
   Building2,
   Heart,
   X,
+  Search,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,7 @@ interface SlideContent {
   bulletPoints?: string[];
   stats?: { label: string; value: string }[];
   imageUrl?: string;
+  imageUrls?: string[];
   enabled: boolean;
 }
 
@@ -105,6 +107,8 @@ export function PresentationGenerator() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResearching, setIsResearching] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookedUpProperty, setLookedUpProperty] = useState<Record<string, unknown> | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PresentationTemplate | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -374,6 +378,7 @@ export function PresentationGenerator() {
             baths: parseFloat(propertyInfo.baths) || 0,
             sqft: parseInt(propertyInfo.sqft?.replace(/[^0-9]/g, '')) || 0,
             yearBuilt: parseInt(propertyInfo.yearBuilt) || undefined,
+            photos: propertyInfo.photos || [],
           },
           areaResearch: research,
           agentInfo,
@@ -439,6 +444,7 @@ export function PresentationGenerator() {
 
   const renderSlidePreview = (slide: SlideContent, index: number) => {
     const isActive = index === currentSlideIndex;
+    const imgUrl = (slide as any).imageUrl || (slide as any).imageUrls?.[0];
     return (
       <div
         key={slide.id}
@@ -449,11 +455,14 @@ export function PresentationGenerator() {
         }`}
         onClick={() => setCurrentSlideIndex(index)}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-          <div className="text-xs text-purple-600 font-medium mb-1">{slide.type.toUpperCase()}</div>
-          <div className="text-sm text-gray-900 font-semibold truncate">{slide.title}</div>
+        {imgUrl && (
+          <img src={imgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        )}
+        <div className={`absolute inset-0 p-4 flex flex-col justify-end ${imgUrl ? 'bg-gradient-to-t from-black/80 via-transparent to-transparent' : 'bg-gradient-to-br from-slate-800 to-slate-900'}`}>
+          <div className="text-xs text-purple-400 font-medium mb-1">{slide.type.toUpperCase()}</div>
+          <div className="text-sm text-white font-semibold truncate">{slide.title}</div>
           {slide.subtitle && (
-            <div className="text-xs text-gray-600 truncate mt-1">{slide.subtitle}</div>
+            <div className="text-xs text-slate-300 truncate mt-0.5">{slide.subtitle}</div>
           )}
         </div>
         <div className="absolute bottom-2 right-2 text-xs text-gray-500">
@@ -576,12 +585,13 @@ export function PresentationGenerator() {
                 <Home className="w-6 h-6 text-purple-600" />
                 Property Information
               </CardTitle>
-              <CardDescription>Enter the property details for your presentation</CardDescription>
+              <CardDescription>Enter the property details or look up online to auto-fill</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Address Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2 relative">
+                <div className="md:col-span-2 flex gap-2">
+                  <div className="flex-1 relative">
                   <Label className="text-gray-700">Street Address *</Label>
                   <Input
                     ref={addressInputRef}
@@ -608,7 +618,118 @@ export function PresentationGenerator() {
                       ))}
                     </div>
                   )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      if (!propertyInfo.address?.trim() && !propertyInfo.city?.trim()) {
+                        toast.error('Enter address or city first');
+                        return;
+                      }
+                      setIsLookingUp(true);
+                      try {
+                        const res = await fetch('/api/real-estate/presentation/property-lookup', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            address: propertyInfo.address,
+                            city: propertyInfo.city,
+                            state: propertyInfo.state,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.found && data.property) {
+                          const p = data.property;
+                          setLookedUpProperty(p);
+                          setPropertyInfo(prev => ({
+                            ...prev,
+                            address: p.address || prev.address,
+                            city: p.city || prev.city,
+                            state: p.state || prev.state,
+                            zipCode: p.zipCode || prev.zipCode,
+                            price: p.price || prev.price,
+                            beds: p.beds || prev.beds,
+                            baths: p.baths || prev.baths,
+                            sqft: p.sqft || prev.sqft,
+                            lotSize: p.lotSize || prev.lotSize,
+                            yearBuilt: p.yearBuilt || prev.yearBuilt,
+                            propertyType: p.propertyType || prev.propertyType,
+                            description: p.description || prev.description,
+                            features: p.features?.length ? p.features : prev.features,
+                            photos: p.photos?.length ? p.photos : prev.photos,
+                          }));
+                          toast.success('Property data found and filled!');
+                        } else {
+                          toast.info(data.message || 'No listing found. Enter details manually.');
+                        }
+                      } catch {
+                        toast.error('Lookup failed');
+                      } finally {
+                        setIsLookingUp(false);
+                      }
+                    }}
+                    disabled={isLookingUp}
+                    className="self-end shrink-0 h-10"
+                  >
+                    {isLookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                    {isLookingUp ? 'Looking up...' : 'Look up'}
+                  </Button>
                 </div>
+                {lookedUpProperty && (
+                  <div className="md:col-span-2 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const p = lookedUpProperty as any;
+                        const zip = p.zipCode || propertyInfo.zipCode;
+                        if (!zip?.trim()) {
+                          toast.error('Enter ZIP/postal code to add to listings');
+                          return;
+                        }
+                        try {
+                          const res = await fetch('/api/real-estate/properties', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              address: p.address || propertyInfo.address,
+                              unit: p.unit,
+                              city: p.city || propertyInfo.city,
+                              state: p.state || propertyInfo.state,
+                              zip: zip,
+                              country: p.country || 'US',
+                              listPrice: p.price ? parseInt(String(p.price).replace(/[^0-9]/g, '')) : undefined,
+                              beds: p.beds ? parseInt(p.beds) : undefined,
+                              baths: p.baths ? parseFloat(p.baths) : undefined,
+                              sqft: p.sqft ? parseInt(String(p.sqft).replace(/[^0-9]/g, '')) : undefined,
+                              lotSize: p.lotSize ? parseInt(String(p.lotSize).replace(/[^0-9]/g, '')) : undefined,
+                              yearBuilt: p.yearBuilt ? parseInt(p.yearBuilt) : undefined,
+                              propertyType: p.propertyType || 'SINGLE_FAMILY',
+                              mlsNumber: p.mlsNumber,
+                              photos: p.photos || [],
+                              virtualTourUrl: p.virtualTourUrl,
+                              description: p.description,
+                              features: p.features || [],
+                              lat: p.latitude,
+                              lng: p.longitude,
+                            }),
+                          });
+                          if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+                          toast.success('Added to Listings!');
+                          setLookedUpProperty(null);
+                        } catch (e) {
+                          toast.error((e as Error)?.message || 'Failed to add');
+                        }
+                      }}
+                      className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add to Listings
+                    </Button>
+                  </div>
+                )}
                 <div>
                   <Label className="text-gray-700">City *</Label>
                   <Input
@@ -837,7 +958,7 @@ export function PresentationGenerator() {
                     <MapPin className="w-6 h-6 text-purple-600" />
                     Area Research
                   </CardTitle>
-                  <CardDescription>AI-powered neighborhood research for your presentation</CardDescription>
+                  <CardDescription>Real neighborhood data from Google Places for your presentation</CardDescription>
                 </div>
                 <Button
                   onClick={handleResearchArea}
@@ -871,27 +992,29 @@ export function PresentationGenerator() {
                     <p className="text-gray-700">{areaResearch.summary}</p>
                   </div>
 
-                  {/* Scores */}
-                  <div className="grid grid-cols-3 gap-4">
-                    {[{
-                      label: 'Walk Score',
-                      value: areaResearch.walkScore,
-                      color: 'emerald'
-                    }, {
-                      label: 'Transit Score',
-                      value: areaResearch.transitScore,
-                      color: 'blue'
-                    }, {
-                      label: 'Bike Score',
-                      value: areaResearch.bikeScore,
-                      color: 'amber'
-                    }].map(score => (
-                      <div key={score.label} className="bg-gray-100/50 rounded-xl p-4 text-center border border-purple-200/50">
-                        <div className={`text-3xl font-bold text-${score.color}-400`}>{score.value || '—'}</div>
-                        <div className="text-sm text-gray-600">{score.label}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {/* Scores - only show when we have real Walk/Transit/Bike scores from a provider */}
+                  {(areaResearch.walkScore != null || areaResearch.transitScore != null || areaResearch.bikeScore != null) && (
+                    <div className="grid grid-cols-3 gap-4">
+                      {[{
+                        label: 'Walk Score',
+                        value: areaResearch.walkScore,
+                        color: 'emerald'
+                      }, {
+                        label: 'Transit Score',
+                        value: areaResearch.transitScore,
+                        color: 'blue'
+                      }, {
+                        label: 'Bike Score',
+                        value: areaResearch.bikeScore,
+                        color: 'amber'
+                      }].map(score => (
+                        <div key={score.label} className="bg-gray-100/50 rounded-xl p-4 text-center border border-purple-200/50">
+                          <div className={`text-3xl font-bold text-${score.color}-400`}>{score.value ?? '—'}</div>
+                          <div className="text-sm text-gray-600">{score.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Categories */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1110,44 +1233,104 @@ export function PresentationGenerator() {
               </div>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 bg-slate-950 rounded-lg p-8 overflow-auto">
+          <div className="flex-1 bg-slate-100 rounded-lg p-8 overflow-auto">
             {generatedPresentation && generatedPresentation.slides[currentSlideIndex] && (
-              <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-8 flex flex-col">
-                <div className="text-purple-600 text-sm font-medium mb-2">
-                  {(generatedPresentation.slides[currentSlideIndex] as any).type?.toUpperCase()}
-                </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  {generatedPresentation.slides[currentSlideIndex].title}
-                </h2>
-                {generatedPresentation.slides[currentSlideIndex].subtitle && (
-                  <p className="text-xl text-purple-600 mb-6">
-                    {generatedPresentation.slides[currentSlideIndex].subtitle}
-                  </p>
+              <div className="min-h-[400px] bg-white rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-200">
+                {/* Gallery grid for gallery slides */}
+                {(generatedPresentation.slides[currentSlideIndex] as any).type === 'gallery' && (generatedPresentation.slides[currentSlideIndex] as any).imageUrls?.length > 0 && (
+                  <>
+                    <div className="p-4 border-b bg-slate-50">
+                      <h2 className="text-xl font-bold text-slate-900">{generatedPresentation.slides[currentSlideIndex].title}</h2>
+                      {generatedPresentation.slides[currentSlideIndex].subtitle && (
+                        <p className="text-sm text-slate-600 mt-1">{generatedPresentation.slides[currentSlideIndex].subtitle}</p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 p-4">
+                      {(generatedPresentation.slides[currentSlideIndex] as any).imageUrls.slice(0, 6).map((url: string, i: number) => (
+                        <img key={i} src={url} alt="" className="w-full aspect-video object-cover rounded-lg" />
+                      ))}
+                    </div>
+                  </>
                 )}
-                {(generatedPresentation.slides[currentSlideIndex] as any).stats && (
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    {(generatedPresentation.slides[currentSlideIndex] as any).stats.map((stat: any, i: number) => (
-                      <div key={i} className="bg-gray-100/50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-purple-600">{stat.value}</div>
-                        <div className="text-sm text-gray-600">{stat.label}</div>
+                {/* Hero image for property slide (single image) */}
+                {(generatedPresentation.slides[currentSlideIndex] as any).type !== 'gallery' && ((generatedPresentation.slides[currentSlideIndex] as any).imageUrl || (generatedPresentation.slides[currentSlideIndex] as any).imageUrls?.[0]) && (
+                  <div className="relative h-48 bg-slate-200">
+                    <img
+                      src={(generatedPresentation.slides[currentSlideIndex] as any).imageUrl || (generatedPresentation.slides[currentSlideIndex] as any).imageUrls?.[0]}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <div className="text-purple-400 text-xs font-medium uppercase tracking-wider">
+                        {(generatedPresentation.slides[currentSlideIndex] as any).type}
                       </div>
-                    ))}
+                      <h2 className="text-2xl font-bold text-white drop-shadow-lg">
+                        {generatedPresentation.slides[currentSlideIndex].title}
+                      </h2>
+                      {generatedPresentation.slides[currentSlideIndex].subtitle && (
+                        <p className="text-white/90 text-sm mt-0.5">
+                          {generatedPresentation.slides[currentSlideIndex].subtitle}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
-                {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints && (
-                  <ul className="space-y-2">
-                    {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints.map((point: string, i: number) => (
-                      <li key={i} className="text-gray-700 flex items-start gap-2">
-                        <Check className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
+                {/* Content area for non-gallery, non-image slides */}
+                {(generatedPresentation.slides[currentSlideIndex] as any).type !== 'gallery' && !((generatedPresentation.slides[currentSlideIndex] as any).imageUrl || (generatedPresentation.slides[currentSlideIndex] as any).imageUrls?.[0]) && (
+                  <div className="p-8">
+                    <div className="text-purple-600 text-sm font-medium mb-2">
+                      {(generatedPresentation.slides[currentSlideIndex] as any).type?.toUpperCase()}
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                      {generatedPresentation.slides[currentSlideIndex].title}
+                    </h2>
+                    {generatedPresentation.slides[currentSlideIndex].subtitle && (
+                      <p className="text-xl text-purple-600 mb-6">
+                        {generatedPresentation.slides[currentSlideIndex].subtitle}
+                      </p>
+                    )}
+                    {(generatedPresentation.slides[currentSlideIndex] as any).stats && (
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        {(generatedPresentation.slides[currentSlideIndex] as any).stats.map((stat: any, i: number) => (
+                          <div key={i} className="bg-slate-50 rounded-lg p-4 text-center border border-slate-100">
+                            <div className="text-2xl font-bold text-purple-600">{stat.value}</div>
+                            <div className="text-sm text-slate-600">{stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints && (
+                      <ul className="space-y-2">
+                        {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints.map((point: string, i: number) => (
+                          <li key={i} className="text-slate-700 flex items-start gap-2">
+                            <Check className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                            {point}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {generatedPresentation.slides[currentSlideIndex].content && (
+                      <p className="text-slate-700 whitespace-pre-line">
+                        {generatedPresentation.slides[currentSlideIndex].content}
+                      </p>
+                    )}
+                  </div>
                 )}
-                {generatedPresentation.slides[currentSlideIndex].content && (
-                  <p className="text-gray-700 whitespace-pre-line">
-                    {generatedPresentation.slides[currentSlideIndex].content}
-                  </p>
+                {/* Stats for property slide with hero image */}
+                {(generatedPresentation.slides[currentSlideIndex] as any).type === 'property' && ((generatedPresentation.slides[currentSlideIndex] as any).imageUrl || (generatedPresentation.slides[currentSlideIndex] as any).imageUrls?.[0]) && (
+                  <div className="p-6 border-t">
+                    {(generatedPresentation.slides[currentSlideIndex] as any).stats && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {(generatedPresentation.slides[currentSlideIndex] as any).stats.map((stat: any, i: number) => (
+                          <div key={i} className="bg-slate-50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-purple-600">{stat.value}</div>
+                            <div className="text-xs text-slate-600">{stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}

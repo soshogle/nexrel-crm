@@ -15,6 +15,8 @@ interface SlideContent {
   content?: string;
   bulletPoints?: string[];
   stats?: { label: string; value: string }[];
+  imageUrl?: string;
+  imageUrls?: string[];
   enabled: boolean;
 }
 
@@ -38,6 +40,7 @@ function buildSlides(
     enabled: true,
   });
 
+  const propertyPhotos = propertyData.photos?.filter((p: string) => p?.startsWith('http'));
   slides.push({
     id: 'property',
     type: 'property',
@@ -51,8 +54,21 @@ function buildSlides(
       { label: 'Year Built', value: `${propertyData.yearBuilt || '—'}` },
       { label: 'Property Type', value: propertyData.propertyType || 'Residential' },
     ],
+    imageUrl: propertyPhotos?.[0],
+    imageUrls: propertyPhotos,
     enabled: true,
   });
+
+  if (propertyPhotos?.length > 1) {
+    slides.push({
+      id: 'gallery',
+      type: 'gallery',
+      title: 'Property Photos',
+      subtitle: propertyData.address,
+      imageUrls: propertyPhotos,
+      enabled: true,
+    });
+  }
 
   if (propertyData.features?.length > 0) {
     slides.push({
@@ -75,16 +91,17 @@ function buildSlides(
   }
 
   if (areaResearch) {
+    const areaStats = [
+      areaResearch.walkScore != null && { label: 'Walk Score', value: `${areaResearch.walkScore}` },
+      areaResearch.transitScore != null && { label: 'Transit Score', value: `${areaResearch.transitScore}` },
+      areaResearch.bikeScore != null && { label: 'Bike Score', value: `${areaResearch.bikeScore}` },
+    ].filter(Boolean) as { label: string; value: string }[];
     slides.push({
       id: 'area',
       type: 'area',
       title: 'Neighborhood & Community',
       content: areaResearch.summary || '',
-      stats: [
-        { label: 'Walk Score', value: `${areaResearch.walkScore || '—'}` },
-        { label: 'Transit Score', value: `${areaResearch.transitScore || '—'}` },
-        { label: 'Bike Score', value: `${areaResearch.bikeScore || '—'}` },
-      ],
+      stats: areaStats,
       bulletPoints: [
         ...(areaResearch.schools?.slice(0, 3).map((s: any) => `${s.name} (${s.rating || s.type}) - ${s.distance}`) || []),
         ...(areaResearch.shopping?.slice(0, 2).map((s: any) => `${s.name} - ${s.distance}`) || []),
