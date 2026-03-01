@@ -249,12 +249,12 @@ export function NewLeadForm() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">Province</Label>
                     <Input
                       id="state"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
-                      placeholder="Enter state"
+                      placeholder="QC"
                     />
                   </div>
                   

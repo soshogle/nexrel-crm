@@ -110,7 +110,7 @@ export function ListingFormDialog({
               <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div>
-              <Label>Province/State *</Label>
+              <Label>Province *</Label>
               <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
             </div>
             <div>

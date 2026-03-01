@@ -42,7 +42,7 @@ export async function collectMarketStats(input: MarketDataInput, stats: MarketSt
       region: input.region,
       city: input.city,
       state: input.state,
-      country: input.country || 'US',
+      country: input.country || 'CA',
       periodType: input.periodType || 'WEEKLY',
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,

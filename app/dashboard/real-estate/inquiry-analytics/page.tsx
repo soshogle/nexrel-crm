@@ -79,6 +79,8 @@ export default function InquiryAnalyticsPage() {
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     leads: d.count,
   }));
+  const activePropertyInquiries = (Array.isArray(data?.propertyInquiries) ? data.propertyInquiries : [])
+    .filter((p) => p.inquiryCount > 0);
 
   return (
     <div className="space-y-6">
@@ -238,7 +240,7 @@ export default function InquiryAnalyticsPage() {
           <CardDescription>Which properties are generating the most interest (last 30 days)</CardDescription>
         </CardHeader>
         <CardContent>
-          {data.propertyInquiries.length === 0 ? (
+          {activePropertyInquiries.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No property inquiries tracked yet. As leads come in with property addresses, they will be matched here.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -252,7 +254,7 @@ export default function InquiryAnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(data.propertyInquiries) && data.propertyInquiries.map(p => (
+                  {Array.isArray(activePropertyInquiries) && activePropertyInquiries.map(p => (
                     <tr key={p.propertyId} className="border-b last:border-0">
                       <td className="py-2.5">{p.address}</td>
                       <td className="py-2.5">

@@ -126,31 +126,57 @@ export async function updatePropertyGallery(
  * Inserts or updates based on mls_number or address match.
  * Returns true on success.
  */
+export interface SyncListingInput {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country?: string;
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
+  propertyType?: string;
+  listingStatus?: string;
+  listPrice?: number | null;
+  rentPrice?: number | null;
+  rentPriceLabel?: string | null;
+  listingType?: 'sale' | 'rent';
+  mlsNumber?: string | null;
+  photos?: string[] | null;
+  description?: string | null;
+  features?: string[];
+  lat?: number | null;
+  lng?: number | null;
+  virtualTourUrl?: string | null;
+  // Extended fields for full Centris-style display
+  neighborhood?: string | null;
+  rooms?: number | null;
+  yearBuilt?: number | null;
+  lotSize?: string | null;
+  areaUnit?: string | null;
+  addendum?: string | null;
+  priceLabel?: string | null;
+  featuresJson?: {
+    heating?: string;
+    heatingEnergy?: string;
+    waterSupply?: string;
+    sewageSystem?: string;
+    amenities?: string[];
+    proximity?: string[];
+    inclusions?: string[];
+  } | null;
+  roomDetails?: Array<{
+    name: string;
+    level: string;
+    dimensions: string;
+    flooring?: string;
+    details?: string;
+  }> | null;
+}
+
 export async function syncListingToWebsite(
   userId: string,
-  listing: {
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-    country?: string;
-    beds?: number | null;
-    baths?: number | null;
-    sqft?: number | null;
-    propertyType?: string;
-    listingStatus?: string;
-    listPrice?: number | null;
-    rentPrice?: number | null;
-    rentPriceLabel?: string | null;
-    listingType?: 'sale' | 'rent';
-    mlsNumber?: string | null;
-    photos?: string[] | null;
-    description?: string | null;
-    features?: string[];
-    lat?: number | null;
-    lng?: number | null;
-    virtualTourUrl?: string | null;
-  }
+  listing: SyncListingInput
 ): Promise<{ success: boolean; websiteId?: string; error?: string }> {
   try {
     const industry = await getUserIndustry(userId);
@@ -192,7 +218,6 @@ export async function syncListingToWebsite(
     const propertyType = typeMap[listing.propertyType || 'OTHER'] || 'house';
 
     const listingType = listing.listingType || 'sale';
-    // When sold or rented, do not display price on the website
     const displayPrice =
       status === 'sold' || status === 'rented'
         ? null
@@ -200,44 +225,75 @@ export async function syncListingToWebsite(
           ? (listing.rentPrice ?? null)
           : (listing.listPrice ?? null);
 
-    // Upsert: match on mls_number if available, otherwise on address
+    // Build the features JSON for the website (amenities, inclusions, proximity, etc.)
+    let featuresJson: Record<string, unknown> | null = null;
+    if (listing.featuresJson) {
+      featuresJson = listing.featuresJson;
+    } else if (listing.features && listing.features.length > 0) {
+      featuresJson = { amenities: listing.features };
+    }
+
     const upsertQuery = `
       INSERT INTO properties (
-        title, slug, address, property_type, listing_type, status, price,
-        bedrooms, bathrooms, living_area, main_image_url, gallery_images,
-        latitude, longitude, is_featured, mls_number, description,
+        title, slug, address, city, province, postal_code, neighborhood,
+        property_type, listing_type, status, price, price_label,
+        bedrooms, bathrooms, rooms, area, area_unit, lot_area, year_built,
+        main_image_url, gallery_images, features, room_details,
+        latitude, longitude, is_featured, mls_number, description, addendum,
         original_url, created_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,NOW(),NOW())
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
+        $20,$21::jsonb,$22::jsonb,$23::jsonb,$24,$25,$26,$27,$28,$29,$30,NOW(),NOW()
+      )
       ON CONFLICT (mls_number) WHERE mls_number IS NOT NULL DO UPDATE SET
         title = EXCLUDED.title, slug = EXCLUDED.slug, address = EXCLUDED.address,
+        city = EXCLUDED.city, province = EXCLUDED.province,
+        postal_code = EXCLUDED.postal_code, neighborhood = EXCLUDED.neighborhood,
         property_type = EXCLUDED.property_type, listing_type = EXCLUDED.listing_type,
-        status = EXCLUDED.status, price = EXCLUDED.price,
+        status = EXCLUDED.status, price = EXCLUDED.price, price_label = EXCLUDED.price_label,
         bedrooms = EXCLUDED.bedrooms, bathrooms = EXCLUDED.bathrooms,
-        living_area = EXCLUDED.living_area, main_image_url = EXCLUDED.main_image_url,
-        gallery_images = EXCLUDED.gallery_images, latitude = EXCLUDED.latitude,
-        longitude = EXCLUDED.longitude, description = EXCLUDED.description,
+        rooms = EXCLUDED.rooms, area = EXCLUDED.area, area_unit = EXCLUDED.area_unit,
+        lot_area = EXCLUDED.lot_area, year_built = EXCLUDED.year_built,
+        main_image_url = EXCLUDED.main_image_url, gallery_images = EXCLUDED.gallery_images,
+        features = COALESCE(EXCLUDED.features, properties.features),
+        room_details = COALESCE(EXCLUDED.room_details, properties.room_details),
+        latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude,
+        description = EXCLUDED.description,
+        addendum = COALESCE(EXCLUDED.addendum, properties.addendum),
         is_featured = EXCLUDED.is_featured, updated_at = NOW()
     `;
 
     await pool.query(upsertQuery, [
-      title,
-      slug,
-      fullAddress,
-      propertyType,
-      listingType,
-      status,
-      displayPrice,
-      listing.beds || null,
-      listing.baths || null,
-      listing.sqft || null,
-      mainImage,
-      JSON.stringify(galleryImages),
-      listing.lat || null,
-      listing.lng || null,
-      true, // is_featured — owner's own listings are featured
-      listing.mlsNumber || null,
-      listing.description || null,
-      listing.virtualTourUrl || null,
+      title,                                                   // $1
+      slug,                                                    // $2
+      fullAddress,                                             // $3
+      listing.city || '',                                      // $4
+      listing.state || null,                                   // $5  province
+      listing.zip || null,                                     // $6  postal_code
+      listing.neighborhood || null,                            // $7
+      propertyType,                                            // $8
+      listingType,                                             // $9
+      status,                                                  // $10
+      displayPrice,                                            // $11
+      listing.priceLabel || listing.rentPriceLabel || null,     // $12 price_label
+      listing.beds || null,                                    // $13
+      listing.baths || null,                                   // $14
+      listing.rooms || null,                                   // $15
+      listing.sqft ? String(listing.sqft) : null,              // $16 area
+      listing.areaUnit || null,                                // $17 area_unit
+      listing.lotSize || null,                                 // $18 lot_area
+      listing.yearBuilt || null,                               // $19 year_built
+      mainImage,                                               // $20
+      JSON.stringify(galleryImages),                           // $21 gallery_images
+      featuresJson ? JSON.stringify(featuresJson) : null,      // $22 features
+      listing.roomDetails ? JSON.stringify(listing.roomDetails) : null, // $23 room_details
+      listing.lat || null,                                     // $24
+      listing.lng || null,                                     // $25
+      true,                                                    // $26 is_featured
+      listing.mlsNumber || null,                               // $27
+      listing.description || null,                             // $28
+      listing.addendum || null,                                // $29
+      listing.virtualTourUrl || null,                          // $30 original_url
     ]);
 
     return { success: true, websiteId: website.id };

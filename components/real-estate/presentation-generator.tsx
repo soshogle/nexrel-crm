@@ -735,26 +735,26 @@ export function PresentationGenerator() {
                   <Input
                     value={propertyInfo.city}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="Los Angeles"
+                    placeholder="Montreal"
                     className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-700">State</Label>
+                    <Label className="text-gray-700">Province</Label>
                     <Input
                       value={propertyInfo.state}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, state: e.target.value }))}
-                      placeholder="CA"
+                      placeholder="QC"
                       className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">ZIP</Label>
+                    <Label className="text-gray-700">Postal Code</Label>
                     <Input
                       value={propertyInfo.zipCode}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, zipCode: e.target.value }))}
-                      placeholder="90210"
+                      placeholder="H3B 2Y5"
                       className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>

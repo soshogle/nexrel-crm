@@ -13,6 +13,8 @@ import { getCrmDb } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
 import { apiErrors } from '@/lib/api-error';
 import { runPriceMonitor, type PriceMonitorResult } from "@/lib/listing-enrichment/price-monitor";
+import { enrichCrmListings } from "@/lib/listing-enrichment/enrich-crm-listings";
+import { backfillPropertyCoordinates } from "@/lib/real-estate/geo-comps";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -149,6 +151,48 @@ export async function GET(req: NextRequest) {
       console.warn("[price-monitor] User lookup failed:", err);
     }
 
+    // Run CRM listing enrichment (scrape Centris/RE/MAX for full details)
+    const enrichmentResults: Array<{ userId: string; enriched: number; failed: number }> = [];
+    try {
+      const reUsers: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsers) {
+        try {
+          const er = await enrichCrmListings(u.id, { limit: 15, verbose: true });
+          enrichmentResults.push({ userId: u.id, enriched: er.enriched, failed: er.failed });
+        } catch (err) {
+          console.warn("[enrich-crm] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[enrich-crm] User lookup failed:", err);
+    }
+
+    // Backfill lat/lng coordinates for properties missing them
+    const coordBackfillResults: Array<{ userId: string; updated: number }> = [];
+    try {
+      const reUsers2: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsers2) {
+        try {
+          const bf = await backfillPropertyCoordinates(u.id, { limit: 30, verbose: true });
+          if (bf.updated > 0) {
+            coordBackfillResults.push({ userId: u.id, updated: bf.updated });
+          }
+        } catch (err) {
+          console.warn("[backfill-coords] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[backfill-coords] User lookup failed:", err);
+    }
+
     return NextResponse.json({
       ok: true,
       centris: { fetched: result.fetched, databases: result.databases.length, details: result.databases },
@@ -161,6 +205,16 @@ export async function GET(req: NextRequest) {
           checked: r.result.checked,
           changes: r.result.priceChanges,
         })),
+      },
+      enrichment: {
+        usersProcessed: enrichmentResults.length,
+        totalEnriched: enrichmentResults.reduce((s, r) => s + r.enriched, 0),
+        details: enrichmentResults,
+      },
+      coordBackfill: {
+        usersProcessed: coordBackfillResults.length,
+        totalUpdated: coordBackfillResults.reduce((s, r) => s + r.updated, 0),
+        details: coordBackfillResults,
       },
     });
   } catch (err) {

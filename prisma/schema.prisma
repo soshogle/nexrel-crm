@@ -7169,12 +7169,14 @@ model REProperty {
   city           String
   state          String
   zip            String
-  country        String          @default("US")
+  country        String          @default("CA")
   beds           Int?
   baths          Float?
   sqft           Int?
   lotSize        Int?
   yearBuilt      Int?
+  latitude       Float?
+  longitude      Float?
   propertyType   REPropertyType  @default(SINGLE_FAMILY)
   listingStatus  REListingStatus @default(ACTIVE)
   listPrice      Float?
@@ -7331,7 +7333,7 @@ model REDNCEntry {
   phoneNumber String      @unique
   source      REDNCSource
   reason      String?
-  country     String      @default("US")
+  country     String      @default("CA")
   addedAt     DateTime    @default(now())
   expiresAt   DateTime?
 

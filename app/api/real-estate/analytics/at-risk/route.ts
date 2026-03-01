@@ -84,15 +84,46 @@ export async function GET(req: NextRequest) {
 
     const atRiskItems: AtRiskItem[] = [];
 
-    // 1. Fetch stale FSBO/seller leads (listings at risk)
+    // 1. Fetch stale listings from real estate properties (source of listing check-ins)
+    const staleProperties = await getCrmDb(ctx).rEProperty.findMany({
+      where: {
+        userId: ctx.userId,
+        listingStatus: { in: ['ACTIVE', 'PENDING'] } as any,
+        updatedAt: {
+          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: 20,
+    });
+
+    for (const prop of staleProperties) {
+      const daysInactive = calculateDaysSince(prop.updatedAt);
+      const riskLevel = determineRiskLevel(daysInactive, 'listing');
+
+      if (riskLevel !== 'low') {
+        atRiskItems.push({
+          id: prop.id,
+          type: 'listing',
+          name: prop.address || 'Listing',
+          address: prop.address || undefined,
+          reason: generateRiskReason('listing', daysInactive),
+          daysInactive,
+          riskLevel,
+          suggestedAction: generateSuggestedAction('listing', daysInactive),
+        });
+      }
+    }
+
+    // 2. Also include stale seller leads without linked properties
     const staleListings = await leadService.findMany(ctx, {
       where: {
         status: { in: ['NEW', 'CONTACTED', 'QUALIFIED'] } as any,
         OR: [
+          { contactType: { contains: 'seller' } },
           { source: { contains: 'FSBO' } },
           { source: { contains: 'DUPROPRIO' } },
           { source: { contains: 'ZILLOW' } },
-          { contactType: { contains: 'seller' } },
         ],
         updatedAt: {
           lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -120,19 +151,29 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. Fetch inactive buyer leads
+    // 3. Fetch inactive follow-up leads (buyers and active prospects)
     const inactiveBuyers = await leadService.findMany(ctx, {
       where: {
+        status: { notIn: ['CONVERTED', 'LOST'] } as any,
         OR: [
           { contactType: { contains: 'buyer' } },
+          { contactType: null },
+          { contactType: '' },
         ],
-        updatedAt: {
-          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        },
-        status: { notIn: ['CONVERTED', 'LOST'] } as any,
+        AND: [
+          {
+            OR: [
+              { lastContactedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+              {
+                lastContactedAt: null,
+                updatedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+              },
+            ],
+          },
+        ],
       },
-      orderBy: { updatedAt: 'asc' },
-      take: 10,
+      orderBy: { lastContactedAt: 'asc' },
+      take: 20,
     });
 
     for (const buyer of inactiveBuyers) {
@@ -152,7 +193,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Fetch stalled deals
+    // 4. Fetch stalled deals
     const stalledDeals = await getCrmDb(ctx).deal.findMany({
       where: {
         userId: ctx.userId,

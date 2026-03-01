@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!address || !city || !state || !zip) {
-      return apiErrors.badRequest('Address, city, state, and zip are required');
+      return apiErrors.badRequest('Address, city, province, and postal code are required');
     }
 
     const property = await prisma.rEProperty.create({
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         city,
         state,
         zip,
-        country: country || 'US',
+        country: country || 'CA',
         beds: beds ? parseInt(beds) : null,
         baths: baths ? parseFloat(baths) : null,
         sqft: sqft ? parseInt(sqft) : null,

@@ -734,7 +734,7 @@ async function generateMarketResearch(
     const placeData = {
       city: actionConfig?.city || lead?.city || '',
       state: actionConfig?.state || lead?.state || '',
-      country: actionConfig?.country || 'USA',
+      country: actionConfig?.country || 'CA',
     };
 
     // Build request based on report type

@@ -277,7 +277,8 @@ export function CMAPanel() {
       });
 
       if (!response.ok) {
-        throw new Error('CMA generation failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'CMA generation failed');
       }
 
       const result = await response.json();
@@ -317,7 +318,8 @@ export function CMAPanel() {
       toast.success('CMA analysis complete!');
     } catch (error) {
       console.error('CMA analysis error:', error);
-      toast.error('CMA analysis requires MLS data integration. Please configure your MLS connection in settings.');
+      const message = error instanceof Error ? error.message : 'Failed to generate CMA report.';
+      toast.error(message || 'Failed to generate CMA report.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -428,18 +430,18 @@ export function CMAPanel() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-gray-700">State</Label>
+                          <Label className="text-gray-700">Province</Label>
                           <Input
-                            placeholder="CA"
+                            placeholder="QC"
                             value={propertyData.state}
                             onChange={(e) => setPropertyData({ ...propertyData, state: e.target.value })}
                             className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                           />
                         </div>
                         <div>
-                          <Label className="text-gray-700">ZIP</Label>
+                          <Label className="text-gray-700">Postal Code</Label>
                           <Input
-                            placeholder="90210"
+                            placeholder="H3B 2Y5"
                             value={propertyData.zip}
                             onChange={(e) => setPropertyData({ ...propertyData, zip: e.target.value })}
                             className="mt-1 bg-white/80 border-purple-200 text-gray-900"

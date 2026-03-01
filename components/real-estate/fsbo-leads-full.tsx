@@ -1042,7 +1042,7 @@ export function FSBOLeadsFull() {
                   />
                 </div>
                 <div>
-                  <Label className="text-white">State/Province</Label>
+                  <Label className="text-white">Province</Label>
                   <Input
                     value={manualLead.state}
                     onChange={(e) => setManualLead({ ...manualLead, state: e.target.value })}
@@ -1050,7 +1050,7 @@ export function FSBOLeadsFull() {
                   />
                 </div>
                 <div>
-                  <Label className="text-white">ZIP/Postal Code</Label>
+                  <Label className="text-white">Postal Code</Label>
                   <Input
                     value={manualLead.zipCode}
                     onChange={(e) => setManualLead({ ...manualLead, zipCode: e.target.value })}
@@ -1138,7 +1138,7 @@ export function FSBOLeadsFull() {
                 <FileSpreadsheet className="h-12 w-12 text-slate-500 mx-auto mb-4" />
                 <p className="text-white mb-2">Upload CSV File</p>
                 <p className="text-sm text-slate-400 mb-4">
-                  CSV should include columns: seller_name, phone, email, address, city, state, price, beds, baths, url
+                  CSV should include columns: seller_name, phone, email, address, city, province, price, beds, baths, url
                 </p>
                 <input
                   type="file"

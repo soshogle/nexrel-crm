@@ -39,7 +39,7 @@ export async function getComparables(
   
   return {
     comparables: [],
-    source: 'No MLS API configured - using generated comparables'
+    source: 'No MLS API configured'
   };
 }
 

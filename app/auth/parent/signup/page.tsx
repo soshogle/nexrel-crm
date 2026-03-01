@@ -346,12 +346,12 @@ function ParentSignupForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">Province</Label>
                   <Input
                     id="state"
                     name="state"
                     type="text"
-                    placeholder="IL"
+                    placeholder="QC"
                     value={formData.state}
                     onChange={handleChange}
                   />

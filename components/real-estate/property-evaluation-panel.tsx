@@ -36,6 +36,18 @@ interface Website {
   status: string;
 }
 
+function normalizeSiteOrigin(rawUrl?: string): string | null {
+  if (!rawUrl) return null;
+  try {
+    const withProtocol = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const parsed = new URL(withProtocol);
+    // Always use origin only (drop any accidental /index.html or nested path)
+    return parsed.origin.replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+}
+
 interface Comparable {
   address: string;
   city: string;
@@ -572,8 +584,9 @@ function LiveSiteLinks() {
             <p className="text-sm text-muted-foreground">Open your Property Evaluation page:</p>
             <div className="flex flex-wrap gap-3">
               {serviceSites.map((site) => {
-                const baseUrl = site.vercelDeploymentUrl!.replace(/\/$/, '');
-                const evalUrl = `${baseUrl}/market-appraisal`;
+                const siteOrigin = normalizeSiteOrigin(site.vercelDeploymentUrl);
+                if (!siteOrigin) return null;
+                const evalUrl = `${siteOrigin}/market-appraisal`;
                 return (
                   <Button
                     key={site.id}

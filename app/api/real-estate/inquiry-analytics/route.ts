@@ -7,6 +7,24 @@ import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
+function normalizeAddress(v: string | null | undefined): string {
+  return (v || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractHost(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const withProtocol = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    return new URL(withProtocol).host;
+  } catch {
+    return url;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -35,6 +53,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true, businessName: true, contactPerson: true, email: true,
           phone: true, source: true, status: true, tags: true, address: true,
+          enrichedData: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -53,7 +72,7 @@ export async function GET(request: NextRequest) {
       }),
       getCrmDb(ctx).website.findMany({
         where: { userId: ctx.userId },
-        select: { id: true, name: true, vercelDeploymentUrl: true },
+        select: { id: true, name: true, vercelDeploymentUrl: true, sourceUrl: true },
       }),
       getCrmDb(ctx).rEProperty.findMany({
         where: { userId: ctx.userId },
@@ -76,7 +95,35 @@ export async function GET(request: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count }));
 
-    // Attribution: match leads to properties by address overlap
+    // Attribution: match leads to properties by explicit propertyId first, then address overlap.
+    const propertyInquiryMap = new Map<string, number>();
+    for (const prop of properties) propertyInquiryMap.set(prop.id, 0);
+
+    for (const lead of recentLeads) {
+      const enriched = (lead.enrichedData || {}) as any;
+      const explicitPropertyId = typeof enriched.propertyId === 'string' ? enriched.propertyId : null;
+
+      if (explicitPropertyId && propertyInquiryMap.has(explicitPropertyId)) {
+        propertyInquiryMap.set(explicitPropertyId, (propertyInquiryMap.get(explicitPropertyId) || 0) + 1);
+        continue;
+      }
+
+      const leadAddr = normalizeAddress(
+        typeof enriched.propertyAddress === 'string'
+          ? enriched.propertyAddress
+          : lead.address || lead.businessName || null
+      );
+      if (!leadAddr) continue;
+
+      const matched = properties.find((p) => {
+        const propAddr = normalizeAddress(p.address);
+        return propAddr && (leadAddr.includes(propAddr) || propAddr.includes(leadAddr));
+      });
+      if (matched) {
+        propertyInquiryMap.set(matched.id, (propertyInquiryMap.get(matched.id) || 0) + 1);
+      }
+    }
+
     const propertyInquiries: Array<{
       propertyId: string;
       address: string;
@@ -85,32 +132,37 @@ export async function GET(request: NextRequest) {
       inquiryCount: number;
     }> = [];
     for (const prop of properties) {
-      const addr = (prop.address || '').toLowerCase();
-      if (!addr) continue;
-      const count = recentLeads.filter(l => {
-        const leadAddr = (l.address || l.businessName || '').toLowerCase();
-        const tags = Array.isArray(l.tags) ? l.tags : [];
-        const tagStr = tags.join(' ').toLowerCase();
-        return leadAddr.includes(addr) || addr.includes(leadAddr) || tagStr.includes(addr);
-      }).length;
       propertyInquiries.push({
         propertyId: prop.id,
         address: prop.address || 'Unknown',
         status: prop.listingStatus || 'UNKNOWN',
         price: prop.listPrice ? Number(prop.listPrice) : null,
-        inquiryCount: count,
+        inquiryCount: propertyInquiryMap.get(prop.id) || 0,
       });
     }
     propertyInquiries.sort((a, b) => b.inquiryCount - a.inquiryCount);
 
-    // Website-sourced leads
+    // Website-sourced leads: attribute via enrichedData.websiteId first, then source/url/domain matches.
     const websiteLeads = websites.map(w => ({
       websiteId: w.id,
       name: w.name,
-      domain: w.vercelDeploymentUrl || null,
-      leadCount: recentLeads.filter(l =>
-        l.source.includes(w.id) || l.source.includes(w.vercelDeploymentUrl || '') || l.source === 'website-inquiry'
-      ).length,
+      domain: extractHost(w.vercelDeploymentUrl || w.sourceUrl),
+      leadCount: recentLeads.filter((l) => {
+        const enriched = (l.enrichedData || {}) as any;
+        if (enriched.websiteId === w.id) return true;
+
+        const source = (l.source || '').toLowerCase();
+        const domain = extractHost(w.vercelDeploymentUrl || w.sourceUrl)?.toLowerCase() || '';
+        const websiteName = (w.name || '').toLowerCase();
+        return (
+          source.includes('website') &&
+          (
+            source.includes(w.id.toLowerCase()) ||
+            (!!domain && source.includes(domain)) ||
+            (!!websiteName && source.includes(websiteName))
+          )
+        );
+      }).length,
     })).sort((a, b) => b.leadCount - a.leadCount);
 
     // Source breakdown for pie chart

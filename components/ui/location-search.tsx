@@ -83,7 +83,7 @@ export function LocationSearch({
   defaultValue = '',
   onChange,
   onSelect,
-  placeholder = 'Enter city, state or ZIP',
+  placeholder = 'Enter city, province or postal code',
   className = '',
   countryRestriction
 }: LocationSearchProps) {

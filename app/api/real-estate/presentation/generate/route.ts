@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
+import { getMarketContext, marketBulletPoints } from '@/lib/real-estate/market-data';
 
 interface SlideContent {
   id: string;
@@ -24,7 +25,8 @@ function buildSlides(
   type: string,
   propertyData: any,
   agentInfo: any,
-  areaResearch: any
+  areaResearch: any,
+  marketBullets?: string[]
 ): SlideContent[] {
   const price = propertyData.price
     ? `$${Number(propertyData.price).toLocaleString()}`
@@ -111,17 +113,19 @@ function buildSlides(
     });
   }
 
+  const defaultMarketBullets = [
+    'Active inventory levels are balanced for the current market',
+    'Average days on market aligns with seasonal patterns',
+    'Price-per-square-foot trending upward in comparable neighborhoods',
+    'Strong buyer demand supports competitive pricing strategy',
+  ];
+
   slides.push({
     id: 'market',
     type: 'market',
     title: 'Market Analysis',
     subtitle: `${propertyData.city || 'Local'} Market Conditions`,
-    bulletPoints: [
-      'Active inventory levels are balanced for the current market',
-      'Average days on market aligns with seasonal patterns',
-      'Price-per-square-foot trending upward in comparable neighborhoods',
-      'Strong buyer demand supports competitive pricing strategy',
-    ],
+    bulletPoints: marketBullets && marketBullets.length > 0 ? marketBullets : defaultMarketBullets,
     enabled: true,
   });
 
@@ -192,7 +196,17 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Property address is required');
     }
 
-    const slides = buildSlides(presentationType || 'listing', propertyData, agentInfo, areaResearch);
+    let marketBullets: string[] = [];
+    try {
+      const mktCtx = await getMarketContext(session.user.id, {
+        city: propertyData.city,
+        region: propertyData.state === 'QC' ? 'Montréal' : undefined,
+        propertyCategory: propertyData.propertyType,
+      });
+      marketBullets = marketBulletPoints(mktCtx);
+    } catch { /* non-critical, fall back to defaults */ }
+
+    const slides = buildSlides(presentationType || 'listing', propertyData, agentInfo, areaResearch, marketBullets);
 
     const title = presentationType === 'buyer'
       ? `Buyer Consultation - ${propertyData.address}`

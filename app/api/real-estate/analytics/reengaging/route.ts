@@ -164,15 +164,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Also check converted leads
+    // Also check converted leads directly so referral asks reflect real CRM data
     const convertedLeads = await leadService.findMany(ctx, {
       where: {
         status: 'CONVERTED',
-        lastContactedAt: {
-          lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        },
+        OR: [
+          { lastContactedAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+          { lastContactedAt: null, updatedAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        ],
       },
-      take: 10,
+      orderBy: { updatedAt: 'asc' },
+      take: 25,
     });
 
     for (const lead of convertedLeads) {

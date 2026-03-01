@@ -290,12 +290,12 @@ export default function CMAToolsPage() {
                 <Input id="city" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input id="state" placeholder="State" value={state} onChange={(e) => setState(e.target.value)} />
+                <Label htmlFor="state">Province</Label>
+                <Input id="state" placeholder="QC" value={state} onChange={(e) => setState(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zip">ZIP</Label>
-                <Input id="zip" placeholder="ZIP" value={zip} onChange={(e) => setZip(e.target.value)} />
+                <Label htmlFor="zip">Postal Code</Label>
+                <Input id="zip" placeholder="H3B 2Y5" value={zip} onChange={(e) => setZip(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -37,7 +37,7 @@ interface CostBreakdown {
 
 export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddress }: SellerNetSheetCalculatorProps) {
   const [salePrice, setSalePrice] = useState(initialPrice);
-  const [state, setState] = useState('CA');
+  const [state, setState] = useState('QC');
   const [mortgageBalance, setMortgageBalance] = useState(250000);
   const [commissionRate, setCommissionRate] = useState(5);
   const [expandedSections, setExpandedSections] = useState<string[]>(['closing', 'prepaid']);
@@ -179,21 +179,22 @@ export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddres
           </div>
         </div>
         <div>
-          <Label className="text-slate-300">State/Province</Label>
+          <Label className="text-slate-300">Province</Label>
           <Select value={state} onValueChange={setState}>
             <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CA">California</SelectItem>
-              <SelectItem value="NY">New York</SelectItem>
-              <SelectItem value="TX">Texas</SelectItem>
-              <SelectItem value="FL">Florida</SelectItem>
-              <SelectItem value="IL">Illinois</SelectItem>
+              <SelectItem value="QC">Quebec</SelectItem>
               <SelectItem value="ON">Ontario</SelectItem>
               <SelectItem value="BC">British Columbia</SelectItem>
-              <SelectItem value="QC">Quebec</SelectItem>
               <SelectItem value="AB">Alberta</SelectItem>
+              <SelectItem value="MB">Manitoba</SelectItem>
+              <SelectItem value="SK">Saskatchewan</SelectItem>
+              <SelectItem value="NS">Nova Scotia</SelectItem>
+              <SelectItem value="NB">New Brunswick</SelectItem>
+              <SelectItem value="PE">Prince Edward Island</SelectItem>
+              <SelectItem value="NL">Newfoundland &amp; Labrador</SelectItem>
             </SelectContent>
           </Select>
         </div>

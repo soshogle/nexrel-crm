@@ -162,19 +162,11 @@ export async function GET(req: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    // Fetch leads (our contacts) with real estate tags or FSBO sources
+    // Fetch active leads with broad criteria so dashboard reflects real CRM activity.
+    // We avoid overly narrow source filters to prevent empty "Priority Actions" on real accounts.
     const leads: any[] = await leadService.findMany(ctx, {
       where: {
-        OR: [
-          { source: { contains: 'FSBO' } },
-          { source: { contains: 'DUPROPRIO' } },
-          { source: { contains: 'ZILLOW' } },
-          { source: { contains: 'REALTOR' } },
-          { contactType: { contains: 'buyer' } },
-          { contactType: { contains: 'seller' } },
-          { status: 'QUALIFIED' },
-          { status: 'CONTACTED' },
-        ],
+        status: { notIn: ['CONVERTED', 'LOST'] } as any,
       },
       include: {
         notes: {
@@ -190,7 +182,7 @@ export async function GET(req: NextRequest) {
       orderBy: {
         updatedAt: 'desc',
       },
-      take: 50,
+      take: 100,
     } as any);
 
     // Score each lead

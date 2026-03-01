@@ -278,7 +278,7 @@ export default function MarketInsightsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search city, state..."
+                placeholder="Search city, province..."
                 value={locationQuery}
                 onChange={(e) => { searchPlaces(e.target.value); setShowDropdown(true); }}
                 onFocus={() => setShowDropdown(true)}

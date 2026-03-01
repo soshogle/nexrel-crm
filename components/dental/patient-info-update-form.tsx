@@ -181,7 +181,7 @@ export function PatientInfoUpdateForm({ leadId, initialData, onSuccess, onCancel
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="state">State/Province</Label>
+          <Label htmlFor="state">Province</Label>
           <Input
             id="state"
             value={formData.state}

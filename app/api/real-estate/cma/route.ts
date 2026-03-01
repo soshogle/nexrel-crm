@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const subject = body?.subjectProperty ?? body;
     const {
       propertyId,
       address,
@@ -52,16 +53,43 @@ export async function POST(request: NextRequest) {
       baths,
       sqft,
       yearBuilt,
+      propertyType,
       comparables,
       adjustments,
       suggestedPriceMin,
       suggestedPriceMax,
       suggestedPrice,
       pricePerSqft,
-    } = body;
+    } = subject;
 
     if (!address) {
       return apiErrors.badRequest('Property address required');
+    }
+
+    // Generate a full CMA report when subject property is provided from CMA panel.
+    // This supports payloads like { subjectProperty, searchRadius, maxComps, lookbackMonths }.
+    if (beds && baths && sqft) {
+      const { generateCMA } = await import('@/lib/real-estate/cma');
+      const cityStateZip = (address as string).split(',').map((s) => s.trim());
+      const generated = await generateCMA(
+        {
+          address: address as string,
+          city: (subject.city as string) || cityStateZip[1] || '',
+          state: (subject.state as string) || cityStateZip[2]?.split(' ')[0] || '',
+          zip: (subject.zip as string) || cityStateZip[2]?.split(' ')[1] || '',
+          propertyType: (propertyType as string) || 'single_family',
+          beds: Number(beds),
+          baths: Number(baths),
+          sqft: Number(sqft),
+          yearBuilt: yearBuilt ? Number(yearBuilt) : undefined,
+          condition: (subject.condition as any) || 'good',
+          features: Array.isArray(subject.features) ? subject.features : [],
+          lotSize: subject.lotSize ? Number(subject.lotSize) : undefined,
+        },
+        session.user.id
+      );
+
+      return NextResponse.json({ success: true, cma: generated });
     }
 
     // Create CMA report - comparables stored as JSON

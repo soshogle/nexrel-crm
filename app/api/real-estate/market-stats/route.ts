@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
     const region = searchParams.get('region');
     const city = searchParams.get('city');
     const state = searchParams.get('state');
-    const limit = parseInt(searchParams.get('limit') || '24');
+    const propertyCategory = searchParams.get('propertyCategory');
+    const periodType = searchParams.get('periodType');
+    const limit = parseInt(searchParams.get('limit') || '200');
     const mode = searchParams.get('mode') || 'auto'; // 'auto' | 'stored' | 'live'
 
     // Build location filter for listings
@@ -26,13 +28,15 @@ export async function GET(request: NextRequest) {
     if (city) locationFilter.city = { contains: city, mode: 'insensitive' };
     if (state) locationFilter.state = { contains: state, mode: 'insensitive' };
 
-    // Fetch stored stats (previously generated/seeded)
+    // Fetch stored stats (previously generated/seeded + Centris imports)
     const storedStats = await prisma.rEMarketStats.findMany({
       where: {
         userId: session.user.id,
-        ...(region && { region }),
+        ...(region && { region: { contains: region, mode: 'insensitive' } }),
         ...(city && { city: { contains: city, mode: 'insensitive' } }),
         ...(state && { state: { contains: state, mode: 'insensitive' } }),
+        ...(propertyCategory && { propertyCategory: { contains: propertyCategory, mode: 'insensitive' } }),
+        ...(periodType && { periodType: periodType as any }),
       },
       orderBy: { periodStart: 'asc' },
       take: limit,
