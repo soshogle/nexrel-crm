@@ -114,6 +114,7 @@ model User {
   parentRole                  Boolean                      @default(false)
   subdomain                   String?                      @unique
   language                    String?                      @default("en")
+  country                     String?                      @default("CA")
   crmVoiceAgentId             String? // ElevenLabs agent ID for CRM voice assistant
   activeWorkflowDraftId       String? // Active workflow draft for voice/chat (cleared when leaving builder)
   workflowExecutions          AIWorkflowExecution[]        @relation("UserWorkflowExecutions")

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   Brain,
   Search,
@@ -110,6 +111,7 @@ interface CMAResult {
 }
 
 export function CMAPanel() {
+  const locale = useLocaleLabels();
   const [step, setStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -430,18 +432,18 @@ export function CMAPanel() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-gray-700">Province</Label>
+                          <Label className="text-gray-700">{locale.stateLabel}</Label>
                           <Input
-                            placeholder="QC"
+                            placeholder={locale.statePlaceholder}
                             value={propertyData.state}
                             onChange={(e) => setPropertyData({ ...propertyData, state: e.target.value })}
                             className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                           />
                         </div>
                         <div>
-                          <Label className="text-gray-700">Postal Code</Label>
+                          <Label className="text-gray-700">{locale.zipLabel}</Label>
                           <Input
-                            placeholder="H3B 2Y5"
+                            placeholder={locale.zipPlaceholder}
                             value={propertyData.zip}
                             onChange={(e) => setPropertyData({ ...propertyData, zip: e.target.value })}
                             className="mt-1 bg-white/80 border-purple-200 text-gray-900"

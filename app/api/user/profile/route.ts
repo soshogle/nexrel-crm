@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         businessDescription: true,
         industry: true,
         timezone: true,
+        country: true,
       },
     });
 
@@ -54,7 +55,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, companyName, image, phone, address, website, businessDescription, industry, timezone } = body;
+    const { name, companyName, image, phone, address, website, businessDescription, industry, timezone, country } = body;
 
     // Build update object with only provided fields
     const updateData: any = {};
@@ -67,6 +68,7 @@ export async function PATCH(req: NextRequest) {
     if (businessDescription !== undefined) updateData.businessDescription = businessDescription || null;
     if (industry !== undefined) updateData.industry = industry || null;
     if (timezone !== undefined) updateData.timezone = timezone;
+    if (country !== undefined) updateData.country = country;
 
     if (Object.keys(updateData).length === 0) {
       return apiErrors.badRequest("No fields to update");
@@ -87,6 +89,7 @@ export async function PATCH(req: NextRequest) {
         businessDescription: true,
         industry: true,
         timezone: true,
+        country: true,
       },
     });
 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogFooter, DialogDescription,
@@ -60,6 +61,7 @@ export function ListingFormDialog({
   open, onOpenChange, editingId, form, setForm,
   saving, uploading, onSave, onPhotoUpload, onRemovePhoto, onMovePhoto,
 }: ListingFormDialogProps) {
+  const locale = useLocaleLabels();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -110,11 +112,11 @@ export function ListingFormDialog({
               <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div>
-              <Label>Province *</Label>
+              <Label>{locale.stateLabel} *</Label>
               <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
             </div>
             <div>
-              <Label>Postal Code *</Label>
+              <Label>{locale.zipLabel} *</Label>
               <Input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
             </div>
           </div>

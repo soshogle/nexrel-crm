@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getLocaleLabels } from '@/lib/locale-labels';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -36,9 +37,11 @@ function ParentSignupForm() {
     city: '',
     state: '',
     zipCode: '',
+    country: 'CA',
     emergencyContact: '',
     emergencyPhone: '',
   });
+  const locale = useMemo(() => getLocaleLabels(formData.country), [formData.country]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -332,6 +335,20 @@ function ParentSignupForm() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <select
+                  id="country"
+                  name="country"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.country}
+                  onChange={handleChange}
+                >
+                  <option value="CA">Canada</option>
+                  <option value="US">United States</option>
+                </select>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
@@ -339,26 +356,26 @@ function ParentSignupForm() {
                     id="city"
                     name="city"
                     type="text"
-                    placeholder="Springfield"
+                    placeholder={locale.cityPlaceholder || 'City'}
                     value={formData.city}
                     onChange={handleChange}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="state">Province</Label>
+                  <Label htmlFor="state">{locale.stateLabel}</Label>
                   <Input
                     id="state"
                     name="state"
                     type="text"
-                    placeholder="QC"
+                    placeholder={locale.statePlaceholder}
                     value={formData.state}
                     onChange={handleChange}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Label htmlFor="zipCode">{locale.zipLabel}</Label>
                   <Input
                     id="zipCode"
                     name="zipCode"

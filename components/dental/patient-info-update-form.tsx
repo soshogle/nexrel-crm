@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 
 interface PatientInfoUpdateFormProps {
   leadId: string;
@@ -29,6 +30,7 @@ interface PatientInfoUpdateFormProps {
 }
 
 export function PatientInfoUpdateForm({ leadId, initialData, onSuccess, onCancel }: PatientInfoUpdateFormProps) {
+  const locale = useLocaleLabels();
   const [formData, setFormData] = useState({
     contactPerson: initialData?.contactPerson || '',
     email: initialData?.email || '',
@@ -181,12 +183,12 @@ export function PatientInfoUpdateForm({ leadId, initialData, onSuccess, onCancel
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="state">Province</Label>
+          <Label htmlFor="state">{locale.stateLabel}</Label>
           <Input
             id="state"
             value={formData.state}
             onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-            placeholder="QC"
+            placeholder={locale.statePlaceholder}
           />
         </div>
 

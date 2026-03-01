@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ export default function CreateContactDialog({
   onContactCreated,
   initialData,
 }: CreateContactDialogProps) {
+  const locale = useLocaleLabels();
   const tToasts = useTranslations('toasts.general');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -276,12 +278,12 @@ export default function CreateContactDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="state">Province</Label>
+                  <Label htmlFor="state">{locale.stateLabel}</Label>
                   <Input
                     id="state"
                     value={formData.state}
                     onChange={(e) => handleInputChange('state', e.target.value)}
-                    placeholder="QC"
+                    placeholder={locale.statePlaceholder}
                   />
                 </div>
 

@@ -163,6 +163,7 @@ export const authOptions: NextAuthOptions = {
                   industry: true,
                   onboardingCompleted: true,
                   accountStatus: true,
+                  country: true,
                 },
               },
               superAdmin: {
@@ -191,6 +192,7 @@ export const authOptions: NextAuthOptions = {
               agencyId: impersonatedUser.agencyId,
               parentRole: impersonatedUser.parentRole || false,
               industry: impersonatedUser.industry,
+              country: impersonatedUser.country || 'CA',
               onboardingCompleted: impersonatedUser.onboardingCompleted || false,
               isImpersonating: true,
               superAdminId: impersonationSession.superAdminId,
@@ -213,6 +215,7 @@ export const authOptions: NextAuthOptions = {
                 industry: true,
                 onboardingCompleted: true,
                 accountStatus: true,
+                country: true,
               },
             });
 
@@ -225,6 +228,7 @@ export const authOptions: NextAuthOptions = {
                 agencyId: superAdmin.agencyId,
                 parentRole: superAdmin.parentRole || false,
                 industry: superAdmin.industry,
+                country: superAdmin.country || 'CA',
                 onboardingCompleted: superAdmin.onboardingCompleted || false,
                 isImpersonating: false,
                 originalUserId: superAdmin.id,
@@ -255,6 +259,7 @@ export const authOptions: NextAuthOptions = {
                 industry: true,
                 onboardingCompleted: true,
                 accountStatus: true,
+                country: true,
               },
             })
 
@@ -267,6 +272,7 @@ export const authOptions: NextAuthOptions = {
               token.industry = dbUser.industry
               token.onboardingCompleted = dbUser.onboardingCompleted || false
               token.accountStatus = dbUser.accountStatus
+              token.country = dbUser.country || 'CA'
               token.isImpersonating = false
               token.originalUserId = dbUser.id
               token.originalUserIsSuperAdmin = dbUser.role === 'SUPER_ADMIN'
@@ -317,6 +323,7 @@ export const authOptions: NextAuthOptions = {
           agencyName: token.agencyName as string | null,
           parentRole: token.parentRole as boolean,
           industry: token.industry as string | null,
+          country: token.country as string | null,
           onboardingCompleted: token.onboardingCompleted as boolean,
           accountStatus: token.accountStatus as string,
           // Impersonation context

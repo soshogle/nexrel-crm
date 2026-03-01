@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   PresentationIcon,
   Sparkles,
@@ -104,6 +105,7 @@ interface GeneratedPresentation {
 }
 
 export function PresentationGenerator() {
+  const locale = useLocaleLabels();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResearching, setIsResearching] = useState(false);
@@ -735,26 +737,26 @@ export function PresentationGenerator() {
                   <Input
                     value={propertyInfo.city}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="Montreal"
+                    placeholder={locale.cityPlaceholder}
                     className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-700">Province</Label>
+                    <Label className="text-gray-700">{locale.stateLabel}</Label>
                     <Input
                       value={propertyInfo.state}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, state: e.target.value }))}
-                      placeholder="QC"
+                      placeholder={locale.statePlaceholder}
                       className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">Postal Code</Label>
+                    <Label className="text-gray-700">{locale.zipLabel}</Label>
                     <Input
                       value={propertyInfo.zipCode}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, zipCode: e.target.value }))}
-                      placeholder="H3B 2Y5"
+                      placeholder={locale.zipPlaceholder}
                       className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>

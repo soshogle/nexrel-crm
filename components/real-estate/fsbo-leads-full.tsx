@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   Search, MapPin, Home, Building2, TreePine, Building, DollarSign,
   Bed, Bath, Maximize, Calendar, Phone, Mail, User, ExternalLink,
@@ -107,6 +108,7 @@ const AMENITIES = [
 ];
 
 export function FSBOLeadsFull() {
+  const locale = useLocaleLabels();
   // State
   const [activeTab, setActiveTab] = useState('search');
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -1042,7 +1044,7 @@ export function FSBOLeadsFull() {
                   />
                 </div>
                 <div>
-                  <Label className="text-white">Province</Label>
+                  <Label className="text-white">{locale.stateLabel}</Label>
                   <Input
                     value={manualLead.state}
                     onChange={(e) => setManualLead({ ...manualLead, state: e.target.value })}
@@ -1050,7 +1052,7 @@ export function FSBOLeadsFull() {
                   />
                 </div>
                 <div>
-                  <Label className="text-white">Postal Code</Label>
+                  <Label className="text-white">{locale.zipLabel}</Label>
                   <Input
                     value={manualLead.zipCode}
                     onChange={(e) => setManualLead({ ...manualLead, zipCode: e.target.value })}
@@ -1138,7 +1140,7 @@ export function FSBOLeadsFull() {
                 <FileSpreadsheet className="h-12 w-12 text-slate-500 mx-auto mb-4" />
                 <p className="text-white mb-2">Upload CSV File</p>
                 <p className="text-sm text-slate-400 mb-4">
-                  CSV should include columns: seller_name, phone, email, address, city, province, price, beds, baths, url
+                  {`CSV should include columns: seller_name, phone, email, address, city, ${locale.stateLabel.toLowerCase()}, price, beds, baths, url`}
                 </p>
                 <input
                   type="file"

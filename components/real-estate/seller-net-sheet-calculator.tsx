@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
   Calculator,
   DollarSign,
@@ -36,6 +37,7 @@ interface CostBreakdown {
 }
 
 export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddress }: SellerNetSheetCalculatorProps) {
+  const locale = useLocaleLabels();
   const [salePrice, setSalePrice] = useState(initialPrice);
   const [state, setState] = useState('QC');
   const [mortgageBalance, setMortgageBalance] = useState(250000);
@@ -179,22 +181,15 @@ export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddres
           </div>
         </div>
         <div>
-          <Label className="text-slate-300">Province</Label>
+          <Label className="text-slate-300">{locale.stateLabel}</Label>
           <Select value={state} onValueChange={setState}>
             <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="QC">Quebec</SelectItem>
-              <SelectItem value="ON">Ontario</SelectItem>
-              <SelectItem value="BC">British Columbia</SelectItem>
-              <SelectItem value="AB">Alberta</SelectItem>
-              <SelectItem value="MB">Manitoba</SelectItem>
-              <SelectItem value="SK">Saskatchewan</SelectItem>
-              <SelectItem value="NS">Nova Scotia</SelectItem>
-              <SelectItem value="NB">New Brunswick</SelectItem>
-              <SelectItem value="PE">Prince Edward Island</SelectItem>
-              <SelectItem value="NL">Newfoundland &amp; Labrador</SelectItem>
+              {locale.stateOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

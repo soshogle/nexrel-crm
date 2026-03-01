@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +83,7 @@ function formatK(v: number) {
 }
 
 export default function MarketInsightsPage() {
+  const locale = useLocaleLabels();
   const [marketReports, setMarketReports] = useState<MarketReport[]>([]);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
@@ -278,7 +280,7 @@ export default function MarketInsightsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search city, province..."
+                placeholder={`Search city, ${locale.stateLabel.toLowerCase()}...`}
                 value={locationQuery}
                 onChange={(e) => { searchPlaces(e.target.value); setShowDropdown(true); }}
                 onFocus={() => setShowDropdown(true)}

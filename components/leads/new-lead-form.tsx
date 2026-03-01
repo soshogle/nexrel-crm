@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocaleLabels } from '@/hooks/use-locale-labels'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +32,7 @@ import {
 import Link from 'next/link'
 
 export function NewLeadForm() {
+  const locale = useLocaleLabels()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -249,12 +251,12 @@ export function NewLeadForm() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="state">Province</Label>
+                    <Label htmlFor="state">{locale.stateLabel}</Label>
                     <Input
                       id="state"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
-                      placeholder="QC"
+                      placeholder={locale.statePlaceholder}
                     />
                   </div>
                   

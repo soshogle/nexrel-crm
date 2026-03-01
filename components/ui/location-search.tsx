@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from './input';
 import { MapPin, Loader2 } from 'lucide-react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 
 export interface LocationData {
   city: string;
@@ -83,10 +84,12 @@ export function LocationSearch({
   defaultValue = '',
   onChange,
   onSelect,
-  placeholder = 'Enter city, province or postal code',
+  placeholder: placeholderProp,
   className = '',
   countryRestriction
 }: LocationSearchProps) {
+  const locale = useLocaleLabels();
+  const placeholder = placeholderProp || `Enter city, ${locale.stateLabel.toLowerCase()} or ${locale.zipLabel.toLowerCase()}`;
   const [inputValue, setInputValue] = useState(defaultValue || '');
   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);

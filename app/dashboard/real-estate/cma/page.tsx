@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,7 @@ interface CMAResult {
 }
 
 export default function CMAToolsPage() {
+  const locale = useLocaleLabels();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -290,12 +292,12 @@ export default function CMAToolsPage() {
                 <Input id="city" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">Province</Label>
-                <Input id="state" placeholder="QC" value={state} onChange={(e) => setState(e.target.value)} />
+                <Label htmlFor="state">{locale.stateLabel}</Label>
+                <Input id="state" placeholder={locale.statePlaceholder} value={state} onChange={(e) => setState(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zip">Postal Code</Label>
-                <Input id="zip" placeholder="H3B 2Y5" value={zip} onChange={(e) => setZip(e.target.value)} />
+                <Label htmlFor="zip">{locale.zipLabel}</Label>
+                <Input id="zip" placeholder={locale.zipPlaceholder} value={zip} onChange={(e) => setZip(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

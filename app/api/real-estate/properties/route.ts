@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         city,
         state,
         zip,
-        country: country || 'CA',
+        country: country || (session.user as any).country || 'CA',
         beds: beds ? parseInt(beds) : null,
         baths: baths ? parseFloat(baths) : null,
         sqft: sqft ? parseInt(sqft) : null,

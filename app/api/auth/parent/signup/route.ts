@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       city,
       state,
       zipCode,
+      country,
       emergencyContact,
       emergencyPhone,
     } = body;
@@ -80,9 +81,10 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name,
         phone,
+        country: country || 'CA',
         role: 'PARENT',
         parentRole: true,
-        onboardingCompleted: true, // Parents don't need onboarding
+        onboardingCompleted: true,
       },
     });
 
