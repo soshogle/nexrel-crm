@@ -1,6 +1,9 @@
 # Backup data (sensitive, large - keep locally only)
 backups/
 
+# Market data files (PDFs, Excel, screenshots - imported into DB, not for git)
+data/market-reports/
+
 # Temp / build artifacts (not for deployment)
 .tmp-*/
 owner-websites/**/data/xml/
