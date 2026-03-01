@@ -12,6 +12,7 @@ import { runRealtorSync } from "@/lib/realtor-sync";
 import { getCrmDb } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
 import { apiErrors } from '@/lib/api-error';
+import { runPriceMonitor, type PriceMonitorResult } from "@/lib/listing-enrichment/price-monitor";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -126,10 +127,41 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Run price monitor for each broker user after sync
+    const priceMonitorResults: Array<{ userId: string; result: PriceMonitorResult }> = [];
+    try {
+      const brokerUsers: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of brokerUsers) {
+        try {
+          const pmResult = await runPriceMonitor(u.id, { limit: 30, verbose: true });
+          if (pmResult.priceChanges > 0) {
+            priceMonitorResults.push({ userId: u.id, result: pmResult });
+          }
+        } catch (err) {
+          console.warn("[price-monitor] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[price-monitor] User lookup failed:", err);
+    }
+
     return NextResponse.json({
       ok: true,
       centris: { fetched: result.fetched, databases: result.databases.length, details: result.databases },
       realtor: realtorResults,
+      priceMonitor: {
+        usersChecked: priceMonitorResults.length,
+        totalChanges: priceMonitorResults.reduce((s, r) => s + r.result.priceChanges, 0),
+        details: priceMonitorResults.map((r) => ({
+          userId: r.userId,
+          checked: r.result.checked,
+          changes: r.result.priceChanges,
+        })),
+      },
     });
   } catch (err) {
     console.error("[sync-centris]", err);

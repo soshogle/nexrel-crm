@@ -282,6 +282,8 @@ model User {
   brandMentions               BrandMention[]
   // Real Estate Industry Relations
   reProperties                REProperty[]                 @relation("REUserProperties")
+  reRentalListings            RERentalListing[]            @relation("RERentalListingsUser")
+  rePriceChanges              REPriceChange[]              @relation("REPriceChangeUser")
   reFsboAssignedListings      REFSBOListing[]              @relation("REFSBOAssignedUser")
   reScrapingJobs              REScrapingJob[]              @relation("REScrapingJobUser")
   reMarketStats               REMarketStats[]              @relation("REMarketStatsUser")
@@ -7199,11 +7201,83 @@ model REProperty {
   netSheets     RESellerNetSheet[]
   diagnostics   REStaleDiagnostic[]
   transactions  RETransaction[]
+  priceChanges  REPriceChange[]         @relation("REPropertyPriceChanges")
 
   @@index([userId])
   @@index([city, state])
   @@index([listingStatus])
   @@index([mlsNumber])
+}
+
+enum RERentalStatus {
+  ACTIVE
+  RENTED
+  EXPIRED
+  WITHDRAWN
+}
+
+model RERentalListing {
+  id             String         @id @default(cuid())
+  userId         String
+  address        String
+  unit           String?
+  city           String
+  state          String
+  zip            String
+  country        String         @default("CA")
+  beds           Int?
+  baths          Float?
+  sqft           Int?
+  propertyType   REPropertyType  @default(CONDO)
+  listingStatus  RERentalStatus @default(ACTIVE)
+  rentPrice      Float?
+  rentPriceLabel String?
+  mlsNumber      String?
+  daysOnMarket   Int            @default(0)
+  photos         Json?
+  description    String?
+  features       String[]       @default([])
+  listingDate    DateTime?
+  rentedDate     DateTime?
+  source         String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user         User            @relation("RERentalListingsUser", fields: [userId], references: [id], onDelete: Cascade)
+  priceChanges REPriceChange[] @relation("RERentalPriceChanges")
+
+  @@index([userId])
+  @@index([city, state])
+  @@index([listingStatus])
+  @@index([mlsNumber])
+}
+
+model REPriceChange {
+  id              String           @id @default(cuid())
+  userId          String
+  propertyId      String?
+  rentalId        String?
+  mlsNumber       String?
+  address         String
+  oldPrice        Float?
+  newPrice        Float?
+  changeType      String           // "increase", "decrease", "new", "delisted"
+  changePercent   Float?
+  listingType     String           @default("sale") // "sale" or "rent"
+  source          String?          // "centris", "google", "remax"
+  sourceUrl       String?
+  syncedToWebsite Boolean          @default(false)
+  detectedAt      DateTime         @default(now())
+
+  user     User             @relation("REPriceChangeUser", fields: [userId], references: [id], onDelete: Cascade)
+  property REProperty?      @relation("REPropertyPriceChanges", fields: [propertyId], references: [id], onDelete: SetNull)
+  rental   RERentalListing? @relation("RERentalPriceChanges", fields: [rentalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([rentalId])
+  @@index([mlsNumber])
+  @@index([detectedAt])
 }
 
 model REFSBOListing {
@@ -7302,35 +7376,51 @@ model REScrapingJob {
 }
 
 model REMarketStats {
-  id              String       @id @default(cuid())
-  userId          String
-  periodStart     DateTime
-  periodEnd       DateTime
-  periodType      REPeriodType @default(WEEKLY)
-  region          String
-  city            String?
-  state           String?
-  country         String       @default("US")
-  medianSalePrice Float?
-  avgSalePrice    Float?
-  domMedian       Int?
-  domAvg          Float?
-  newListings     Int?
-  closedSales     Int?
-  activeInventory Int?
-  monthsOfSupply  Float?
-  listToSaleRatio Float?
-  priceReductions Int?
-  source          String?
-  rawData         Json?
-  createdAt       DateTime     @default(now())
+  id               String       @id @default(cuid())
+  userId           String
+  periodStart      DateTime
+  periodEnd        DateTime
+  periodType       REPeriodType @default(MONTHLY)
+  region           String
+  city             String?
+  state            String?
+  country          String       @default("CA")
+  propertyCategory String?
+  propertyType     String?
+  buildingType     String?
+  priceRange       String?
 
-  // Relations
+  medianSalePrice          Float?
+  avgSalePrice             Float?
+  medianAskingPrice        Float?
+  avgAskingPrice           Float?
+  domMedian                Int?
+  domAvg                   Float?
+  sellingTimeMedian        Int?
+  closePriceToAskingRatio  Float?
+  closePriceToOriginalRatio Float?
+  newListings              Int?
+  closedSales              Int?
+  expiredListings          Int?
+  activeInventory          Int?
+  numberOfSales            Int?
+  monthsOfSupply           Float?
+  listToSaleRatio          Float?
+  priceReductions          Int?
+  sampleSize               Int?
+  source                   String?
+  sourceFile               String?
+  rawData                  Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime? @updatedAt
+
   user User @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([region])
+  @@index([propertyCategory])
   @@index([periodStart, periodEnd])
+  @@index([userId, region, propertyCategory, periodType])
 }
 
 model REMarketReport {

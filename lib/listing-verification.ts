@@ -160,28 +160,22 @@ async function getListingsToVerify(
 }
 
 /**
- * Update listing status in DB. When sold, optionally update price to sold price.
+ * Update listing status in DB. When sold or rented, hide price (do not reveal sale/rent amounts).
  */
 async function updateListingStatus(
   databaseUrl: string,
   mlsNumber: string,
   newStatus: "sold" | "rented",
-  soldPrice?: number | null
+  _soldPrice?: number | null
 ): Promise<boolean> {
   const client = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: true } });
   try {
     await client.connect();
-    if (newStatus === "sold" && soldPrice != null && soldPrice > 0) {
-      await client.query(
-        `UPDATE properties SET status = $1, price = $2 WHERE mls_number = $3`,
-        [newStatus, String(soldPrice), mlsNumber]
-      );
-    } else {
-      await client.query(
-        `UPDATE properties SET status = $1 WHERE mls_number = $2`,
-        [newStatus, mlsNumber]
-      );
-    }
+    // Always hide price when sold/rented - do not reveal amounts on the website
+    await client.query(
+      `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
+      [newStatus, mlsNumber]
+    );
     return true;
   } catch (err) {
     console.warn("[listing-verification] updateListingStatus failed:", mlsNumber, err);

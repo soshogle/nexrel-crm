@@ -7,6 +7,7 @@ import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
 import { getMetaDb } from '@/lib/db/meta-db';
+import { prisma } from '@/lib/db';
 import { Pool } from 'pg';
 
 export type GalleryItem = string | { url: string; motionDisabled?: boolean };
@@ -139,6 +140,9 @@ export async function syncListingToWebsite(
     propertyType?: string;
     listingStatus?: string;
     listPrice?: number | null;
+    rentPrice?: number | null;
+    rentPriceLabel?: string | null;
+    listingType?: 'sale' | 'rent';
     mlsNumber?: string | null;
     photos?: string[] | null;
     description?: string | null;
@@ -176,7 +180,7 @@ export async function syncListingToWebsite(
     const galleryImages = photos.length > 1 ? photos.slice(1) : [];
 
     const statusMap: Record<string, string> = {
-      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold',
+      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold', RENTED: 'rented',
       EXPIRED: 'expired', WITHDRAWN: 'withdrawn', COMING_SOON: 'coming_soon',
     };
     const status = statusMap[listing.listingStatus || 'ACTIVE'] || 'active';
@@ -186,6 +190,15 @@ export async function syncListingToWebsite(
       MULTI_FAMILY: 'multi-family', LAND: 'land', COMMERCIAL: 'commercial', OTHER: 'other',
     };
     const propertyType = typeMap[listing.propertyType || 'OTHER'] || 'house';
+
+    const listingType = listing.listingType || 'sale';
+    // When sold or rented, do not display price on the website
+    const displayPrice =
+      status === 'sold' || status === 'rented'
+        ? null
+        : listingType === 'rent'
+          ? (listing.rentPrice ?? null)
+          : (listing.listPrice ?? null);
 
     // Upsert: match on mls_number if available, otherwise on address
     const upsertQuery = `
@@ -197,8 +210,9 @@ export async function syncListingToWebsite(
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,NOW(),NOW())
       ON CONFLICT (mls_number) WHERE mls_number IS NOT NULL DO UPDATE SET
         title = EXCLUDED.title, slug = EXCLUDED.slug, address = EXCLUDED.address,
-        property_type = EXCLUDED.property_type, status = EXCLUDED.status,
-        price = EXCLUDED.price, bedrooms = EXCLUDED.bedrooms, bathrooms = EXCLUDED.bathrooms,
+        property_type = EXCLUDED.property_type, listing_type = EXCLUDED.listing_type,
+        status = EXCLUDED.status, price = EXCLUDED.price,
+        bedrooms = EXCLUDED.bedrooms, bathrooms = EXCLUDED.bathrooms,
         living_area = EXCLUDED.living_area, main_image_url = EXCLUDED.main_image_url,
         gallery_images = EXCLUDED.gallery_images, latitude = EXCLUDED.latitude,
         longitude = EXCLUDED.longitude, description = EXCLUDED.description,
@@ -210,9 +224,9 @@ export async function syncListingToWebsite(
       slug,
       fullAddress,
       propertyType,
-      'sale',
+      listingType,
       status,
-      listing.listPrice || null,
+      displayPrice,
       listing.beds || null,
       listing.baths || null,
       listing.sqft || null,
@@ -314,7 +328,7 @@ export async function syncStatusToWebsite(
     }
 
     const statusMap: Record<string, string> = {
-      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold',
+      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold', RENTED: 'rented',
       EXPIRED: 'expired', WITHDRAWN: 'withdrawn', COMING_SOON: 'coming_soon',
     };
     const dbStatus = statusMap[status] || 'active';
@@ -322,16 +336,29 @@ export async function syncStatusToWebsite(
     const pool = getPool(website.neonDatabaseUrl);
     let result;
 
+    // When sold or rented, hide price on the website (do not reveal sale/rent amounts)
+    const hidePrice = dbStatus === 'sold' || dbStatus === 'rented';
+
     if (mlsNumber) {
-      result = await pool.query(
-        `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
-        [dbStatus, mlsNumber]
-      );
+      result = hidePrice
+        ? await pool.query(
+            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
+            [dbStatus, mlsNumber]
+          )
+        : await pool.query(
+            `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
+            [dbStatus, mlsNumber]
+          );
     } else if (address) {
-      result = await pool.query(
-        `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
-        [dbStatus, `%${address}%`]
-      );
+      result = hidePrice
+        ? await pool.query(
+            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+            [dbStatus, `%${address}%`]
+          )
+        : await pool.query(
+            `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+            [dbStatus, `%${address}%`]
+          );
     } else {
       return { success: false, updated: 0, error: 'No MLS number or address to match' };
     }
@@ -339,6 +366,49 @@ export async function syncStatusToWebsite(
     return { success: true, updated: result.rowCount ?? 0 };
   } catch (e: any) {
     return { success: false, updated: 0, error: e.message };
+  }
+}
+
+/**
+ * Push SOLD/RENTED status from CRM to owner's website for all matching listings.
+ * Matches by MLS number. Hides price for sold/rented listings.
+ */
+export async function syncStatusChangesToWebsite(userId: string): Promise<{
+  soldUpdated: number;
+  rentedUpdated: number;
+  error?: string;
+}> {
+  try {
+    const [soldProps, rentedListings] = await Promise.all([
+      prisma.rEProperty.findMany({
+        where: { userId, listingStatus: 'SOLD', mlsNumber: { not: null } },
+        select: { mlsNumber: true },
+      }),
+      prisma.rERentalListing.findMany({
+        where: { userId, listingStatus: 'RENTED', mlsNumber: { not: null } },
+        select: { mlsNumber: true },
+      }),
+    ]);
+
+    let soldUpdated = 0;
+    let rentedUpdated = 0;
+
+    for (const p of soldProps) {
+      if (p.mlsNumber) {
+        const r = await syncStatusToWebsite(userId, p.mlsNumber, null, 'SOLD');
+        if (r.updated > 0) soldUpdated += r.updated;
+      }
+    }
+    for (const r of rentedListings) {
+      if (r.mlsNumber) {
+        const res = await syncStatusToWebsite(userId, r.mlsNumber, null, 'RENTED');
+        if (res.updated > 0) rentedUpdated += res.updated;
+      }
+    }
+
+    return { soldUpdated, rentedUpdated };
+  } catch (e: any) {
+    return { soldUpdated: 0, rentedUpdated: 0, error: e.message };
   }
 }
 

@@ -7,6 +7,7 @@ import {
   Building2, Home, DollarSign, Plus, Search, Filter,
   Edit, Trash2, MoreHorizontal,
   Calendar, Tag, ChevronLeft, Download, Database, Import, Loader2,
+  TrendingUp, TrendingDown, RefreshCw, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -112,6 +113,13 @@ export default function ListingsPage() {
   const [showWebsiteResults, setShowWebsiteResults] = useState(false);
   const [importingMls, setImportingMls] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+  const [listingTab, setListingTab] = useState<'sale' | 'rent'>('sale');
+  const [rentals, setRentals] = useState<any[]>([]);
+  const [rentalsLoading, setRentalsLoading] = useState(false);
+  const [syncingStatus, setSyncingStatus] = useState(false);
+  const [checkingPrices, setCheckingPrices] = useState(false);
+  const [priceChanges, setPriceChanges] = useState<any[]>([]);
+  const [showPriceChanges, setShowPriceChanges] = useState(false);
   const { toast } = useToast();
 
   const fetchProperties = useCallback(async () => {
@@ -131,7 +139,21 @@ export default function ListingsPage() {
     }
   }, [statusFilter, typeFilter, toast]);
 
+  const fetchRentals = useCallback(async () => {
+    setRentalsLoading(true);
+    try {
+      const res = await fetch('/api/real-estate/rental-listings?limit=200');
+      const data = await res.json();
+      setRentals(Array.isArray(data?.rentals) ? data.rentals : []);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to fetch rentals', variant: 'destructive' });
+    } finally {
+      setRentalsLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
+  useEffect(() => { if (listingTab === 'rent') fetchRentals(); }, [listingTab, fetchRentals]);
 
   const filtered = properties.filter((p) => {
     if (!searchQuery) return true;
@@ -141,6 +163,16 @@ export default function ListingsPage() {
       p.city.toLowerCase().includes(q) ||
       p.mlsNumber?.toLowerCase().includes(q) ||
       p.sellerLead?.contactPerson?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredRentals = rentals.filter((r) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      r.address?.toLowerCase().includes(q) ||
+      r.city?.toLowerCase().includes(q) ||
+      r.mlsNumber?.toLowerCase().includes(q)
     );
   });
 
@@ -425,9 +457,56 @@ export default function ListingsPage() {
           <p className="text-muted-foreground">Centralized view of all your property listings</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              setCheckingPrices(true);
+              try {
+                const res = await fetch('/api/real-estate/properties/price-monitor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 50 }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                if (data.changes?.length > 0) {
+                  setPriceChanges(data.changes);
+                  setShowPriceChanges(true);
+                }
+                toast({ title: 'Price Check Complete', description: data.message });
+                fetchProperties();
+              } catch (e: any) {
+                toast({ title: 'Error', description: e.message || 'Price check failed', variant: 'destructive' });
+              } finally {
+                setCheckingPrices(false);
+              }
+            }}
+            disabled={checkingPrices}
+          >
+            {checkingPrices ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Check Prices
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              setSyncingStatus(true);
+              try {
+                const res = await fetch('/api/real-estate/properties/sync-status-to-website', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                toast({ title: 'Synced', description: data.message || 'Status updates pushed to your website' });
+              } catch (e: any) {
+                toast({ title: 'Error', description: e.message || 'Failed to sync', variant: 'destructive' });
+              } finally {
+                setSyncingStatus(false);
+              }
+            }}
+            disabled={syncingStatus}
+          >
+            {syncingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+            Sync to Website
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={properties.length === 0}>
+              <Button variant="outline" size="sm" disabled={listingTab === 'sale' ? properties.length === 0 : rentals.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Export
               </Button>
             </DropdownMenuTrigger>
@@ -450,6 +529,24 @@ export default function ListingsPage() {
         </div>
       </div>
 
+      {/* Sale vs Rent tabs */}
+      <div className="flex gap-2 border-b pb-2">
+        <Button
+          variant={listingTab === 'sale' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setListingTab('sale')}
+        >
+          For Sale ({stats.total})
+        </Button>
+        <Button
+          variant={listingTab === 'rent' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setListingTab('rent')}
+        >
+          For Rent ({rentals.length})
+        </Button>
+      </div>
+
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
@@ -457,7 +554,7 @@ export default function ListingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Listings</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold">{listingTab === 'sale' ? stats.total : rentals.length}</p>
               </div>
               <Building2 className="h-8 w-8 text-muted-foreground/50" />
             </div>
@@ -467,8 +564,10 @@ export default function ListingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                <p className="text-sm text-muted-foreground">{listingTab === 'rent' ? 'Active' : 'Active'}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {listingTab === 'sale' ? stats.active : rentals.filter((r) => r.listingStatus === 'ACTIVE').length}
+                </p>
               </div>
               <Home className="h-8 w-8 text-green-500/50" />
             </div>
@@ -478,8 +577,10 @@ export default function ListingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-sm text-muted-foreground">{listingTab === 'rent' ? '—' : 'Pending'}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {listingTab === 'sale' ? stats.pending : '—'}
+                </p>
               </div>
               <Calendar className="h-8 w-8 text-yellow-500/50" />
             </div>
@@ -489,8 +590,10 @@ export default function ListingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Sold</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.sold}</p>
+                <p className="text-sm text-muted-foreground">{listingTab === 'rent' ? 'Rented' : 'Sold'}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {listingTab === 'sale' ? stats.sold : rentals.filter((r) => r.listingStatus === 'RENTED').length}
+                </p>
               </div>
               <Tag className="h-8 w-8 text-blue-500/50" />
             </div>
@@ -508,6 +611,48 @@ export default function ListingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Price Changes Feed */}
+      {showPriceChanges && priceChanges.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-orange-500" />
+                <h3 className="font-semibold">Price Changes Detected</h3>
+                <Badge variant="secondary">{priceChanges.length}</Badge>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowPriceChanges(false)}>Dismiss</Button>
+            </div>
+            <div className="space-y-2">
+              {priceChanges.map((c: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                  <div className={`flex items-center justify-center h-8 w-8 rounded-full ${c.changeType === 'increase' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                    {c.changeType === 'increase' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{c.address}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      {c.mlsNumber && <span className="font-mono">MLS# {c.mlsNumber}</span>}
+                      <Badge variant="outline" className="text-[10px] h-4">{c.listingType}</Badge>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground line-through">${c.oldPrice?.toLocaleString()}</span>
+                      {' → '}
+                      <span className="font-semibold">${c.newPrice?.toLocaleString()}</span>
+                    </div>
+                    <div className={`text-xs font-medium ${c.changeType === 'increase' ? 'text-red-600' : 'text-green-600'}`}>
+                      {c.changePercent > 0 ? '+' : ''}{c.changePercent?.toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters + Bulk Actions */}
       <Card>
@@ -633,7 +778,57 @@ export default function ListingsPage() {
       {/* Listings Table */}
       <Card>
         <CardContent className="p-0">
-          {loading ? (
+          {listingTab === 'rent' ? (
+            rentalsLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : filteredRentals.length === 0 ? (
+              <div className="text-center py-20 text-muted-foreground">
+                <Building2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                <p className="text-lg font-medium">No rental listings</p>
+                <p className="text-sm mt-1">Import Centris rental data to see listings here</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Rent</TableHead>
+                    <TableHead className="text-center">Beds</TableHead>
+                    <TableHead className="text-center">Baths</TableHead>
+                    <TableHead className="text-right">Sq Ft</TableHead>
+                    <TableHead>MLS#</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRentals.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{r.address}{r.unit ? `, ${r.unit}` : ''}</div>
+                          <div className="text-xs text-muted-foreground">{r.city}, {r.state}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={r.listingStatus === 'RENTED' ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'}>
+                          {r.listingStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{typeLabel(r.propertyType)}</TableCell>
+                      <TableCell className="text-right font-medium">{r.rentPriceLabel || (r.rentPrice ? `$${r.rentPrice.toLocaleString()}` : '—')}</TableCell>
+                      <TableCell className="text-center">{r.beds ?? '—'}</TableCell>
+                      <TableCell className="text-center">{r.baths ?? '—'}</TableCell>
+                      <TableCell className="text-right">{r.sqft?.toLocaleString() ?? '—'}</TableCell>
+                      <TableCell className="text-sm font-mono">{r.mlsNumber || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          ) : loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
             </div>

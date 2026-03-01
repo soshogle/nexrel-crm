@@ -84,7 +84,64 @@ export async function computeLiveMarketStats(
   ]);
 
   const totalListings = properties.length + fsboListings.length;
+
+  // If no user listings, check for Centris-imported market stats as fallback
   if (totalListings === 0) {
+    const stored = await prisma.rEMarketStats.findMany({
+      where: {
+        userId,
+        periodType: 'MONTHLY',
+        priceRange: null,
+        ...(city ? { OR: [{ city: { contains: city, mode: 'insensitive' } }, { region: { contains: city, mode: 'insensitive' } }] } : {}),
+      },
+      orderBy: { periodStart: 'desc' },
+      take: 12,
+    });
+
+    if (stored.length > 0) {
+      const latest = stored[0];
+      const mTrends = stored.reverse().map((s) => ({
+        month: s.periodStart.toISOString().slice(0, 7),
+        newListings: s.newListings ?? 0,
+        closedSales: s.closedSales ?? 0,
+        medianPrice: s.medianSalePrice ?? 0,
+        avgPrice: Math.round(s.avgSalePrice ?? 0),
+        medianDom: s.domMedian ?? 0,
+      }));
+
+      return {
+        hasData: true,
+        stats: {
+          medianSalePrice: latest.medianSalePrice ?? 0,
+          avgSalePrice: Math.round(latest.avgSalePrice ?? 0),
+          medianListPrice: latest.medianAskingPrice ?? latest.medianSalePrice ?? 0,
+          medianSoldPrice: latest.medianSalePrice ?? 0,
+          activeListings: latest.activeInventory ?? 0,
+          closedSales: latest.closedSales ?? 0,
+          pendingListings: 0,
+          domMedian: latest.domMedian ?? 0,
+          domAvg: Math.round(latest.domAvg ?? 0),
+          pricePerSqft: 0,
+          monthsOfSupply: latest.monthsOfSupply ?? 0,
+          listToSaleRatio: latest.closePriceToAskingRatio ? latest.closePriceToAskingRatio / 100 : 0,
+          newListingsThisMonth: latest.newListings ?? 0,
+          priceChangePercent: 0,
+          fsboListings: 0,
+          fsboActive: 0,
+          fsboMedianPrice: 0,
+          typeBreakdown: latest.propertyCategory ? [{ type: latest.propertyCategory, count: latest.sampleSize ?? 0 }] : [],
+          priceDistribution: [],
+          statusBreakdown: [],
+          monthlyTrends: mTrends,
+          dataSource: {
+            properties: 0,
+            fsboListings: 0,
+            location: latest.city || latest.region || 'Centris Data',
+          },
+        },
+      };
+    }
+
     return {
       hasData: false,
       stats: null,
