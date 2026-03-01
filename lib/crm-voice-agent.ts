@@ -247,12 +247,15 @@ When users ask you to do something:
 3. Execute the action using available functions
 4. Confirm completion
 
+LEAD SOURCES & CATEGORIZATION:
+Leads come from different sources. When users ask about "website leads", "leads from my website", "form submissions", or "how many leads from each source", use list_leads with source filter or get_statistics with "leads by source". Common sources: "Website Form", "Embedded Widget", "Website Voice AI", "Voice AI", "manual", "referral", "Google Maps", "LinkedIn". Website leads = source contains "website" or "Website Form" or "Embedded Widget" or "Website Voice AI".
+
 Available functions:
-- list_leads: List contacts/leads. USE THIS when user asks "how many leads", "how many new leads today", "show my contacts", "show my leads", or wants to see the list of contacts. Use period: "today" for leads created today.
+- list_leads: List contacts/leads. USE THIS when user asks "how many leads", "how many new leads today", "show my contacts", "show my leads", "website leads", "leads from my website", or wants to see the list of contacts. Use period: "today" for leads created today. Use source: "website" to filter website leads (form, widget, voice). Use source: "Website Form", "Embedded Widget", "Website Voice AI" for specific website sources.
 - list_deals: List deals in the pipeline. USE THIS when user asks "how many deals", "show my deals", or wants to see the pipeline.
-- get_statistics: Get comprehensive CRM statistics (revenue, charts, graphs). USE THIS only when user asks for charts, graphs, visualizations, sales over time, revenue comparison, or monthly trends.
+- get_statistics: Get comprehensive CRM statistics (revenue, charts, graphs). USE when user asks for charts, graphs, visualizations, sales over time, revenue comparison, monthly trends, OR "leads by source" / "how many leads from each source" (use chartIntent: "leads by source").
 - create_report: Create and save a report to the Reports page. USE when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". Report is saved and visible on Reports page.
-- create_lead: Create a new contact/lead
+- create_lead: Create a new contact/lead. USE THIS when user says "create a lead", "add a contact", "create contact John Smith". Required: name. Optional: email, phone, company, status, source (e.g. "Voice AI", "manual").
 - create_deal: Create a new deal
 - search_contacts: Search for contacts by name, email, or company
 - get_recent_activity: Get recent CRM activity
@@ -347,7 +350,7 @@ ${getConfidentialityGuard()}`;
     return [
       {
         name: 'get_statistics',
-        description: 'Get CRM statistics, graphs/charts, and "what if" scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, OR "what if" scenarios (e.g. "what if I convert 10 more leads?", "what if I get 50 more leads?", "what if conversion improved 5%?").',
+        description: 'Get CRM statistics, graphs/charts, and "what if" scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, leads by source, OR "what if" scenarios. For "leads by source" or "how many leads from each source", pass chartIntent: "leads by source".',
         parameters: {
           type: 'object',
           properties: {
@@ -358,6 +361,10 @@ ${getConfidentialityGuard()}`;
             compareWith: {
               type: 'string',
               description: 'Compare with previous period. Examples: "previous_year", "previous_period"',
+            },
+            chartIntent: {
+              type: 'string',
+              description: 'Specific chart to show. Use "leads by source" when user asks about lead sources, "revenue by month" for monthly revenue, "deals by stage" for pipeline breakdown.',
             },
           },
         },
@@ -389,7 +396,7 @@ ${getConfidentialityGuard()}`;
       },
       {
         name: 'create_lead',
-        description: 'Create a new contact/lead in the CRM. Use this when the user wants to add a new contact.',
+        description: 'Create a new contact/lead in the CRM. Use when user says "create a lead", "add a contact", "create contact [name]". Always call this function when user asks to create a lead - do not just acknowledge.',
         parameters: {
           type: 'object',
           properties: {
@@ -413,6 +420,10 @@ ${getConfidentialityGuard()}`;
               type: 'string',
               description: 'Lead status (optional, defaults to NEW)',
               enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            },
+            source: {
+              type: 'string',
+              description: 'Lead source (optional, defaults to Voice AI when created via voice)',
             },
           },
           required: ['name'],
@@ -444,7 +455,7 @@ ${getConfidentialityGuard()}`;
       },
       {
         name: 'list_leads',
-        description: 'List contacts/leads. Use when user asks "how many leads", "how many new leads today", "show my contacts", or wants to see leads. Use period: "today" for leads created today.',
+        description: 'List contacts/leads. Use when user asks "how many leads", "website leads", "leads from my website", "show my contacts", or wants to see leads. Use period: "today" for leads created today. Use source: "website" for website leads (form, widget, voice), or specific source like "Website Form", "Embedded Widget", "Website Voice AI".',
         parameters: {
           type: 'object',
           properties: {
@@ -452,6 +463,10 @@ ${getConfidentialityGuard()}`;
               type: 'string',
               description: 'Filter by status (optional)',
               enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            },
+            source: {
+              type: 'string',
+              description: 'Filter by source. Use "website" for any website lead (form, widget, voice). Or specific: "Website Form", "Embedded Widget", "Website Voice AI", "Voice AI", "manual", "referral".',
             },
             period: {
               type: 'string',

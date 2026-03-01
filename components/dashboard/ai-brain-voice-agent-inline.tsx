@@ -6,11 +6,13 @@
 
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Loader2 } from 'lucide-react';
 
 export function AIBrainVoiceAgentInline() {
+  const { data: session } = useSession();
   const {
     agentId,
     loading,
@@ -59,6 +61,8 @@ export function AIBrainVoiceAgentInline() {
     );
   }
 
+  const dynamicVariables = session?.user?.id ? { user_id: session.user.id } : undefined;
+
   return (
     <div className="relative w-full">
       <ElevenLabsAgent 
@@ -70,6 +74,7 @@ export function AIBrainVoiceAgentInline() {
         onAgentSpeakingChange={handleAgentSpeakingChange}
         onMessage={handleMessage}
         onConversationEnd={handleConversationEnd}
+        dynamicVariables={dynamicVariables}
       />
     </div>
   );

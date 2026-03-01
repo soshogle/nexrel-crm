@@ -21,6 +21,7 @@ import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+const DEBUG_CRM_VOICE_FUNCTIONS = process.env.DEBUG_CRM_VOICE_FUNCTIONS === 'true';
 
 async function proxyToActionsAPI(
   action: string,
@@ -51,11 +52,34 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { function_name, parameters, user_id } = body;
+    // ElevenLabs may pass user_id at top level or inside parameters (from dynamic variables)
+    const params = parameters || {};
+    const userIdFromBody = user_id ?? params.user_id ?? body.user_id;
 
     console.log(`🧰 [CRM Voice Functions] Received call: ${function_name}`, parameters);
+    if (DEBUG_CRM_VOICE_FUNCTIONS) {
+      const safeHeaders = {
+        'user-agent': req.headers.get('user-agent'),
+        'content-type': req.headers.get('content-type'),
+        'x-forwarded-for': req.headers.get('x-forwarded-for'),
+        'x-real-ip': req.headers.get('x-real-ip'),
+        'x-elevenlabs-signature': req.headers.get('x-elevenlabs-signature') ? 'present' : null,
+      };
+      console.log('🔎 [CRM Voice Functions][DEBUG] Incoming payload shape', {
+        function_name,
+        topLevelKeys: Object.keys(body || {}),
+        parameterKeys: Object.keys(params || {}),
+        userIdCandidates: {
+          topLevelUserId: user_id ?? null,
+          parameterUserId: params.user_id ?? null,
+          resolvedUserId: userIdFromBody ?? null,
+        },
+        headers: safeHeaders,
+      });
+    }
 
     // Get user from session or user_id, and resolve industry for DB routing
-    let userId = user_id;
+    let userId = userIdFromBody;
     let industry: Industry | null = null;
     const session = await getServerSession(authOptions);
     if (!userId) {
@@ -513,10 +537,10 @@ async function getStatistics(userId: string, params: any = {}, industry: Industr
  */
 async function createLead(userId: string, params: any, industry: Industry | null = null) {
   try {
-    const { name, email, phone, company, status = 'NEW' } = params;
+    const { name, email, phone, company, status = 'NEW', source } = params;
 
     if (!name) {
-      return { error: 'Name is required' };
+      return { error: 'Name is required to create a lead. Please provide the contact\'s name.' };
     }
 
     const ctx = createDalContext(userId, industry);
@@ -526,7 +550,7 @@ async function createLead(userId: string, params: any, industry: Industry | null
       email,
       phone,
       status: status as any,
-      source: 'Voice AI',
+      source: source || 'Voice AI',
     } as any);
 
     syncLeadCreatedToPipeline(userId, lead).catch(err => {
@@ -605,7 +629,7 @@ async function listLeads(userId: string, params: any, industry: Industry | null 
       };
     }
 
-    const { status, limit = 10, period } = params;
+    const { status, source, limit = 10, period } = params;
 
     const now = new Date();
     let startOfToday: Date | undefined;
@@ -616,6 +640,19 @@ async function listLeads(userId: string, params: any, industry: Industry | null 
     const where: any = { userId };
     if (status) where.status = status;
     if (startOfToday) where.createdAt = { gte: startOfToday };
+    // Filter by source: "website" = any website lead, or specific source
+    if (source) {
+      if (source.toLowerCase() === 'website') {
+        where.OR = [
+          { source: { contains: 'website', mode: 'insensitive' } },
+          { source: { contains: 'Website Form', mode: 'insensitive' } },
+          { source: { contains: 'Embedded Widget', mode: 'insensitive' } },
+          { source: { contains: 'Website Voice AI', mode: 'insensitive' } },
+        ];
+      } else {
+        where.source = { contains: source, mode: 'insensitive' };
+      }
+    }
 
     const ctx = createDalContext(userId, industry);
     const leads = await leadService.findMany(ctx, {
@@ -628,17 +665,19 @@ async function listLeads(userId: string, params: any, industry: Industry | null 
         email: true,
         phone: true,
         status: true,
+        source: true,
         createdAt: true,
       },
     });
 
     const periodLabel = period === 'today' ? ' created today' : '';
+    const sourceLabel = source ? ` from ${source}` : '';
     return {
       success: true,
       leads: leads,
       count: leads.length,
       navigateTo: '/dashboard/contacts',
-      message: `You have ${leads.length} ${status ? status.toLowerCase() : ''} lead${leads.length !== 1 ? 's' : ''}${periodLabel}.`,
+      message: `You have ${leads.length} ${status ? status.toLowerCase() : ''} lead${leads.length !== 1 ? 's' : ''}${sourceLabel}${periodLabel}.`,
     };
   } catch (error: any) {
     console.error('Error listing leads:', error);

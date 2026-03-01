@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ElevenLabsAgent, type ElevenLabsAgentHandle } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const STORAGE_KEY = 'crm-voice-assistant-state';
 
 export function GlobalVoiceAssistant() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { handleMessage } = useAIBrainVoice();
   const [isOpen, setIsOpen] = useState(false);
   const [activeWorkflowDraftId, setActiveWorkflowDraftId] = useState<string | null>(null);
@@ -151,6 +153,7 @@ export function GlobalVoiceAssistant() {
     company_name: 'Your CRM',
     user_name: 'User',
     preferred_language: preferredLanguage,
+    ...(session?.user?.id && { user_id: session.user.id }),
     ...(typeof window !== 'undefined' && (() => {
       const pc = getPageContext();
       return pc.path ? { current_path: pc.path } : {};
