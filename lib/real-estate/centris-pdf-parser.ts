@@ -121,6 +121,10 @@ function isInvalidMunicipality(label: string): boolean {
   if (/calculation|assessment|ratio|municipality|borough|property|exclusive use|broker members|Centris/i.test(label)) return true;
   if (/^Statistics by/i.test(label)) return true;
   if (/^-\d/.test(label)) return true;
+  if (/^[(<>=]/.test(label)) return true;
+  if (/^Difference\b/i.test(label)) return true;
+  if (/^\d+\s*%/.test(label)) return true;
+  if (/^Unknown$/i.test(label)) return true;
   return false;
 }
 

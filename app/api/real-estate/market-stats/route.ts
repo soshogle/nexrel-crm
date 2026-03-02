@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           listPrice: true, soldPrice: true, listingStatus: true,
           daysOnMarket: true, createdAt: true, soldDate: true, listingDate: true,
           sqft: true, city: true, state: true, beds: true, baths: true,
-          propertyType: true,
+          propertyType: true, isBrokerListing: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -103,11 +103,14 @@ export async function GET(request: NextRequest) {
     const soldListings = properties.filter((l) => l.listingStatus === 'SOLD');
     const pendingListings = properties.filter((l) => l.listingStatus === 'PENDING');
 
-    // Compute DOM from listingDate when daysOnMarket is missing (fallback for ACTIVE: createdAt = first seen in CRM)
+    // Compute DOM from listingDate when daysOnMarket is missing
+    // Only use createdAt fallback for broker's own listings — never for bulk MLS imports
     const now = new Date();
-    const getDom = (p: { daysOnMarket: number | null; listingDate: Date | null; soldDate: Date | null; listingStatus: string; createdAt: Date }) => {
+    const getDom = (p: { daysOnMarket: number | null; listingDate: Date | null; soldDate: Date | null; listingStatus: string; createdAt: Date; isBrokerListing: boolean }) => {
       if (p.daysOnMarket != null && p.daysOnMarket > 0) return p.daysOnMarket;
-      const listDate = p.listingDate ? new Date(p.listingDate) : (p.listingStatus === 'ACTIVE' ? new Date(p.createdAt) : null);
+      const listDate = p.listingDate
+        ? new Date(p.listingDate)
+        : (p.isBrokerListing && p.listingStatus === 'ACTIVE' ? new Date(p.createdAt) : null);
       if (!listDate) return 0;
       const endDate = p.listingStatus === 'SOLD' && p.soldDate ? new Date(p.soldDate) : now;
       return Math.max(0, Math.floor((endDate.getTime() - listDate.getTime()) / 86400000));
@@ -463,8 +466,8 @@ function avg(arr: number[]): number {
 
 function getDomForTrend(p: { daysOnMarket: number | null; listingDate: Date | null; soldDate: Date | null; listingStatus: string }) {
   if (p.daysOnMarket != null && p.daysOnMarket > 0) return p.daysOnMarket;
-  const listDate = p.listingDate ? new Date(p.listingDate) : null;
-  if (!listDate) return 0;
+  if (!p.listingDate) return 0;
+  const listDate = new Date(p.listingDate);
   const now = new Date();
   const endDate = p.listingStatus === 'SOLD' && p.soldDate ? new Date(p.soldDate) : now;
   return Math.max(0, Math.floor((endDate.getTime() - listDate.getTime()) / 86400000));

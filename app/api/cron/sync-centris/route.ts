@@ -11,11 +11,13 @@ import { runCentralCentrisSync, type BrokerOverride } from "@/lib/centris-sync";
 import { runRealtorSync } from "@/lib/realtor-sync";
 import { getCrmDb } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
+import { prisma } from "@/lib/db";
 import { apiErrors } from '@/lib/api-error';
 import { runPriceMonitor, type PriceMonitorResult } from "@/lib/listing-enrichment/price-monitor";
 import { enrichCrmListings } from "@/lib/listing-enrichment/enrich-crm-listings";
 import { backfillPropertyCoordinates } from "@/lib/real-estate/geo-comps";
 import { syncStatusChangesToWebsite, flagBrokerListingsFromWebsite } from "@/lib/website-builder/listings-service";
+import { importApifyListingsToCrm } from "@/lib/real-estate/apify-crm-import";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -130,6 +132,26 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Import new Centris listings into CRM REProperty (incremental — skip existing MLS numbers)
+    const crmImportResults: Array<{ userId: string; imported: number; skipped: number }> = [];
+    try {
+      const reUsersImport: any[] = await db.user.findMany({
+        where: { industry: 'REAL_ESTATE' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsersImport) {
+        try {
+          const ir = await importApifyListingsToCrm(u.id, databaseUrls[0]);
+          crmImportResults.push({ userId: u.id, imported: ir.imported, skipped: ir.skipped });
+        } catch (err) {
+          console.warn("[crm-import] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[crm-import] User lookup failed:", err);
+    }
+
     // Run price monitor for each broker user after sync
     const priceMonitorResults: Array<{ userId: string; result: PriceMonitorResult }> = [];
     try {
@@ -241,6 +263,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       centris: { fetched: result.fetched, databases: result.databases.length, details: result.databases },
+      crmImport: {
+        usersProcessed: crmImportResults.length,
+        totalImported: crmImportResults.reduce((s, r) => s + r.imported, 0),
+        totalSkipped: crmImportResults.reduce((s, r) => s + r.skipped, 0),
+        details: crmImportResults,
+      },
       realtor: realtorResults,
       priceMonitor: {
         usersChecked: priceMonitorResults.length,

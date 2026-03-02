@@ -16,13 +16,22 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
     const [properties, fsbo, cmaReports, staleDiagnostics, priceChanges] = await Promise.all([
+      // Only show broker's own listings (not bulk MLS imports) or listings with real date data
       prisma.rEProperty.findMany({
-        where: { userId },
+        where: {
+          userId,
+          OR: [
+            { isBrokerListing: true },
+            { soldDate: { not: null } },
+            { listingDate: { not: null } },
+          ],
+        },
         select: {
           id: true,
           address: true,
           listingStatus: true,
           listPrice: true,
+          isBrokerListing: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -88,20 +97,28 @@ export async function GET(request: NextRequest) {
 
     for (const p of properties) {
       const status = p.listingStatus?.toLowerCase?.() || 'updated';
+      const prefix = p.isBrokerListing ? '' : 'MLS listing ';
       activities.push({
         id: `listing-${p.id}`,
         type: 'listing',
-        message: `Listing ${status}: ${p.address}`,
+        message: `${prefix}Listing ${status}: ${p.address}`,
         createdAt: p.updatedAt.toISOString(),
       });
     }
 
     for (const c of priceChanges) {
-      const direction = c.changeType === 'decrease' ? 'reduced' : c.changeType === 'increase' ? 'increased' : c.changeType;
+      let message: string;
+      if (c.changeType === 'sold') message = `Listing sold: ${c.address}`;
+      else if (c.changeType === 'rented') message = `Listing rented: ${c.address}`;
+      else if (c.changeType === 'delisted') message = `Listing removed/off-market: ${c.address}`;
+      else {
+        const direction = c.changeType === 'decrease' ? 'reduced' : c.changeType === 'increase' ? 'increased' : c.changeType;
+        message = `Price ${direction} for ${c.address}`;
+      }
       activities.push({
         id: `price-${c.id}`,
-        type: 'price',
-        message: `Price ${direction} for ${c.address}`,
+        type: c.changeType === 'sold' || c.changeType === 'rented' || c.changeType === 'delisted' ? 'listing' : 'price',
+        message,
         createdAt: c.detectedAt.toISOString(),
       });
     }

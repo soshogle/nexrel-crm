@@ -21,7 +21,7 @@ const safeInt = (v: number | undefined | null): number | null => {
   return Math.abs(v) <= INT4_MAX ? v : null;
 };
 const safeDom = (v: number | undefined | null): number | null => {
-  if (v == null || isNaN(v) || v > 5000 || v < 0) return null;
+  if (v == null || isNaN(v) || v > 500 || v < 0) return null;
   return v;
 };
 

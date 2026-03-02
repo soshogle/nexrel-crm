@@ -85,10 +85,23 @@ interface ScrapedPrice {
   price: number | null;
   source: string;
   sourceUrl?: string;
+  detectedStatus?: 'sold' | 'rented' | 'off_market' | null;
+}
+
+const SOLD_PATTERNS = [/vendu/i, />sold</i, /"status"\s*:\s*"sold"/i, /this\s+listing\s+is\s+no\s+longer\s+available/i];
+const RENTED_PATTERNS = [/loué/i, />rented</i, /"status"\s*:\s*"rented"/i];
+const OFF_MARKET_PATTERNS = [/listing\s+not\s+found/i, /cette\s+annonce\s+n['']est\s+plus\s+disponible/i, /no\s+longer\s+available/i];
+
+function detectStatusFromHtml(html: string): 'sold' | 'rented' | 'off_market' | null {
+  for (const p of SOLD_PATTERNS) { if (p.test(html)) return 'sold'; }
+  for (const p of RENTED_PATTERNS) { if (p.test(html)) return 'rented'; }
+  for (const p of OFF_MARKET_PATTERNS) { if (p.test(html)) return 'off_market'; }
+  return null;
 }
 
 /**
  * Try to get the current live price for a listing.
+ * Also detects sold/rented/off-market status from Centris HTML.
  * Tier 1: Centris direct scrape → Tier 2: Google Search fallback
  */
 async function scrapeLivePrice(
@@ -101,13 +114,16 @@ async function scrapeLivePrice(
   if (originalUrl?.includes('centris.ca')) {
     const html = await fetchHtml(originalUrl);
     if (html && html.length > 1000) {
+      const detectedStatus = detectStatusFromHtml(html);
       const price =
         listingType === 'rent'
           ? extractRentPriceFromHtml(html)
           : extractPriceFromHtml(html);
-      if (price) {
-        return { price, source: 'centris', sourceUrl: originalUrl };
+      if (price || detectedStatus) {
+        return { price, source: 'centris', sourceUrl: originalUrl, detectedStatus };
       }
+    } else if (html !== null && html.length < 500) {
+      return { price: null, source: 'centris', sourceUrl: originalUrl, detectedStatus: 'off_market' };
     }
   }
 
@@ -221,6 +237,69 @@ export async function runPriceMonitor(
         'sale'
       );
 
+      // Detect status changes (sold, rented, off-market) from Centris HTML
+      if (scraped.detectedStatus) {
+        const newStatus =
+          scraped.detectedStatus === 'sold' ? 'SOLD' as const :
+          scraped.detectedStatus === 'rented' ? 'SOLD' as const :
+          scraped.detectedStatus === 'off_market' ? 'WITHDRAWN' as const : null;
+
+        if (newStatus) {
+          await prisma.rEProperty.update({
+            where: { id: listing.id },
+            data: {
+              listingStatus: newStatus,
+              ...(newStatus === 'SOLD' ? { soldDate: new Date(), soldPrice: scraped.price ?? listing.listPrice } : {}),
+            },
+          });
+
+          await prisma.rEPriceChange.create({
+            data: {
+              userId,
+              propertyId: listing.id,
+              mlsNumber: listing.mlsNumber,
+              address: listing.address,
+              oldPrice: listing.listPrice,
+              newPrice: scraped.price,
+              changeType: scraped.detectedStatus === 'sold' ? 'sold' : scraped.detectedStatus === 'rented' ? 'rented' : 'delisted',
+              changePercent: null,
+              listingType: 'sale',
+              source: scraped.source,
+              sourceUrl: scraped.sourceUrl,
+            },
+          });
+
+          try {
+            await syncListingToWebsite(userId, {
+              address: listing.address,
+              city: listing.city,
+              state: '',
+              zip: '',
+              listPrice: scraped.price ?? listing.listPrice ?? 0,
+              mlsNumber: listing.mlsNumber,
+              listingType: 'sale',
+              listingStatus: newStatus,
+            });
+          } catch {}
+
+          result.delistedListings++;
+          result.changes.push({
+            mlsNumber: listing.mlsNumber,
+            address: listing.address,
+            listingType: 'sale',
+            oldPrice: listing.listPrice,
+            newPrice: scraped.price,
+            changeType: scraped.detectedStatus,
+            changePercent: null,
+          });
+
+          if (verbose) {
+            console.log(`  ⚑ Status changed to ${scraped.detectedStatus}: ${listing.address}`);
+          }
+          continue;
+        }
+      }
+
       if (scraped.price !== null && listing.listPrice !== null) {
         const diff = scraped.price - listing.listPrice;
         if (Math.abs(diff) > 100) {
@@ -248,7 +327,6 @@ export async function runPriceMonitor(
             data: { listPrice: scraped.price },
           });
 
-          // Sync updated price to website
           try {
             await syncListingToWebsite(userId, {
               address: listing.address,
