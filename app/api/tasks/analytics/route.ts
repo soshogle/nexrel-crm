@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Return mock analytics when database is empty for demo purposes
-    if (tasks.length === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && tasks.length === 0) {
       const { MOCK_TASKS } = await import('@/lib/mock-data');
       const mockTasks = MOCK_TASKS.map((t) => ({
         ...t,
@@ -87,6 +88,25 @@ export async function GET(request: NextRequest) {
         teamPerformance: [],
         overdueAnalysis: { count: 1, byPriority: { URGENT: 0, HIGH: 1, MEDIUM: 0, LOW: 0 } },
         predictions: [{ type: 'insight', message: '1 task is overdue. Consider rescheduling or completing it.', confidence: 90 }],
+      });
+    } else if (tasks.length === 0) {
+      return NextResponse.json({
+        period,
+        summary: {
+          total: 0,
+          completed: 0,
+          inProgress: 0,
+          overdue: 0,
+          completionRate: 0,
+        },
+        completionTrend: [],
+        productivityMetrics: { avgCompletionTime: 0, tasksCreatedVsCompleted: { created: 0, completed: 0 } },
+        priorityDistribution: { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 },
+        statusBreakdown: { TODO: 0, IN_PROGRESS: 0, BLOCKED: 0, REVIEW: 0, COMPLETED: 0, CANCELLED: 0 },
+        categoryPerformance: [],
+        teamPerformance: [],
+        overdueAnalysis: { count: 0, byPriority: { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 } },
+        predictions: [],
       });
     }
 

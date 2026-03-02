@@ -20,15 +20,7 @@ interface RedesignedProceduresLogProps {
 }
 
 export function RedesignedProceduresLog({ procedures = [] }: RedesignedProceduresLogProps) {
-  // Mock data matching image
-  const defaultProcedures: Procedure[] = [
-    { time: '10:00 AM', patient: 'Sarah Jones', procedure: 'Orthodontic Adjustment', status: 'Online' },
-    { time: '10:30 AM', patient: 'Michael Brown', procedure: 'Prophylaxis', status: 'Restorative' },
-    { time: '11:00 AM', patient: 'Lola Rome', procedure: 'Restorative', status: 'Restorative' },
-    { time: '11:30 AM', patient: 'Shemb Joes', procedure: 'Orthodontic Adjustment', status: 'Closed' },
-  ];
-
-  const displayProcedures = procedures.length > 0 ? procedures : defaultProcedures;
+  const displayProcedures = procedures.length > 0 ? procedures : [];
 
   const getStatusColor = (status: string) => {
     if (status === 'Online') return 'bg-green-100 text-green-700 border-green-200';
@@ -46,6 +38,9 @@ export function RedesignedProceduresLog({ procedures = [] }: RedesignedProcedure
       </div>
 
       {/* Table Rows - min-w-0 prevents grid blowout, truncate prevents overlap */}
+      {displayProcedures.length === 0 && (
+        <div className="text-xs text-gray-500 py-3">No procedures logged yet</div>
+      )}
       {displayProcedures.slice(0, 4).map((proc, idx) => (
         <div key={idx} className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,1.2fr)] gap-2 items-center text-xs border-b border-gray-100 pb-2 min-w-0">
           <div className="text-gray-600 font-medium min-w-0 truncate">{proc.time}</div>

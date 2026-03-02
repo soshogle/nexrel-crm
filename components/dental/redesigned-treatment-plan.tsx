@@ -5,7 +5,7 @@
 
 'use client';
 
-import { ClipboardList, Sparkles, Circle } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface TreatmentItem {
@@ -23,41 +23,15 @@ interface RedesignedTreatmentPlanProps {
 }
 
 export function RedesignedTreatmentPlan({ treatments }: RedesignedTreatmentPlanProps) {
-  // Mock data matching image exactly
-  const defaultTreatments: TreatmentItem[] = [
-    {
-      code: 'D0150',
-      name: 'Comprehensive Oral Eval',
-      cost: 120,
-      timeline: 'Week 1',
-      costColor: 'bg-green-100 text-green-700 border-green-200',
-      icon: ClipboardList,
-      progress: 100,
-    },
-    {
-      code: 'D1110',
-      name: 'Prophylaxis - Adult',
-      cost: 150,
-      timeline: 'Week 2',
-      costColor: 'bg-orange-100 text-orange-700 border-orange-200',
-      icon: Sparkles,
-      progress: 50,
-    },
-    {
-      code: 'D2740',
-      name: 'Crown - Porcelain/Ceramic',
-      cost: 1200,
-      timeline: 'Weeks 3-4',
-      costColor: 'bg-gray-100 text-gray-700 border-gray-200',
-      icon: Circle,
-      progress: 25,
-    },
-  ];
-
-  const displayTreatments = treatments && treatments.length > 0 ? treatments.filter(Boolean) : defaultTreatments;
+  const displayTreatments = treatments && treatments.length > 0 ? treatments.filter(Boolean) : [];
 
   return (
     <div className="space-y-3">
+      {displayTreatments.length === 0 && (
+        <div className="text-xs text-gray-500 p-3 border border-dashed rounded-lg">
+          No treatment plans available
+        </div>
+      )}
       {displayTreatments.map((treatment, idx) => {
         if (!treatment) return null;
         const IconComponent = treatment.icon || ClipboardList;

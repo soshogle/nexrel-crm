@@ -58,6 +58,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Conversation } from '@elevenlabs/client';
+import { useSession } from 'next-auth/react';
 
 interface Lead {
   id: string;
@@ -93,6 +94,7 @@ interface CallLog {
 }
 
 export function VoiceAIPanel() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState('dialer');
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -110,6 +112,7 @@ export function VoiceAIPanel() {
   
   const conversationRef = useRef<any>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
 
   // Demo call scripts
   const callScripts: CallScript[] = [
@@ -297,15 +300,40 @@ export function VoiceAIPanel() {
   };
 
   const generateAISuggestion = async (userMessage: string) => {
-    // Simulate AI suggestion generation
-    const suggestions = [
-      'Consider asking about their timeline for selling.',
-      'This might be a good time to mention your recent sales in the area.',
-      'Ask about their biggest concerns with the selling process.',
-      'Offer to send them a free market analysis.',
-      'Suggest scheduling a no-obligation consultation.',
-    ];
-    setAiSuggestion(suggestions[Math.floor(Math.random() * suggestions.length)]);
+    const normalized = String(userMessage || '').toLowerCase();
+
+    // Keep legacy mock-style rotation for the dedicated orthodontist demo account.
+    if (isOrthoDemo) {
+      const suggestions = [
+        'Consider asking about their timeline for selling.',
+        'This might be a good time to mention your recent sales in the area.',
+        'Ask about their biggest concerns with the selling process.',
+        'Offer to send them a free market analysis.',
+        'Suggest scheduling a no-obligation consultation.',
+      ];
+      const index = Math.min(suggestions.length - 1, transcript.length % suggestions.length);
+      setAiSuggestion(suggestions[index]);
+      return;
+    }
+
+    // Deterministic coaching based on conversation intent.
+    if (/price|commission|fee|cost|expensive|budget/.test(normalized)) {
+      setAiSuggestion('Acknowledge pricing concern, then offer a concrete net-proceeds estimate and recent comparable sale context.');
+      return;
+    }
+    if (/already|agent|realtor|listing|contract/.test(normalized)) {
+      setAiSuggestion('Clarify current representation status and ask permission before discussing alternatives.');
+      return;
+    }
+    if (/not interested|busy|later|stop|remove/.test(normalized)) {
+      setAiSuggestion('Respectfully confirm opt-out preference and offer one soft follow-up option only if they consent.');
+      return;
+    }
+    if (/when|timeline|moving|relocate|closing/.test(normalized)) {
+      setAiSuggestion('Anchor on timeline: target move date, ideal listing date, and critical constraints.');
+      return;
+    }
+    setAiSuggestion('Ask one discovery question about motivation, then summarize and propose a concrete next step.');
   };
 
   const filteredLeads = leads.filter(lead => {

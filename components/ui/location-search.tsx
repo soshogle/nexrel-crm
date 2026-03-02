@@ -26,58 +26,14 @@ interface LocationSearchProps {
   countryRestriction?: string[];
 }
 
-// Global to track Google Maps script loading
-let googleMapsPromise: Promise<void> | null = null;
-
-function loadGoogleMapsScript(): Promise<void> {
-  if (googleMapsPromise) return googleMapsPromise;
-  
-  if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
-    return Promise.resolve();
-  }
-
-  googleMapsPromise = new Promise((resolve, reject) => {
-    // Check if already loaded
-    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
-      resolve();
-      return;
-    }
-
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set. Add it to .env for address autocomplete.');
-      reject(new Error('Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env'));
-      return;
-    }
-
-    // Check if script is already in DOM (loading or loaded)
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      if ((window as any).google?.maps?.places) {
-        resolve();
-        return;
-      }
-      existingScript.addEventListener('load', () => resolve());
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Maps'));
-    document.head.appendChild(script);
-  });
-
-  return googleMapsPromise;
+interface PlacePrediction {
+  place_id: string;
+  description: string;
 }
 
 /**
  * Location Search Component
- * Uses Google Places Autocomplete API directly in browser (client-side)
- * This works with referrer-restricted API keys
+ * Uses server-side Google Places endpoints to avoid legacy JS SDK warnings.
  */
 export function LocationSearch({
   value: controlledValue,
@@ -86,37 +42,22 @@ export function LocationSearch({
   onSelect,
   placeholder: placeholderProp,
   className = '',
-  countryRestriction
+  countryRestriction,
 }: LocationSearchProps) {
   const locale = useLocaleLabels();
-  const placeholder = placeholderProp || `Enter city, ${locale.stateLabel.toLowerCase()} or ${locale.zipLabel.toLowerCase()}`;
+  const placeholder =
+    placeholderProp ||
+    `Enter city, ${locale.stateLabel.toLowerCase()} or ${locale.zipLabel.toLowerCase()}`;
+
   const [inputValue, setInputValue] = useState(defaultValue || '');
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  
+
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const lastControlledValueRef = useRef(controlledValue);
-
-  // Load Google Maps script
-  useEffect(() => {
-    loadGoogleMapsScript()
-      .then(() => {
-        setIsGoogleLoaded(true);
-        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-        // PlacesService needs a DOM element or map
-        const dummyDiv = document.createElement('div');
-        placesServiceRef.current = new google.maps.places.PlacesService(dummyDiv);
-      })
-      .catch((err) => {
-        console.error('Failed to load Google Maps:', err);
-      });
-  }, []);
 
   // Sync controlled value
   useEffect(() => {
@@ -142,41 +83,41 @@ export function LocationSearch({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchPredictions = useCallback((input: string) => {
-    if (!input || input.length < 2 || !autocompleteServiceRef.current) {
-      setPredictions([]);
-      setShowDropdown(false);
-      return;
-    }
+  const fetchPredictions = useCallback(
+    async (input: string) => {
+      if (!input || input.length < 2) {
+        setPredictions([]);
+        setShowDropdown(false);
+        return;
+      }
 
-    setIsLoading(true);
-    
-    const request: google.maps.places.AutocompletionRequest = {
-      input,
-      types: ['geocode'],
-    };
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({ input, types: '(cities)' });
+        if (Array.isArray(countryRestriction) && countryRestriction.length > 0) {
+          params.set('country', countryRestriction.join(','));
+        }
 
-    if (countryRestriction && countryRestriction.length > 0) {
-      request.componentRestrictions = { country: countryRestriction };
-    }
-
-    autocompleteServiceRef.current.getPlacePredictions(
-      request,
-      (results, status) => {
-        setIsLoading(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          setPredictions(results);
-          setShowDropdown(true);
-        } else {
-          if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-            console.warn('[LocationSearch] Places API status:', status);
-          }
+        const res = await fetch(`/api/places/autocomplete?${params.toString()}`);
+        if (!res.ok) {
           setPredictions([]);
           setShowDropdown(false);
+          return;
         }
+
+        const data = await res.json();
+        const nextPreds = Array.isArray(data?.predictions) ? data.predictions : [];
+        setPredictions(nextPreds);
+        setShowDropdown(nextPreds.length > 0);
+      } catch {
+        setPredictions([]);
+        setShowDropdown(false);
+      } finally {
+        setIsLoading(false);
       }
-    );
-  }, [countryRestriction]);
+    },
+    [countryRestriction]
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -194,77 +135,49 @@ export function LocationSearch({
     }
   };
 
-  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
+  const handleSelectPrediction = async (prediction: PlacePrediction) => {
     const desc = prediction.description;
     setInputValue(desc);
     setShowDropdown(false);
     setPredictions([]);
 
-    if (!placesServiceRef.current) {
-      // Fallback without details
-      const parts = desc.split(',').map((p) => p.trim());
-      const locationData: LocationData = {
-        city: parts[0] || '',
-        state: parts[1] || '',
-        country: parts[2] || '',
-        countryCode: '',
-        formatted: desc,
-        placeId: prediction.place_id,
-      };
-      if (onChange) onChange(locationData);
-      if (onSelect) onSelect(locationData);
-      return;
-    }
-
-    // Fetch place details
-    placesServiceRef.current.getDetails(
-      { placeId: prediction.place_id, fields: ['address_components', 'geometry', 'formatted_address'] },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          let city = '', state = '', country = '', countryCode = '';
-          
-          place.address_components?.forEach((component) => {
-            if (component.types.includes('locality')) {
-              city = component.long_name;
-            }
-            if (component.types.includes('administrative_area_level_1')) {
-              state = component.short_name;
-            }
-            if (component.types.includes('country')) {
-              country = component.long_name;
-              countryCode = component.short_name;
-            }
-          });
-
+    try {
+      const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const p = data?.place;
+        if (p) {
           const locationData: LocationData = {
-            city,
-            state,
-            country,
-            countryCode,
-            formatted: place.formatted_address || desc,
-            lat: place.geometry?.location?.lat(),
-            lng: place.geometry?.location?.lng(),
-            placeId: prediction.place_id,
-          };
-
-          if (onChange) onChange(locationData);
-          if (onSelect) onSelect(locationData);
-        } else {
-          // Fallback
-          const parts = desc.split(',').map((p) => p.trim());
-          const locationData: LocationData = {
-            city: parts[0] || '',
-            state: parts[1] || '',
-            country: parts[2] || '',
-            countryCode: '',
-            formatted: desc,
-            placeId: prediction.place_id,
+            city: p.city || '',
+            state: p.state || '',
+            country: p.country || '',
+            countryCode: p.countryCode || '',
+            formatted: p.description || desc,
+            lat: p.lat,
+            lng: p.lng,
+            placeId: p.placeId || prediction.place_id,
           };
           if (onChange) onChange(locationData);
           if (onSelect) onSelect(locationData);
+          return;
         }
       }
-    );
+    } catch {
+      // Ignore and use fallback
+    }
+
+    // Fallback parsing from description
+    const parts = desc.split(',').map((p) => p.trim());
+    const locationData: LocationData = {
+      city: parts[0] || '',
+      state: parts[1] || '',
+      country: parts[2] || '',
+      countryCode: '',
+      formatted: desc,
+      placeId: prediction.place_id,
+    };
+    if (onChange) onChange(locationData);
+    if (onSelect) onSelect(locationData);
   };
 
   return (
@@ -276,8 +189,7 @@ export function LocationSearch({
         value={inputValue}
         onChange={handleInputChange}
         onFocus={() => predictions.length > 0 && setShowDropdown(true)}
-        placeholder={isGoogleLoaded ? placeholder : 'Loading...'}
-        disabled={!isGoogleLoaded}
+        placeholder={placeholder}
         className="pl-10 pr-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
         autoComplete="off"
       />
@@ -298,9 +210,7 @@ export function LocationSearch({
               className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 transition-colors"
             >
               <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0" />
-              <span className="text-sm text-white truncate">
-                {prediction.description}
-              </span>
+              <span className="text-sm text-white truncate">{prediction.description}</span>
             </button>
           ))}
         </div>

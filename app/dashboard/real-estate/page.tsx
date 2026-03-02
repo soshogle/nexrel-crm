@@ -67,6 +67,13 @@ interface MarketStat {
   icon: any;
 }
 
+interface ActivityItem {
+  id: string;
+  type: 'listing' | 'price' | 'cma' | 'fsbo' | 'diagnostic';
+  message: string;
+  createdAt: string;
+}
+
 interface QuickAction {
   id: string;
   label: string;
@@ -81,7 +88,8 @@ export default function RealEstateDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [marketStats, setMarketStats] = useState<MarketStat[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [alertCount, setAlertCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch
@@ -94,17 +102,32 @@ export default function RealEstateDashboard() {
     
     const fetchDashboardData = async () => {
       try {
-        const [fsboRes, activityRes, marketRes] = await Promise.all([
+        const [fsboRes, activityRes, marketRes, atRiskRes] = await Promise.all([
           fetch('/api/real-estate/fsbo'),
           fetch('/api/real-estate/activity'),
           fetch('/api/real-estate/market-stats?limit=24'),
+          fetch('/api/real-estate/analytics/at-risk'),
         ]);
 
         const fsboData = fsboRes.ok ? await fsboRes.json() : { pagination: { total: 0 } };
         const activityData = activityRes.ok ? await activityRes.json() : { activities: [] };
         const marketData = marketRes.ok ? await marketRes.json() : { liveStats: {} };
+        const atRiskData = atRiskRes.ok ? await atRiskRes.json() : { summary: { highRisk: 0 } };
 
         const live = marketData.liveStats || {};
+        const monthlyTrends = Array.isArray(marketData.monthlyTrends) ? marketData.monthlyTrends : [];
+        const lastTrend = monthlyTrends[monthlyTrends.length - 1];
+        const prevTrend = monthlyTrends[monthlyTrends.length - 2];
+
+        const pct = (current: number, previous: number) => {
+          if (!previous || previous <= 0) return 0;
+          return Math.round(((current - previous) / previous) * 1000) / 10;
+        };
+
+        const activeChange = lastTrend && prevTrend ? pct(lastTrend.newListings || 0, prevTrend.newListings || 0) : 0;
+        const domChange = lastTrend && prevTrend ? pct(lastTrend.medianDom || 0, prevTrend.medianDom || 0) : 0;
+        const fsboTrend = lastTrend && prevTrend ? pct(lastTrend.fsboNew || 0, prevTrend.fsboNew || 0) : 0;
+
         const formatPrice = (p: number) => {
           if (!p) return '—';
           if (p >= 1000000) return `$${(p / 1000000).toFixed(1)}M`;
@@ -113,22 +136,19 @@ export default function RealEstateDashboard() {
         };
 
         setMarketStats([
-          { label: 'Active Listings', value: live.activeListings > 0 ? String(live.activeListings) : '0', change: 0, trend: live.activeListings > 0 ? 'up' : 'neutral', icon: Building2 },
+          { label: 'Active Listings', value: live.totalActiveListings > 0 ? String(live.totalActiveListings) : String(live.activeListings || 0), change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', icon: Building2 },
           { label: 'Median Price', value: formatPrice(live.medianSalePrice), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', icon: DollarSign },
-          { label: 'Days on Market', value: live.domMedian > 0 ? `${live.domMedian}` : '—', change: 0, trend: 'neutral', icon: Clock },
-          { label: 'FSBO Leads', value: String(fsboData.pagination?.total || live.fsboListings || 0), change: 0, trend: (fsboData.pagination?.total || 0) > 0 ? 'up' : 'neutral', icon: Users },
+          { label: 'Days on Market', value: live.domMedian > 0 ? `${live.domMedian}` : (live.domAvg > 0 ? `${live.domAvg}` : '—'), change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', icon: Clock },
+          { label: 'FSBO Leads', value: String(fsboData.pagination?.total || live.fsboListings || 0), change: fsboTrend, trend: fsboTrend > 0 ? 'up' : fsboTrend < 0 ? 'down' : 'neutral', icon: Users },
         ]);
 
         setRecentActivity(Array.isArray(activityData?.activities) ? activityData.activities : []);
+        setAlertCount(Number(atRiskData?.summary?.highRisk || 0));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        setMarketStats([
-          { label: 'Active Listings', value: '0', change: 0, trend: 'neutral', icon: Building2 },
-          { label: 'Median Price', value: '—', change: 0, trend: 'neutral', icon: DollarSign },
-          { label: 'Days on Market', value: '—', change: 0, trend: 'neutral', icon: Clock },
-          { label: 'FSBO Leads', value: '0', change: 0, trend: 'neutral', icon: Users },
-        ]);
+        setMarketStats([]);
         setRecentActivity([]);
+        setAlertCount(0);
       } finally {
         setIsLoading(false);
       }
@@ -145,6 +165,25 @@ export default function RealEstateDashboard() {
       </div>
     );
   }
+
+  const getActivityIcon = (type: ActivityItem['type']) => {
+    if (type === 'price') return DollarSign;
+    if (type === 'cma') return Brain;
+    if (type === 'fsbo') return Users;
+    if (type === 'diagnostic') return AlertTriangle;
+    return Building2;
+  };
+
+  const formatRelativeTime = (isoDate: string) => {
+    const created = new Date(isoDate).getTime();
+    const diffMins = Math.max(0, Math.floor((Date.now() - created) / 60000));
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
 
   const quickActions: QuickAction[] = [
     {
@@ -212,7 +251,7 @@ export default function RealEstateDashboard() {
             <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
               <Bell className="w-4 h-4 mr-2" />
               Alerts
-              <Badge className="ml-2 bg-red-500/20 text-red-500 border-red-500/30">3</Badge>
+              <Badge className="ml-2 bg-red-500/20 text-red-500 border-red-500/30">{alertCount}</Badge>
             </Button>
             <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -246,10 +285,16 @@ export default function RealEstateDashboard() {
                     stat.trend === 'up' ? 'text-green-500' :
                     stat.trend === 'down' ? 'text-red-500' : 'text-gray-500'
                   }`}>
-                    {stat.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> :
-                     stat.trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
-                    {Math.abs(stat.change)}%
-                    <span className="text-gray-500 ml-1">vs last month</span>
+                    {stat.change !== 0 ? (
+                      <>
+                        {stat.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> :
+                         stat.trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
+                        {Math.abs(stat.change)}%
+                        <span className="text-gray-500 ml-1">vs last month</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-500">No trend delta</span>
+                    )}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-purple-500/20">
@@ -404,20 +449,25 @@ export default function RealEstateDashboard() {
                 <CardContent>
                   <ScrollArea className="h-[300px]">
                     <div className="space-y-4">
-                      {recentActivity.map((activity) => (
+                      {recentActivity.length === 0 && (
+                        <div className="text-sm text-gray-600">No recent activity yet.</div>
+                      )}
+                      {recentActivity.map((activity) => {
+                        const Icon = getActivityIcon(activity.type);
+                        return (
                         <div
                           key={activity.id}
                           className="flex items-start gap-3 p-3 rounded-lg border border-purple-200/50 bg-white/60 hover:border-purple-300 transition-colors"
                         >
                           <div className="p-2 rounded-lg bg-purple-500/20">
-                            <activity.icon className="w-4 h-4 text-purple-600" />
+                            <Icon className="w-4 h-4 text-purple-600" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-900 truncate">{activity.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                            <p className="text-xs text-gray-500 mt-1">{formatRelativeTime(activity.createdAt)}</p>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </ScrollArea>
                 </CardContent>

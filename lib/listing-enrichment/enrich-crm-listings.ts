@@ -203,6 +203,20 @@ export async function enrichCrmListings(
       fieldsUpdated.push('features');
     }
 
+    // Days on market (for Market Insights stats)
+    if (data.daysOnMarket != null && data.daysOnMarket > 0 && (!prop.daysOnMarket || prop.daysOnMarket === 0)) {
+      updateData.daysOnMarket = data.daysOnMarket;
+      fieldsUpdated.push('daysOnMarket');
+    }
+    // Listing date (for DOM computation when daysOnMarket missing)
+    if (data.listingDate && !prop.listingDate) {
+      const parsed = new Date(data.listingDate);
+      if (!isNaN(parsed.getTime())) {
+        updateData.listingDate = parsed;
+        fieldsUpdated.push('listingDate');
+      }
+    }
+
     // Populate lat/lng for geo-based comparables
     if (data.latitude && !prop.latitude) {
       const lat = parseFloat(data.latitude);

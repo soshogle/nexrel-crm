@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -27,9 +28,37 @@ export async function PATCH(
       return apiErrors.badRequest('Invalid status value');
     }
 
-    // In production, this would update the fraud alert in the database
-    // For demo purposes, we just return success
-    console.log(`Alert ${alertId} updated to status: ${status}`);
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    if (isOrthoDemo) {
+      return NextResponse.json({
+        success: true,
+        message: `Alert ${alertId} has been ${status.toLowerCase()}`,
+      });
+    }
+
+    const dbStatus =
+      status === 'APPROVED'
+        ? 'APPROVED'
+        : status === 'BLOCKED'
+          ? 'DECLINED'
+          : 'RESOLVED';
+
+    const updated = await prisma.fraudAlert.updateMany({
+      where: {
+        id: alertId,
+        userId: session.user.id,
+      },
+      data: {
+        status: dbStatus as any,
+        reviewedAt: new Date(),
+        reviewedBy: session.user.id,
+        actionTaken: status,
+      },
+    });
+
+    if (updated.count === 0) {
+      return apiErrors.notFound('Fraud alert not found');
+    }
 
     return NextResponse.json({
       success: true,

@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
     result.address_components?.forEach((comp: any) => {
       if (comp.types.includes('locality')) placeData.city = comp.long_name;
       if (comp.types.includes('administrative_area_level_1')) placeData.state = comp.short_name;
-      if (comp.types.includes('country')) placeData.country = comp.long_name;
+      if (comp.types.includes('country')) {
+        placeData.country = comp.long_name;
+        placeData.countryCode = comp.short_name;
+      }
       if (comp.types.includes('postal_code')) placeData.zip = comp.long_name;
     });
 

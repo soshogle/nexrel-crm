@@ -60,17 +60,12 @@ export default function AdministrativeDashboardPage() {
     casesStartedToday: 0,
     casesCompletedToday: 0,
     activeTreatments: 0,
-    chairUtilization: 75,
-    teamProductivity: 85,
+    chairUtilization: 0,
+    teamProductivity: 0,
     productionTrend: 'up' as 'up' | 'down' | 'stable',
-    revenueTrend: 12.5,
+    revenueTrend: 0,
   });
-  const [teamMembers, setTeamMembers] = useState([
-    { id: '1', name: 'Dr. Smith', role: 'Orthodontist', production: 12500, cases: 8, efficiency: 92, trend: 'up' as const },
-    { id: '2', name: 'Dr. Johnson', role: 'Orthodontist', production: 9800, cases: 6, efficiency: 88, trend: 'up' as const },
-    { id: '3', name: 'Sarah Miller', role: 'Hygienist', production: 3200, cases: 12, efficiency: 95, trend: 'stable' as const },
-    { id: '4', name: 'Mike Davis', role: 'Assistant', production: 1800, cases: 15, efficiency: 90, trend: 'up' as const },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalPatients: 0,
     todayAppointments: 0,
@@ -89,6 +84,7 @@ export default function AdministrativeDashboardPage() {
     byPractitioner: [] as any[],
     byDayOfWeek: [] as any[],
   });
+  const [outstandingBalance, setOutstandingBalance] = useState<number | null>(null);
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -135,7 +131,12 @@ export default function AdministrativeDashboardPage() {
       const response = await fetch(`/api/dental/ramq/claims?userId=${session.user.id}`);
       if (response.ok) {
         const data = await response.json();
-        setClaims(Array.isArray(data) ? data : []);
+        const nextClaims = Array.isArray(data) ? data : (Array.isArray(data?.claims) ? data.claims : []);
+        setClaims(nextClaims);
+        const outstanding = nextClaims
+          .filter((c: any) => ['DRAFT', 'SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'INFO_REQUESTED'].includes(String(c.status || '').toUpperCase()))
+          .reduce((sum: number, c: any) => sum + Number(c.amount || c.estimatedCost || 0), 0);
+        setOutstandingBalance(outstanding);
       }
     } catch (error) {
       console.error('Error fetching claims:', error);
@@ -176,84 +177,107 @@ export default function AdministrativeDashboardPage() {
   // Fetch production metrics
   const fetchProductionMetrics = useCallback(async () => {
     try {
-      // Calculate daily production from appointments/treatment plans
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Mock data - replace with actual API calls
+      const [dayRes, weekRes, monthRes] = await Promise.all([
+        fetch('/api/dental/reports?reportType=comprehensive&dateRange=today'),
+        fetch('/api/dental/reports?reportType=comprehensive&dateRange=week'),
+        fetch('/api/dental/reports?reportType=comprehensive&dateRange=month'),
+      ]);
+      const day = dayRes.ok ? await dayRes.json() : { summary: {}, data: [] };
+      const week = weekRes.ok ? await weekRes.json() : { summary: {}, data: [] };
+      const month = monthRes.ok ? await monthRes.json() : { summary: {}, data: [] };
+
+      const daySummary = day.summary || {};
+      const weekSummary = week.summary || {};
+      const monthSummary = month.summary || {};
+
+      const dayData = Array.isArray(day.data) ? day.data : [];
+      const weekData = Array.isArray(week.data) ? week.data : [];
+      const monthData = Array.isArray(month.data) ? month.data : [];
+
+      const dayRevenue = Number(daySummary.totalRevenue || 0);
+      const prevDayRevenue = dayData.length >= 2 ? Number(dayData[dayData.length - 2]?.revenue || 0) : 0;
+      const revenueTrend = prevDayRevenue > 0 ? ((dayRevenue - prevDayRevenue) / prevDayRevenue) * 100 : 0;
+
+      const providerAgg = new Map<string, { cases: number; production: number }>();
+      (Array.isArray(appointments) ? appointments : []).forEach((apt: any) => {
+        const provider = apt.providerName || apt.provider || apt.practitionerName || apt.assignedTo || 'Unassigned';
+        const current = providerAgg.get(provider) || { cases: 0, production: 0 };
+        current.cases += 1;
+        providerAgg.set(provider, current);
+      });
+      const apptCount = Math.max(1, (Array.isArray(appointments) ? appointments.length : 0));
+      for (const [provider, value] of providerAgg.entries()) {
+        value.production = Math.round((value.cases / apptCount) * Number(monthSummary.totalRevenue || 0));
+        providerAgg.set(provider, value);
+      }
+      const computedTeam = Array.from(providerAgg.entries()).map(([name, v], idx) => ({
+        id: `provider-${idx}`,
+        name,
+        role: 'Provider',
+        production: v.production,
+        cases: v.cases,
+        efficiency: Math.min(100, Math.max(50, Math.round((v.cases / apptCount) * 100))),
+        trend: 'stable' as const,
+      }));
+      setTeamMembers(computedTeam);
+
+      const activeTreatments = Number(monthSummary.totalProcedures || 0);
+      const chairUtilization = Math.min(100, Math.round(((Array.isArray(appointments) ? appointments.length : 0) / 16) * 100));
+      const teamProductivity = computedTeam.length > 0
+        ? Math.round(computedTeam.reduce((sum, t) => sum + t.efficiency, 0) / computedTeam.length)
+        : 0;
+
       setProductionMetrics({
-        dailyProduction: 12500,
-        weeklyProduction: 87500,
-        monthlyProduction: 350000,
-        casesStartedToday: 8,
-        casesCompletedToday: 5,
-        activeTreatments: 45,
-        chairUtilization: 75,
-        teamProductivity: 85,
-        productionTrend: 'up',
-        revenueTrend: 12.5,
+        dailyProduction: dayRevenue,
+        weeklyProduction: Number(weekSummary.totalRevenue || 0),
+        monthlyProduction: Number(monthSummary.totalRevenue || 0),
+        casesStartedToday: Number(daySummary.totalProcedures || 0),
+        casesCompletedToday: Number(daySummary.totalAppointments || 0),
+        activeTreatments,
+        chairUtilization,
+        teamProductivity,
+        productionTrend: revenueTrend > 1 ? 'up' : revenueTrend < -1 ? 'down' : 'stable',
+        revenueTrend,
       });
 
-      // Generate chart data
-      const dailyData = Array.from({ length: 30 }, (_, i) => {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (29 - i));
-        return {
-          date: date.toISOString(),
-          value: 8000 + Math.random() * 7000,
-          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        };
-      });
+      const dailyData = monthData.map((d: any) => ({
+        date: d.period,
+        value: Number(d.revenue || 0),
+        label: d.period,
+      }));
+      const weeklyData = weekData.map((d: any) => ({
+        date: d.period,
+        value: Number(d.revenue || 0),
+        label: d.period,
+      }));
+      const monthlyData = monthData.reduce((acc: any[], d: any) => {
+        const key = String(d.period || '').slice(0, 6) || d.period;
+        const existing = acc.find((x) => x.label === key);
+        if (existing) existing.value += Number(d.revenue || 0);
+        else acc.push({ date: d.period, value: Number(d.revenue || 0), label: key });
+        return acc;
+      }, []);
 
-      const weeklyData = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (11 - i) * 7);
-        return {
-          date: date.toISOString(),
-          value: 50000 + Math.random() * 50000,
-          label: `Week ${i + 1}`,
-        };
+      const byDayMap = new Map<string, number>();
+      monthData.forEach((d: any) => {
+        const label = d.period || '';
+        const day = label.split(' ')[0] || label;
+        byDayMap.set(day, (byDayMap.get(day) || 0) + Number(d.revenue || 0));
       });
-
-      const monthlyData = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date(today);
-        date.setMonth(date.getMonth() - (11 - i));
-        return {
-          date: date.toISOString(),
-          value: 200000 + Math.random() * 200000,
-          label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-        };
-      });
+      const byDayOfWeek = Array.from(byDayMap.entries()).map(([day, value]) => ({ day, value }));
 
       setProductionChartData({
         dailyData,
         weeklyData,
         monthlyData,
-        byTreatmentType: [
-          { type: 'Invisalign', value: 150000 },
-          { type: 'Braces', value: 120000 },
-          { type: 'Retainers', value: 50000 },
-          { type: 'Other', value: 30000 },
-        ],
-        byPractitioner: [
-          { name: 'Dr. Smith', value: 180000 },
-          { name: 'Dr. Johnson', value: 120000 },
-          { name: 'Hygienist', value: 40000 },
-        ],
-        byDayOfWeek: [
-          { day: 'Mon', value: 15000 },
-          { day: 'Tue', value: 18000 },
-          { day: 'Wed', value: 20000 },
-          { day: 'Thu', value: 17000 },
-          { day: 'Fri', value: 14000 },
-          { day: 'Sat', value: 8000 },
-          { day: 'Sun', value: 0 },
-        ],
+        byTreatmentType: [],
+        byPractitioner: computedTeam.map((m) => ({ name: m.name, value: m.production })),
+        byDayOfWeek,
       });
     } catch (error) {
       console.error('Error fetching production metrics:', error);
     }
-  }, []);
+  }, [appointments]);
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -284,7 +308,7 @@ export default function AdministrativeDashboardPage() {
         totalPatients: leads.length,
         todayAppointments: Array.isArray(appointments) ? appointments.length : 0,
         pendingClaims,
-        monthlyRevenue: productionMetrics.monthlyProduction,
+        monthlyRevenue: productionMetrics.monthlyProduction || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -324,9 +348,14 @@ export default function AdministrativeDashboardPage() {
   // Display claims
   const displayClaims = claims.slice(0, 5).map((claim: any) => ({
     id: claim.id.substring(0, 8),
-    provider: claim.provider || 'RAMQ',
+    provider: claim.provider || claim.insuranceProvider || 'RAMQ',
     amount: claim.amount || 0,
-    status: claim.status === 'APPROVED' ? 'Approved' : 'Pending',
+    status:
+      String(claim.status || '').toUpperCase() === 'APPROVED'
+        ? 'Approved'
+        : ['SUBMITTED', 'UNDER_REVIEW', 'PENDING', 'INFO_REQUESTED'].includes(String(claim.status || '').toUpperCase())
+          ? 'Funding'
+          : 'Pending',
   }));
 
   // Display form responses with search (form name from response.form.formName)
@@ -341,6 +370,7 @@ export default function AdministrativeDashboardPage() {
     .slice(0, 5)
     .map((response: any) => ({
       date: new Date(response.submittedAt).toLocaleDateString(),
+      submittedAt: response.submittedAt,
       patient: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
       form: response.form?.formName || response.formName || 'Form',
     }));
@@ -423,7 +453,11 @@ export default function AdministrativeDashboardPage() {
           <CardContent className="px-4 pb-4">
             {session?.user?.id ? (
               <RedesignedCheckIn
-                patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+                patientName={
+                  selectedLeadId
+                    ? leads.find((l) => l.id === selectedLeadId)?.contactPerson || 'Patient'
+                    : (displayMultiChairAppointments[0]?.patient || 'No patient selected')
+                }
                 onCheckIn={() => setOpenModal('check-in')}
                 onUpdateInfo={() => setOpenModal('check-in')}
               />
@@ -514,7 +548,9 @@ export default function AdministrativeDashboardPage() {
               </div>
               <div className="flex items-center justify-between p-2 border border-gray-200 rounded">
                 <span className="text-xs text-gray-700">Outstanding</span>
-                <span className="text-xs font-bold text-gray-900">$12,450</span>
+                <span className="text-xs font-bold text-gray-900">
+                  {outstandingBalance != null ? `$${outstandingBalance.toLocaleString()}` : '—'}
+                </span>
               </div>
               <Button 
                 size="sm" 
@@ -522,8 +558,7 @@ export default function AdministrativeDashboardPage() {
                 className="w-full"
                 onClick={async (e) => {
                   e.stopPropagation();
-                  toast.info('Payment processing feature - coming soon');
-                  // TODO: Implement payment processing
+                  toast.info('Use the Payments flow to process patient balances.');
                 }}
               >
                 <DollarSign className="w-3 h-3 mr-1" />
@@ -548,7 +583,9 @@ export default function AdministrativeDashboardPage() {
                 patientName: r.patient,
                 formTitle: r.form,
                 submissionDate: r.date,
-                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                time: r.submittedAt
+                  ? new Date(r.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                  : '—',
               }))}
             />
           </CardContent>
@@ -661,6 +698,7 @@ export default function AdministrativeDashboardPage() {
         teamMembers={teamMembers}
         displayMultiChairAppointments={displayMultiChairAppointments}
         productionMetrics={productionMetrics}
+        outstandingBalance={outstandingBalance}
         productionChartData={productionChartData}
         onRefreshLeads={fetchLeads}
       />

@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Activity, Download, History, X, Check, ArrowLeft, Box, Grid3x3 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 const Perio3D = lazy(() => import('./perio-3d').then(m => ({ default: m.Perio3D })));
 
@@ -659,7 +660,9 @@ function ZoomedToothOverlay({
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function NeuralPerioChart({ measurements, leadId, onSave }: NeuralPerioChartProps) {
+  const { data: session } = useSession();
   const chartRef = useRef<HTMLDivElement>(null);
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
 
   // ── View mode (2D neural chart vs 3D) ──
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
@@ -680,9 +683,9 @@ export function NeuralPerioChart({ measurements, leadId, onSave }: NeuralPerioCh
 
   // ── Initialize from prop ──
   useEffect(() => {
-    const d = measurements && Object.keys(measurements).length > 0 ? measurements : DEMO;
+    const d = measurements && Object.keys(measurements).length > 0 ? measurements : (isOrthoDemo ? DEMO : {});
     setLocalData(d);
-  }, [measurements]);
+  }, [measurements, isOrthoDemo]);
 
   // ── Fetch exam history when leadId is provided ──
   useEffect(() => {

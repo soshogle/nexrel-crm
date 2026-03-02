@@ -25,19 +25,24 @@ interface MarketMetric {
   value: string;
   change: number;
   trend: 'up' | 'down' | 'neutral';
+  hasData?: boolean;
 }
 
 interface LiveStats {
   medianSalePrice: number;
   avgSalePrice: number;
   activeListings: number;
+  totalActiveListings?: number;
   closedSales: number;
   domMedian: number;
+  domAvg: number;
   pricePerSqft: number;
   monthsOfSupply: number;
   listToSaleRatio: number;
   priceChangePercent: number;
   fsboListings: number;
+  rentalListings?: number;
+  rentalActive?: number;
   newListingsThisMonth: number;
   totalActiveValue: number;
 }
@@ -78,22 +83,28 @@ export function MarketInsightsWidget() {
       setDataSource(data.dataSource);
       setMonthlyTrends(data.monthlyTrends || []);
 
-      const hasData = (live.activeListings || 0) + (live.closedSales || 0) > 0;
+      const hasData = (live.activeListings || 0) + (live.closedSales || 0) + (live.rentalActive || 0) + (live.rentalListings || 0) > 0;
+      const trends = Array.isArray(data.monthlyTrends) ? data.monthlyTrends : [];
+      const last = trends[trends.length - 1];
+      const prev = trends[trends.length - 2];
+      const pct = (current: number, previous: number) => (previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : 0);
+      const activeChange = last && prev ? pct(last.newListings || 0, prev.newListings || 0) : 0;
+      const domChange = last && prev ? pct(last.medianDom || 0, prev.medianDom || 0) : 0;
 
       setMetrics(hasData ? [
-        { label: 'Median Sale Price', value: formatPrice(live.medianSalePrice || 0), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral' },
-        { label: 'Avg Days on Market', value: `${live.domMedian || 0} days`, change: 0, trend: 'neutral' },
-        { label: 'Active Listings', value: `${live.activeListings || 0}`, change: 0, trend: (live.newListingsThisMonth || 0) > 0 ? 'up' : 'neutral' },
-        { label: 'Closed Sales', value: `${live.closedSales || 0}`, change: 0, trend: live.closedSales > 0 ? 'up' : 'neutral' },
-        { label: 'Price per Sq Ft', value: live.pricePerSqft > 0 ? `$${live.pricePerSqft}` : 'N/A', change: 0, trend: 'neutral' },
-        { label: 'Months of Supply', value: live.monthsOfSupply > 0 ? `${live.monthsOfSupply}` : 'N/A', change: 0, trend: live.monthsOfSupply < 3 ? 'down' : live.monthsOfSupply > 6 ? 'up' : 'neutral' },
+        { label: 'Median Sale Price', value: formatPrice(live.medianSalePrice || 0), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', hasData: live.medianSalePrice > 0 },
+        { label: 'Avg Days on Market', value: (live.domMedian > 0 || live.domAvg > 0) ? `${live.domMedian || live.domAvg} days` : '—', change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', hasData: (live.domMedian > 0 || live.domAvg > 0) },
+        { label: 'Active Listings', value: `${live.totalActiveListings ?? live.activeListings ?? 0}`, change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', hasData: (live.totalActiveListings ?? live.activeListings ?? 0) > 0 },
+        { label: 'Closed Sales', value: `${live.closedSales || 0}`, change: 0, trend: live.closedSales > 0 ? 'up' : 'neutral', hasData: live.closedSales > 0 },
+        { label: 'Price per Sq Ft', value: live.pricePerSqft > 0 ? `$${live.pricePerSqft}` : '—', change: 0, trend: 'neutral', hasData: live.pricePerSqft > 0 },
+        { label: 'Months of Supply', value: live.monthsOfSupply > 0 ? `${live.monthsOfSupply}` : '—', change: 0, trend: live.monthsOfSupply < 3 ? 'down' : live.monthsOfSupply > 6 ? 'up' : 'neutral', hasData: live.monthsOfSupply > 0 },
       ] : [
-        { label: 'Median Sale Price', value: 'No data', change: 0, trend: 'neutral' },
-        { label: 'Avg Days on Market', value: 'No data', change: 0, trend: 'neutral' },
-        { label: 'Active Listings', value: '0', change: 0, trend: 'neutral' },
-        { label: 'Closed Sales', value: '0', change: 0, trend: 'neutral' },
-        { label: 'Price per Sq Ft', value: 'No data', change: 0, trend: 'neutral' },
-        { label: 'Months of Supply', value: 'No data', change: 0, trend: 'neutral' },
+        { label: 'Median Sale Price', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Avg Days on Market', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Active Listings', value: '0', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Closed Sales', value: '0', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Price per Sq Ft', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Months of Supply', value: '—', change: 0, trend: 'neutral', hasData: false },
       ]);
     } catch (error) {
       console.error('Error fetching market stats:', error);
@@ -198,7 +209,7 @@ export function MarketInsightsWidget() {
           {metrics.map((metric) => (
             <div key={metric.label} className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50 hover:border-purple-300 transition-colors">
               <p className="text-gray-500 text-sm mb-1">{metric.label}</p>
-              <p className={`text-xl font-bold ${metric.value === 'No data' ? 'text-gray-500' : 'text-gray-900'}`}>{metric.value}</p>
+              <p className={`text-xl font-bold ${metric.hasData === false ? 'text-gray-500' : 'text-gray-900'}`}>{metric.value}</p>
               {metric.change !== 0 && (
                 <div className={`flex items-center gap-1 mt-2 text-sm ${metric.trend === 'up' ? 'text-emerald-400' : metric.trend === 'down' ? 'text-red-400' : 'text-gray-500'}`}>
                   {metric.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : metric.trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
@@ -235,11 +246,7 @@ export function MarketInsightsWidget() {
                   </div>
                 </div>
               );
-            }) : (
-              Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="flex-1 bg-slate-700/30 rounded-t" style={{ height: '10%' }} />
-              ))
-            )}
+            }) : null}
           </div>
           {monthlyTrends.length === 0 && (
             <p className="text-center text-xs text-gray-500 mt-2">Add listings to see price trends</p>

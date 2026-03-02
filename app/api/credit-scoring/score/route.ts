@@ -85,17 +85,53 @@ export async function POST(req: NextRequest) {
       console.warn('AI Trust Score service unavailable, using default values')
     }
 
-    // Generate mock credit score update (simulation)
-    const mockScore = Math.floor(Math.random() * (850 - 300) + 300)
-    const riskLevel = 
-      mockScore >= 750 ? 'LOW' :
-      mockScore >= 650 ? 'MEDIUM' :
-      mockScore >= 550 ? 'HIGH' : 'CRITICAL'
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com'
+
+    // Deterministic scoring model from real user history (non-demo users).
+    const [existingScore, applications] = await Promise.all([
+      prisma.creditScore.findUnique({ where: { userId: session.user.id } }),
+      prisma.creditApplication.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+    ])
+
+    let nextScore = existingScore?.score || 650
+    const totalApps = applications.length
+    const approvedApps = applications.filter((a) => a.status === 'APPROVED').length
+    const deniedApps = applications.filter((a) => a.status === 'DENIED' || a.status === 'EXPIRED').length
+    const pendingApps = applications.filter((a) => a.status === 'PENDING' || a.status === 'UNDER_REVIEW').length
+
+    if (isOrthoDemo) {
+      // Keep stable curated demo range for the demo account.
+      nextScore = 720
+    } else {
+      const approvalRate = totalApps > 0 ? approvedApps / totalApps : 0
+      const pendingPenalty = Math.min(25, pendingApps * 2)
+      const denialPenalty = Math.min(60, deniedApps * 8)
+      const approvalBoost = Math.min(40, Math.round(approvalRate * 40))
+
+      // Utilization proxy from existing credit profile.
+      const utilization =
+        existingScore && existingScore.creditLimit > 0
+          ? Math.max(0, Math.min(1, 1 - (existingScore.availableCredit / existingScore.creditLimit)))
+          : 0.5
+      const utilizationPenalty = Math.round(utilization * 35)
+
+      nextScore = 650 + approvalBoost - denialPenalty - pendingPenalty - utilizationPenalty
+      nextScore = Math.max(300, Math.min(850, nextScore))
+    }
+
+    const riskLevel =
+      nextScore >= 750 ? 'LOW' :
+      nextScore >= 650 ? 'MEDIUM' :
+      nextScore >= 550 ? 'HIGH' : 'CRITICAL'
 
     const creditScore = await prisma.creditScore.upsert({
       where: { userId: session.user.id },
       update: {
-        score: mockScore,
+        score: nextScore,
         scoreDate: new Date(),
         trustScore,
         trustScoreDate: trustScore ? new Date() : null,
@@ -109,7 +145,7 @@ export async function POST(req: NextRequest) {
       },
       create: {
         userId: session.user.id,
-        score: mockScore,
+        score: nextScore,
         trustScore,
         trustScoreDate: trustScore ? new Date() : null,
         riskLevel,

@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   MessageSquare, 
@@ -47,12 +50,23 @@ interface ConnectionStats {
   messagesSent: number;
 }
 
+interface AutoReplySettings {
+  isEnabled: boolean;
+  notifyOnEscalation: boolean;
+  businessHoursEnabled: boolean;
+  businessHoursStart: string;
+  businessHoursEnd: string;
+  responseLanguage: string;
+}
+
 export default function SoshoglePage() {
   const { data: session } = useSession() || {};
   const [connections, setConnections] = useState<ChannelConnection[]>([]);
   const [stats, setStats] = useState<ConnectionStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [connectingChannel, setConnectingChannel] = useState<string | null>(null);
+  const [autoReplySettings, setAutoReplySettings] = useState<AutoReplySettings | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Check if user is super admin
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
@@ -60,6 +74,7 @@ export default function SoshoglePage() {
   useEffect(() => {
     fetchConnections();
     fetchStats();
+    fetchAutoReplySettings();
   }, []);
 
   // Handle OAuth redirect when returning to this page (e.g. after same-window redirect or popup)
@@ -105,6 +120,48 @@ export default function SoshoglePage() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchAutoReplySettings = async () => {
+    try {
+      const response = await fetch('/api/auto-reply-settings');
+      if (!response.ok) return;
+      const data = await response.json();
+      const s = data?.settings;
+      if (!s) return;
+      setAutoReplySettings({
+        isEnabled: Boolean(s.isEnabled),
+        notifyOnEscalation: Boolean(s.notifyOnEscalation),
+        businessHoursEnabled: Boolean(s.businessHoursEnabled),
+        businessHoursStart: s.businessHoursStart || '09:00',
+        businessHoursEnd: s.businessHoursEnd || '17:00',
+        responseLanguage: s.responseLanguage || 'en',
+      });
+    } catch (error) {
+      console.error('Error fetching auto-reply settings:', error);
+    }
+  };
+
+  const saveAutoReplySettings = async () => {
+    if (!autoReplySettings) return;
+    try {
+      setSavingSettings(true);
+      const response = await fetch('/api/auto-reply-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(autoReplySettings),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error || 'Failed to save settings');
+      }
+      toast.success('Settings saved');
+      await fetchAutoReplySettings();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to save settings');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -661,11 +718,77 @@ export default function SoshoglePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Alert className="bg-blue-500/10 border-blue-500/20">
-                    <AlertDescription className="text-blue-200">
-                      Settings coming soon. You'll be able to configure notifications, auto-replies, and more.
-                    </AlertDescription>
-                  </Alert>
+                  {!autoReplySettings ? (
+                    <div className="text-sm text-gray-400">Loading settings...</div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-gray-200">Enable Auto Replies</Label>
+                          <p className="text-xs text-gray-400 mt-1">Automatically respond to inbound messages.</p>
+                        </div>
+                        <Switch
+                          checked={autoReplySettings.isEnabled}
+                          onCheckedChange={(checked) => setAutoReplySettings((prev) => prev ? { ...prev, isEnabled: checked } : prev)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-gray-200">Notify on Escalation</Label>
+                          <p className="text-xs text-gray-400 mt-1">Alert you when a thread needs manual intervention.</p>
+                        </div>
+                        <Switch
+                          checked={autoReplySettings.notifyOnEscalation}
+                          onCheckedChange={(checked) =>
+                            setAutoReplySettings((prev) => prev ? { ...prev, notifyOnEscalation: checked } : prev)
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-3 border-t border-gray-800 pt-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-gray-200">Business Hours Only</Label>
+                          <Switch
+                            checked={autoReplySettings.businessHoursEnabled}
+                            onCheckedChange={(checked) =>
+                              setAutoReplySettings((prev) => prev ? { ...prev, businessHoursEnabled: checked } : prev)
+                            }
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs text-gray-400">Start</Label>
+                            <Input
+                              type="time"
+                              value={autoReplySettings.businessHoursStart}
+                              onChange={(e) =>
+                                setAutoReplySettings((prev) => prev ? { ...prev, businessHoursStart: e.target.value } : prev)
+                              }
+                              disabled={!autoReplySettings.businessHoursEnabled}
+                              className="bg-gray-800 border-gray-700 text-gray-200"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-400">End</Label>
+                            <Input
+                              type="time"
+                              value={autoReplySettings.businessHoursEnd}
+                              onChange={(e) =>
+                                setAutoReplySettings((prev) => prev ? { ...prev, businessHoursEnd: e.target.value } : prev)
+                              }
+                              disabled={!autoReplySettings.businessHoursEnabled}
+                              className="bg-gray-800 border-gray-700 text-gray-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button onClick={saveAutoReplySettings} disabled={savingSettings}>
+                        {savingSettings ? 'Saving...' : 'Save Settings'}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

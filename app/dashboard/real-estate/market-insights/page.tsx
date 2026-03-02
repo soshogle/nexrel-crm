@@ -45,6 +45,7 @@ interface LiveStats {
   medianListPrice: number;
   medianSoldPrice: number;
   activeListings: number;
+  totalActiveListings?: number;
   closedSales: number;
   pendingListings: number;
   domMedian: number;
@@ -58,6 +59,8 @@ interface LiveStats {
   fsboListings: number;
   fsboActive: number;
   fsboMedianPrice: number;
+  rentalListings?: number;
+  rentalActive?: number;
   typeBreakdown: { type: string; count: number }[];
   priceDistribution: { range: string; count: number }[];
   statusBreakdown: { status: string; count: number }[];
@@ -130,16 +133,21 @@ export default function MarketInsightsPage() {
       if (selectedState) params.set('state', selectedState);
 
       const res = await fetch(`/api/real-estate/market-stats?${params}`);
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Invalid JSON from market stats API');
+      }
 
       setLiveStats(data.liveStats || null);
       setMonthlyTrends(Array.isArray(data?.monthlyTrends) ? data.monthlyTrends : []);
       setLocations(Array.isArray(data?.locations) ? data.locations : []);
       setDataSource(data.dataSource || null);
-    } catch {
-      setLiveStats(null);
-      setMonthlyTrends([]);
+    } catch (err: any) {
+      console.error('Market stats fetch failed:', err);
+      toast.error(`Market stats refresh failed. Keeping last data. ${err?.message || ''}`.trim());
     } finally {
       setLoadingStats(false);
     }
@@ -231,7 +239,7 @@ export default function MarketInsightsPage() {
     }
   };
 
-  const hasData = liveStats && ((liveStats.activeListings || 0) + (liveStats.closedSales || 0) > 0);
+  const hasData = liveStats && ((liveStats.activeListings || 0) + (liveStats.closedSales || 0) + (liveStats.rentalActive || 0) + (liveStats.rentalListings || 0) > 0);
 
   // Chart data from monthly trends (live calculated)
   const priceChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
@@ -344,6 +352,12 @@ export default function MarketInsightsPage() {
             <span className="font-medium">Data Sources:</span>
           </div>
           <span>{dataSource.properties} properties</span>
+          {(dataSource.rentalListings ?? 0) > 0 && (
+            <>
+              <span>&bull;</span>
+              <span>{dataSource.rentalListings} rentals</span>
+            </>
+          )}
           <span>&bull;</span>
           <span>{dataSource.fsboListings} FSBO listings</span>
           {dataSource.location !== 'All Areas' && (
@@ -358,9 +372,9 @@ export default function MarketInsightsPage() {
       {/* Live Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatsCard label="Median Sale Price" value={hasData ? formatK(liveStats!.medianSalePrice) : '—'} change={liveStats?.priceChangePercent} icon={DollarSign} loading={loadingStats} />
-        <StatsCard label="Active Listings" value={hasData ? String(liveStats!.activeListings) : '0'} subtext={`${liveStats?.newListingsThisMonth || 0} new this month`} icon={Building2} loading={loadingStats} positive={!!liveStats?.activeListings} />
+        <StatsCard label="Active Listings" value={hasData ? String(liveStats!.totalActiveListings ?? liveStats!.activeListings) : '0'} subtext={`${liveStats?.newListingsThisMonth || 0} new this month`} icon={Building2} loading={loadingStats} positive={!!(liveStats?.totalActiveListings ?? liveStats?.activeListings)} />
         <StatsCard label="Closed Sales" value={hasData ? String(liveStats!.closedSales) : '0'} subtext={hasData ? `Median ${formatK(liveStats!.medianSoldPrice)}` : undefined} icon={Target} loading={loadingStats} positive={!!liveStats?.closedSales} />
-        <StatsCard label="Days on Market" value={hasData && liveStats!.domMedian > 0 ? `${liveStats!.domMedian}` : '—'} subtext={hasData && liveStats!.domAvg > 0 ? `Avg ${liveStats!.domAvg} days` : undefined} icon={Clock} loading={loadingStats} />
+        <StatsCard label="Days on Market" value={hasData && (liveStats!.domMedian > 0 || liveStats!.domAvg > 0) ? `${liveStats!.domMedian || liveStats!.domAvg}` : '—'} subtext={hasData && liveStats!.domAvg > 0 ? `Avg ${liveStats!.domAvg} days` : undefined} icon={Clock} loading={loadingStats} />
         <StatsCard label="Price / Sq Ft" value={hasData && liveStats!.pricePerSqft > 0 ? `$${liveStats!.pricePerSqft}` : '—'} icon={Layers} loading={loadingStats} />
         <StatsCard label="Months of Supply" value={hasData && liveStats!.monthsOfSupply > 0 ? `${liveStats!.monthsOfSupply}` : '—'} subtext={liveStats?.monthsOfSupply ? (liveStats.monthsOfSupply < 3 ? "Seller's market" : liveStats.monthsOfSupply > 6 ? "Buyer's market" : 'Balanced') : undefined} icon={Activity} loading={loadingStats} />
       </div>

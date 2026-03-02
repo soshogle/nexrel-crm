@@ -83,154 +83,175 @@ export async function GET(req: NextRequest) {
     if (!ctx) return apiErrors.unauthorized();
 
     const atRiskItems: AtRiskItem[] = [];
+    const partialErrors: string[] = [];
 
     // 1. Fetch stale listings from real estate properties (source of listing check-ins)
-    const staleProperties = await getCrmDb(ctx).rEProperty.findMany({
-      where: {
-        userId: ctx.userId,
-        listingStatus: { in: ['ACTIVE', 'PENDING'] } as any,
-        updatedAt: {
-          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    try {
+      const staleProperties = await getCrmDb(ctx).rEProperty.findMany({
+        where: {
+          userId: ctx.userId,
+          listingStatus: { in: ['ACTIVE', 'PENDING'] } as any,
+          updatedAt: {
+            lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
         },
-      },
-      orderBy: { updatedAt: 'asc' },
-      take: 20,
-    });
+        orderBy: { updatedAt: 'asc' },
+        take: 20,
+      });
 
-    for (const prop of staleProperties) {
-      const daysInactive = calculateDaysSince(prop.updatedAt);
-      const riskLevel = determineRiskLevel(daysInactive, 'listing');
+      for (const prop of staleProperties) {
+        const daysInactive = calculateDaysSince(prop.updatedAt);
+        const riskLevel = determineRiskLevel(daysInactive, 'listing');
 
-      if (riskLevel !== 'low') {
-        atRiskItems.push({
-          id: prop.id,
-          type: 'listing',
-          name: prop.address || 'Listing',
-          address: prop.address || undefined,
-          reason: generateRiskReason('listing', daysInactive),
-          daysInactive,
-          riskLevel,
-          suggestedAction: generateSuggestedAction('listing', daysInactive),
-        });
+        if (riskLevel !== 'low') {
+          atRiskItems.push({
+            id: prop.id,
+            type: 'listing',
+            name: prop.address || 'Listing',
+            address: prop.address || undefined,
+            reason: generateRiskReason('listing', daysInactive),
+            daysInactive,
+            riskLevel,
+            suggestedAction: generateSuggestedAction('listing', daysInactive),
+          });
+        }
       }
+    } catch (error) {
+      console.error('At-risk listings query failed:', error);
+      partialErrors.push('listings');
     }
 
     // 2. Also include stale seller leads without linked properties
-    const staleListings = await leadService.findMany(ctx, {
-      where: {
-        status: { in: ['NEW', 'CONTACTED', 'QUALIFIED'] } as any,
-        OR: [
-          { contactType: { contains: 'seller' } },
-          { source: { contains: 'FSBO' } },
-          { source: { contains: 'DUPROPRIO' } },
-          { source: { contains: 'ZILLOW' } },
-        ],
-        updatedAt: {
-          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    try {
+      const staleListings = await leadService.findMany(ctx, {
+        where: {
+          status: { in: ['NEW', 'CONTACTED', 'QUALIFIED'] } as any,
+          OR: [
+            { contactType: { contains: 'seller' } },
+            { source: { contains: 'FSBO' } },
+            { source: { contains: 'DUPROPRIO' } },
+            { source: { contains: 'ZILLOW' } },
+          ],
+          updatedAt: {
+            lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
         },
-      },
-      orderBy: { updatedAt: 'asc' },
-      take: 10,
-    });
+        orderBy: { updatedAt: 'asc' },
+        take: 10,
+      });
 
-    for (const lead of staleListings) {
-      const daysInactive = calculateDaysSince(lead.updatedAt);
-      const riskLevel = determineRiskLevel(daysInactive, 'listing');
-      
-      if (riskLevel !== 'low') {
-        atRiskItems.push({
-          id: lead.id,
-          type: 'listing',
-          name: lead.contactPerson || lead.businessName || 'Unknown Seller',
-          address: lead.address || undefined,
-          reason: generateRiskReason('listing', daysInactive),
-          daysInactive,
-          riskLevel,
-          suggestedAction: generateSuggestedAction('listing', daysInactive),
-        });
+      for (const lead of staleListings) {
+        const daysInactive = calculateDaysSince(lead.updatedAt);
+        const riskLevel = determineRiskLevel(daysInactive, 'listing');
+        
+        if (riskLevel !== 'low') {
+          atRiskItems.push({
+            id: lead.id,
+            type: 'listing',
+            name: lead.contactPerson || lead.businessName || 'Unknown Seller',
+            address: lead.address || undefined,
+            reason: generateRiskReason('listing', daysInactive),
+            daysInactive,
+            riskLevel,
+            suggestedAction: generateSuggestedAction('listing', daysInactive),
+          });
+        }
       }
+    } catch (error) {
+      console.error('At-risk stale seller leads query failed:', error);
+      partialErrors.push('seller-leads');
     }
 
     // 3. Fetch inactive follow-up leads (buyers and active prospects)
-    const inactiveBuyers = await leadService.findMany(ctx, {
-      where: {
-        status: { notIn: ['CONVERTED', 'LOST'] } as any,
-        OR: [
-          { contactType: { contains: 'buyer' } },
-          { contactType: null },
-          { contactType: '' },
-        ],
-        AND: [
-          {
-            OR: [
-              { lastContactedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
-              {
-                lastContactedAt: null,
-                updatedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-              },
-            ],
-          },
-        ],
-      },
-      orderBy: { lastContactedAt: 'asc' },
-      take: 20,
-    });
+    try {
+      const inactiveBuyers = await leadService.findMany(ctx, {
+        where: {
+          status: { notIn: ['CONVERTED', 'LOST'] } as any,
+          OR: [
+            { contactType: { contains: 'buyer' } },
+            { contactType: null },
+            { contactType: '' },
+          ],
+          AND: [
+            {
+              OR: [
+                { lastContactedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+                {
+                  lastContactedAt: null,
+                  updatedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+                },
+              ],
+            },
+          ],
+        },
+        orderBy: { lastContactedAt: 'asc' },
+        take: 20,
+      });
 
-    for (const buyer of inactiveBuyers) {
-      const daysInactive = calculateDaysSince(buyer.lastContactedAt || buyer.updatedAt);
-      const riskLevel = determineRiskLevel(daysInactive, 'buyer');
-      
-      if (riskLevel !== 'low') {
-        atRiskItems.push({
-          id: buyer.id,
-          type: 'buyer',
-          name: buyer.contactPerson || buyer.businessName || 'Unknown Buyer',
-          reason: generateRiskReason('buyer', daysInactive),
-          daysInactive,
-          riskLevel,
-          suggestedAction: generateSuggestedAction('buyer', daysInactive),
-        });
+      for (const buyer of inactiveBuyers) {
+        const daysInactive = calculateDaysSince(buyer.lastContactedAt || buyer.updatedAt);
+        const riskLevel = determineRiskLevel(daysInactive, 'buyer');
+        
+        if (riskLevel !== 'low') {
+          atRiskItems.push({
+            id: buyer.id,
+            type: 'buyer',
+            name: buyer.contactPerson || buyer.businessName || 'Unknown Buyer',
+            reason: generateRiskReason('buyer', daysInactive),
+            daysInactive,
+            riskLevel,
+            suggestedAction: generateSuggestedAction('buyer', daysInactive),
+          });
+        }
       }
+    } catch (error) {
+      console.error('At-risk inactive buyers query failed:', error);
+      partialErrors.push('buyers');
     }
 
     // 4. Fetch stalled deals
-    const stalledDeals = await getCrmDb(ctx).deal.findMany({
-      where: {
-        userId: ctx.userId,
-        actualCloseDate: null,
-        updatedAt: {
-          lt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        },
-      },
-      include: {
-        lead: {
-          select: {
-            contactPerson: true,
-            businessName: true,
+    try {
+      const stalledDeals = await getCrmDb(ctx).deal.findMany({
+        where: {
+          userId: ctx.userId,
+          actualCloseDate: null,
+          updatedAt: {
+            lt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           },
         },
-      },
-      orderBy: {
-        updatedAt: 'asc',
-      },
-      take: 10,
-    });
+        include: {
+          lead: {
+            select: {
+              contactPerson: true,
+              businessName: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'asc',
+        },
+        take: 10,
+      });
 
-    for (const deal of stalledDeals) {
-      const daysInactive = calculateDaysSince(deal.updatedAt);
-      const riskLevel = determineRiskLevel(daysInactive, 'deal');
-      
-      if (riskLevel !== 'low') {
-        atRiskItems.push({
-          id: deal.id,
-          type: 'deal',
-          name: deal.lead?.contactPerson || deal.lead?.businessName || deal.title || 'Unknown Deal',
-          reason: generateRiskReason('deal', daysInactive),
-          daysInactive,
-          riskLevel,
-          suggestedAction: generateSuggestedAction('deal', daysInactive),
-        });
+      for (const deal of stalledDeals) {
+        const daysInactive = calculateDaysSince(deal.updatedAt);
+        const riskLevel = determineRiskLevel(daysInactive, 'deal');
+        
+        if (riskLevel !== 'low') {
+          atRiskItems.push({
+            id: deal.id,
+            type: 'deal',
+            name: deal.lead?.contactPerson || deal.lead?.businessName || deal.title || 'Unknown Deal',
+            reason: generateRiskReason('deal', daysInactive),
+            daysInactive,
+            riskLevel,
+            suggestedAction: generateSuggestedAction('deal', daysInactive),
+          });
+        }
       }
+    } catch (error) {
+      console.error('At-risk stalled deals query failed:', error);
+      partialErrors.push('deals');
     }
 
     // Sort by risk level (high first) then by days inactive
@@ -250,6 +271,8 @@ export async function GET(req: NextRequest) {
         deals: atRiskItems.filter((i) => i.type === 'deal').length,
         highRisk: atRiskItems.filter((i) => i.riskLevel === 'high').length,
       },
+      partial: partialErrors.length > 0,
+      partialErrors,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {

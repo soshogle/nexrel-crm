@@ -40,10 +40,11 @@ export default async function DashboardPage() {
       })
     ])
 
-    // Use mock data when database is empty for demo purposes
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com'
+    // Preserve mock behavior only for the dedicated demo account
     let leadsToUse = Array.isArray(leads) ? leads : []
     let recentLeadsToUse = Array.isArray(recentLeadsRaw) ? recentLeadsRaw : []
-    if (leadsToUse.length === 0) {
+    if (isOrthoDemo && leadsToUse.length === 0) {
       const { MOCK_LEADS } = await import('@/lib/mock-data')
       leadsToUse = MOCK_LEADS.map((l) => ({
         id: l.id,

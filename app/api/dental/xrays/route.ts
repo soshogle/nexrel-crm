@@ -66,8 +66,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(xrays);
   } catch (error) {
     console.error('Error fetching X-rays:', error);
-    // Return empty array instead of 500 to prevent dashboard crashes
-    return NextResponse.json([]);
+    return apiErrors.internal(await t('api.fetchXraysFailed'));
   }
 }
 
@@ -126,6 +125,7 @@ export async function POST(request: NextRequest) {
     const encryptionKey = crypto.randomBytes(32).toString('hex');
     
     let dicomFile: string | null = null;
+    let fallbackStoragePath: string | null = null;
     let thumbnailUrl: string | null = null;
     let previewUrl: string | null = null;
     let fullUrl: string | null = null;
@@ -330,8 +330,7 @@ export async function POST(request: NextRequest) {
           file.type || 'image/png',
           encryptionKey
         );
-        // Use legacy fields for backward compatibility
-        thumbnailUrl = previewUrl = fullUrl = `/api/dental/xrays/${Date.now()}/image`;
+        fallbackStoragePath = uploadResult.storagePath;
       }
     }
 
@@ -342,7 +341,7 @@ export async function POST(request: NextRequest) {
       userId,
       dicomFile,
       // Legacy fields for backward compatibility
-      imageFile: fullUrl || null,
+      imageFile: fullUrl || fallbackStoragePath || null,
       imageUrl: fullUrl || previewUrl || thumbnailUrl || null,
       // New multi-resolution fields
       thumbnailUrl,

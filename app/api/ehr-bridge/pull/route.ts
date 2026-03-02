@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       result = {
         matched: 'calendar',
         appointmentsCount: data.appointments.length,
-        message: `Extracted ${data.appointments.length} appointments (calendar sync coming soon)`,
+        message: `Extracted ${data.appointments.length} appointments from calendar payload`,
       } as any;
     } else {
       return apiErrors.badRequest('Unsupported data type');

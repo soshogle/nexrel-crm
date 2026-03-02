@@ -157,7 +157,7 @@ export function DentalModals({
               <User className="w-10 h-10 text-gray-400" />
             </div>
             <div>
-              <p className="text-lg font-medium text-gray-900 mb-2">Welcome, John Smith!</p>
+              <p className="text-lg font-medium text-gray-900 mb-2">Welcome!</p>
               <p className="text-sm text-gray-600 mb-6">Please confirm your appointment.</p>
             </div>
             <Input placeholder="Patient name" className="mb-4 border border-gray-300 h-10" />

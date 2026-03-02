@@ -300,7 +300,7 @@ export function ProductionReportDashboard({ clinicId }: ProductionReportDashboar
         </CardContent>
       </Card>
 
-      {/* Provider Production Placeholder */}
+      {/* Provider Production Availability */}
       <Card className="shadow-sm border-dashed">
         <CardContent className="flex items-center gap-4 py-12">
           <div className="rounded-full bg-purple-100 p-4">
@@ -308,10 +308,10 @@ export function ProductionReportDashboard({ clinicId }: ProductionReportDashboar
           </div>
           <div>
             <p className="font-medium text-muted-foreground">
-              Provider breakdown coming soon
+              Provider breakdown unavailable
             </p>
             <p className="text-sm text-muted-foreground">
-              Per-provider production metrics will be available in a future update.
+              This report currently shows verified clinic-level production totals.
             </p>
           </div>
         </CardContent>

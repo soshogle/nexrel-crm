@@ -8,11 +8,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PenTool, X } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 export function CustomSignature() {
+  const { data: session } = useSession();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(true); // Show mock signature initially
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  const [hasSignature, setHasSignature] = useState(isOrthoDemo); // Keep prefilled mock signature only for demo account
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,12 +32,12 @@ export function CustomSignature() {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Draw mock signature "Signit"
-    if (hasSignature) {
+    // Draw mock signature only for the dedicated demo account
+    if (isOrthoDemo && hasSignature) {
       ctx.font = '24px cursive';
       ctx.fillText('Signit', 20, 50);
     }
-  }, [hasSignature]);
+  }, [hasSignature, isOrthoDemo]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);

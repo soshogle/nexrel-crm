@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,11 @@ interface CMAResult {
   sellerTips: string[];
 }
 
+interface PlacePrediction {
+  place_id: string;
+  description: string;
+}
+
 export default function CMAToolsPage() {
   const locale = useLocaleLabels();
   const [address, setAddress] = useState('');
@@ -69,46 +74,8 @@ export default function CMAToolsPage() {
   const [selectedReport, setSelectedReport] = useState<CMAReport | null>(null);
   const [generatedResult, setGeneratedResult] = useState<CMAResult | null>(null);
 
-  const [addressPredictions, setAddressPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [addressPredictions, setAddressPredictions] = useState<PlacePrediction[]>([]);
   const [showAddressPredictions, setShowAddressPredictions] = useState(false);
-  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesService = useRef<google.maps.places.PlacesService | null>(null);
-
-  useEffect(() => {
-    const loadGoogleMaps = () => {
-      if (typeof window !== 'undefined' && window.google?.maps?.places) {
-        setIsGoogleMapsLoaded(true);
-        autocompleteService.current = new google.maps.places.AutocompleteService();
-        const mapDiv = document.createElement('div');
-        placesService.current = new google.maps.places.PlacesService(mapDiv);
-        return;
-      }
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-      if (existingScript) {
-        existingScript.addEventListener('load', () => {
-          setIsGoogleMapsLoaded(true);
-          autocompleteService.current = new google.maps.places.AutocompleteService();
-          const mapDiv = document.createElement('div');
-          placesService.current = new google.maps.places.PlacesService(mapDiv);
-        });
-        return;
-      }
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        setIsGoogleMapsLoaded(true);
-        autocompleteService.current = new google.maps.places.AutocompleteService();
-        const mapDiv = document.createElement('div');
-        placesService.current = new google.maps.places.PlacesService(mapDiv);
-      };
-      document.head.appendChild(script);
-    };
-    loadGoogleMaps();
-  }, []);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -130,52 +97,49 @@ export default function CMAToolsPage() {
 
   const handleAddressChange = useCallback((value: string) => {
     setAddress(value);
-    if (!value || value.length < 3 || !autocompleteService.current || !isGoogleMapsLoaded) {
+    if (!value || value.length < 3) {
       setAddressPredictions([]);
       setShowAddressPredictions(false);
       return;
     }
-    autocompleteService.current.getPlacePredictions(
-      { input: value, types: ['address'] },
-      (predictions, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setAddressPredictions(predictions);
-          setShowAddressPredictions(true);
-        } else {
+    (async () => {
+      try {
+        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(value)}&types=address`);
+        if (!res.ok) {
           setAddressPredictions([]);
           setShowAddressPredictions(false);
+          return;
         }
-      }
-    );
-  }, [isGoogleMapsLoaded]);
-
-  const handleSelectPrediction = useCallback((prediction: google.maps.places.AutocompletePrediction) => {
-    if (!placesService.current) return;
-    placesService.current.getDetails(
-      { placeId: prediction.place_id, fields: ['address_components', 'formatted_address'] },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          let streetNumber = '';
-          let route = '';
-          let newCity = '';
-          let newState = '';
-          let newZip = '';
-          place.address_components?.forEach((component) => {
-            if (component.types.includes('street_number')) streetNumber = component.long_name;
-            if (component.types.includes('route')) route = component.long_name;
-            if (component.types.includes('locality')) newCity = component.long_name;
-            if (component.types.includes('administrative_area_level_1')) newState = component.short_name;
-            if (component.types.includes('postal_code')) newZip = component.long_name;
-          });
-          setAddress(`${streetNumber} ${route}`.trim());
-          setCity(newCity);
-          setState(newState);
-          setZip(newZip);
-        }
-        setShowAddressPredictions(false);
+        const data = await res.json();
+        const preds = Array.isArray(data?.predictions) ? data.predictions : [];
+        setAddressPredictions(preds);
+        setShowAddressPredictions(preds.length > 0);
+      } catch {
         setAddressPredictions([]);
+        setShowAddressPredictions(false);
       }
-    );
+    })();
+  }, []);
+
+  const handleSelectPrediction = useCallback(async (prediction: PlacePrediction) => {
+    try {
+      const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const place = data?.place;
+        if (place) {
+          setAddress(place.description || prediction.description);
+          setCity(place.city || '');
+          setState(place.state || '');
+          setZip(place.zip || '');
+        }
+      }
+    } catch {
+      setAddress(prediction.description);
+    } finally {
+      setShowAddressPredictions(false);
+      setAddressPredictions([]);
+    }
   }, []);
 
   const handleGenerate = async () => {

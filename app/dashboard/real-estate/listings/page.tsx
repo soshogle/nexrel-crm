@@ -114,6 +114,7 @@ export default function ListingsPage() {
   const [importingMls, setImportingMls] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [listingTab, setListingTab] = useState<'sale' | 'rent'>('sale');
+  const [saleScope, setSaleScope] = useState<'all' | 'broker'>('all');
   const [rentals, setRentals] = useState<any[]>([]);
   const [rentalsLoading, setRentalsLoading] = useState(false);
   const [syncingStatus, setSyncingStatus] = useState(false);
@@ -155,7 +156,11 @@ export default function ListingsPage() {
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
   useEffect(() => { if (listingTab === 'rent') fetchRentals(); }, [listingTab, fetchRentals]);
 
-  const filtered = properties.filter((p) => {
+  const saleScopedProperties = saleScope === 'broker'
+    ? properties.filter((p) => !!p.sellerLead)
+    : properties;
+
+  const filtered = saleScopedProperties.filter((p) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -177,14 +182,18 @@ export default function ListingsPage() {
   });
 
   const stats = {
-    total: properties.length,
-    active: properties.filter((p) => p.listingStatus === 'ACTIVE').length,
-    pending: properties.filter((p) => p.listingStatus === 'PENDING').length,
-    sold: properties.filter((p) => p.listingStatus === 'SOLD').length,
-    totalValue: properties
+    total: saleScopedProperties.length,
+    active: saleScopedProperties.filter((p) => p.listingStatus === 'ACTIVE').length,
+    pending: saleScopedProperties.filter((p) => p.listingStatus === 'PENDING').length,
+    sold: saleScopedProperties.filter((p) => p.listingStatus === 'SOLD').length,
+    totalValue: saleScopedProperties
       .filter((p) => p.listingStatus === 'ACTIVE')
       .reduce((sum, p) => sum + (p.listPrice || 0), 0),
   };
+
+  useEffect(() => {
+    setBulkSelected(new Set());
+  }, [saleScope, listingTab, searchQuery, statusFilter, typeFilter]);
 
   function openNew() {
     setEditingId(null);
@@ -464,8 +473,10 @@ export default function ListingsPage() {
               setCheckingPrices(true);
               try {
                 const res = await fetch('/api/real-estate/properties/price-monitor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 50 }) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
+                const raw = await res.text();
+                let data: any = {};
+                try { data = raw ? JSON.parse(raw) : {}; } catch {}
+                if (!res.ok) throw new Error(data?.error || `Price check failed (${res.status})`);
                 if (data.changes?.length > 0) {
                   setPriceChanges(data.changes);
                   setShowPriceChanges(true);
@@ -490,8 +501,10 @@ export default function ListingsPage() {
               setSyncingStatus(true);
               try {
                 const res = await fetch('/api/real-estate/properties/sync-status-to-website', { method: 'POST' });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
+                const raw = await res.text();
+                let data: any = {};
+                try { data = raw ? JSON.parse(raw) : {}; } catch {}
+                if (!res.ok) throw new Error(data?.error || `Sync failed (${res.status})`);
                 toast({ title: 'Synced', description: data.message || 'Status updates pushed to your website' });
               } catch (e: any) {
                 toast({ title: 'Error', description: e.message || 'Failed to sync', variant: 'destructive' });
@@ -536,7 +549,7 @@ export default function ListingsPage() {
           size="sm"
           onClick={() => setListingTab('sale')}
         >
-          For Sale ({stats.total})
+          For Sale ({saleScopedProperties.length})
         </Button>
         <Button
           variant={listingTab === 'rent' ? 'default' : 'ghost'}
@@ -546,6 +559,25 @@ export default function ListingsPage() {
           For Rent ({rentals.length})
         </Button>
       </div>
+
+      {listingTab === 'sale' && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant={saleScope === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSaleScope('all')}
+          >
+            MLS Listings ({properties.length})
+          </Button>
+          <Button
+            variant={saleScope === 'broker' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSaleScope('broker')}
+          >
+            Broker Listings ({properties.filter((p) => !!p.sellerLead).length})
+          </Button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-5">
@@ -661,11 +693,17 @@ export default function ListingsPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search address, city, MLS#, seller... (also searches your website DB)"
+                placeholder={listingTab === 'sale' && saleScope === 'broker'
+                  ? 'Search broker listings by address, city, MLS#, seller...'
+                  : 'Search address, city, MLS#, seller... (also searches your website DB)'}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  searchWebsiteDB(e.target.value);
+                  if (!(listingTab === 'sale' && saleScope === 'broker')) {
+                    searchWebsiteDB(e.target.value);
+                  } else {
+                    setShowWebsiteResults(false);
+                  }
                 }}
                 className="pl-10"
               />
@@ -836,7 +874,11 @@ export default function ListingsPage() {
             <div className="text-center py-20 text-muted-foreground">
               <Building2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p className="text-lg font-medium">No listings found</p>
-              <p className="text-sm mt-1">Add your first listing to get started</p>
+              <p className="text-sm mt-1">
+                {saleScope === 'broker'
+                  ? 'No broker-linked listings yet. Link a seller lead to a listing to include it here.'
+                  : 'Add your first listing to get started'}
+              </p>
               <Button className="mt-4" onClick={openNew}>
                 <Plus className="mr-2 h-4 w-4" /> Add Listing
               </Button>

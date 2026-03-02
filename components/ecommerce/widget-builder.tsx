@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +68,8 @@ interface WidgetBuilderProps {
 }
 
 export function WidgetBuilder({ onWidgetCreated }: WidgetBuilderProps = {}) {
+  const { data: session } = useSession();
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   const [loading, setLoading] = useState(true);
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -284,10 +287,12 @@ export function WidgetBuilder({ onWidgetCreated }: WidgetBuilderProps = {}) {
             Create embeddable e-commerce widgets for your website
           </p>
         </div>
-        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Demo Mode
-        </Badge>
+        {isOrthoDemo && (
+          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Demo Mode
+          </Badge>
+        )}
       </div>
 
       {/* Existing Widgets */}

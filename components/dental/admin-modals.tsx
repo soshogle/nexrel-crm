@@ -29,6 +29,7 @@ interface AdminModalsProps {
   teamMembers: any[];
   displayMultiChairAppointments: any[];
   productionMetrics: { dailyProduction: number };
+  outstandingBalance?: number | null;
   productionChartData: {
     dailyData: any[];
     weeklyData: any[];
@@ -50,6 +51,7 @@ export function AdminModals({
   teamMembers,
   displayMultiChairAppointments,
   productionMetrics,
+  outstandingBalance,
   productionChartData,
   onRefreshLeads,
 }: AdminModalsProps) {
@@ -100,7 +102,7 @@ export function AdminModals({
               </div>
             )}
             <RedesignedCheckIn
-              patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+              patientName={selectedLeadId ? leads.find((l) => l.id === selectedLeadId)?.contactPerson || 'Patient' : undefined}
               onCheckIn={() => { toast.success('Patient checked in successfully'); onCloseModal(); }}
               onUpdateInfo={() => {
                 if (!selectedLeadId) { toast.error('Please select a patient first'); return; }
@@ -115,9 +117,14 @@ export function AdminModals({
         <RedesignedInsuranceClaims
           claims={claims.map((claim: any) => ({
             id: claim.id?.substring(0, 8) || 'N/A',
-            provider: claim.provider || 'RAMQ',
+            provider: claim.provider || claim.insuranceProvider || 'RAMQ',
             amount: claim.amount || 0,
-            status: claim.status === 'APPROVED' ? 'Approved' : 'Funding',
+            status:
+              String(claim.status || '').toUpperCase() === 'APPROVED'
+                ? 'Approved'
+                : ['SUBMITTED', 'UNDER_REVIEW', 'PENDING', 'INFO_REQUESTED'].includes(String(claim.status || '').toUpperCase())
+                  ? 'Funding'
+                  : 'Pending',
           }))}
         />
       </CardModal>
@@ -131,10 +138,14 @@ export function AdminModals({
             </Card>
             <Card>
               <CardHeader><CardTitle className="text-sm">Outstanding</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold text-amber-600">$12,450</p></CardContent>
+              <CardContent>
+                <p className="text-2xl font-bold text-amber-600">
+                  {outstandingBalance != null ? `$${outstandingBalance.toLocaleString()}` : '—'}
+                </p>
+              </CardContent>
             </Card>
           </div>
-          <Button className="w-full" onClick={() => { toast.info('Payment processing feature - coming soon'); }}>
+          <Button className="w-full" onClick={() => { toast.info('Use the Payments flow to process balances.'); }}>
             <DollarSign className="w-4 h-4 mr-2" /> Process Payment
           </Button>
         </div>
@@ -183,9 +194,8 @@ export function AdminModals({
               <Building2 className="w-4 h-4 mr-2" /> Create New Lab Order
             </Button>
             <div className="space-y-2">
-              <div className="p-3 border border-gray-200 rounded">
-                <p className="font-semibold">Order #12345</p>
-                <p className="text-sm text-gray-600">Status: In Progress</p>
+              <div className="p-3 border border-dashed border-gray-200 rounded text-sm text-gray-600">
+                Open the patient lab order form to view and create live orders.
               </div>
             </div>
           </div>

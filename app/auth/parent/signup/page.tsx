@@ -85,7 +85,7 @@ function ParentSignupForm() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // Clear error when user starts typing
     if (errors[e.target.name]) {

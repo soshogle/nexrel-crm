@@ -36,6 +36,7 @@ interface RawRow {
   extra1: string | null;
   extra2: string | null;
   extra3: string | null;
+  extra4: string | number | null;
   sqft: number | null;
 }
 
@@ -76,6 +77,7 @@ function normaliseRow(raw: any[], expectedStatus: 'AC' | 'SO'): RawRow | null {
     extra1: cols[12] ?? null,
     extra2: cols[13] ?? null,
     extra3: cols[14] ?? null,
+    extra4: cols[15] ?? null,
     sqft: typeof cols[13] === 'number' ? cols[13] : (typeof cols[14] === 'number' ? cols[14] : null),
   };
 }
@@ -105,6 +107,16 @@ function parseBedBath(val: string | null): number {
   if (!val) return 0;
   const parts = String(val).split('+').map(Number);
   return parts.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+}
+
+/** Parse DOM from extra columns — Centris Excel may have "Days" or numeric DOM in extra4 or extra1/2/3 */
+function parseDom(row: RawRow): number {
+  for (const val of [row.extra4, row.extra1, row.extra2, row.extra3]) {
+    if (val == null) continue;
+    const n = typeof val === 'number' ? val : parseInt(String(val).replace(/[^\d]/g, ''), 10);
+    if (!isNaN(n) && n >= 1 && n <= 999) return n;
+  }
+  return 0;
 }
 
 type PropertyType = 'SINGLE_FAMILY' | 'CONDO' | 'TOWNHOUSE' | 'MULTI_FAMILY' | 'MOBILE_HOME' | 'OTHER';
@@ -242,7 +254,7 @@ async function main() {
           rentPrice: rentParsed.amount,
           rentPriceLabel: rentParsed.label || null,
           mlsNumber: centrisNo,
-          daysOnMarket: 0,
+          daysOnMarket: parseDom(row),
           description: [
             row.propertyType && `Type: ${row.propertyType}`,
             row.buildingType && `Building: ${row.buildingType}`,
@@ -307,7 +319,7 @@ async function main() {
         listPrice: status === 'ACTIVE' ? price : (price || null),
         soldPrice: status === 'SOLD' ? price : null,
         mlsNumber: centrisNo,
-        daysOnMarket: 0,
+        daysOnMarket: parseDom(row),
         description: [
           row.propertyType && `Type: ${row.propertyType}`,
           row.buildingType && `Building: ${row.buildingType}`,

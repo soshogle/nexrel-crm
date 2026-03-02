@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,8 @@ export function BnplCheckout({
   onSuccess,
   onCancel,
 }: BnplCheckoutProps) {
+  const { data: session } = useSession();
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [eligibility, setEligibility] = useState<EligibilityResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -166,7 +169,7 @@ export function BnplCheckout({
         <CardHeader>
           <CardTitle>Buy Now, Pay Later</CardTitle>
           <CardDescription>
-            <Badge variant="outline" className="mr-2">Demo Mode</Badge>
+            {isOrthoDemo && <Badge variant="outline" className="mr-2">Demo Mode</Badge>}
             Split your purchase into easy payments
           </CardDescription>
         </CardHeader>
@@ -194,7 +197,7 @@ export function BnplCheckout({
           Buy Now, Pay Later
         </CardTitle>
         <CardDescription>
-          <Badge variant="outline" className="mr-2">Demo Mode</Badge>
+          {isOrthoDemo && <Badge variant="outline" className="mr-2">Demo Mode</Badge>}
           Split your purchase into easy installments
         </CardDescription>
       </CardHeader>
@@ -336,9 +339,11 @@ export function BnplCheckout({
         </div>
 
         {/* Disclaimer */}
-        <p className="text-xs text-muted-foreground text-center">
-          This is a demo mode. No actual credit check or payment processing will occur.
-        </p>
+        {isOrthoDemo && (
+          <p className="text-xs text-muted-foreground text-center">
+            This is a demo mode. No actual credit check or payment processing will occur.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    if (!isOrthoDemo) {
+      return apiErrors.forbidden('Demo data generation is restricted');
+    }
 
     // Grant demo consent if not already granted
     let consent = await dataMonetizationService.getConsent(session.user.id);

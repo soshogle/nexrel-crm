@@ -2,31 +2,137 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Calculator, FileText } from 'lucide-react';
 
 export default function SellerNetSheetPage() {
+  const { toast } = useToast();
+  const [address, setAddress] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [mortgageBalance, setMortgageBalance] = useState('');
   const [commissionRate, setCommissionRate] = useState('6');
+  const [closingCostsRate, setClosingCostsRate] = useState('2');
+  const [titleInsuranceRate, setTitleInsuranceRate] = useState('0.5');
+  const [transferTaxRate, setTransferTaxRate] = useState('1');
+  const [isSaving, setIsSaving] = useState(false);
 
   const salePriceNum = parseFloat(salePrice) || 0;
   const mortgageNum = parseFloat(mortgageBalance) || 0;
   const commissionNum = parseFloat(commissionRate) || 0;
+  const closingRateNum = parseFloat(closingCostsRate) || 0;
+  const titleRateNum = parseFloat(titleInsuranceRate) || 0;
+  const transferRateNum = parseFloat(transferTaxRate) || 0;
 
   const commission = salePriceNum * (commissionNum / 100);
-  const closingCosts = salePriceNum * 0.02; // Estimated 2%
-  const titleInsurance = salePriceNum * 0.005; // Estimated 0.5%
-  const transferTax = salePriceNum * 0.01; // Estimated 1%
+  const closingCosts = salePriceNum * (closingRateNum / 100);
+  const titleInsurance = salePriceNum * (titleRateNum / 100);
+  const transferTax = salePriceNum * (transferRateNum / 100);
   const totalDeductions = commission + closingCosts + titleInsurance + transferTax + mortgageNum;
   const netProceeds = salePriceNum - totalDeductions;
 
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+  };
+
+  useEffect(() => {
+    const loadLastSheet = async () => {
+      try {
+        const res = await fetch('/api/real-estate/net-sheet?limit=1');
+        if (!res.ok) return;
+        const data = await res.json();
+        const latest = Array.isArray(data?.netSheets) ? data.netSheets[0] : null;
+        if (!latest) return;
+        setAddress(latest.address || '');
+        setSalePrice(latest.salePrice ? String(latest.salePrice) : '');
+        setMortgageBalance(latest.mortgagePayoff ? String(latest.mortgagePayoff) : '');
+        setCommissionRate(latest.commissionRate ? String(latest.commissionRate) : '6');
+        if (latest.salePrice) {
+          setClosingCostsRate(latest.closingCosts ? ((latest.closingCosts / latest.salePrice) * 100).toFixed(2) : '2');
+          setTitleInsuranceRate(latest.titleInsurance ? ((latest.titleInsurance / latest.salePrice) * 100).toFixed(2) : '0.5');
+          setTransferTaxRate(latest.transferTax ? ((latest.transferTax / latest.salePrice) * 100).toFixed(2) : '1');
+        }
+      } catch {
+        // Keep defaults if no prior sheet exists
+      }
+    };
+    loadLastSheet();
+  }, []);
+
+  const handleGeneratePdf = async () => {
+    if (!address || salePriceNum <= 0) {
+      toast({ title: 'Missing fields', description: 'Address and sale price are required.', variant: 'destructive' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const savePayload = {
+        address,
+        salePrice: salePriceNum,
+        mortgagePayoff: mortgageNum,
+        commissionRate: commissionNum,
+        commissionAmount: commission,
+        listingAgentComm: commission / 2,
+        buyerAgentComm: commission / 2,
+        closingCosts,
+        titleInsurance,
+        transferTax,
+        estimatedNet: netProceeds,
+      };
+      const saveRes = await fetch('/api/real-estate/net-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(savePayload),
+      });
+      if (!saveRes.ok) throw new Error('Failed to save net sheet');
+
+      const pdfPayload = {
+        propertyAddress: address,
+        salePrice: salePriceNum,
+        state: '',
+        mortgageBalance: mortgageNum,
+        commissionRate: commissionNum,
+        closingCosts: {
+          commission,
+          transferTax,
+          titleInsurance,
+          escrowFee: 0,
+          recordingFees: 0,
+          total: commission + transferTax + titleInsurance,
+        },
+        prepaidItems: {
+          propertyTaxProration: 0,
+          hoaProration: 0,
+          homeWarranty: 0,
+          total: 0,
+        },
+        estimatedProceeds: netProceeds,
+      };
+      const pdfRes = await fetch('/api/real-estate/net-sheet/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pdfPayload),
+      });
+      if (!pdfRes.ok) throw new Error('Failed to generate PDF');
+
+      const blob = await pdfRes.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `net-sheet-${address.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: 'Saved', description: 'Net sheet saved to CRM and PDF downloaded.' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error?.message || 'Could not generate net sheet PDF.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -51,6 +157,15 @@ export default function SellerNetSheetPage() {
             <CardDescription>Enter the sale details to calculate net proceeds</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="address">Property Address</Label>
+              <Input
+                id="address"
+                placeholder="123 Main St, City"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="salePrice">Sale Price</Label>
               <div className="relative">
@@ -89,6 +204,20 @@ export default function SellerNetSheetPage() {
                 onChange={(e) => setCommissionRate(e.target.value)}
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="closingRate">Closing Costs (%)</Label>
+                <Input id="closingRate" type="number" value={closingCostsRate} onChange={(e) => setClosingCostsRate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="titleRate">Title Insurance (%)</Label>
+                <Input id="titleRate" type="number" value={titleInsuranceRate} onChange={(e) => setTitleInsuranceRate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="transferRate">Transfer Tax (%)</Label>
+                <Input id="transferRate" type="number" value={transferTaxRate} onChange={(e) => setTransferTaxRate(e.target.value)} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -108,15 +237,15 @@ export default function SellerNetSheetPage() {
                 <span className="font-medium text-red-500">-{formatCurrency(commission)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Closing Costs (est. 2%)</span>
+                <span className="text-muted-foreground">Closing Costs ({closingCostsRate}%)</span>
                 <span className="font-medium text-red-500">-{formatCurrency(closingCosts)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Title Insurance (est. 0.5%)</span>
+                <span className="text-muted-foreground">Title Insurance ({titleInsuranceRate}%)</span>
                 <span className="font-medium text-red-500">-{formatCurrency(titleInsurance)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Transfer Tax (est. 1%)</span>
+                <span className="text-muted-foreground">Transfer Tax ({transferTaxRate}%)</span>
                 <span className="font-medium text-red-500">-{formatCurrency(transferTax)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
@@ -130,9 +259,9 @@ export default function SellerNetSheetPage() {
                 </span>
               </div>
             </div>
-            <Button className="w-full gap-2">
+            <Button className="w-full gap-2" onClick={handleGeneratePdf} disabled={isSaving}>
               <FileText className="h-4 w-4" />
-              Generate PDF Report
+              {isSaving ? 'Saving & Generating...' : 'Save to CRM + Generate PDF'}
             </Button>
           </CardContent>
         </Card>

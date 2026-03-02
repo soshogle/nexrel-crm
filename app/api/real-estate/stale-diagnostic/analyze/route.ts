@@ -22,6 +22,13 @@ interface PropertyData {
   priceHistory?: Array<{ date: string; price: number }>;
 }
 
+function median(values: number[]) {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -108,6 +115,23 @@ Provide your response in the following JSON format:
 
 Respond with raw JSON only. Do not include code blocks, markdown, or any other formatting.`;
 
+    const localSoldComps = await prisma.rEProperty.findMany({
+      where: {
+        userId: session.user.id,
+        listingStatus: 'SOLD',
+        ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
+        ...(state ? { state: { contains: state, mode: 'insensitive' } } : {}),
+        daysOnMarket: { gt: 0 },
+      },
+      select: { daysOnMarket: true },
+      orderBy: { soldDate: 'desc' },
+      take: 120,
+    });
+    const domBaseline = median(localSoldComps.map((c) => c.daysOnMarket || 0).filter((d) => d > 0));
+    const baselineLine = domBaseline > 0
+      ? `Local sold comparables median DOM is ${domBaseline} days.`
+      : 'Local sold comparable DOM baseline is unavailable.';
+
     const userPrompt = `Analyze this stale listing:
 
 Property: ${address}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}
@@ -121,7 +145,7 @@ ${propertyType ? `Property Type: ${propertyType}` : ''}
 ${description ? `Description: ${description}` : ''}
 ${priceHistory && priceHistory.length > 0 ? `Price History: ${JSON.stringify(priceHistory)}` : ''}
 
-Note: Average days on market for comparable properties in this area is typically 30-45 days. This listing at ${daysOnMarket} days is significantly above average.
+${baselineLine} This listing is currently at ${daysOnMarket} days on market.
 
 Provide a detailed stale listing diagnostic.`;
 

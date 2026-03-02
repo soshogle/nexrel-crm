@@ -176,7 +176,7 @@ export default function InquiryAnalyticsPage() {
       </div>
 
       {/* Lead Status + Website Attribution */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={`grid gap-6 ${data.websiteLeads.length > 0 ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
         <Card>
           <CardHeader>
             <CardTitle>Lead Status Breakdown</CardTitle>
@@ -202,23 +202,21 @@ export default function InquiryAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" /> Website Lead Attribution
-            </CardTitle>
-            <CardDescription>Leads generated from your websites</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data.websiteLeads.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-10">No website leads tracked yet</p>
-            ) : (
+        {data.websiteLeads.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" /> Website Lead Attribution
+              </CardTitle>
+              <CardDescription>Leads generated from your websites</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 {Array.isArray(data.websiteLeads) && data.websiteLeads.map(w => (
                   <div key={w.websiteId} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div>
                       <p className="font-medium text-sm">{w.name}</p>
-                      <p className="text-xs text-muted-foreground">{w.domain || 'No domain'}</p>
+                      {w.domain && <p className="text-xs text-muted-foreground">{w.domain}</p>}
                     </div>
                     <Badge variant={w.leadCount > 0 ? 'default' : 'secondary'}>
                       {w.leadCount} lead{w.leadCount !== 1 ? 's' : ''}
@@ -226,9 +224,9 @@ export default function InquiryAnalyticsPage() {
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Property Inquiry Performance */}
@@ -237,7 +235,7 @@ export default function InquiryAnalyticsPage() {
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" /> Listing Inquiry Performance
           </CardTitle>
-          <CardDescription>Which properties are generating the most interest (last 30 days)</CardDescription>
+          <CardDescription>Which properties are generating the most interest from website actions (last 30 days)</CardDescription>
         </CardHeader>
         <CardContent>
           {activePropertyInquiries.length === 0 ? (

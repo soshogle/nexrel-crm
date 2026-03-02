@@ -32,51 +32,6 @@ interface ServerPrediction {
   place_id: string;
 }
 
-// Global to track Google Maps script loading
-let googleMapsPromise: Promise<void> | null = null;
-
-function loadGoogleMapsScript(): Promise<void> {
-  if (googleMapsPromise) return googleMapsPromise;
-  
-  if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
-    return Promise.resolve();
-  }
-
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    googleMapsPromise = Promise.reject(new Error('No client API key'));
-    return googleMapsPromise;
-  }
-
-  googleMapsPromise = new Promise((resolve, reject) => {
-    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
-      resolve();
-      return;
-    }
-
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      if ((window as any).google?.maps?.places) {
-        resolve();
-        return;
-      }
-      existingScript.addEventListener('load', () => resolve());
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Maps'));
-    document.head.appendChild(script);
-  });
-
-  return googleMapsPromise;
-}
-
 export function PlaceAutocomplete({
   value,
   onChange,
@@ -89,8 +44,8 @@ export function PlaceAutocomplete({
   const [predictions, setPredictions] = useState<ServerPrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  const [useServerApi, setUseServerApi] = useState(false);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(true);
+  const [useServerApi] = useState(true);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -99,39 +54,9 @@ export function PlaceAutocomplete({
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
 
-  // Load Google Maps script; fallback to server API if client SDK fails
+  // Use server-side Places API only to avoid client SDK legacy warnings.
   useEffect(() => {
-    let cancelled = false;
-    const timeout = setTimeout(() => {
-      if (!cancelled) {
-        setUseServerApi(true);
-        setIsGoogleLoaded(true);
-      }
-    }, 4000);
-
-    loadGoogleMapsScript()
-      .then(() => {
-        if (!cancelled) {
-          clearTimeout(timeout);
-          setIsGoogleLoaded(true);
-          setUseServerApi(false);
-          autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-          const dummyDiv = document.createElement('div');
-          placesServiceRef.current = new google.maps.places.PlacesService(dummyDiv);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          clearTimeout(timeout);
-          setUseServerApi(true);
-          setIsGoogleLoaded(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
+    setIsGoogleLoaded(true);
   }, []);
 
   // Update input when value prop changes

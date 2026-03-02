@@ -9,6 +9,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { ChevronLeft, ChevronRight, Box, Grid3x3, Loader2 } from 'lucide-react';
 import { CrownRootToothShape, getToothTypeFromNum } from '@/components/dental/crown-root-tooth-shape';
+import { useSession } from 'next-auth/react';
 
 const Perio3D = lazy(() => import('./perio-3d').then(m => ({ default: m.Perio3D })));
 
@@ -62,8 +63,13 @@ const DEMO_MEASUREMENTS: Record<string, ToothMeasurements> = (() => {
 })();
 
 export function EnhancedPeriodontalChart({ measurements, patient: _patient }: EnhancedPeriodontalChartProps) {
+  const { data: session } = useSession();
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-  const data = measurements && Object.keys(measurements).length > 0 ? measurements : DEMO_MEASUREMENTS;
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  const data =
+    measurements && Object.keys(measurements).length > 0
+      ? measurements
+      : (isOrthoDemo ? DEMO_MEASUREMENTS : {});
   const getToothData = (toothNum: number) => data?.[String(toothNum)] || {};
   const getPdBgColor = (pd: number, isPlaceholder = false) => {
     if (isPlaceholder || pd === 0) return 'bg-white/10';

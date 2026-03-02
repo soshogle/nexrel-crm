@@ -4,7 +4,7 @@
 /**
  * Data Monetization Dashboard
  * Displays aggregated insights and export capabilities
- * Demo Mode: Uses simulated data for visualization
+ * Uses real aggregated payment data from APIs
  */
 
 import { useState, useEffect } from 'react';
@@ -178,10 +178,7 @@ export function DataMonetizationDashboard() {
       
       toast.success('Export requested. Processing will complete shortly.');
       
-      // Refresh exports after a delay
-      setTimeout(() => {
-        fetchExports();
-      }, 5000);
+      await fetchExports();
     } catch (error: any) {
       console.error('Error requesting export:', error);
       toast.error('Failed to request export');
@@ -213,7 +210,6 @@ export function DataMonetizationDashboard() {
           <h1 className="text-3xl font-bold">Data Monetization</h1>
           <p className="text-muted-foreground mt-1">
             Privacy-compliant analytics and data exports
-            <Badge variant="secondary" className="ml-2">Demo Mode</Badge>
           </p>
         </div>
         <Button onClick={generateInsight} disabled={loading}>

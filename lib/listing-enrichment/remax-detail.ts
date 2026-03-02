@@ -236,6 +236,41 @@ export async function scrapeRemaxDetail(url: string): Promise<EnrichedData | nul
     }
   }
 
+  // --- Listing Date ---
+  const listDatePatterns = [
+    /(?:listed|publication|posted|date)\s*:?\s*(\d{4}-\d{2}-\d{2})/i,
+    /(\d{4}-\d{2}-\d{2})\s*(?:listed|publication|posted)/i,
+    /"listingDate"\s*:\s*"([^"]+)"/i,
+    /"dateAdded"\s*:\s*"([^"]+)"/i,
+  ];
+  for (const p of listDatePatterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const d = new Date(m[1]);
+      if (!isNaN(d.getTime()) && d <= new Date()) {
+        data.listingDate = m[1];
+        break;
+      }
+    }
+  }
+
+  // --- Days on Market ---
+  const domPatterns = [
+    /(?:days?\s*on\s*market|DOM|jours?\s*sur\s*le\s*marché)\s*:?\s*(\d+)/i,
+    /"daysOnMarket"\s*:\s*(\d+)/i,
+    /(\d+)\s*(?:days?\s*on\s*market|jours?\s*sur\s*le\s*marché)/i,
+  ];
+  for (const p of domPatterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const dom = parseInt(m[1], 10);
+      if (dom >= 0 && dom <= 9999) {
+        data.daysOnMarket = dom;
+        break;
+      }
+    }
+  }
+
   // --- Lot Area ---
   const lotMatch = text.match(/Lot\s*size\s+([\d'"x X.irr]+)/i);
   if (lotMatch) data.lotArea = lotMatch[1].trim();

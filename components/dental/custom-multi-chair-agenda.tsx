@@ -39,14 +39,8 @@ export function CustomMultiChairAgenda({ appointments: propAppointments }: Custo
     }
   };
 
-  const defaultAppointments: Appointment[] = [
-    { chair: 'Chair 1', time: '9:00 AM - 10:00 AM', patient: 'Emily White', procedure: 'Ortho Adjustment', color: 'bg-blue-100 border-blue-400' },
-    { chair: 'Chair 2', time: '10:30 AM - 11:30 AM', patient: 'Michael Brown', procedure: 'Prophylaxis', color: 'bg-teal-100 border-teal-400' },
-    { chair: 'Chair 3', time: '10:00 AM - 11:00 AM', patient: 'Sarah Jones', procedure: 'Filling', color: 'bg-green-200 border-green-500' },
-    { chair: 'Chair 4', time: '11:00 AM - 12:00 PM', patient: 'Michael Brown', procedure: 'Prophylaxis', color: 'bg-yellow-100 border-yellow-400' },
-  ];
-
-  const appointments = propAppointments && propAppointments.length > 0 ? propAppointments : defaultAppointments;
+  const appointments = propAppointments && propAppointments.length > 0 ? propAppointments : [];
+  const chairCount = new Set(appointments.map((a) => a.chair).filter(Boolean)).size;
   const timeSlots = ['9:00', '9:30', '10:00', '10:30', '11 AM', '12:50', '1 PM', '4 PM'];
 
   return (
@@ -97,12 +91,11 @@ export function CustomMultiChairAgenda({ appointments: propAppointments }: Custo
       {/* Sort By - EXACT match */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs text-gray-600">Sort by:</span>
-        <Select defaultValue="essenger">
+        <Select defaultValue="time">
           <SelectTrigger className="w-28 h-7 text-[11px] border border-gray-300">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="essenger">essenger</SelectItem>
             <SelectItem value="time">Time</SelectItem>
             <SelectItem value="chair">Chair</SelectItem>
           </SelectContent>
@@ -119,6 +112,11 @@ export function CustomMultiChairAgenda({ appointments: propAppointments }: Custo
         </div>
 
         {/* Appointment Blocks */}
+        {appointments.length === 0 && (
+          <div className="text-xs text-gray-500 p-2 border border-dashed rounded-lg">
+            No appointments scheduled
+          </div>
+        )}
         {appointments.map((apt, idx) => (
           <div key={idx} className="flex items-center gap-2">
             <div 
@@ -155,7 +153,7 @@ export function CustomMultiChairAgenda({ appointments: propAppointments }: Custo
 
       {/* Chair Count - Bottom right */}
       <div className="flex items-center justify-end text-[11px] text-gray-600">
-        <span>4 Chairs</span>
+        <span>{chairCount} {chairCount === 1 ? 'Chair' : 'Chairs'}</span>
       </div>
     </div>
   );

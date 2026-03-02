@@ -28,50 +28,70 @@ export async function POST(
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
 
-    // Find the claim in all leads' insuranceInfo
+    const db = getCrmDb(ctx);
+
+    const dbClaim = await (db as any).dentalInsuranceClaim.findFirst({
+      where: { id: params.id, userId: ctx.userId },
+      select: { id: true, status: true, claimNumber: true },
+    });
+
+    if (dbClaim) {
+      if (dbClaim.status !== 'DRAFT') {
+        return apiErrors.badRequest(await t('api.claimAlreadySubmitted'));
+      }
+
+      const updated = await (db as any).dentalInsuranceClaim.update({
+        where: { id: params.id },
+        data: {
+          status: 'SUBMITTED',
+          submittedAt: new Date(),
+          claimNumber: dbClaim.claimNumber || `RAMQ-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+          ramqStatus: 'PROCESSING',
+        },
+        select: { id: true, claimNumber: true, submittedAt: true, status: true },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Claim submitted successfully',
+        claimId: updated.id,
+        claimNumber: updated.claimNumber,
+        submittedAt: updated.submittedAt,
+        status: updated.status,
+      });
+    }
+
+    // Legacy fallback: old Lead.insuranceInfo.ramqClaims claims
     const leads = await leadService.findMany(ctx, {
-      select: {
-        id: true,
-        insuranceInfo: true,
-      },
+      select: { id: true, insuranceInfo: true },
+      take: 200,
     } as any);
 
-    let claimFound = false;
-    let updatedLeadId: string | null = null;
-
-    for (const lead of leads) {
+    for (const lead of leads as any[]) {
       const insuranceInfo = (lead.insuranceInfo as any) || {};
-      if (insuranceInfo.ramqClaims && Array.isArray(insuranceInfo.ramqClaims)) {
-        const claimIndex = insuranceInfo.ramqClaims.findIndex(
-          (c: any) => c.id === params.id
-        );
+      if (!Array.isArray(insuranceInfo.ramqClaims)) continue;
+      const claimIndex = insuranceInfo.ramqClaims.findIndex((c: any) => c.id === params.id);
+      if (claimIndex === -1) continue;
 
-        if (claimIndex !== -1) {
-          const claim = insuranceInfo.ramqClaims[claimIndex];
-          
-          if (claim.status !== 'DRAFT') {
-            return apiErrors.badRequest(await t('api.claimAlreadySubmitted'));
-          }
-
-          // Update claim status
-          insuranceInfo.ramqClaims[claimIndex] = {
-            ...claim,
-            submittedAt: new Date().toISOString(),
-            claimNumber: `RAMQ-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          };
-
-          await leadService.update(ctx, lead.id, { insuranceInfo });
-
-          claimFound = true;
-          updatedLeadId = lead.id;
-          break;
-        }
+      const claim = insuranceInfo.ramqClaims[claimIndex];
+      if (claim.status !== 'DRAFT') {
+        return apiErrors.badRequest(await t('api.claimAlreadySubmitted'));
       }
+      insuranceInfo.ramqClaims[claimIndex] = {
+        ...claim,
+        status: 'SUBMITTED',
+        submittedAt: new Date().toISOString(),
+        claimNumber: claim.claimNumber || `RAMQ-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      };
+      await leadService.update(ctx, lead.id, { insuranceInfo });
+      return NextResponse.json({
+        success: true,
+        message: 'Claim submitted successfully',
+        claimId: params.id,
+      });
     }
 
-    if (!claimFound) {
-      return apiErrors.notFound(await t('api.notFound'));
-    }
+    return apiErrors.notFound(await t('api.notFound'));
 
     // TODO: Integrate with Facturation.net API if available
     // For now, we'll simulate submission
@@ -83,12 +103,6 @@ export async function POST(
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    return NextResponse.json({
-      success: true,
-      message: 'Claim submitted successfully',
-      claimId: params.id,
-      // In production, include Facturation.net response here
-    });
   } catch (error) {
     console.error('Error submitting RAMQ claim:', error);
     return apiErrors.internal(await t('api.submitClaimFailed'));

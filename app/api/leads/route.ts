@@ -43,8 +43,9 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    // Return mock leads when database is empty for demo purposes
-    if (leads.length === 0 && total === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com'
+    // Preserve demo behavior only for the dedicated orthodontist demo account
+    if (isOrthoDemo && leads.length === 0 && total === 0) {
       const { MOCK_LEADS } = await import('@/lib/mock-data');
       const mockLeads = MOCK_LEADS.slice(0, pagination.take);
       return paginatedResponse(mockLeads, MOCK_LEADS.length, pagination, 'leads')

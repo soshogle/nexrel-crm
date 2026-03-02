@@ -15,7 +15,8 @@ interface RedesignedCheckInProps {
   onUpdateInfo?: () => void;
 }
 
-export function RedesignedCheckIn({ patientName = 'John Smith', onCheckIn, onUpdateInfo }: RedesignedCheckInProps) {
+export function RedesignedCheckIn({ patientName, onCheckIn, onUpdateInfo }: RedesignedCheckInProps) {
+  const safeName = patientName || 'Patient';
   return (
     <div className="space-y-4 text-center px-2">
       {/* User Icon - EXACT match to image */}
@@ -26,7 +27,7 @@ export function RedesignedCheckIn({ patientName = 'John Smith', onCheckIn, onUpd
       {/* Welcome Message - EXACT match */}
       <div>
         <p className="text-base font-bold text-gray-900 mb-1">
-          Welcome, {patientName}!
+          Welcome, {safeName}!
         </p>
         <p className="text-sm text-gray-600">
           Please confirm your appointment.
@@ -55,7 +56,7 @@ export function RedesignedCheckIn({ patientName = 'John Smith', onCheckIn, onUpd
         <Input
           placeholder="Patient Name"
           className="h-10 text-sm border-2 border-gray-300 rounded-lg px-3 text-center"
-          defaultValue={patientName}
+          defaultValue={safeName}
         />
       </div>
     </div>

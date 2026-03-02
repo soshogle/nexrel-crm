@@ -6,13 +6,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useClinic } from '@/lib/dental/clinic-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Users, DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
+import { Building2, Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
 import { ClinicManagementDialog } from './clinic-management-dialog';
 
 interface ClinicStats {
@@ -26,7 +25,6 @@ interface ClinicStats {
 }
 
 export function MultiClinicAdminDashboard() {
-  const { data: session } = useSession();
   const { clinics, activeClinic, setActiveClinic } = useClinic();
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [clinicStats, setClinicStats] = useState<ClinicStats[]>([]);
@@ -42,22 +40,59 @@ export function MultiClinicAdminDashboard() {
 
   useEffect(() => {
     fetchClinicStats();
-  }, [selectedClinicId, viewMode]);
+  }, [clinics, selectedClinicId, viewMode]);
 
   const fetchClinicStats = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would fetch aggregated stats
-      // For now, we'll use mock data structure
-      const stats: ClinicStats[] = clinics.map((clinic) => ({
-        clinicId: clinic.id,
-        clinicName: clinic.name,
-        totalPatients: 0, // Would fetch from API
-        totalAppointments: 0,
-        monthlyRevenue: 0,
-        activeStaff: 0,
-        growthRate: 0,
-      }));
+      if (clinics.length === 0) {
+        setClinicStats([]);
+        return;
+      }
+
+      const stats = await Promise.all(
+        clinics.map(async (clinic): Promise<ClinicStats> => {
+          try {
+            const params = new URLSearchParams({
+              reportType: 'comprehensive',
+              dateRange: 'month',
+              clinicId: clinic.id,
+            });
+            const response = await fetch(`/api/dental/reports?${params.toString()}`);
+            if (!response.ok) {
+              throw new Error(`Failed to load report for clinic ${clinic.id}`);
+            }
+            const report = await response.json();
+            const summary = report?.summary || {};
+            const providerBreakdown = Array.isArray(summary.providerBreakdown)
+              ? summary.providerBreakdown
+              : Array.isArray(report.providerBreakdown)
+                ? report.providerBreakdown
+                : [];
+
+            return {
+              clinicId: clinic.id,
+              clinicName: clinic.name,
+              totalPatients: Number(summary.totalPatients || 0),
+              totalAppointments: Number(summary.totalAppointments || 0),
+              monthlyRevenue: Number(summary.totalRevenue || 0),
+              activeStaff: providerBreakdown.length,
+              growthRate: Number(summary.avgGrowthRate || 0),
+            };
+          } catch (error) {
+            console.error(`Error fetching stats for clinic ${clinic.id}:`, error);
+            return {
+              clinicId: clinic.id,
+              clinicName: clinic.name,
+              totalPatients: 0,
+              totalAppointments: 0,
+              monthlyRevenue: 0,
+              activeStaff: 0,
+              growthRate: 0,
+            };
+          }
+        })
+      );
 
       setClinicStats(stats);
     } catch (error) {
@@ -175,6 +210,10 @@ export function MultiClinicAdminDashboard() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {loading && (
+        <div className="text-sm text-gray-500">Loading clinic analytics...</div>
       )}
 
       {/* Clinic Cards */}

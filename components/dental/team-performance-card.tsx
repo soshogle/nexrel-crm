@@ -25,6 +25,28 @@ interface TeamPerformanceCardProps {
 }
 
 export function TeamPerformanceCard({ teamMembers, onViewDetails }: TeamPerformanceCardProps) {
+  if (!teamMembers || teamMembers.length === 0) {
+    return (
+      <Card
+        className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+        onClick={onViewDetails}
+      >
+        <CardHeader className="pb-2 px-4 pt-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-gray-900">Team Performance</CardTitle>
+            <Badge variant="outline" className="text-xs">
+              <Users className="w-3 h-3 mr-1" />
+              0 members
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <p className="text-xs text-gray-600">No team performance data yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const topPerformer = teamMembers.reduce((prev, current) => 
     (prev.production > current.production) ? prev : current
   );

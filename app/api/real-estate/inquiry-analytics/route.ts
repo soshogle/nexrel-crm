@@ -25,6 +25,29 @@ function extractHost(url: string | null | undefined): string | null {
   }
 }
 
+function isVercelHost(host: string | null | undefined): boolean {
+  if (!host) return false;
+  return host.toLowerCase().includes('.vercel.app');
+}
+
+function extractPropertyHints(payload: any): { propertyId?: string; mlsNumber?: string; address?: string } {
+  if (!payload || typeof payload !== 'object') return {};
+  const propertyId = typeof payload.propertyId === 'string' ? payload.propertyId : undefined;
+  const mlsNumber = typeof payload.mlsNumber === 'string'
+    ? payload.mlsNumber
+    : typeof payload.listingMls === 'string'
+      ? payload.listingMls
+      : undefined;
+  const address = typeof payload.propertyAddress === 'string'
+    ? payload.propertyAddress
+    : typeof payload.listingAddress === 'string'
+      ? payload.listingAddress
+      : typeof payload.address === 'string'
+        ? payload.address
+        : undefined;
+  return { propertyId, mlsNumber, address };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -38,14 +61,20 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
 
+    const websites = await getCrmDb(ctx).website.findMany({
+      where: { userId: ctx.userId },
+      select: { id: true, name: true, vercelDeploymentUrl: true, sourceUrl: true },
+    });
+    const websiteIds = websites.map((w) => w.id);
+
     const [
       allLeads,
       recentLeads,
       weekLeads,
       leadsBySource,
       leadsByStatus,
-      websites,
       properties,
+      websiteVisitors,
     ] = await Promise.all([
       leadService.count(ctx),
       leadService.findMany(ctx, {
@@ -62,22 +91,33 @@ export async function GET(request: NextRequest) {
       getCrmDb(ctx).lead.groupBy({
         by: ['source'],
         where: { userId: ctx.userId },
-        _count: true,
+        _count: { _all: true },
         orderBy: { _count: { source: 'desc' } },
       }),
       getCrmDb(ctx).lead.groupBy({
         by: ['status'],
         where: { userId: ctx.userId },
-        _count: true,
-      }),
-      getCrmDb(ctx).website.findMany({
-        where: { userId: ctx.userId },
-        select: { id: true, name: true, vercelDeploymentUrl: true, sourceUrl: true },
+        _count: { _all: true },
       }),
       getCrmDb(ctx).rEProperty.findMany({
         where: { userId: ctx.userId },
-        select: { id: true, address: true, listingStatus: true, listPrice: true },
+        select: { id: true, address: true, listingStatus: true, listPrice: true, mlsNumber: true },
       }),
+      websiteIds.length > 0
+        ? getCrmDb(ctx).websiteVisitor.findMany({
+            where: {
+              websiteId: { in: websiteIds },
+              createdAt: { gte: thirtyDaysAgo },
+            },
+            select: {
+              websiteId: true,
+              formData: true,
+              interactions: true,
+              pagesVisited: true,
+              createdAt: true,
+            },
+          })
+        : Promise.resolve([] as any[]),
     ]);
 
     // Compute leads-per-day for the last 30 days
@@ -95,33 +135,60 @@ export async function GET(request: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count }));
 
-    // Attribution: match leads to properties by explicit propertyId first, then address overlap.
+    // Attribution: match website actions and leads to properties by propertyId/mls first, then address overlap.
     const propertyInquiryMap = new Map<string, number>();
+    const propertyById = new Map<string, any>();
+    const propertyByMls = new Map<string, any>();
     for (const prop of properties) propertyInquiryMap.set(prop.id, 0);
+    for (const prop of properties) {
+      propertyById.set(prop.id, prop);
+      if (prop.mlsNumber) propertyByMls.set(prop.mlsNumber.toUpperCase(), prop);
+    }
 
-    for (const lead of recentLeads) {
-      const enriched = (lead.enrichedData || {}) as any;
-      const explicitPropertyId = typeof enriched.propertyId === 'string' ? enriched.propertyId : null;
-
-      if (explicitPropertyId && propertyInquiryMap.has(explicitPropertyId)) {
-        propertyInquiryMap.set(explicitPropertyId, (propertyInquiryMap.get(explicitPropertyId) || 0) + 1);
-        continue;
+    const addInquiry = (hint: { propertyId?: string; mlsNumber?: string; address?: string }) => {
+      if (hint.propertyId && propertyById.has(hint.propertyId)) {
+        propertyInquiryMap.set(hint.propertyId, (propertyInquiryMap.get(hint.propertyId) || 0) + 1);
+        return;
       }
-
-      const leadAddr = normalizeAddress(
-        typeof enriched.propertyAddress === 'string'
-          ? enriched.propertyAddress
-          : lead.address || lead.businessName || null
-      );
-      if (!leadAddr) continue;
-
+      if (hint.mlsNumber) {
+        const byMls = propertyByMls.get(hint.mlsNumber.toUpperCase());
+        if (byMls) {
+          propertyInquiryMap.set(byMls.id, (propertyInquiryMap.get(byMls.id) || 0) + 1);
+          return;
+        }
+      }
+      const normalizedAddress = normalizeAddress(hint.address);
+      if (!normalizedAddress) return;
       const matched = properties.find((p) => {
         const propAddr = normalizeAddress(p.address);
-        return propAddr && (leadAddr.includes(propAddr) || propAddr.includes(leadAddr));
+        return propAddr && (normalizedAddress.includes(propAddr) || propAddr.includes(normalizedAddress));
       });
       if (matched) {
         propertyInquiryMap.set(matched.id, (propertyInquiryMap.get(matched.id) || 0) + 1);
       }
+    };
+
+    for (const visitor of websiteVisitors as any[]) {
+      const formHint = extractPropertyHints(visitor.formData);
+      addInquiry(formHint);
+
+      const interactions = (visitor.interactions || {}) as Record<string, any>;
+      for (const val of Object.values(interactions)) {
+        if (!Array.isArray(val)) continue;
+        for (const entry of val) {
+          addInquiry(extractPropertyHints(entry));
+        }
+      }
+    }
+
+    for (const lead of recentLeads) {
+      const enriched = (lead.enrichedData || {}) as any;
+      addInquiry({
+        ...extractPropertyHints(enriched),
+        address:
+          extractPropertyHints(enriched).address ||
+          (lead.address || lead.businessName || undefined),
+      });
     }
 
     const propertyInquiries: Array<{
@@ -142,11 +209,16 @@ export async function GET(request: NextRequest) {
     }
     propertyInquiries.sort((a, b) => b.inquiryCount - a.inquiryCount);
 
-    // Website-sourced leads: attribute via enrichedData.websiteId first, then source/url/domain matches.
+    // Website-sourced leads and website form submissions.
     const websiteLeads = websites.map(w => ({
       websiteId: w.id,
       name: w.name,
-      domain: extractHost(w.vercelDeploymentUrl || w.sourceUrl),
+      domain: (() => {
+        const sourceHost = extractHost(w.sourceUrl);
+        if (sourceHost) return sourceHost;
+        const deployedHost = extractHost(w.vercelDeploymentUrl);
+        return isVercelHost(deployedHost) ? null : deployedHost;
+      })(),
       leadCount: recentLeads.filter((l) => {
         const enriched = (l.enrichedData || {}) as any;
         if (enriched.websiteId === w.id) return true;
@@ -162,23 +234,28 @@ export async function GET(request: NextRequest) {
             (!!websiteName && source.includes(websiteName))
           )
         );
+      }).length + websiteVisitors.filter((v: any) => {
+        if (v.websiteId !== w.id) return false;
+        return !!v.formData || Array.isArray((v.interactions as any)?.form_submit) || Array.isArray((v.interactions as any)?.formSubmissions);
       }).length,
-    })).sort((a, b) => b.leadCount - a.leadCount);
+    }))
+      .filter((w) => w.leadCount > 0)
+      .sort((a, b) => b.leadCount - a.leadCount);
 
     // Source breakdown for pie chart
     const sources = leadsBySource.map(s => ({
       source: s.source || 'unknown',
-      count: s._count,
+      count: (s as any)._count?._all || 0,
     }));
 
     // Status breakdown
     const statuses = leadsByStatus.map(s => ({
       status: s.status,
-      count: s._count,
+      count: (s as any)._count?._all || 0,
     }));
 
-    // Conversion rate (leads that became QUALIFIED or further)
-    const convertedStatuses = ['QUALIFIED', 'CONVERTED', 'WON'];
+    // Conversion rate (lead funnel conversion; deal win-rate is tracked separately)
+    const convertedStatuses = ['QUALIFIED', 'CONVERTED'];
     const convertedCount = statuses
       .filter(s => convertedStatuses.includes(s.status))
       .reduce((sum, s) => sum + s.count, 0);

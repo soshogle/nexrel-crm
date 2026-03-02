@@ -274,14 +274,23 @@ function ClinicalDashboardPageContent() {
       const appointmentsRes = await fetch(
         `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
       );
+      const [claimsRes, reportsRes] = await Promise.all([
+        fetch('/api/dental/ramq/claims'),
+        fetch('/api/dental/reports?reportType=comprehensive&dateRange=month'),
+      ]);
       const res = appointmentsRes.ok ? await appointmentsRes.json() : {};
       const appointments = res?.appointments ?? res?.data ?? [];
+      const claims = claimsRes.ok ? await claimsRes.json() : [];
+      const report = reportsRes.ok ? await reportsRes.json() : { summary: { totalRevenue: 0 } };
+      const pendingClaims = Array.isArray(claims)
+        ? claims.filter((c: any) => ['DRAFT', 'SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'INFO_REQUESTED'].includes(String(c.status || '').toUpperCase())).length
+        : 0;
 
       setStats({
         totalPatients: leads.length,
         todayAppointments: Array.isArray(appointments) ? appointments.length : 0,
-        pendingClaims: 0,
-        monthlyRevenue: 0,
+        pendingClaims,
+        monthlyRevenue: Number(report?.summary?.totalRevenue || 0),
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -528,7 +537,10 @@ function ClinicalDashboardPageContent() {
               timeline: plan?.timeline || 'N/A',
               costColor: plan?.costColor || 'bg-blue-100 text-blue-700',
               icon: plan?.icon || ClipboardList,
-              progress: 50,
+              progress:
+                typeof plan?.progress === 'number'
+                  ? Math.max(0, Math.min(100, plan.progress))
+                  : (String(plan?.status || '').toUpperCase() === 'COMPLETED' ? 100 : String(plan?.status || '').toUpperCase() === 'IN_PROGRESS' ? 50 : 0),
             }))}
           />
         </div>

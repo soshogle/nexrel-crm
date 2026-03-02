@@ -76,8 +76,9 @@ export default async function LeadsPage() {
       }
     }
 
-    // Use mock leads when database is empty for demo purposes
-    if (Array.isArray(leadsData) && leadsData.length === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com'
+    // Preserve mock behavior only for the dedicated demo account
+    if (isOrthoDemo && Array.isArray(leadsData) && leadsData.length === 0) {
       const { MOCK_LEADS } = await import('@/lib/mock-data');
       leadsData = MOCK_LEADS.map((l) => ({
         ...l,

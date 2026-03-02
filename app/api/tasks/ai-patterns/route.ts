@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
     }
 
     const patterns = await aiTaskService.analyzeTaskPatterns(session.user.id);
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
 
     // Return mock patterns when empty for demo purposes
-    if (!patterns || (Array.isArray(patterns.patterns) && patterns.patterns.length === 0)) {
+    if (isOrthoDemo && (!patterns || (Array.isArray(patterns.patterns) && patterns.patterns.length === 0))) {
       return NextResponse.json({
         patterns: [
           { type: 'peak_hours', description: 'Most tasks completed between 10-11 AM', confidence: 78 },
@@ -33,15 +34,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    if (!patterns || (Array.isArray((patterns as any).patterns) && (patterns as any).patterns.length === 0)) {
+      return NextResponse.json({ patterns: [], recommendations: [] });
+    }
+
     return NextResponse.json(patterns);
   } catch (error: any) {
     console.error('Error analyzing task patterns:', error);
-    return NextResponse.json({
-      patterns: [
-        { type: 'peak_hours', description: 'Most tasks completed between 10-11 AM', confidence: 78 },
-        { type: 'category_focus', description: 'Sales tasks have highest completion rate', confidence: 82 },
-      ],
-      recommendations: ['Schedule important tasks in the morning', 'Break down complex tasks into smaller subtasks'],
-    });
+    return apiErrors.internal('Failed to analyze task patterns');
   }
 }

@@ -304,8 +304,14 @@ async function getStatistics(userId: string, params: any = {}, industry: Industr
       campaignService.count(ctx, whereClause),
     ]);
 
-    // Return mock statistics when database is empty for demo purposes
-    if (leads === 0 && deals === 0 && campaigns === 0) {
+    const userForDemoCheck = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    const isOrthoDemo = String(userForDemoCheck?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && leads === 0 && deals === 0 && campaigns === 0) {
       const { MOCK_CRM_STATISTICS } = await import('@/lib/mock-data');
       return {
         success: true,

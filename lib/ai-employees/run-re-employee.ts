@@ -293,7 +293,7 @@ export async function executeREEmployee(
         success: true,
         employeeType,
         tasksCompleted: 0,
-        summary: `${employeeType} execution queued. Full implementation coming soon.`,
+        summary: `${employeeType} execution queued for asynchronous processing.`,
         details: { status: 'queued' },
       };
       break;

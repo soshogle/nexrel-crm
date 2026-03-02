@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Save, MapPin, Phone, Mail, Building2, Key, Bell, Zap, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function RealEstateSettingsPage() {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Profile settings
   const [profile, setProfile] = useState({
@@ -61,15 +62,62 @@ export default function RealEstateSettingsPage() {
   });
 
   const handleSave = async () => {
-    setSaving(true);
-    // Simulate save
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: 'Settings Saved',
-      description: 'Your real estate settings have been updated.',
-    });
+    try {
+      setSaving(true);
+      const res = await fetch('/api/real-estate/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile,
+          apiSettings,
+          notifications,
+          voiceSettings,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to save settings');
+      }
+      toast({
+        title: 'Settings Saved',
+        description: 'Your real estate settings have been updated.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save Failed',
+        description: error?.message || 'Failed to save settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/real-estate/settings', { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error('Failed to load settings');
+        }
+        const data = await res.json();
+        if (data?.profile) setProfile((prev) => ({ ...prev, ...data.profile }));
+        if (data?.apiSettings) setApiSettings((prev) => ({ ...prev, ...data.apiSettings }));
+        if (data?.notifications) setNotifications((prev) => ({ ...prev, ...data.notifications }));
+        if (data?.voiceSettings) setVoiceSettings((prev) => ({ ...prev, ...data.voiceSettings }));
+      } catch (error: any) {
+        toast({
+          title: 'Load Failed',
+          description: error?.message || 'Failed to load settings',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSettings();
+  }, [toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
@@ -91,9 +139,9 @@ export default function RealEstateSettingsPage() {
               <p className="text-slate-400">Configure your real estate tools and integrations</p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={handleSave} disabled={saving || loading} className="bg-purple-600 hover:bg-purple-700">
             <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {loading ? 'Loading...' : saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </motion.div>
 
@@ -224,7 +272,10 @@ export default function RealEstateSettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-slate-300">MLS Provider</Label>
-                    <Select defaultValue="rets">
+                    <Select
+                      value={apiSettings.mlsProvider}
+                      onValueChange={(value) => setApiSettings({ ...apiSettings, mlsProvider: value })}
+                    >
                       <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
@@ -241,6 +292,8 @@ export default function RealEstateSettingsPage() {
                     <Input
                       type="password"
                       placeholder="Enter your MLS API key"
+                      value={apiSettings.mlsApiKey}
+                      onChange={(e) => setApiSettings({ ...apiSettings, mlsApiKey: e.target.value })}
                       className="bg-slate-800 border-slate-700 text-white"
                     />
                   </div>
@@ -258,6 +311,18 @@ export default function RealEstateSettingsPage() {
                     <Input
                       type="password"
                       placeholder="Enter your Gamma API key"
+                      value={apiSettings.gammaApiKey}
+                      onChange={(e) => setApiSettings({ ...apiSettings, gammaApiKey: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Zillow API Key</Label>
+                    <Input
+                      type="password"
+                      placeholder="Enter your Zillow API key"
+                      value={apiSettings.zillowApiKey}
+                      onChange={(e) => setApiSettings({ ...apiSettings, zillowApiKey: e.target.value })}
                       className="bg-slate-800 border-slate-700 text-white"
                     />
                   </div>

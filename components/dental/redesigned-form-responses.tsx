@@ -26,32 +26,7 @@ export function RedesignedFormResponses({ responses }: RedesignedFormResponsesPr
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('date');
   
-  // Mock data matching image
-  const defaultResponses: FormResponse[] = [
-    {
-      date: '06/13/2022',
-      patientName: 'Sarah Jones',
-      formTitle: 'New Patient Registration',
-      submissionDate: '06/13/2022',
-      time: '10:30 AM',
-    },
-    {
-      date: '06/18/2022',
-      patientName: 'John Nites',
-      formTitle: 'New Patient Registration',
-      submissionDate: '06/18/2022',
-      time: '2:15 PM',
-    },
-    {
-      date: '06/20/2022',
-      patientName: 'Michael Brown',
-      formTitle: 'New Patient Registration',
-      submissionDate: '06/20/2022',
-      time: '9:45 AM',
-    },
-  ];
-
-  const allResponses = responses && responses.length > 0 ? responses : defaultResponses;
+  const allResponses = responses && responses.length > 0 ? responses : [];
   
   // Filter responses based on search
   const displayResponses = allResponses.filter((response) => {
@@ -98,6 +73,11 @@ export function RedesignedFormResponses({ responses }: RedesignedFormResponsesPr
         </div>
 
         {/* Table Rows */}
+        {displayResponses.length === 0 && (
+          <div className="text-xs text-gray-500 py-3">
+            No form responses yet
+          </div>
+        )}
         {displayResponses.slice(0, 3).map((response, idx) => (
           <div key={idx} className="grid grid-cols-12 gap-2 items-center text-xs border-b border-gray-100 pb-1">
             <div className="col-span-1">

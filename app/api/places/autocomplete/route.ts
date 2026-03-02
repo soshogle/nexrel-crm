@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const input = searchParams.get('input');
     const types = searchParams.get('types') || '(cities)';
+    const country = searchParams.get('country');
 
     if (!input || input.length < 2) {
       return NextResponse.json({ predictions: [] });
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ predictions: [], noApiKey: true });
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&types=${encodeURIComponent(types)}&key=${GOOGLE_MAPS_API_KEY}`;
+    const countryParam = country ? `&components=${encodeURIComponent(`country:${country.split(',').join('|country:')}`)}` : '';
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&types=${encodeURIComponent(types)}${countryParam}&key=${GOOGLE_MAPS_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();

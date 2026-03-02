@@ -233,8 +233,9 @@ export async function GET(request: NextRequest) {
 
     const total = await leadService.count(ctx, where);
 
-    // Return mock contacts when database is empty for demo purposes
-    if (parsedContacts.length === 0 && total === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && parsedContacts.length === 0 && total === 0) {
       const { MOCK_CONTACTS } = await import('@/lib/mock-data');
       const mockContacts = MOCK_CONTACTS.map((c) => ({
         ...c,

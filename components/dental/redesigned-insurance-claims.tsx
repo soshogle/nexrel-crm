@@ -19,26 +19,15 @@ interface RedesignedInsuranceClaimsProps {
 }
 
 export function RedesignedInsuranceClaims({ claims }: RedesignedInsuranceClaimsProps) {
-  // Mock data matching image exactly
-  const defaultClaims: InsuranceClaim[] = [
-    {
-      id: 'PI2345',
-      provider: 'BlueCross BlueShield',
-      amount: 850,
-      status: 'Approved',
-    },
-    {
-      id: 'H78910',
-      provider: 'Delta Dental',
-      amount: 1300,
-      status: 'Funding',
-    },
-  ];
-
-  const displayClaims = claims && claims.length > 0 ? claims : defaultClaims;
+  const displayClaims = claims && claims.length > 0 ? claims : [];
 
   return (
     <div className="space-y-2">
+      {displayClaims.length === 0 && (
+        <div className="text-xs text-gray-500 p-2 border border-dashed rounded-lg">
+          No insurance claims yet
+        </div>
+      )}
       {displayClaims.slice(0, 2).map((claim, idx) => (
         <div
           key={idx}

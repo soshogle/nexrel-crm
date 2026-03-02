@@ -8,6 +8,37 @@ const prisma = new PrismaClient();
  * Manages user consent, data insights, and revenue sharing for merchant data
  */
 export class DataMonetizationService {
+  private resolvePeriodStart(period: string, endDate = new Date()): Date {
+    const d = new Date(endDate);
+    switch (period) {
+      case 'DAILY':
+        d.setDate(d.getDate() - 1);
+        break;
+      case 'WEEKLY':
+        d.setDate(d.getDate() - 7);
+        break;
+      case 'QUARTERLY':
+        d.setMonth(d.getMonth() - 3);
+        break;
+      case 'YEARLY':
+        d.setFullYear(d.getFullYear() - 1);
+        break;
+      case 'MONTHLY':
+      default:
+        d.setMonth(d.getMonth() - 1);
+        break;
+    }
+    return d;
+  }
+
+  private normalizePeriod(raw?: string): 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' {
+    const p = String(raw || 'MONTHLY').toUpperCase();
+    if (p === 'DAILY' || p === 'WEEKLY' || p === 'MONTHLY' || p === 'QUARTERLY' || p === 'YEARLY') {
+      return p;
+    }
+    return 'MONTHLY';
+  }
+
   /**
    * Grant data sharing consent
    */
@@ -346,35 +377,111 @@ export class DataMonetizationService {
     timeRange?: string;
     confidence?: number;
   }) {
-    // If all required fields are provided, create the insight directly
-    if (params.title && params.description && params.dataPoints && params.timeRange && params.confidence !== undefined) {
-      return this.createInsight(params as any);
-    }
+    const period = this.normalizePeriod(params.period);
+    const endDate = params.endDate || new Date();
+    const startDate = params.startDate || this.resolvePeriodStart(period, endDate);
 
-    // Otherwise, generate a demo insight
-    const timeRange = params.period || 'last_30_days';
-    const insight = {
-      insightType: params.insightType,
-      category: params.category || 'GENERAL',
-      title: `${params.insightType} Insight`,
-      description: `Generated insight for ${timeRange}`,
-      dataPoints: {
-        period: timeRange,
-        startDate: params.startDate,
-        endDate: params.endDate,
-        metrics: {
-          totalValue: Math.floor(Math.random() * 10000),
-          count: Math.floor(Math.random() * 1000),
-          average: Math.floor(Math.random() * 100),
-        },
+    const transactions = await prisma.soshogleTransaction.findMany({
+      where: {
+        customer: { userId: params.userId },
+        createdAt: { gte: startDate, lte: endDate },
       },
-      timeRange,
-      confidence: 0.85,
-    };
+      select: {
+        id: true,
+        customerId: true,
+        amount: true,
+        type: true,
+        status: true,
+        createdAt: true,
+        processedAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
 
-    return this.createInsight({
-      userId: params.userId,
-      ...insight,
+    const totalTransactions = transactions.length;
+    const totalRevenue = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const uniqueCustomers = new Set(transactions.map((tx) => tx.customerId)).size;
+    const averageOrderValue = totalTransactions > 0 ? Math.round(totalRevenue / totalTransactions) : 0;
+    const cardPayments = transactions.filter((tx) => /card/i.test(tx.type)).length;
+    const walletPayments = transactions.filter((tx) => /wallet/i.test(tx.type)).length;
+    const bnplPayments = transactions.filter((tx) => /bnpl/i.test(tx.type)).length;
+    const achPayments = transactions.filter((tx) => /ach/i.test(tx.type)).length;
+    const successCount = transactions.filter((tx) => /success|complete|paid/i.test(tx.status)).length;
+    const successRate = totalTransactions > 0 ? Number(((successCount / totalTransactions) * 100).toFixed(2)) : 0;
+
+    const fraudCount = await prisma.fraudAlert.count({
+      where: {
+        userId: params.userId,
+        detectedAt: { gte: startDate, lte: endDate },
+        riskLevel: { in: ['HIGH', 'CRITICAL'] },
+      },
+    });
+    const fraudRate = totalTransactions > 0 ? Number(((fraudCount / totalTransactions) * 100).toFixed(2)) : 0;
+
+    const processingSamples = transactions
+      .filter((tx) => tx.processedAt)
+      .map((tx) => tx.processedAt!.getTime() - tx.createdAt.getTime())
+      .filter((ms) => ms >= 0);
+    const averageProcessingTime =
+      processingSamples.length > 0
+        ? Math.round(processingSamples.reduce((sum, ms) => sum + ms, 0) / processingSamples.length / 1000)
+        : 0;
+
+    const periodMs = endDate.getTime() - startDate.getTime();
+    const previousStart = new Date(startDate.getTime() - periodMs);
+    const previousEnd = new Date(startDate.getTime());
+    const previousRevenueAgg = await prisma.soshogleTransaction.aggregate({
+      where: {
+        customer: { userId: params.userId },
+        createdAt: { gte: previousStart, lt: previousEnd },
+      },
+      _sum: { amount: true },
+    });
+    const previousRevenue = previousRevenueAgg._sum.amount || 0;
+    const growthRate =
+      previousRevenue > 0
+        ? Number((((totalRevenue - previousRevenue) / previousRevenue) * 100).toFixed(2))
+        : (totalRevenue > 0 ? 100 : 0);
+
+    const trendMap = new Map<string, { transactions: number; revenue: number }>();
+    for (const tx of transactions) {
+      const bucket = tx.createdAt.toISOString().slice(0, 10);
+      const prev = trendMap.get(bucket) || { transactions: 0, revenue: 0 };
+      prev.transactions += 1;
+      prev.revenue += tx.amount || 0;
+      trendMap.set(bucket, prev);
+    }
+    const trendData = Array.from(trendMap.entries()).map(([date, values]) => ({
+      date,
+      ...values,
+    }));
+
+    const confidenceScore = Math.min(0.95, Number((0.5 + totalTransactions / 500).toFixed(2)));
+
+    return prisma.dataInsight.create({
+      data: {
+        userId: params.userId,
+        insightType: params.insightType as any,
+        period: period as any,
+        startDate,
+        endDate,
+        totalTransactions,
+        totalRevenue,
+        averageOrderValue,
+        uniqueCustomers,
+        cardPayments,
+        walletPayments,
+        bnplPayments,
+        achPayments,
+        successRate,
+        fraudRate,
+        averageProcessingTime,
+        growthRate,
+        trendData: trendData as any,
+        dataPoints: totalTransactions,
+        confidenceScore,
+        notes: params.category || undefined,
+      },
     });
   }
 
@@ -382,31 +489,15 @@ export class DataMonetizationService {
    * Get data exports for a user
    */
   async getExports(userId: string, filters?: any) {
-    // In production, this would query actual exports from the database
-    // For now, return demo data
-    return [
-      {
-        id: 'export_1',
+    return prisma.dataExport.findMany({
+      where: {
         userId,
-        status: 'COMPLETED',
-        dataType: 'TRANSACTION_SUMMARY',
-        format: 'CSV',
-        fileSize: 245678,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        completedAt: new Date(Date.now() - 1000 * 60 * 60 * 23),
-        downloadUrl: '/api/exports/export_1/download',
+        ...(filters?.status ? { status: filters.status } : {}),
+        ...(filters?.exportType ? { exportType: filters.exportType } : {}),
       },
-      {
-        id: 'export_2',
-        userId,
-        status: 'PROCESSING',
-        dataType: 'CUSTOMER_BEHAVIOR',
-        format: 'JSON',
-        createdAt: new Date(Date.now() - 1000 * 60 * 30),
-        completedAt: null,
-        downloadUrl: null,
-      },
-    ];
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
   }
 
   /**
@@ -428,18 +519,21 @@ export class DataMonetizationService {
     filters?: any;
     anonymized?: boolean;
   }) {
-    // In production, this would create an export request in the database
-    // For now, return a demo export request
-    return {
-      id: `export_${Date.now()}`,
-      userId: params.userId,
-      status: 'PROCESSING',
-      dataType: params.dataType || params.exportType || 'UNKNOWN',
-      format: params.format,
-      createdAt: new Date(),
-      completedAt: null,
-      downloadUrl: null,
-    };
+    const now = new Date();
+    return prisma.dataExport.create({
+      data: {
+        userId: params.userId,
+        exportType: params.exportType || params.dataType || 'transactions',
+        format: params.format as any,
+        status: 'PENDING',
+        startDate: params.startDate || params.dateRange?.start || now,
+        endDate: params.endDate || params.dateRange?.end || now,
+        includeFields: params.includeFields || [],
+        excludeFields: params.excludeFields || [],
+        filters: params.filters || undefined,
+        anonymized: params.anonymized ?? true,
+      },
+    });
   }
 
   /**
@@ -449,23 +543,58 @@ export class DataMonetizationService {
     startDate?: Date;
     endDate?: Date;
   }) {
-    // In production, this would aggregate actual data
-    // For now, return demo stats
+    const where = {
+      userId,
+      ...(filter?.startDate || filter?.endDate
+        ? {
+            createdAt: {
+              ...(filter?.startDate ? { gte: filter.startDate } : {}),
+              ...(filter?.endDate ? { lte: filter.endDate } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const [insights, exports] = await Promise.all([
+      prisma.dataInsight.findMany({
+        where,
+        select: { insightType: true, totalRevenue: true, createdAt: true },
+      }),
+      prisma.dataExport.findMany({
+        where: { userId, ...(filter?.startDate || filter?.endDate ? { createdAt: where.createdAt as any } : {}) },
+        select: { exportType: true, status: true, createdAt: true },
+      }),
+    ]);
+
+    const totalRevenue = insights.reduce((sum, i) => sum + (i.totalRevenue || 0), 0);
+    const totalAccesses = exports.filter((e) => e.status === 'COMPLETED').length;
+    const averageRevenuePerAccess = totalAccesses > 0 ? totalRevenue / totalAccesses : 0;
+
+    const topTypeMap = new Map<string, { type: string; count: number; revenue: number }>();
+    for (const i of insights) {
+      const k = String(i.insightType);
+      const prev = topTypeMap.get(k) || { type: k, count: 0, revenue: 0 };
+      prev.count += 1;
+      prev.revenue += i.totalRevenue || 0;
+      topTypeMap.set(k, prev);
+    }
+    const topDataTypes = Array.from(topTypeMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+    const monthMap = new Map<string, number>();
+    for (const i of insights) {
+      const month = i.createdAt.toISOString().slice(0, 7);
+      monthMap.set(month, (monthMap.get(month) || 0) + (i.totalRevenue || 0));
+    }
+    const revenueByMonth = Array.from(monthMap.entries())
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([month, revenue]) => ({ month, revenue }));
+
     return {
-      totalRevenue: 2450.75,
-      totalAccesses: 1247,
-      averageRevenuePerAccess: 1.96,
-      topDataTypes: [
-        { type: 'TRANSACTION_SUMMARY', count: 567, revenue: 1100.45 },
-        { type: 'CUSTOMER_BEHAVIOR', count: 423, revenue: 825.30 },
-        { type: 'DEMOGRAPHIC_DATA', count: 257, revenue: 525.00 },
-      ],
-      revenueByMonth: [
-        { month: '2024-01', revenue: 450.25 },
-        { month: '2024-02', revenue: 675.50 },
-        { month: '2024-03', revenue: 825.00 },
-        { month: '2024-04', revenue: 500.00 },
-      ],
+      totalRevenue,
+      totalAccesses,
+      averageRevenuePerAccess,
+      topDataTypes,
+      revenueByMonth,
     };
   }
 }

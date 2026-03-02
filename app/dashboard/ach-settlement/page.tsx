@@ -60,6 +60,7 @@ interface AchSettlement {
 
 export default function AchSettlementPage() {
   const { data: session, status } = useSession() || {};
+  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   const [stats, setStats] = useState<AchSettlementStats | null>(null);
   const [settlements, setSettlements] = useState<AchSettlement[]>([]);
   const [selectedSettlement, setSelectedSettlement] = useState<AchSettlement | null>(null);
@@ -168,35 +169,37 @@ export default function AchSettlementPage() {
         <div>
           <h1 className="text-3xl font-bold">ACH Settlement</h1>
           <p className="text-muted-foreground mt-1">
-            <Badge variant="outline" className="mr-2">Demo Mode</Badge>
+            {isOrthoDemo && <Badge variant="outline" className="mr-2">Demo Mode</Badge>}
             Manage ACH batch processing and settlements
           </p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={showDemoDialog} onOpenChange={setShowDemoDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Generate Demo Data
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Generate Demo Settlements</DialogTitle>
-                <DialogDescription>
-                  This will create 5 sample ACH settlement batches with demo transactions for testing.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowDemoDialog(false)}>
-                  Cancel
+          {isOrthoDemo && (
+            <Dialog open={showDemoDialog} onOpenChange={setShowDemoDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Generate Demo Data
                 </Button>
-                <Button onClick={handleGenerateDemo}>
-                  Generate
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate Demo Settlements</DialogTitle>
+                  <DialogDescription>
+                    This will create 5 sample ACH settlement batches with demo transactions for testing.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setShowDemoDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleGenerateDemo}>
+                    Generate
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button onClick={fetchData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -275,12 +278,14 @@ export default function AchSettlementPage() {
               <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No settlements yet</h3>
               <p className="text-muted-foreground mb-4">
-                Generate demo data to see how ACH settlements work
+                {isOrthoDemo ? 'Generate demo data to see how ACH settlements work' : 'No ACH settlements found yet.'}
               </p>
-              <Button onClick={() => setShowDemoDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Generate Demo Data
-              </Button>
+              {isOrthoDemo && (
+                <Button onClick={() => setShowDemoDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Generate Demo Data
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

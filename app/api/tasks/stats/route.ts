@@ -31,8 +31,9 @@ export async function GET(request: NextRequest) {
     // Calculate completion rate
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Return mock task stats when database is empty for demo purposes
-    if (total === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && total === 0) {
       const { MOCK_TASK_STATS } = await import('@/lib/mock-data');
       return NextResponse.json(MOCK_TASK_STATS);
     }

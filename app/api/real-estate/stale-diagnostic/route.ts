@@ -25,7 +25,20 @@ export async function GET(request: NextRequest) {
         ...(status && { status }),
       },
       include: {
-        property: true,
+        property: {
+          include: {
+            priceChanges: {
+              select: {
+                changeType: true,
+                oldPrice: true,
+                newPrice: true,
+                detectedAt: true,
+              },
+              orderBy: { detectedAt: 'desc' },
+              take: 20,
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: limit,

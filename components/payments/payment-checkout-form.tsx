@@ -170,8 +170,52 @@ export function PaymentCheckoutForm({
   };
 
   const handleBNPLPayment = async (amountValue: number) => {
-    toast.info('BNPL financing is coming soon!');
-    // Future implementation for Buy Now Pay Later
+    const amountInCents = Math.round(amountValue * 100);
+
+    const eligibilityRes = await fetch('/api/payments/bnpl/eligibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ purchaseAmount: amountInCents }),
+    });
+
+    if (!eligibilityRes.ok) {
+      const error = await eligibilityRes.json();
+      throw new Error(error.error || 'Unable to check BNPL eligibility');
+    }
+
+    const eligibility = await eligibilityRes.json();
+    if (!eligibility?.eligible) {
+      throw new Error(eligibility?.message || 'Not eligible for BNPL financing');
+    }
+
+    const applicationRes = await fetch('/api/payments/bnpl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        purchaseAmount: amountInCents,
+        downPayment: 0,
+        installmentCount: 4,
+        interestRate: 0,
+        merchantName: 'Checkout',
+        productDescription: description || 'Checkout purchase',
+        orderId: `CHK-${Date.now()}`,
+        autoApprove: true,
+      }),
+    });
+
+    if (!applicationRes.ok) {
+      const error = await applicationRes.json();
+      throw new Error(error.error || 'Failed to create BNPL application');
+    }
+
+    const result = await applicationRes.json();
+    if (result?.approved === false) {
+      throw new Error(result?.denialReason || 'BNPL application was not approved');
+    }
+
+    toast.success('BNPL plan activated successfully!');
+    onSuccess?.({ method: 'bnpl', amount: amountValue, result });
+    router.push('/dashboard/bnpl');
   };
 
   return (

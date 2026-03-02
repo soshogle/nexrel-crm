@@ -31,6 +31,14 @@ interface ReportData {
   growthRate: number;
 }
 
+interface ProviderBreakdownItem {
+  provider: string;
+  procedures: number;
+  completedProcedures: number;
+  patients: number;
+  attributedRevenue: number;
+}
+
 /**
  * Calculate date range based on selection
  */
@@ -193,15 +201,32 @@ export async function GET(request: NextRequest) {
     const { start, end } = getDateRange(dateRange, startDate, endDate);
     const periods = getPeriods(dateRange, start, end);
 
-    // Build base where clause for clinic filtering
-    const clinicWhere: any = clinicId ? { clinicId } : {};
+    // Build clinic-scoped lead set once for consistent filtering
+    let clinicLeadIdsArray: string[] | null = null;
+    if (clinicId) {
+      const [clinicAppointments, clinicProcedures] = await Promise.all([
+        db.bookingAppointment.findMany({
+          where: { userId: session.user.id, clinicId },
+          select: { leadId: true },
+          distinct: ['leadId'],
+        }),
+        (db as any).dentalProcedure.findMany({
+          where: { userId: session.user.id, clinicId },
+          select: { leadId: true },
+          distinct: ['leadId'],
+        }),
+      ]);
+      const clinicLeadIds = new Set<string>();
+      clinicAppointments.forEach((a: any) => { if (a.leadId) clinicLeadIds.add(a.leadId); });
+      clinicProcedures.forEach((p: any) => { if (p.leadId) clinicLeadIds.add(p.leadId); });
+      clinicLeadIdsArray = Array.from(clinicLeadIds);
+    }
 
     // Fetch data for each period
     const reportData: ReportData[] = [];
 
     for (const period of periods) {
       // Revenue from invoices and payments
-      // For clinic filtering, we need to check if lead has appointments/procedures with that clinic
       let invoiceWhere: any = {
         userId: session.user.id,
         issueDate: {
@@ -210,29 +235,14 @@ export async function GET(request: NextRequest) {
         },
       };
 
-      // If clinicId is provided, we'll filter invoices by checking if the lead has appointments/procedures with that clinic
       if (clinicId) {
-        // Get lead IDs that have appointments or procedures with this clinic
-        const clinicLeadIds = await db.bookingAppointment.findMany({
-          where: {
-            userId: session.user.id,
-            clinicId,
-          },
-          select: {
-            leadId: true,
-          },
-          distinct: ['leadId'],
-        });
-        const clinicLeadIdsSet = new Set(clinicLeadIds.map(a => a.leadId).filter(Boolean));
-        
-        invoiceWhere.leadId = {
-          in: Array.from(clinicLeadIdsSet),
-        };
+        invoiceWhere.leadId = { in: clinicLeadIdsArray || [] };
       }
 
       const invoices = await db.invoice.findMany({
         where: invoiceWhere,
         select: {
+          id: true,
           totalAmount: true,
           paidAmount: true,
           leadId: true,
@@ -250,39 +260,33 @@ export async function GET(request: NextRequest) {
       };
 
       if (clinicId) {
-        const clinicLeadIds = await db.bookingAppointment.findMany({
-          where: {
-            userId: session.user.id,
-            clinicId,
-          },
-          select: {
-            leadId: true,
-          },
-          distinct: ['leadId'],
-        });
-        const clinicLeadIdsSet = new Set(clinicLeadIds.map(a => a.leadId).filter(Boolean));
-        
-        paymentWhere.leadId = {
-          in: Array.from(clinicLeadIdsSet),
-        };
+        paymentWhere.leadId = { in: clinicLeadIdsArray || [] };
       }
 
       const payments = await db.payment.findMany({
         where: paymentWhere,
         select: {
+          invoiceId: true,
           amount: true,
         },
       });
 
-      // Calculate revenue (use paid amount from invoices + completed payments)
-      const revenue = invoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0) +
-                     payments.reduce((sum, p) => sum + p.amount, 0);
+      // Recognized revenue: completed payments + paid invoices without payment rows (legacy/manual)
+      const paidInvoiceIds = new Set(
+        payments
+          .map((p: any) => p.invoiceId)
+          .filter((id: string | null) => !!id) as string[]
+      );
+      const invoiceResidualRevenue = invoices
+        .filter((inv: any) => !paidInvoiceIds.has(inv.id))
+        .reduce((sum, inv: any) => sum + (inv.paidAmount || 0), 0);
+      const paymentRevenue = payments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      const revenue = paymentRevenue + invoiceResidualRevenue;
 
       // Patients (unique leads with appointments or procedures in this period)
       const patientIds = new Set<string>();
       
       // From appointments
-      // If clinicId is provided, filter by checking if lead has procedures with that clinic
       let appointmentWhere: any = {
         userId: session.user.id,
         appointmentDate: {
@@ -292,27 +296,7 @@ export async function GET(request: NextRequest) {
       };
 
       if (clinicId) {
-        // Get lead IDs that have procedures with this clinic
-        const clinicProcedures = await (db as any).dentalProcedure.findMany({
-          where: {
-            userId: session.user.id,
-            clinicId,
-          },
-          select: {
-            leadId: true,
-          },
-          distinct: ['leadId'],
-        });
-        const clinicLeadIds = new Set(clinicProcedures.map((p: any) => p.leadId).filter(Boolean));
-        
-        if (clinicLeadIds.size > 0) {
-          appointmentWhere.leadId = {
-            in: Array.from(clinicLeadIds),
-          };
-        } else {
-          // No leads with procedures for this clinic, return empty
-          appointmentWhere.leadId = { in: [] };
-        }
+        appointmentWhere.clinicId = clinicId;
       }
 
       const appointments = await db.bookingAppointment.findMany({
@@ -333,7 +317,7 @@ export async function GET(request: NextRequest) {
             gte: period.start,
             lte: period.end,
           },
-          ...clinicWhere,
+          ...(clinicId ? { clinicId } : {}),
         },
         select: {
           leadId: true,
@@ -395,25 +379,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (clinicId) {
-      const clinicProcedures = await (db as any).dentalProcedure.findMany({
-        where: {
-          userId: session.user.id,
-          clinicId,
-        },
-        select: {
-          leadId: true,
-        },
-        distinct: ['leadId'],
-      });
-      const clinicLeadIds = new Set(clinicProcedures.map((p: any) => p.leadId).filter(Boolean));
-      
-      if (clinicLeadIds.size > 0) {
-        allAppointmentsWhere.leadId = {
-          in: Array.from(clinicLeadIds),
-        };
-      } else {
-        allAppointmentsWhere.leadId = { in: [] };
-      }
+      allAppointmentsWhere.clinicId = clinicId;
     }
 
     const allAppointments = await db.bookingAppointment.findMany({
@@ -433,7 +399,7 @@ export async function GET(request: NextRequest) {
           gte: start,
           lte: end,
         },
-        ...clinicWhere,
+        ...(clinicId ? { clinicId } : {}),
       },
       select: {
         leadId: true,
@@ -447,6 +413,72 @@ export async function GET(request: NextRequest) {
       ? reportData.reduce((sum, d) => sum + d.growthRate, 0) / reportData.length
       : 0;
 
+    // Provider attribution payload (dedicated breakdown)
+    // For demo account, preserve expected mock provider behavior.
+    let providerBreakdown: ProviderBreakdownItem[] = [];
+    const sessionEmail = String(session.user.email || '').toLowerCase();
+    if (sessionEmail === 'orthodontist@nexrel.com') {
+      providerBreakdown = [
+        { provider: 'Dr. Smith', procedures: 32, completedProcedures: 24, patients: 19, attributedRevenue: 12500 },
+        { provider: 'Dr. Johnson', procedures: 24, completedProcedures: 18, patients: 14, attributedRevenue: 9800 },
+        { provider: 'Sarah Miller', procedures: 19, completedProcedures: 16, patients: 12, attributedRevenue: 3200 },
+        { provider: 'Mike Davis', procedures: 12, completedProcedures: 9, patients: 8, attributedRevenue: 1800 },
+      ];
+    } else {
+      const providerProcedures = await (db as any).dentalProcedure.findMany({
+        where: {
+          userId: session.user.id,
+          ...(clinicId ? { clinicId } : {}),
+          performedDate: {
+            gte: start,
+            lte: end,
+          },
+        },
+        select: {
+          performedBy: true,
+          leadId: true,
+          cost: true,
+          status: true,
+        },
+      });
+
+      const providerMap = new Map<string, {
+        procedures: number;
+        completedProcedures: number;
+        patientIds: Set<string>;
+        attributedRevenue: number;
+      }>();
+
+      for (const proc of providerProcedures as any[]) {
+        const providerName = (proc.performedBy || 'Unassigned').trim() || 'Unassigned';
+        const current = providerMap.get(providerName) || {
+          procedures: 0,
+          completedProcedures: 0,
+          patientIds: new Set<string>(),
+          attributedRevenue: 0,
+        };
+        current.procedures += 1;
+        if (proc.status === 'COMPLETED') {
+          current.completedProcedures += 1;
+        }
+        if (proc.leadId) {
+          current.patientIds.add(proc.leadId);
+        }
+        current.attributedRevenue += Number(proc.cost || 0);
+        providerMap.set(providerName, current);
+      }
+
+      providerBreakdown = Array.from(providerMap.entries())
+        .map(([provider, v]) => ({
+          provider,
+          procedures: v.procedures,
+          completedProcedures: v.completedProcedures,
+          patients: v.patientIds.size,
+          attributedRevenue: Math.round(v.attributedRevenue * 100) / 100,
+        }))
+        .sort((a, b) => b.attributedRevenue - a.attributedRevenue || b.procedures - a.procedures);
+    }
+
     return NextResponse.json({
       success: true,
       reportType,
@@ -455,6 +487,7 @@ export async function GET(request: NextRequest) {
       endDate: end.toISOString(),
       clinicId,
       data: reportData,
+      providerBreakdown,
       summary: {
         totalRevenue,
         totalPatients: totalPatients.size,
@@ -462,6 +495,7 @@ export async function GET(request: NextRequest) {
         totalProcedures,
         averageTicket: totalAppointments > 0 ? totalRevenue / totalAppointments : 0,
         avgGrowthRate,
+        providerBreakdown,
       },
     });
   } catch (error: any) {

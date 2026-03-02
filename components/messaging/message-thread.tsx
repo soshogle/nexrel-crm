@@ -173,6 +173,26 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
     }
   };
 
+  const handleVideoCallClick = () => {
+    // Fallback to voice workflow until native video is integrated.
+    toast.info('Starting a voice call workflow for this contact');
+    setCallDialogOpen(true);
+  };
+
+  const handleMoreOptionsClick = async () => {
+    try {
+      const identifier = conversation?.contactIdentifier || '';
+      if (!identifier) {
+        toast.info('No contact identifier available');
+        return;
+      }
+      await navigator.clipboard.writeText(identifier);
+      toast.success('Contact identifier copied');
+    } catch {
+      toast.error('Failed to copy contact identifier');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -286,9 +306,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => {
-              toast.info('Video calling feature coming soon!');
-            }}
+            onClick={handleVideoCallClick}
             title="Video call"
           >
             <Video className="h-5 w-5" />
@@ -296,9 +314,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => {
-              toast.info('More options coming soon!');
-            }}
+            onClick={handleMoreOptionsClick}
             title="More options"
           >
             <MoreVertical className="h-5 w-5" />

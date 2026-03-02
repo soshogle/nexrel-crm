@@ -41,6 +41,11 @@ export interface EnrichedData {
   brokerName?: string;
   brokerAgency?: string;
   brokerPhone?: string;
+  virtualTourUrl?: string;
+  mlsNumber?: string;
+  listPrice?: number;
+  daysOnMarket?: number;
+  listingDate?: string;
 }
 
 export interface EnrichmentResult {

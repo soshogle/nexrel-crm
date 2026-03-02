@@ -16,78 +16,105 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Generate demo fraud alerts and stats
-    // In production, this would query actual fraud detection data
-    const demoAlerts = [
-      {
-        id: 'alert_1',
-        transactionId: 'txn_demo_001',
-        customerId: session.user.id,
-        riskScore: 85,
-        riskLevel: 'HIGH' as const,
-        reason: 'Unusual transaction amount for this customer',
-        amount: 150000, // $1,500.00
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago
-        status: 'PENDING' as const,
-      },
-      {
-        id: 'alert_2',
-        transactionId: 'txn_demo_002',
-        customerId: session.user.id,
-        riskScore: 95,
-        riskLevel: 'CRITICAL' as const,
-        reason: 'Multiple failed payment attempts detected',
-        amount: 50000, // $500.00
-        timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
-        status: 'PENDING' as const,
-      },
-      {
-        id: 'alert_3',
-        transactionId: 'txn_demo_003',
-        customerId: session.user.id,
-        riskScore: 45,
-        riskLevel: 'MEDIUM' as const,
-        reason: 'Transaction from new geographic location',
-        amount: 25000, // $250.00
-        timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(), // 90 min ago
-        status: 'REVIEWED' as const,
-      },
-      {
-        id: 'alert_4',
-        transactionId: 'txn_demo_004',
-        customerId: session.user.id,
-        riskScore: 20,
-        riskLevel: 'LOW' as const,
-        reason: 'Slightly unusual purchase pattern',
-        amount: 10000, // $100.00
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-        status: 'APPROVED' as const,
-      },
-      {
-        id: 'alert_5',
-        transactionId: 'txn_demo_005',
-        customerId: session.user.id,
-        riskScore: 78,
-        riskLevel: 'HIGH' as const,
-        reason: 'Velocity check failed - too many transactions in short time',
-        amount: 75000, // $750.00
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min ago
-        status: 'PENDING' as const,
-      },
-    ];
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
 
-    const stats = {
-      totalTransactions: 1247,
-      flaggedTransactions: 28,
-      blockedTransactions: 5,
-      averageRiskScore: 32.4,
-      highRiskPercentage: 2.2,
+    if (isOrthoDemo) {
+      const demoAlerts = [
+        {
+          id: 'alert_1',
+          transactionId: 'txn_demo_001',
+          customerId: session.user.id,
+          riskScore: 85,
+          riskLevel: 'HIGH' as const,
+          reason: 'Unusual transaction amount for this customer',
+          amount: 150000,
+          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+          status: 'PENDING' as const,
+        },
+      ];
+      return NextResponse.json({
+        success: true,
+        alerts: demoAlerts,
+        stats: {
+          totalTransactions: 1247,
+          flaggedTransactions: 28,
+          blockedTransactions: 5,
+          averageRiskScore: 32.4,
+          highRiskPercentage: 2.2,
+        },
+      });
+    }
+
+    const [transactionsCount, fraudAlerts, riskScoreAgg, highRiskCount] = await Promise.all([
+      prisma.soshogleTransaction.count({
+        where: { customer: { userId: session.user.id } },
+      }),
+      prisma.fraudAlert.findMany({
+        where: { userId: session.user.id },
+        include: {
+          transaction: {
+            select: {
+              id: true,
+              amount: true,
+              customerId: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { detectedAt: 'desc' },
+        take: 200,
+      }),
+      prisma.fraudAlert.aggregate({
+        where: { userId: session.user.id },
+        _avg: { riskScore: true },
+      }),
+      prisma.fraudAlert.count({
+        where: {
+          userId: session.user.id,
+          riskLevel: { in: ['HIGH', 'CRITICAL'] },
+        },
+      }),
+    ]);
+
+    const mapRiskLevel = (level: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' => {
+      if (level === 'VERY_LOW') return 'LOW';
+      if (level === 'LOW' || level === 'MEDIUM' || level === 'HIGH' || level === 'CRITICAL') return level;
+      return 'MEDIUM';
     };
+    const mapStatus = (status: string): 'PENDING' | 'REVIEWED' | 'BLOCKED' | 'APPROVED' => {
+      if (status === 'APPROVED') return 'APPROVED';
+      if (status === 'DECLINED') return 'BLOCKED';
+      if (status === 'PENDING') return 'PENDING';
+      return 'REVIEWED';
+    };
+
+    const alerts = fraudAlerts.map((alert) => ({
+      id: alert.id,
+      transactionId: alert.transactionId || alert.transaction?.id || 'n/a',
+      customerId: alert.transaction?.customerId || session.user.id,
+      riskScore: Number(alert.riskScore || 0),
+      riskLevel: mapRiskLevel(String(alert.riskLevel)),
+      reason: alert.reason,
+      amount: alert.transaction?.amount || 0,
+      timestamp: (alert.detectedAt || alert.createdAt).toISOString(),
+      status: mapStatus(String(alert.status)),
+    }));
+
+    const blockedTransactions = fraudAlerts.filter((a) => a.status === 'DECLINED').length;
+    const flaggedTransactions = fraudAlerts.length;
+    const averageRiskScore = Number(riskScoreAgg._avg.riskScore || 0);
+    const highRiskPercentage = transactionsCount > 0 ? (highRiskCount / transactionsCount) * 100 : 0;
 
     return NextResponse.json({
       success: true,
-      alerts: demoAlerts,
-      stats,
+      alerts,
+      stats: {
+        totalTransactions: transactionsCount,
+        flaggedTransactions,
+        blockedTransactions,
+        averageRiskScore,
+        highRiskPercentage,
+      },
     });
   } catch (error) {
     console.error('Error fetching fraud detection data:', error);

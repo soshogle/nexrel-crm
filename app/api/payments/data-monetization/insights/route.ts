@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { dataMonetizationService } from '@/lib/payments/data-monetization-service';
 import { InsightType, InsightPeriod } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
@@ -28,16 +29,23 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const filters: any = {};
-    if (insightType) filters.insightType = insightType;
-    if (period) filters.period = period;
-    if (startDate) filters.startDate = new Date(startDate);
-    if (endDate) filters.endDate = new Date(endDate);
-
-    const insights = await dataMonetizationService.getInsights(
-      session.user.id,
-      filters
-    );
+    const insights = await prisma.dataInsight.findMany({
+      where: {
+        userId: session.user.id,
+        ...(insightType ? { insightType } : {}),
+        ...(period ? { period } : {}),
+        ...(startDate || endDate
+          ? {
+              createdAt: {
+                ...(startDate ? { gte: new Date(startDate) } : {}),
+                ...(endDate ? { lte: new Date(endDate) } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
 
     return NextResponse.json({ insights });
   } catch (error: any) {

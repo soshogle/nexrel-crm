@@ -112,6 +112,49 @@ export default function InventoryPage() {
     }
   };
 
+  const handleQuickAddItem = async () => {
+    try {
+      const name = window.prompt('Item name');
+      if (!name) return;
+      const sku = window.prompt('SKU (must be unique)');
+      if (!sku) return;
+      const category = window.prompt('Category (e.g. FOOD, SUPPLIES, BEVERAGES)');
+      if (!category) return;
+      const unit = window.prompt('Unit (e.g. pcs, kg, L)', 'pcs');
+      if (!unit) return;
+
+      const currentStockRaw = window.prompt('Current stock', '0');
+      const minimumStockRaw = window.prompt('Minimum stock', '0');
+      const costPerUnitRaw = window.prompt('Cost per unit', '0');
+
+      const payload = {
+        name: name.trim(),
+        sku: sku.trim(),
+        category: category.trim(),
+        unit: unit.trim(),
+        currentStock: Number(currentStockRaw || 0),
+        minimumStock: Number(minimumStockRaw || 0),
+        costPerUnit: Number(costPerUnitRaw || 0),
+      };
+
+      const response = await fetch('/api/inventory/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error?.error || 'Failed to create item');
+      }
+
+      toast.success('Inventory item created');
+      await loadInventoryData();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to add item');
+    }
+  };
+
   const getStockStatusColor = (status: string) => {
     switch (status) {
       case 'OUT_OF_STOCK':
@@ -173,7 +216,7 @@ export default function InventoryPage() {
             <Search className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button onClick={() => toast.info('Add Item dialog coming soon')} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={handleQuickAddItem} className="bg-purple-600 hover:bg-purple-700">
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
@@ -278,7 +321,7 @@ export default function InventoryPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Start adding items to track your inventory
               </p>
-              <Button className="mt-4 bg-purple-600 hover:bg-purple-700">Add First Item</Button>
+              <Button onClick={handleQuickAddItem} className="mt-4 bg-purple-600 hover:bg-purple-700">Add First Item</Button>
             </div>
           ) : (
             <div className="grid gap-4">

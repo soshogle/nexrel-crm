@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    // Calculate LIVE stats from actual REProperty + REFSBOListing data
-    const [properties, fsboListings, allProperties] = await Promise.all([
+    // Calculate LIVE stats from actual REProperty + REFSBOListing + RERentalListing data
+    const [properties, fsboListings, rentalListings, allProperties] = await Promise.all([
       prisma.rEProperty.findMany({
         where: { userId: session.user.id, ...locationFilter },
         select: {
@@ -68,6 +68,19 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
+      prisma.rERentalListing.findMany({
+        where: {
+          userId: session.user.id,
+          ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
+          ...(state ? { state: { contains: state, mode: 'insensitive' } } : {}),
+        },
+        select: {
+          rentPrice: true, listingStatus: true, daysOnMarket: true, createdAt: true,
+          sqft: true, city: true, state: true, beds: true, baths: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
       // All user properties (for available locations)
       prisma.rEProperty.findMany({
         where: { userId: session.user.id },
@@ -80,20 +93,29 @@ export async function GET(request: NextRequest) {
     const soldListings = properties.filter((l) => l.listingStatus === 'SOLD');
     const pendingListings = properties.filter((l) => l.listingStatus === 'PENDING');
 
+    // Compute DOM from listingDate when daysOnMarket is missing (fallback for ACTIVE: createdAt = first seen in CRM)
+    const now = new Date();
+    const getDom = (p: { daysOnMarket: number | null; listingDate: Date | null; soldDate: Date | null; listingStatus: string; createdAt: Date }) => {
+      if (p.daysOnMarket != null && p.daysOnMarket > 0) return p.daysOnMarket;
+      const listDate = p.listingDate ? new Date(p.listingDate) : (p.listingStatus === 'ACTIVE' ? new Date(p.createdAt) : null);
+      if (!listDate) return 0;
+      const endDate = p.listingStatus === 'SOLD' && p.soldDate ? new Date(p.soldDate) : now;
+      return Math.max(0, Math.floor((endDate.getTime() - listDate.getTime()) / 86400000));
+    };
+    const activeDom = activeListings.map((l) => getDom(l)).filter((d) => d > 0);
+    const soldDom = soldListings.map((l) => getDom(l)).filter((d) => d > 0);
+    const allDom = [...activeDom, ...soldDom];
+
     // Active prices for median/avg calculations
     const activePrices = activeListings.map((l) => l.listPrice).filter(Boolean) as number[];
     const soldPrices = soldListings.map((l) => l.soldPrice || l.listPrice).filter(Boolean) as number[];
     const allPrices = [...activePrices, ...soldPrices];
 
-    // Days on market
-    const activeDom = activeListings.map((l) => l.daysOnMarket).filter((d) => d > 0);
-    const soldDom = soldListings.map((l) => l.daysOnMarket).filter((d) => d > 0);
-    const allDom = [...activeDom, ...soldDom];
-
-    // Price per sqft
-    const pricePerSqft = activeListings
-      .filter((l) => l.listPrice && l.sqft && l.sqft > 0)
-      .map((l) => (l.listPrice! / l.sqft!));
+    // Price per sqft — include both active and sold
+    const pricePerSqft = [
+      ...activeListings.filter((l) => l.listPrice && l.sqft && l.sqft > 0).map((l) => l.listPrice! / l.sqft!),
+      ...soldListings.filter((l) => (l.soldPrice || l.listPrice) && l.sqft && l.sqft > 0).map((l) => (l.soldPrice || l.listPrice)!/ l.sqft!),
+    ];
 
     // FSBO stats
     const fsboActive = fsboListings.filter((f: any) => f.status === 'NEW' || f.status === 'CONTACTED' || f.status === 'FOLLOW_UP');
@@ -122,32 +144,56 @@ export async function GET(request: NextRequest) {
     const prevMedian = median(prevProperties.map((p) => p.listPrice).filter(Boolean) as number[]);
     const priceChange = prevMedian > 0 ? ((recentMedian - prevMedian) / prevMedian) * 100 : 0;
 
-    // Available locations from user's data
+    // Available locations from user's data (properties + rentals)
     const locationSet = new Set<string>();
     for (const p of allProperties) {
       if (p.city) locationSet.add(`${p.city}, ${p.state}`);
     }
+    for (const r of rentalListings) {
+      if (r.city) locationSet.add(`${r.city}, ${r.state}`);
+    }
     const locations = Array.from(locationSet).sort();
 
+    // Fallback to stored stats when live stats are sparse (DOM, months of supply, etc.)
+    const latestStored = storedStats.length > 0
+      ? storedStats.reduce((a, b) => (new Date(b.periodStart) > new Date(a.periodStart) ? b : a))
+      : null;
+
+    // When no live data but we have stored stats, use stored for display
+    const useStoredFallback = properties.length === 0 && latestStored != null;
+
+    const liveDomMedian = useStoredFallback ? (latestStored.domMedian ?? Math.round(latestStored.domAvg ?? 0)) : median(allDom);
+    const liveDomAvg = useStoredFallback ? Math.round(latestStored.domAvg ?? 0) : Math.round(avg(allDom));
+    const livePricePerSqft = useStoredFallback ? 0 : Math.round(avg(pricePerSqft));
+    const liveMonthsOfSupply = useStoredFallback ? (latestStored.monthsOfSupply ?? 0) : Math.round(monthsOfSupply * 10) / 10;
+    const liveListToSale = listToSaleRatios.length > 0
+      ? Math.round(avgListToSale * 1000) / 1000
+      : (latestStored?.closePriceToAskingRatio != null ? Math.round(latestStored.closePriceToAskingRatio) / 100 : 0);
+
     const liveStats = {
-      medianSalePrice: median(allPrices),
-      avgSalePrice: avg(allPrices),
-      medianListPrice: median(activePrices),
-      medianSoldPrice: median(soldPrices),
+      medianSalePrice: useStoredFallback ? (latestStored.medianSalePrice ?? 0) : median(allPrices),
+      avgSalePrice: useStoredFallback ? Math.round(latestStored.avgSalePrice ?? 0) : avg(allPrices),
+      medianListPrice: useStoredFallback ? (latestStored.medianAskingPrice ?? latestStored.medianSalePrice ?? 0) : median(activePrices),
+      medianSoldPrice: useStoredFallback ? (latestStored.medianSalePrice ?? 0) : median(soldPrices),
       activeListings: activeListings.length,
-      closedSales: soldListings.length,
+      totalActiveListings: activeListings.length + rentalListings.filter((r: any) => r.listingStatus === 'ACTIVE').length,
+      closedSales: useStoredFallback ? (latestStored.closedSales ?? 0) : soldListings.length,
       pendingListings: pendingListings.length,
-      domMedian: median(allDom),
-      domAvg: Math.round(avg(allDom)),
-      pricePerSqft: Math.round(avg(pricePerSqft)),
-      monthsOfSupply: Math.round(monthsOfSupply * 10) / 10,
-      listToSaleRatio: Math.round(avgListToSale * 1000) / 1000,
+      domMedian: liveDomMedian > 0 ? liveDomMedian : (latestStored?.domMedian ?? latestStored?.domAvg) ?? 0,
+      domAvg: liveDomAvg > 0 ? liveDomAvg : Math.round(latestStored?.domAvg ?? 0),
+      pricePerSqft: livePricePerSqft > 0 ? livePricePerSqft : 0,
+      monthsOfSupply: liveMonthsOfSupply > 0 && liveMonthsOfSupply < 99
+        ? liveMonthsOfSupply
+        : (latestStored?.monthsOfSupply ?? 0),
+      listToSaleRatio: liveListToSale,
       totalActiveValue: activeListings.reduce((s, l) => s + (l.listPrice || 0), 0),
       newListingsThisMonth: recentProperties.length,
       priceChangePercent: Math.round(priceChange * 10) / 10,
       fsboListings: fsboListings.length,
       fsboActive: fsboActive.length,
       fsboMedianPrice: median(fsboPrices),
+      rentalListings: rentalListings.length,
+      rentalActive: rentalListings.filter((r: any) => r.listingStatus === 'ACTIVE').length,
       // Property type breakdown
       typeBreakdown: getPropertyTypeBreakdown(properties),
       // Price range distribution
@@ -169,12 +215,16 @@ export async function GET(request: NextRequest) {
       avgDaysOnMarket: Math.round(avg(activeDom)),
       medianSoldPrice: median(soldPrices),
       totalActiveValue: liveStats.totalActiveValue,
-      statusBreakdown: liveStats.statusBreakdown.map((s) => ({
-        status: s.status,
-        count: s.count,
-        avgPrice: avg(properties.filter((p) => p.listingStatus === s.status).map((p) => p.listPrice).filter(Boolean) as number[]),
-        avgDom: avg(properties.filter((p) => p.listingStatus === s.status).map((p) => p.daysOnMarket).filter((d) => d > 0)),
-      })),
+      statusBreakdown: liveStats.statusBreakdown.map((s) => {
+        const subset = properties.filter((p) => p.listingStatus === s.status);
+        const doms = subset.map((p) => getDom(p)).filter((d) => d > 0);
+        return {
+          status: s.status,
+          count: s.count,
+          avgPrice: avg(subset.map((p) => p.listPrice).filter(Boolean) as number[]),
+          avgDom: avg(doms),
+        };
+      }),
     };
 
     return NextResponse.json({
@@ -186,6 +236,7 @@ export async function GET(request: NextRequest) {
       dataSource: {
         properties: properties.length,
         fsboListings: fsboListings.length,
+        rentalListings: rentalListings.length,
         storedStats: storedStats.length,
         location: city || state || region || 'All Areas',
       },
@@ -258,6 +309,13 @@ export async function POST(request: NextRequest) {
 
     // Bulk seed: generate sample market data (kept for backwards compatibility)
     if (body.action === 'seed_sample') {
+      const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+      if (!isOrthoDemo) {
+        return apiErrors.forbidden('Sample seeding is restricted');
+      }
+      if (process.env.NODE_ENV === 'production') {
+        return apiErrors.badRequest('Sample seeding is disabled in production');
+      }
       const region = body.region || 'Local Market';
       const cityVal = body.city || '';
       const stateVal = body.state || '';
@@ -363,14 +421,23 @@ function avg(arr: number[]): number {
   return arr.reduce((s, v) => s + v, 0) / arr.length;
 }
 
+function getDomForTrend(p: { daysOnMarket: number | null; listingDate: Date | null; soldDate: Date | null; listingStatus: string }) {
+  if (p.daysOnMarket != null && p.daysOnMarket > 0) return p.daysOnMarket;
+  const listDate = p.listingDate ? new Date(p.listingDate) : null;
+  if (!listDate) return 0;
+  const now = new Date();
+  const endDate = p.listingStatus === 'SOLD' && p.soldDate ? new Date(p.soldDate) : now;
+  return Math.max(0, Math.floor((endDate.getTime() - listDate.getTime()) / 86400000));
+}
+
 function calculateMonthlyTrends(properties: any[], fsboListings: any[]) {
-  const months: Record<string, { listings: number; sold: number; medianPrice: number; prices: number[]; dom: number[] }> = {};
+  const months: Record<string, { listings: number; sold: number; fsboNew: number; medianPrice: number; prices: number[]; dom: number[] }> = {};
   const now = new Date();
 
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    months[key] = { listings: 0, sold: 0, medianPrice: 0, prices: [], dom: [] };
+    months[key] = { listings: 0, sold: 0, fsboNew: 0, medianPrice: 0, prices: [], dom: [] };
   }
 
   for (const p of properties) {
@@ -379,7 +446,8 @@ function calculateMonthlyTrends(properties: any[], fsboListings: any[]) {
     if (months[key]) {
       months[key].listings++;
       if (p.listPrice) months[key].prices.push(p.listPrice);
-      if (p.daysOnMarket > 0) months[key].dom.push(p.daysOnMarket);
+      const domVal = getDomForTrend(p);
+      if (domVal > 0) months[key].dom.push(domVal);
     }
     if (p.listingStatus === 'SOLD' && p.soldDate) {
       const sd = new Date(p.soldDate);
@@ -388,10 +456,19 @@ function calculateMonthlyTrends(properties: any[], fsboListings: any[]) {
     }
   }
 
+  for (const f of fsboListings) {
+    const d = new Date(f.createdAt || f.firstSeenAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (months[key]) {
+      months[key].fsboNew++;
+    }
+  }
+
   return Object.entries(months).map(([month, data]) => ({
     month,
     newListings: data.listings,
     closedSales: data.sold,
+    fsboNew: data.fsboNew,
     medianPrice: median(data.prices),
     avgPrice: Math.round(avg(data.prices)),
     medianDom: median(data.dom),

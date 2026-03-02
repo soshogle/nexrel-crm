@@ -26,10 +26,28 @@ export async function GET(request: NextRequest) {
       db.deal.count({ where: { userId: session.user.id } }),
     ]);
 
-    // Return mock predictions when database is empty for demo purposes
-    if (leadCount === 0 && dealCount === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && leadCount === 0 && dealCount === 0) {
       const { MOCK_PREDICTIONS } = await import('@/lib/mock-data');
       return NextResponse.json(MOCK_PREDICTIONS);
+    }
+
+    if (leadCount === 0 && dealCount === 0) {
+      return NextResponse.json({
+        nextWeekForecast: {
+          newLeads: { predicted: 0, confidence: 0 },
+          dealConversions: { predicted: 0, confidence: 0 },
+          revenue: { predicted: 0, confidence: 0, currency: 'USD' },
+        },
+        nextMonthForecast: {
+          newLeads: { predicted: 0, confidence: 0 },
+          dealConversions: { predicted: 0, confidence: 0 },
+          revenue: { predicted: 0, confidence: 0, currency: 'USD' },
+        },
+        growthTrend: 'neutral',
+        seasonalPatterns: [],
+      });
     }
 
     // Generate predictions based on CRM data
@@ -49,7 +67,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Business AI predictions error:', error);
-    const { MOCK_PREDICTIONS } = await import('@/lib/mock-data');
-    return NextResponse.json(MOCK_PREDICTIONS);
+    return apiErrors.internal(error.message || 'Failed to generate predictions');
   }
 }

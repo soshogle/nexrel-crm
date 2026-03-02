@@ -4,6 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { REDNCSource } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -11,7 +13,11 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ data: [], message: 'RE feature initializing...' });
+  const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  if (isOrthoDemo) {
+    return NextResponse.json({ data: [], message: 'RE feature initializing...' });
+  }
+  return NextResponse.json({ message: 'Use POST for bulk DNC operations' });
 }
 
 export async function POST(request: NextRequest) {
@@ -19,7 +25,56 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  if (isOrthoDemo) {
+    return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  }
+
+  try {
+    const body = await request.json();
+    const action = String(body.action || 'add').toLowerCase();
+    const country = String(body.country || 'CA').toUpperCase();
+    const source = ((body.source as REDNCSource) || 'MANUAL_ADD') as REDNCSource;
+    const reason = body.reason ? String(body.reason) : null;
+    const numbersRaw = Array.isArray(body.phoneNumbers) ? body.phoneNumbers : [];
+    const phoneNumbers = numbersRaw
+      .map((n: any) => String(n || '').replace(/[^\d+]/g, ''))
+      .filter((n: string) => n.length > 0);
+
+    if (phoneNumbers.length === 0) {
+      return apiErrors.badRequest('phoneNumbers is required');
+    }
+
+    if (action === 'remove') {
+      const result = await prisma.rEDNCEntry.deleteMany({
+        where: { phoneNumber: { in: phoneNumbers } },
+      });
+      return NextResponse.json({ success: true, removed: result.count });
+    }
+
+    const operations = phoneNumbers.map((phoneNumber: string) =>
+      prisma.rEDNCEntry.upsert({
+        where: { phoneNumber },
+        update: {
+          country,
+          source,
+          reason,
+        },
+        create: {
+          phoneNumber,
+          country,
+          source,
+          reason,
+        },
+      })
+    );
+
+    const created = await prisma.$transaction(operations);
+    return NextResponse.json({ success: true, added: created.length });
+  } catch (error) {
+    console.error('DNC bulk POST error:', error);
+    return apiErrors.internal('Failed to process bulk DNC operation');
+  }
 }
 
 export async function PUT(request: NextRequest) {
@@ -27,7 +82,11 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  if (isOrthoDemo) {
+    return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  }
+  return apiErrors.badRequest('Use POST for bulk DNC operations');
 }
 
 export async function DELETE(request: NextRequest) {
@@ -35,5 +94,9 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  if (isOrthoDemo) {
+    return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  }
+  return apiErrors.badRequest('Use POST with action=remove for bulk deletes');
 }

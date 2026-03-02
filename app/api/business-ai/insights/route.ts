@@ -26,12 +26,21 @@ export async function GET(request: NextRequest) {
       db.deal.count({ where: { userId: session.user.id } }),
     ]);
 
-    // Return mock insights when database is empty for demo purposes
-    if (leadCount === 0 && dealCount === 0) {
+    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    // Preserve demo behavior only for orthodontist demo account
+    if (isOrthoDemo && leadCount === 0 && dealCount === 0) {
       const { MOCK_INSIGHTS } = await import('@/lib/mock-data');
       return NextResponse.json({
         success: true,
         insights: MOCK_INSIGHTS,
+        generatedAt: new Date().toISOString(),
+      });
+    }
+
+    if (leadCount === 0 && dealCount === 0) {
+      return NextResponse.json({
+        success: true,
+        insights: [],
         generatedAt: new Date().toISOString(),
       });
     }
@@ -47,11 +56,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Business AI insights error:', error);
-    const { MOCK_INSIGHTS } = await import('@/lib/mock-data');
-    return NextResponse.json({
-      success: true,
-      insights: MOCK_INSIGHTS,
-      generatedAt: new Date().toISOString(),
-    });
+    return apiErrors.internal(error.message || 'Failed to generate insights');
   }
 }

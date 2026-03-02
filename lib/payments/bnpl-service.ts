@@ -105,8 +105,8 @@ export class BnplService {
         creditScore = existingScore.score;
         riskLevel = existingScore.riskLevel;
       } else {
-        // Simulate AI Trust Score call (in production, this would call the Python service on port 8000)
-        creditScore = Math.floor(Math.random() * 250) + 600; // 600-850
+        // Deterministic fallback when no score record exists yet.
+        creditScore = 650;
         riskLevel = creditScore >= 750 ? RiskLevel.LOW 
                   : creditScore >= 650 ? RiskLevel.MEDIUM 
                   : creditScore >= 550 ? RiskLevel.HIGH 

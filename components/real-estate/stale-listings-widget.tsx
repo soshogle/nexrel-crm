@@ -67,18 +67,24 @@ export function StaleListingsWidget() {
         const diagnostics = data.diagnostics || data.listings || [];
         const mapped = diagnostics.map((d: any) => {
           const prop = d.property;
+          const priceChanges = Array.isArray(prop?.priceChanges) ? prop.priceChanges : [];
+          const reductionChanges = priceChanges.filter((pc: any) => pc.changeType === 'decrease');
+          const originalPriceFromHistory = priceChanges
+            .map((pc: any) => Number(pc.oldPrice || 0))
+            .filter((v: number) => v > 0)
+            .sort((a: number, b: number) => b - a)[0];
           return {
             id: d.id,
             address: d.address || prop?.address || 'Unknown',
             city: prop?.city || '',
             state: prop?.state || '',
             price: prop?.listPrice || d.listPrice || 0,
-            originalPrice: prop?.listPrice || d.listPrice || undefined,
+            originalPrice: originalPriceFromHistory || undefined,
             daysOnMarket: d.daysOnMarket || prop?.daysOnMarket || 0,
             beds: prop?.beds || 0,
             baths: prop?.baths || 0,
             sqft: prop?.sqft || 0,
-            priceReductions: 0,
+            priceReductions: reductionChanges.length,
             staleness: (d.daysOnMarket || 0) > 90 ? 'severe' as const : (d.daysOnMarket || 0) > 60 ? 'critical' as const : 'warning' as const,
             aiRecommendation: d.clientSummary || undefined,
             issues: d.topReasons || [],
@@ -102,48 +108,36 @@ export function StaleListingsWidget() {
     setIsAnalyzing(true);
 
     try {
-      const response = await fetch('/api/real-estate/stale-diagnostic', {
+      const response = await fetch('/api/real-estate/stale-diagnostic/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listingId: listing.id }),
+        body: JSON.stringify({
+          address: listing.address,
+          city: listing.city,
+          state: listing.state,
+          listPrice: listing.price,
+          daysOnMarket: listing.daysOnMarket,
+          beds: listing.beds,
+          baths: listing.baths,
+          sqft: listing.sqft,
+        }),
       });
 
       if (!response.ok) throw new Error('Analysis failed');
 
       const result = await response.json();
+      const analysis = result?.analysis || {};
+      const suggestedPrice = Number(analysis?.suggestedPriceReduction?.newPrice || 0) || undefined;
       setSelectedListing({
         ...listing,
-        aiRecommendation: result.recommendation,
-        suggestedPrice: result.suggestedPrice,
-        issues: result.issues,
+        aiRecommendation: analysis?.clientSummary || 'No summary generated.',
+        suggestedPrice,
+        issues: Array.isArray(analysis?.topReasons) ? analysis.topReasons.map((r: any) => r?.reason).filter(Boolean) : listing.issues,
       });
     } catch (error) {
-      // Demo analysis
-      setTimeout(() => {
-        setSelectedListing({
-          ...listing,
-          aiRecommendation: `**Analysis for ${listing.address}**
-
-This property has been on the market for ${listing.daysOnMarket || 0} days, which is ${Math.round((listing.daysOnMarket || 0) / 24 * 100 - 100)}% longer than the area average of 24 days.
-
-**Key Issues Identified:**
-1. Current price of $${(listing.price || 0).toLocaleString()} is approximately 8% above comparable sales
-2. Photos may benefit from professional staging
-3. Marketing description lacks compelling hooks
-
-**Recommended Actions:**
-- Price reduction to $${(listing.suggestedPrice || (listing.price || 0) * 0.95).toLocaleString()}
-- Professional photography refresh
-- Enhanced online marketing campaign
-- Open house strategy for next 2 weekends
-
-**Seller Communication Script:**
-"Based on current market data and buyer feedback, I recommend adjusting our strategy to increase showing activity and generate competitive offers."`,
-          issues: listing.issues || ['Overpriced', 'Limited exposure', 'Stale photos'],
-        });
-        setIsAnalyzing(false);
-      }, 2000);
+      toast.error('AI diagnostic failed. Please try again.');
     }
+    setIsAnalyzing(false);
   };
 
   const getStalenessColor = (staleness: string) => {

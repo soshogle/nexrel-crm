@@ -4,14 +4,145 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return apiErrors.unauthorized();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+
+    const userId = session.user.id;
+    const [properties, fsbo, cmaReports, staleDiagnostics, priceChanges] = await Promise.all([
+      prisma.rEProperty.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          address: true,
+          listingStatus: true,
+          listPrice: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+      }),
+      prisma.rEFSBOListing.findMany({
+        where: { assignedUserId: userId },
+        select: {
+          id: true,
+          address: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 8,
+      }),
+      prisma.rECMAReport.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          address: true,
+          suggestedPrice: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+      }),
+      prisma.rEStaleDiagnostic.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          address: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 8,
+      }),
+      prisma.rEPriceChange.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          address: true,
+          changeType: true,
+          oldPrice: true,
+          newPrice: true,
+          detectedAt: true,
+        },
+        orderBy: { detectedAt: 'desc' },
+        take: 10,
+      }),
+    ]);
+
+    const activities: Array<{
+      id: string;
+      type: 'listing' | 'price' | 'cma' | 'fsbo' | 'diagnostic';
+      message: string;
+      createdAt: string;
+    }> = [];
+
+    for (const p of properties) {
+      const status = p.listingStatus?.toLowerCase?.() || 'updated';
+      activities.push({
+        id: `listing-${p.id}`,
+        type: 'listing',
+        message: `Listing ${status}: ${p.address}`,
+        createdAt: p.updatedAt.toISOString(),
+      });
+    }
+
+    for (const c of priceChanges) {
+      const direction = c.changeType === 'decrease' ? 'reduced' : c.changeType === 'increase' ? 'increased' : c.changeType;
+      activities.push({
+        id: `price-${c.id}`,
+        type: 'price',
+        message: `Price ${direction} for ${c.address}`,
+        createdAt: c.detectedAt.toISOString(),
+      });
+    }
+
+    for (const cma of cmaReports) {
+      activities.push({
+        id: `cma-${cma.id}`,
+        type: 'cma',
+        message: `CMA generated for ${cma.address}`,
+        createdAt: cma.createdAt.toISOString(),
+      });
+    }
+
+    for (const f of fsbo) {
+      activities.push({
+        id: `fsbo-${f.id}`,
+        type: 'fsbo',
+        message: `FSBO lead ${f.status?.toLowerCase?.() || 'updated'}: ${f.address}`,
+        createdAt: f.updatedAt.toISOString(),
+      });
+    }
+
+    for (const d of staleDiagnostics) {
+      activities.push({
+        id: `diag-${d.id}`,
+        type: 'diagnostic',
+        message: `Stale listing diagnostic ${d.status.toLowerCase()}: ${d.address}`,
+        createdAt: d.updatedAt.toISOString(),
+      });
+    }
+
+    activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({
+      activities: activities.slice(0, 20),
+      count: activities.length,
+    });
+  } catch (error) {
+    console.error('Real estate activity GET error:', error);
+    return apiErrors.internal('Failed to fetch activity');
   }
-  return NextResponse.json({ data: [], message: 'RE feature initializing...' });
 }
 
 export async function POST(request: NextRequest) {
@@ -19,7 +150,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  return NextResponse.json(
+    { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
+    { status: 405 }
+  );
 }
 
 export async function PUT(request: NextRequest) {
@@ -27,7 +161,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  return NextResponse.json(
+    { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
+    { status: 405 }
+  );
 }
 
 export async function DELETE(request: NextRequest) {
@@ -35,5 +172,8 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
+  return NextResponse.json(
+    { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
+    { status: 405 }
+  );
 }

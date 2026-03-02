@@ -134,7 +134,10 @@ export function DentalCardGrid({
                 timeline: plan?.timeline || 'N/A',
                 costColor: plan?.costColor || 'bg-blue-100 text-blue-700',
                 icon: plan?.icon || ClipboardList,
-                progress: 50,
+                progress:
+                  typeof plan?.progress === 'number'
+                    ? Math.max(0, Math.min(100, plan.progress))
+                    : (String(plan?.status || '').toUpperCase() === 'COMPLETED' ? 100 : String(plan?.status || '').toUpperCase() === 'IN_PROGRESS' ? 50 : 0),
               }))}
             />
           </CardContent>
@@ -220,7 +223,9 @@ export function DentalCardGrid({
                 patientName: r.patient,
                 formTitle: r.form,
                 submissionDate: r.date,
-                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                time: r.submittedAt
+                  ? new Date(r.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                  : '—',
               }))}
             />
           </CardContent>
@@ -261,7 +266,9 @@ export function DentalCardGrid({
                     <User className="w-8 h-8 text-gray-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Welcome, John Smith!</p>
+                    <p className="text-sm font-medium text-gray-900 mb-2">
+                      Welcome, {selectedPatient?.contactPerson || selectedPatient?.businessName || 'Patient'}!
+                    </p>
                     <p className="text-xs text-gray-600 mb-4">Please confirm your appointment.</p>
                   </div>
                   <Input placeholder="Patient name" className="mb-3 border border-gray-300" />

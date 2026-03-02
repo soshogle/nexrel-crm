@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
 import { Copy, ExternalLink, Code, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
@@ -18,6 +19,17 @@ export function BookingWidgetSettings() {
   const [copied, setCopied] = useState(false)
   const [widgetUrl, setWidgetUrl] = useState('')
   const [embedCode, setEmbedCode] = useState('')
+  const [businessHours, setBusinessHours] = useState<Record<string, { enabled: boolean; start: string; end: string }>>({
+    monday: { enabled: true, start: '09:00', end: '17:00' },
+    tuesday: { enabled: true, start: '09:00', end: '17:00' },
+    wednesday: { enabled: true, start: '09:00', end: '17:00' },
+    thursday: { enabled: true, start: '09:00', end: '17:00' },
+    friday: { enabled: true, start: '09:00', end: '17:00' },
+    saturday: { enabled: false, start: '09:00', end: '17:00' },
+    sunday: { enabled: false, start: '09:00', end: '17:00' },
+  })
+  const [hoursLoading, setHoursLoading] = useState(false)
+  const [hoursSaving, setHoursSaving] = useState(false)
 
   const industry = (session?.user as any)?.industry || null
   const config = getIndustryBookingConfig(industry)
@@ -39,6 +51,27 @@ export function BookingWidgetSettings() {
     }
   }, [session])
 
+  useEffect(() => {
+    const loadBookingSettings = async () => {
+      if (!session?.user?.id) return
+      try {
+        setHoursLoading(true)
+        const response = await fetch('/api/booking/settings')
+        if (!response.ok) return
+        const data = await response.json()
+        const schedule = data?.settings?.availabilitySchedule
+        if (schedule && typeof schedule === 'object') {
+          setBusinessHours((prev) => ({ ...prev, ...schedule }))
+        }
+      } catch (error) {
+        console.error('Failed to load booking settings:', error)
+      } finally {
+        setHoursLoading(false)
+      }
+    }
+    loadBookingSettings()
+  }, [session?.user?.id])
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     setCopied(true)
@@ -48,6 +81,28 @@ export function BookingWidgetSettings() {
 
   const handleOpenPreview = () => {
     window.open(widgetUrl, '_blank')
+  }
+
+  const handleSaveBusinessHours = async () => {
+    try {
+      setHoursSaving(true)
+      const response = await fetch('/api/booking/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          availabilitySchedule: businessHours,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error?.error || 'Failed to save business hours')
+      }
+      toast.success('Business hours saved')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to save business hours')
+    } finally {
+      setHoursSaving(false)
+    }
   }
 
   return (
@@ -204,16 +259,47 @@ export function BookingWidgetSettings() {
       <Card className="p-6 bg-card">
         <h3 className="text-lg font-semibold mb-4">Business Hours</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Currently using default hours (9 AM - 5 PM, Monday to Friday). Custom business hours coming soon.
+          Configure your booking availability windows. These hours are used by your public booking page.
         </p>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between p-2 bg-muted/50 rounded">
-            <span>Monday - Friday</span>
-            <span className="font-medium">9:00 AM - 5:00 PM</span>
-          </div>
-          <div className="flex justify-between p-2 bg-muted/50 rounded">
-            <span>Saturday - Sunday</span>
-            <span className="text-muted-foreground">Closed</span>
+        <div className="space-y-3">
+          {Object.entries(businessHours).map(([day, value]) => (
+            <div key={day} className="grid grid-cols-12 gap-3 items-center p-3 bg-muted/50 rounded">
+              <div className="col-span-3 font-medium capitalize">{day}</div>
+              <div className="col-span-2">
+                <Switch
+                  checked={value.enabled}
+                  onCheckedChange={(enabled) =>
+                    setBusinessHours((prev) => ({ ...prev, [day]: { ...prev[day], enabled } }))
+                  }
+                  disabled={hoursLoading || hoursSaving}
+                />
+              </div>
+              <div className="col-span-3">
+                <Input
+                  type="time"
+                  value={value.start}
+                  disabled={!value.enabled || hoursLoading || hoursSaving}
+                  onChange={(e) =>
+                    setBusinessHours((prev) => ({ ...prev, [day]: { ...prev[day], start: e.target.value } }))
+                  }
+                />
+              </div>
+              <div className="col-span-3">
+                <Input
+                  type="time"
+                  value={value.end}
+                  disabled={!value.enabled || hoursLoading || hoursSaving}
+                  onChange={(e) =>
+                    setBusinessHours((prev) => ({ ...prev, [day]: { ...prev[day], end: e.target.value } }))
+                  }
+                />
+              </div>
+            </div>
+          ))}
+          <div className="pt-2">
+            <Button onClick={handleSaveBusinessHours} disabled={hoursLoading || hoursSaving}>
+              {hoursSaving ? 'Saving...' : 'Save Business Hours'}
+            </Button>
           </div>
         </div>
       </Card>
