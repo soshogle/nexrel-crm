@@ -6,7 +6,7 @@
  */
 
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 
 const CACHE_EXPIRY_DAYS = 90; // Cache enrichment data for 90 days
 
@@ -60,7 +60,7 @@ export async function enrichLead(
     );
     
     if (cached) {
-      const ctx = createDalContext(lead.userId);
+      const ctx = await resolveDalContext(lead.userId);
       // Update lead with cached data
       await leadService.update(ctx, leadId, {
         enrichedData: cached.enrichedData,
@@ -109,7 +109,7 @@ export async function enrichLead(
       enrichedData
     );
     
-    const ctx = createDalContext(lead.userId);
+    const ctx = await resolveDalContext(lead.userId);
     // Update lead
     await leadService.update(ctx, leadId, {
       enrichedData,
@@ -361,7 +361,7 @@ export async function batchEnrichLeads(
  * Get enrichment stats
  */
 export async function getEnrichmentStats(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const total = await db.lead.count({
     where: { userId: ctx.userId },

@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import * as fs from 'fs';
@@ -239,7 +239,7 @@ export class LeadResearcher {
       // Update lead in database ONLY if leadId was provided
       if (leadId) {
         const leadUserId = await this.getLeadUserId(leadId);
-        const ctx = createDalContext(leadUserId);
+        const ctx = await resolveDalContext(leadUserId);
         const db = getCrmDb(ctx);
         await db.lead.update({
           where: { id: leadId },

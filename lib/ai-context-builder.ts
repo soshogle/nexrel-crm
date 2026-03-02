@@ -3,7 +3,7 @@
  * Gathers comprehensive context about entities using the relationship graph
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 import { relationshipService } from './relationship-service';
 import { EntityType } from '@prisma/client';
@@ -35,7 +35,7 @@ export class AIContextBuilder {
    * Build comprehensive context for a lead
    */
   async buildLeadContext(userId: string, leadId: string): Promise<EntityContext> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     // Get the lead with all related data
     const lead = await db.lead.findUnique({
@@ -127,7 +127,7 @@ export class AIContextBuilder {
    * Build comprehensive context for a deal
    */
   async buildDealContext(userId: string, dealId: string): Promise<EntityContext> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const deal = await db.deal.findUnique({
       where: { id: dealId, userId },
@@ -196,7 +196,7 @@ export class AIContextBuilder {
    * Build comprehensive context for a task
    */
   async buildTaskContext(userId: string, taskId: string): Promise<EntityContext> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const task = await db.task.findFirst({
       where: {

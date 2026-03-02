@@ -4,7 +4,7 @@
  * Auto-enriches new leads with Hunter.io in background when email/company missing
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import fs from 'fs';
 import path from 'path';
@@ -63,7 +63,7 @@ export class LinkedInScraperService {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const scrapedCount = await leadService.count(ctx, {
       source: 'Soshogle Lead Finder',
       createdAt: {
@@ -125,7 +125,7 @@ export class LinkedInScraperService {
       const createdLeadIds: string[] = [];
       for (const profile of profiles) {
         try {
-          const ctx = createDalContext(userId);
+          const ctx = await resolveDalContext(userId);
           const lead = await leadService.create(ctx, {
             businessName: profile.company || 'Unknown Company',
             contactPerson: profile.name,

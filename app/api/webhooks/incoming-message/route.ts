@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { apiErrors } from '@/lib/api-error';
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Missing required fields');
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Get or create conversation

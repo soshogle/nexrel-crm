@@ -3,7 +3,7 @@
  * Sends email/SMS notifications for stock alerts
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { EmailService } from '@/lib/email-service';
 import { sendSMS } from '@/lib/twilio';
@@ -40,7 +40,7 @@ export class WebsiteStockNotificationService {
     let smsSent = false;
 
     try {
-      const db = getCrmDb(createDalContext(alert.userId));
+      const db = getCrmDb(await resolveDalContext(alert.userId));
       // Get user preferences
       const user = await db.user.findUnique({
         where: { id: alert.userId },

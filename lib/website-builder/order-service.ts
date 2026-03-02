@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { websiteStockSyncService } from './stock-sync-service';
 
 export interface OrderItemData {
@@ -176,7 +176,7 @@ export class WebsiteOrderService {
       metadata = {},
     } = params;
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Start transaction
@@ -460,7 +460,7 @@ export class WebsiteOrderService {
     });
     if (!website) return [];
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     const websiteOrders = await db.websiteOrder.findMany({

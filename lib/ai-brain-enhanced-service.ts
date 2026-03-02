@@ -5,7 +5,7 @@
  */
 
 import { prisma } from './db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, taskService } from '@/lib/dal';
 
 export interface BrainDataPoint {
@@ -83,7 +83,7 @@ export class AIBrainEnhancedService {
     const cacheKey = `${userId}:enhanced`;
     const cached = this.getCached<ComprehensiveBrainData>(cacheKey);
     if (cached) return cached;
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     // Helper to fetch leads safely, handling dateOfBirth column issues
     const fetchLeadsSafely = async () => {

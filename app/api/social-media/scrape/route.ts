@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal';
 import fs from 'fs';
 import { apiErrors } from '@/lib/api-error';
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
           leadData.notes = `Followers: ${profile.authorMeta?.fans || 0}\nLikes: ${profile.diggCount || 0}\nViews: ${profile.playCount || 0}`;
         }
 
-        const ctx = createDalContext(session.user.id);
+        const ctx = getDalContextFromSession(session);
         // Check for duplicates (by contact person name)
         const existing = await leadService.findMany(ctx, {
           where: { contactPerson: leadData.contactPerson },

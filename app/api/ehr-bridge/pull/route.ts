@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
       let existing: { id: string; businessName: string } | null = null;
 
-      const ctx = createDalContext(auth.userId);
+      const ctx = await resolveDalContext(auth.userId);
       const db = getCrmDb(ctx);
 
       if (email) {

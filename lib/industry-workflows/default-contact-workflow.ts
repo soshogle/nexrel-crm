@@ -4,7 +4,7 @@
  * (e.g. APPOINTMENT_SCHEDULER for DENTIST = "Contact New Patient")
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, workflowTemplateService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
@@ -20,7 +20,7 @@ export async function createDefaultIndustryContactWorkflow(
   const industryConfig = getIndustryConfig(industry);
   const contactLabel = industryConfig?.fieldLabels?.contact || 'Contact';
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const workflow = await workflowTemplateService.create(ctx, {
     industry,
     name: `Contact New ${contactLabel}`,
@@ -61,7 +61,7 @@ export async function hasIndustryContactWorkflow(
   industry: Industry,
   employeeType: string
 ): Promise<boolean> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const count = await db.workflowTask.count({
     where: {

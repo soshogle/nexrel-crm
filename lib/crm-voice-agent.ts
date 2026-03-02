@@ -3,7 +3,7 @@
  * Manages the creation and configuration of CRM voice assistants
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { PLATFORM_SETTINGS_WITH_OVERRIDES } from '@/lib/elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
@@ -20,7 +20,7 @@ export class CrmVoiceAgentService {
    * Get or create CRM voice agent for user
    */
   async getOrCreateCrmVoiceAgent(userId: string): Promise<{ agentId: string; created: boolean }> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     // Check if user already has a CRM voice agent
     const user = await db.user.findUnique({
@@ -82,7 +82,7 @@ export class CrmVoiceAgentService {
    * Create a new CRM voice agent
    */
   private async createCrmVoiceAgent(config: CrmVoiceAgentConfig): Promise<string> {
-    const ctx = createDalContext(config.userId);
+    const ctx = await resolveDalContext(config.userId);
     const db = getCrmDb(ctx);
     const user = await db.user.findUnique({
       where: { id: config.userId },
@@ -972,7 +972,7 @@ ${getConfidentialityGuard()}`;
     }
 
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const user = await db.user.findUnique({
         where: { id: userId },
@@ -1070,7 +1070,7 @@ ${getConfidentialityGuard()}`;
    * Update CRM voice agent configuration
    */
   async updateCrmVoiceAgent(userId: string, updates: { voiceId?: string; language?: string }): Promise<void> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const user = await db.user.findUnique({
       where: { id: userId },

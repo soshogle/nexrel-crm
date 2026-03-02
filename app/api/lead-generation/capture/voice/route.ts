@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { validateLead } from '@/lib/lead-generation/data-validation';
 import { scoreAndSaveLead } from '@/lib/lead-generation/lead-scoring-db';
 import { apiErrors } from '@/lib/api-error';
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Create lead
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.create(ctx, {
       businessName: fullName,
       contactPerson: fullName,

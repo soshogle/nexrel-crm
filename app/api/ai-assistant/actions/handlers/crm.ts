@@ -1,6 +1,6 @@
 import { leadService, dealService, campaignService, noteService, taskService } from "@/lib/dal";
 import { getCrmDb } from "@/lib/dal";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 import { syncLeadStatusToPipeline, syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
 
 export async function createLead(userId: string, params: any) {
@@ -10,7 +10,7 @@ export async function createLead(userId: string, params: any) {
     throw new Error("Lead name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const lead = await leadService.create(ctx, {
     businessName: company || name,
     contactPerson: name,
@@ -40,7 +40,7 @@ export async function createLead(userId: string, params: any) {
 export async function updateLead(userId: string, params: any) {
   const { leadId, contactName, email, phone, status, company, name, ...rest } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let targetLeadId = leadId;
   if (!targetLeadId && contactName) {
     const found = await leadService.findMany(ctx, {
@@ -90,7 +90,7 @@ export async function getLeadDetails(userId: string, params: any) {
   const { leadId, name, contactName } = params;
   const searchName = name || contactName;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   let lead: any;
 
@@ -144,7 +144,7 @@ export async function getLeadDetails(userId: string, params: any) {
 export async function deleteLead(userId: string, params: any) {
   const { leadId, contactName } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let targetId = leadId;
   if (!targetId && contactName) {
     const found = await leadService.findMany(ctx, {
@@ -176,7 +176,7 @@ export async function deleteLead(userId: string, params: any) {
 export async function listLeads(userId: string, params: any) {
   const { status, limit = 10, search } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const leads = await leadService.findMany(ctx, {
     status: status || undefined,
     search: search || undefined,
@@ -205,7 +205,7 @@ export async function createDeal(userId: string, params: any) {
     throw new Error("Deal title is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Get or create default pipeline
@@ -265,7 +265,7 @@ export async function updateDeal(userId: string, params: any) {
     throw new Error("Deal ID is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const existingDeal = await dealService.findUnique(ctx, dealId);
 
   if (!existingDeal) {
@@ -290,7 +290,7 @@ export async function updateDeal(userId: string, params: any) {
 export async function getDealDetails(userId: string, params: any) {
   const { dealId, dealTitle } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let deal: any;
   if (dealId) {
     deal = await dealService.findUnique(ctx, dealId, {
@@ -319,7 +319,7 @@ export async function getDealDetails(userId: string, params: any) {
 export async function deleteDeal(userId: string, params: any) {
   const { dealId, dealTitle } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let targetId = dealId;
   if (!targetId && dealTitle) {
     const found = await dealService.findMany(ctx, {
@@ -348,7 +348,7 @@ export async function createPipeline(userId: string, params: any) {
 
   if (!name) throw new Error("Pipeline name is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const pipeline = await db.pipeline.create({
     data: {
@@ -370,7 +370,7 @@ export async function createPipelineStage(userId: string, params: any) {
 
   if (!pipelineName || !stageName) throw new Error("Pipeline name and stage name are required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const pipeline = await db.pipeline.findFirst({
     where: { userId: ctx.userId, name: { contains: pipelineName, mode: "insensitive" } },
@@ -399,7 +399,7 @@ export async function createPipelineStage(userId: string, params: any) {
 export async function listDeals(userId: string, params: any) {
   const { stage, limit = 10 } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const deals: any = await dealService.findMany(ctx, {
     take: Math.min(limit, 50),
     include: {
@@ -421,7 +421,7 @@ export async function createCampaign(userId: string, params: any) {
     throw new Error("Campaign name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const campaign = await campaignService.create(ctx, {
     name,
     type: type || "SMS",
@@ -443,7 +443,7 @@ export async function createCampaign(userId: string, params: any) {
 export async function updateCampaign(userId: string, params: any) {
   const { campaignId, campaignName, name, status } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let campaign;
   if (campaignId) {
     campaign = await campaignService.findUnique(ctx, campaignId);
@@ -476,7 +476,7 @@ export async function updateCampaign(userId: string, params: any) {
 export async function getCampaignDetails(userId: string, params: any) {
   const { campaignId, campaignName } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let campaign;
   if (campaignId) {
     campaign = await campaignService.findUnique(ctx, campaignId);
@@ -501,7 +501,7 @@ export async function getCampaignDetails(userId: string, params: any) {
 export async function listCampaigns(userId: string, params: any) {
   const { status, limit = 10 } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const campaigns = await campaignService.findMany(ctx, {
     status: status || undefined,
     take: Math.min(limit, 50),
@@ -520,7 +520,7 @@ export async function searchContacts(userId: string, params: any) {
     throw new Error("Search query is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const leads = await leadService.findMany(ctx, {
     search: query,
     select: {
@@ -543,7 +543,7 @@ export async function searchContacts(userId: string, params: any) {
 export async function updateDealStage(userId: string, params: any) {
   const { dealTitle, stageName, dealId } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let deal: any;
@@ -625,7 +625,7 @@ export async function updateDealStage(userId: string, params: any) {
 export async function updateDealOrByTitle(userId: string, params: any) {
   const { dealId, dealTitle, value, expectedCloseDate, ...rest } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let targetDealId = dealId;
   if (!targetDealId && dealTitle) {
     const deals = await dealService.findMany(ctx, {
@@ -652,7 +652,7 @@ export async function updateDealOrByTitle(userId: string, params: any) {
 export async function assignDealToLead(userId: string, params: any) {
   const { dealId, dealTitle, leadId, contactName } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let deal;
   if (dealId) {
     deal = await dealService.findUnique(ctx, dealId);
@@ -694,7 +694,7 @@ export async function assignDealToLead(userId: string, params: any) {
 export async function getPipelineStages(userId: string, params: any) {
   const { pipelineName } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   let pipeline;
   if (pipelineName) {
@@ -729,7 +729,7 @@ export async function addLeadTag(userId: string, params: any) {
   const { leadId, contactName, tag } = params;
   if (!tag?.trim()) throw new Error("Tag is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let lead;
   if (leadId) {
     lead = await leadService.findUnique(ctx, leadId);
@@ -766,7 +766,7 @@ export async function updateLeadStatus(userId: string, params: any) {
   const validStatuses = ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"];
   if (!validStatuses.includes(status)) throw new Error(`Invalid status. Use: ${validStatuses.join(", ")}`);
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let lead;
   if (leadId) {
     lead = await leadService.findUnique(ctx, leadId);
@@ -800,7 +800,7 @@ export async function updateLeadStatus(userId: string, params: any) {
 export async function listNotes(userId: string, params: any) {
   const { contactName, dealTitle, leadId, dealId, limit = 10 } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   if (dealId || dealTitle) {
@@ -861,7 +861,7 @@ export async function addNote(userId: string, params: any) {
     throw new Error("Note content is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   if (dealId || dealTitle) {
@@ -935,7 +935,7 @@ export async function bulkUpdateLeadStatus(userId: string, params: any) {
   const { fromStatus, toStatus, limit = 100 } = params;
   if (!toStatus) throw new Error("toStatus is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: fromStatus ? { status: fromStatus } : undefined,
@@ -970,7 +970,7 @@ export async function bulkAddTag(userId: string, params: any) {
     else if (period === "last_month") where.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const leads = await leadService.findMany(ctx, {
     where: Object.keys(where).length > 0 ? where : undefined,
     take: Math.min(limit, 500),
@@ -996,7 +996,7 @@ export async function bulkAddTag(userId: string, params: any) {
 export async function exportPipelineCsv(userId: string, params: any) {
   const { type = "deals", limit = 1000 } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
 
   if (type === "leads") {
     const leads = await leadService.findMany(ctx, {
@@ -1027,7 +1027,7 @@ export async function getDealRiskAlerts(userId: string, params: any) {
   const { staleDays = 7, limit = 10 } = params;
   const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const deals: any[] = await db.deal.findMany({
     where: {
@@ -1068,7 +1068,7 @@ export async function doEverythingForContact(userId: string, params: any) {
   const { contactName, actions } = params;
   if (!contactName) throw new Error("contactName is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads: any = await leadService.findMany(ctx, {
     where: { contactPerson: { contains: contactName, mode: "insensitive" } },
@@ -1118,7 +1118,7 @@ export async function doEverythingForContact(userId: string, params: any) {
 export async function logEmailToContact(userId: string, params: any) {
   const { contactName, subject, body, leadId } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   let lid = leadId;
   if (!lid && contactName) {
     const leads = await leadService.findMany(ctx, {
@@ -1141,7 +1141,7 @@ export async function logEmailToContact(userId: string, params: any) {
 }
 
 export async function deleteDuplicateContacts(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const { findPotentialDuplicates } = await import('@/lib/lead-generation/deduplication');
   

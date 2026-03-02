@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToStructure } from '@/lib/website-builder/convert-scraped-to-structure';
 import { websiteBuilder } from '@/lib/website-builder/builder';
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       googleSearchConsoleSiteUrl,
     } = body;
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Pre-fill questionnaire from user/onboarding when building from template
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
     // Start build process asynchronously
     processWebsiteBuild(website.id, build.id, buildConfig, userId).catch(async (error) => {
       console.error('Website build failed:', error);
-      const errCtx = createDalContext(userId);
+      const errCtx = await resolveDalContext(userId);
       const errDb = getCrmDb(errCtx);
       await Promise.all([
 (errDb as any).websiteBuild.update({
@@ -196,7 +196,7 @@ async function processWebsiteBuild(
   },
   userId: string
 ) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   try {
     // Update progress (sync to Website so list page shows progress)

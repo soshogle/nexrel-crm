@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 export type ReferralTriggerType = 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED';
@@ -26,7 +26,7 @@ export async function processReferralTriggers(
     triggerType,
   });
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // 2. Workflow template enrollments

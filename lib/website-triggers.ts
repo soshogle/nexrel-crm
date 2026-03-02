@@ -3,7 +3,7 @@
  * (form submitted, visitor arrives, CTA clicked, booking created).
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 
 export type WebsiteTriggerType =
@@ -25,7 +25,7 @@ export async function processWebsiteTriggers(
   triggerType: WebsiteTriggerType,
   metadata?: { websiteId?: string }
 ) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const workflows = await db.workflowTemplate.findMany({
     where: {

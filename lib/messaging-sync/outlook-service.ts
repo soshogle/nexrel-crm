@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb, leadService, conversationService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 
 function extractEmail(str: string): string | null {
   const match = str.match(/<([^>]+)>/);
@@ -102,7 +102,7 @@ export class OutlookService {
   }
 
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     try {
       const connection = await db.channelConnection.findUnique({

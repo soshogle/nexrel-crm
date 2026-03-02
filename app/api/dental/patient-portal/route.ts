@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { leadService, getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import crypto from 'crypto';
 import { apiErrors } from '@/lib/api-error';
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     if (!firstLead) {
       return apiErrors.notFound('Patient not found');
     }
-    const ctx = createDalContext(firstLead.userId);
+    const ctx = await resolveDalContext(firstLead.userId);
 
     // Fetch patient data
     const lead = await leadService.findUnique(ctx, firstLead.id);

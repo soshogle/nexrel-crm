@@ -4,7 +4,7 @@
  * Handles messaging via Twilio WhatsApp Business API
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 
 interface WhatsAppCredentials {
@@ -17,7 +17,7 @@ interface WhatsAppCredentials {
  * Get WhatsApp credentials from user config
  */
 async function getWhatsAppCredentials(userId: string): Promise<WhatsAppCredentials | null> {
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { whatsappConfig: true }
@@ -277,7 +277,7 @@ export async function getWhatsAppConversations(
 ): Promise<{ success: boolean; conversations?: any[]; error?: string }> {
   try {
     // Find channel connection for WhatsApp
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const channelConnection = await db.channelConnection.findFirst({
       where: {

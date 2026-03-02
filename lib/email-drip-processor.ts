@@ -1,4 +1,4 @@
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { sendDripEmail } from '@/lib/email-sender';
 const db = getCrmDb({ userId: '', industry: null })
@@ -47,7 +47,7 @@ async function processCampaignEmails(campaign: any) {
 
     // Find enrollments ready for next email
     const now = new Date();
-    const db = getCrmDb(createDalContext(campaign.userId));
+    const db = getCrmDb(await resolveDalContext(campaign.userId));
     const readyEnrollments = await db.emailDripEnrollment.findMany({
       where: {
         campaignId: campaign.id,
@@ -80,7 +80,7 @@ async function processCampaignEmails(campaign: any) {
  */
 async function processEnrollment(enrollment: any, campaign: any) {
   try {
-    const ctx = createDalContext(campaign.userId);
+    const ctx = await resolveDalContext(campaign.userId);
     const lead = await leadService.findUnique(ctx, enrollment.leadId);
 
     if (!lead || !lead.email) {

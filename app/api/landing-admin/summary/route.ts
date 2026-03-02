@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCrmDb } from "@/lib/dal/db";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ leads: [], calls: [] });
     }
 
-    const ctx = createDalContext(leadOwnerId);
+    const ctx = await resolveDalContext(leadOwnerId);
     const db = getCrmDb(ctx);
     const leads = await db.lead.findMany({
       where: {

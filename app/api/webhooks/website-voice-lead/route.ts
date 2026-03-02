@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService, noteService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.notFound('Website not found');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
     const leadOwnerId = website.userId;
 

@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getMarketContext } from './market-data';
 import { findGeoComparables } from './geo-comps';
 import type { SubjectProperty, CMAComparable } from './types';
@@ -156,7 +156,7 @@ async function fetchRealComparables(subject: SubjectProperty, userId: string, li
   }
 
   // Fallback: city-based search when geo-comps returns too few results
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const mappedType = mapSubjectPropertyTypeToEnum(subject.propertyType);
 
@@ -367,7 +367,7 @@ export async function generateCMA(
   const analysis = await generateAnalysis(subject, comparables, priceRange, userId);
 
   // Save to database
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const report = await db.rECMAReport.create({
     data: {
@@ -406,7 +406,7 @@ export async function generateCMA(
  * Get user's CMA reports
  */
 export async function getUserCMAs(userId: string, limit = 10) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   return db.rECMAReport.findMany({
     where: { userId },
@@ -419,7 +419,7 @@ export async function getUserCMAs(userId: string, limit = 10) {
  * Get a single CMA report
  */
 export async function getCMAById(id: string, userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   return db.rECMAReport.findFirst({
     where: { id, userId }

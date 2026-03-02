@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 // GET /api/deals/[id]/activities - Get all activities for a deal
@@ -20,7 +20,11 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
-    const activities = await prisma.dealActivity.findMany({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const db = getCrmDb(ctx);
+    const activities = await db.dealActivity.findMany({
       where: { dealId: params.id },
       orderBy: { createdAt: 'desc' },
       include: {

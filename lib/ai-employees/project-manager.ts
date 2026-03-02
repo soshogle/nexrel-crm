@@ -5,7 +5,7 @@
 
 import { prisma } from '../db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 
@@ -84,7 +84,7 @@ export class ProjectManager {
   }
 
   private async createProjectDeal(userId: string, customerId: string, projectData: any) {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Get or create a default pipeline and stage
@@ -127,7 +127,7 @@ export class ProjectManager {
   }
 
   private async generateProjectTasks(userId: string, dealId: string, projectData: any) {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const taskTemplates = [
       { title: 'Project Kickoff Meeting', priority: 'HIGH' as const },
@@ -161,7 +161,7 @@ export class ProjectManager {
   }
 
   private async assignTeam(userId: string, dealId: string, projectData: any): Promise<string[]> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Fetch REAL team members from database

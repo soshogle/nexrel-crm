@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         let callerEmail = undefined;
 
         try {
-          const ctx = createDalContext(voiceAgent.userId);
+          const ctx = await resolveDalContext(voiceAgent.userId);
           const cleanPhone = (callLog.fromNumber || '').replace(/[\s\-\+\(\)]/g, '');
           const leads = await leadService.findMany(ctx, {
             where: { phone: { contains: cleanPhone.slice(-10) } },

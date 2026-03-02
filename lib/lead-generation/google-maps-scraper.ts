@@ -9,7 +9,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { chromium, Browser, Page } from 'playwright';
 
 export interface GoogleMapsSearchQuery {
@@ -79,7 +79,7 @@ export async function scrapeGoogleMaps(
       try {
         const businesses = await scrapeQuery(page, searchQuery);
         
-        const ctx = createDalContext(userId);
+        const ctx = await resolveDalContext(userId);
         const db = getCrmDb(ctx);
 
         // Save to database

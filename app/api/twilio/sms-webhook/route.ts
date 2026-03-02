@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { conversationService } from '@/lib/dal/conversation-service';
 import { getCrmDb } from '@/lib/dal/db';
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       console.log('Created new channel connection:', channelConnection.id);
     }
 
-    const ctx = createDalContext(user.id);
+    const ctx = await resolveDalContext(user.id);
     let conversation: any = await conversationService.findFirst(ctx, {
       contactIdentifier: from,
       channelConnectionId: channelConnection.id

@@ -1,5 +1,5 @@
 import { getCrmDb, taskService, leadService } from "@/lib/dal";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 
 export async function createTask(userId: string, params: any) {
   const { title, description, dueDate, leadId, dealId, priority } = params;
@@ -8,7 +8,7 @@ export async function createTask(userId: string, params: any) {
     throw new Error("Task title is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const task = await taskService.create(ctx, {
     title,
@@ -42,7 +42,7 @@ export async function createTask(userId: string, params: any) {
 
 export async function listTasks(userId: string, params: any) {
   const { status, overdue, limit = 20 } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const where: any = { userId: ctx.userId };
@@ -78,7 +78,7 @@ export async function listTasks(userId: string, params: any) {
 
 export async function completeTask(userId: string, params: any) {
   const { taskId, taskTitle } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let task;
@@ -120,7 +120,7 @@ export async function completeTask(userId: string, params: any) {
 
 export async function updateTask(userId: string, params: any) {
   const { taskId, taskTitle, title, dueDate, priority } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let task;
@@ -151,7 +151,7 @@ export async function updateTask(userId: string, params: any) {
 
 export async function cancelTask(userId: string, params: any) {
   const { taskId, taskTitle } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let task;
@@ -175,7 +175,7 @@ export async function rescheduleTask(userId: string, params: any) {
   const { taskId, taskTitle, dueDate } = params;
   if (!dueDate) throw new Error("New due date is required (YYYY-MM-DD)");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   let task;
   if (taskId) {
@@ -219,7 +219,7 @@ export async function createBulkTasks(userId: string, params: any) {
     throw new Error("Task title is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const now = new Date();
   let startDate: Date;
@@ -262,7 +262,7 @@ export async function createBulkTasks(userId: string, params: any) {
 export async function createWorkflow(userId: string, params: any) {
   const { description, goal, keywords, autoReply, trigger, actions } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // If description is provided, use AI to generate the workflow
@@ -449,7 +449,7 @@ export async function addWorkflowTask(userId: string, params: any) {
   if (!workflowId || !name) {
     return { success: false, error: 'workflowId and name are required' };
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const existing = await db.workflowTemplate.findFirst({
     where: { id: workflowId, userId: ctx.userId },
@@ -502,7 +502,7 @@ export async function createAppointment(userId: string, params: any) {
   // Parse date and time
   const appointmentDate = new Date(`${date}T${time}`);
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const appointment = await db.bookingAppointment.create({
     data: {
@@ -535,7 +535,7 @@ export async function createAppointment(userId: string, params: any) {
 
 export async function listAppointments(userId: string, params: any) {
   const { date, limit = 20 } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const where: any = { userId: ctx.userId };
@@ -568,7 +568,7 @@ export async function listAppointments(userId: string, params: any) {
 
 export async function updateAppointment(userId: string, params: any) {
   const { appointmentId, customerName, date, time } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let appointment;
@@ -617,7 +617,7 @@ export async function updateAppointment(userId: string, params: any) {
 
 export async function cancelAppointment(userId: string, params: any) {
   const { appointmentId, customerName } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let appointment;
@@ -656,7 +656,7 @@ export async function createAIEmployee(userId: string, params: any) {
     throw new Error("profession and customName are required for AI Team employee");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const employee = await db.userAIEmployee.create({
     data: {
@@ -678,7 +678,7 @@ export async function createAIEmployee(userId: string, params: any) {
 }
 
 export async function listAIEmployees(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const employees = await db.userAIEmployee.findMany({
     where: { userId: ctx.userId },

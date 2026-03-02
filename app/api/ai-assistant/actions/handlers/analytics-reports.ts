@@ -1,8 +1,8 @@
 import { getCrmDb } from "@/lib/dal";
-import { createDalContext } from "@/lib/context/industry-context";
+import { createDalContext, resolveDalContext } from "@/lib/context/industry-context";
 
 export async function getStatistics(userId: string, params: any = {}) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   try {
     const { period = 'all_time', compareWith, chartIntent } = params;
@@ -155,7 +155,7 @@ export async function getStatistics(userId: string, params: any = {}) {
             value,
           }));
         } else {
-          data = await getDynamicChartData(userId, intent.dimension);
+          data = await getDynamicChartData(userId, intent.dimension, ctx.industry);
         }
         if (data.length > 0) {
           const titles: Record<string, string> = {
@@ -210,7 +210,7 @@ export async function getStatistics(userId: string, params: any = {}) {
 }
 
 export async function fetchComprehensiveStats(userId: string, whereClause: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   try {
     const results = await Promise.allSettled([
@@ -390,7 +390,7 @@ export async function createReport(userId: string, params: any) {
   const stats = statsResult.statistics;
   if (!stats) throw new Error("No statistics available for report");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Fetch voice agent usage stats for business owner
@@ -475,7 +475,7 @@ export async function createReport(userId: string, params: any) {
 
 export async function getRecentActivity(userId: string, params: any) {
   const { limit = 5 } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const [recentLeads, recentDeals, recentCampaigns] = await Promise.all([
@@ -521,13 +521,14 @@ export async function getRecentActivity(userId: string, params: any) {
 
 export async function getCustomReport(userId: string, params: any) {
   const { query, period } = params;
+  const ctx = await resolveDalContext(userId);
   const { parseChartIntent, getDynamicChartData } = await import("@/lib/crm-chart-intent");
   const text = query || "leads by status";
   const intent = parseChartIntent(text);
   if (!intent) {
     return { message: "Could not parse report query. Try: 'leads by source', 'revenue by month', 'deals by stage'.", data: [] };
   }
-  const data = await getDynamicChartData(userId, intent.dimension);
+  const data = await getDynamicChartData(userId, intent.dimension, ctx.industry);
   return {
     message: `Custom report: ${intent.dimension}. Chart type: ${intent.chartType}.`,
     dimension: intent.dimension,
@@ -538,7 +539,7 @@ export async function getCustomReport(userId: string, params: any) {
 
 export async function createScheduledReport(userId: string, params: any) {
   const { reportType = "pipeline", frequency = "weekly", email } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const userEmail = email || (await db.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email;
   if (!userEmail) throw new Error("Email required for scheduled reports");
@@ -559,7 +560,7 @@ export async function createScheduledReport(userId: string, params: any) {
 
 export async function getFollowUpPriority(userId: string, params: any) {
   const { limit = 10, sortBy = "lastContact" } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const leads: any[] = await db.lead.findMany({
@@ -603,7 +604,7 @@ export async function getFollowUpPriority(userId: string, params: any) {
 
 export async function getFollowUpSuggestions(userId: string, params: any) {
   const { period = "last_2_weeks", limit = 10 } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const daysAgo = period === "last_week" ? 7 : period === "last_2_weeks" ? 14 : 30;
@@ -648,7 +649,7 @@ export async function getMeetingPrep(userId: string, params: any) {
     throw new Error("Contact name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const lead: any = await db.lead.findFirst({
     where: {
@@ -699,7 +700,7 @@ export async function getMeetingPrep(userId: string, params: any) {
 }
 
 export async function getDailyBriefing(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -813,7 +814,7 @@ export async function getAutoActionSuggestions(userId: string, params: any) {
 
 export async function listEmailTemplates(userId: string, params: any) {
   const { category } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const templates = await db.emailTemplate.findMany({
     where: { userId: ctx.userId, ...(category && { category }) },
@@ -828,7 +829,7 @@ export async function listEmailTemplates(userId: string, params: any) {
 
 export async function listSMSTemplates(userId: string, params: any) {
   const { category } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const templates = await db.sMSTemplate.findMany({
     where: { userId: ctx.userId, ...(category && { category }) },
@@ -843,7 +844,7 @@ export async function listSMSTemplates(userId: string, params: any) {
 
 export async function getPaymentAnalytics(userId: string, params: any) {
   const period = params?.period || 'last_30_days';
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const daysMap: Record<string, number> = { today: 1, last_7_days: 7, last_30_days: 30, last_90_days: 90, all_time: 3650 };
   const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
@@ -876,7 +877,7 @@ export async function getRevenueBreakdown(userId: string, params: any) {
   const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
   const groupBy = params?.groupBy || 'month';
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const payments = await db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true, createdAt: true, paymentMethod: true } });
 
@@ -897,7 +898,7 @@ export async function getRevenueBreakdown(userId: string, params: any) {
 
 export async function listFraudAlerts(userId: string, params: any) {
   const statusFilter = params?.status === 'all' ? undefined : (params?.status || 'OPEN');
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const where: any = { userId: ctx.userId };
   if (statusFilter) where.status = statusFilter;
@@ -907,7 +908,7 @@ export async function listFraudAlerts(userId: string, params: any) {
 
 export async function checkCashFlow(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [incoming, outgoing] = await Promise.all([
@@ -921,7 +922,7 @@ export async function checkCashFlow(userId: string, params: any) {
 }
 
 export async function checkStockLevels(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const items = await (db as any).inventoryItem.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
   let filtered = items;
@@ -935,7 +936,7 @@ export async function checkStockLevels(userId: string, params: any) {
 export async function getBestSellers(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : params?.period === 'all_time' ? 3650 : 30;
   const since = new Date(Date.now() - days * 86400000);
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const orders = await (db as any).orderItem.findMany({ where: { order: { userId: ctx.userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
   const productMap: Record<string, { name: string; revenue: number; qty: number }> = {};
@@ -946,7 +947,7 @@ export async function getBestSellers(userId: string, params: any) {
 }
 
 export async function trackOrder(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   let order: any = null;
   if (params?.orderId) order = await (db as any).order.findFirst({ where: { userId: ctx.userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
@@ -956,7 +957,7 @@ export async function trackOrder(userId: string, params: any) {
 }
 
 export async function getLowStockAlerts(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const [items, alerts] = await Promise.all([
     (db as any).inventoryItem.findMany({ where: { userId: ctx.userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
@@ -967,7 +968,7 @@ export async function getLowStockAlerts(userId: string) {
 }
 
 export async function getWebsiteAnalytics(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const where: any = { userId: ctx.userId };
   if (params?.websiteId) where.id = params.websiteId;
@@ -978,7 +979,7 @@ export async function getWebsiteAnalytics(userId: string, params: any) {
 
 export async function getVoiceAIAnalytics(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [agents, usage, calls] = await Promise.all([
@@ -996,7 +997,7 @@ export async function getVoiceAIAnalytics(userId: string, params: any) {
 
 export async function getConversationAnalytics(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [conversations, messages] = await Promise.all([
@@ -1011,7 +1012,7 @@ export async function getConversationAnalytics(userId: string, params: any) {
 }
 
 export async function getDeliveryAnalytics(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const orders = await (db as any).deliveryOrder?.findMany?.({ where: { userId: ctx.userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
   const delivered = orders.filter((o: any) => o.status === 'DELIVERED').length;
@@ -1021,7 +1022,7 @@ export async function getDeliveryAnalytics(userId: string) {
 
 export async function manageReservations(userId: string, params: any) {
   const action = params?.action || 'list';
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   if (action === 'stats' || action === 'peak_hours') {
     const reservations = await (db as any).reservation.findMany({ where: { userId: ctx.userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
@@ -1039,7 +1040,7 @@ export async function manageReservations(userId: string, params: any) {
 }
 
 export async function manageTables(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const tables = await (db as any).restaurantTable.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
   const available = tables.filter((t: any) => t.status === 'AVAILABLE');
@@ -1049,7 +1050,7 @@ export async function manageTables(userId: string, params: any) {
 
 export async function getTeamPerformance(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [members, tasks, deals] = await Promise.all([
@@ -1063,14 +1064,14 @@ export async function getTeamPerformance(userId: string, params: any) {
 
 export async function getAuditLog(userId: string, params: any) {
   const limit = params?.limit || 20;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const logs = await db.auditLog.findMany({ where: { userId: ctx.userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } } as any).catch(() => []);
   return { success: true, statistics: { entries: logs.map((l: any) => ({ action: l.action, details: l.details, time: l.createdAt })) }, message: `${logs.length} recent activities: ${logs.slice(0, 5).map((l: any) => `${l.action} (${new Date(l.createdAt).toLocaleString()})`).join('; ')}` };
 }
 
 export async function checkIntegrations(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const [channels, calendars, paymentProviders] = await Promise.all([
     db.channelConnection.findMany({ where: { userId: ctx.userId }, select: { channel: true, status: true, lastSyncAt: true } } as any),
@@ -1084,7 +1085,7 @@ export async function checkIntegrations(userId: string) {
 
 export async function manageReviews(userId: string, params: any) {
   const action = params?.action || 'stats';
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const reviews = await (db as any).review.findMany({ where: { campaign: { userId: ctx.userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
   const avg = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : '0';
@@ -1095,7 +1096,7 @@ export async function manageReviews(userId: string, params: any) {
 }
 
 export async function getReferralStats(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const referrals = await (db as any).referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
   const converted = referrals.filter((r: any) => r.status === 'CONVERTED' || r.status === 'REWARDED').length;
@@ -1104,7 +1105,7 @@ export async function getReferralStats(userId: string) {
 }
 
 export async function getIndustryAnalytics(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const user = await db.user.findUnique({ where: { id: userId }, select: { industry: true } });
   const industry = user?.industry || 'GENERAL';
@@ -1146,7 +1147,7 @@ export async function getBusinessScore(userId: string) {
     aiBrainService.generatePredictiveAnalytics(userId),
   ]);
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const [leads, deals, tasks, payments, reviews] = await Promise.all([
     db.lead.count({ where: { userId: ctx.userId } }),
@@ -1181,7 +1182,7 @@ export async function getBusinessScore(userId: string) {
 }
 
 export async function getCostOptimization(userId: string) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const [voiceUsage, smsCampaigns, payments, subscription] = await Promise.all([
     (db as any).voiceUsage.findMany({ where: { userId: ctx.userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
@@ -1215,7 +1216,7 @@ export async function createInvoice(userId: string, params: any) {
     throw new Error("Contact name and amount are required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   let lead;
   if (leadId) {
@@ -1276,7 +1277,7 @@ export async function createInvoice(userId: string, params: any) {
 
 export async function listOverdueInvoices(userId: string, params: any) {
   const { limit = 20 } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   const overdue = await db.invoice.findMany({
@@ -1305,7 +1306,7 @@ export async function listOverdueInvoices(userId: string, params: any) {
 
 export async function updateInvoiceStatus(userId: string, params: any) {
   const { invoiceId, invoiceNumber, status } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let invoice;
@@ -1340,7 +1341,7 @@ export async function updateInvoiceStatus(userId: string, params: any) {
 
 export async function sendInvoice(userId: string, params: any) {
   const { invoiceId, invoiceNumber } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let invoice;

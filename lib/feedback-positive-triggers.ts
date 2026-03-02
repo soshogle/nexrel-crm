@@ -4,7 +4,7 @@
  * after the review step in the "reviews → referral" sequence.
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
@@ -25,7 +25,7 @@ export async function processFeedbackPositiveTriggers(
     metadata: metadata as any,
   });
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const workflows = await db.workflowTemplate.findMany({
     where: {

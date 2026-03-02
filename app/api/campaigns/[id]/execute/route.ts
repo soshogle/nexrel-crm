@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { campaignService, getCrmDb, leadService } from '@/lib/dal';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { sendSMS } from '@/lib/twilio';
 import { apiErrors } from '@/lib/api-error';
@@ -74,7 +74,7 @@ export async function POST(
 
     // Start async processing (in real app, this would be a queue/worker)
     // For now, we'll mark it as running and process messages gradually
-    processCampaignMessages(campaign.id, createDalContext(session.user.id)).catch((error) => {
+    processCampaignMessages(campaign.id, getDalContextFromSession(session)!).catch((error) => {
       console.error('Error processing campaign messages:', error);
     });
 

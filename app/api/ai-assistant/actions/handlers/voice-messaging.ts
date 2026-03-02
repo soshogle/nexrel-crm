@@ -1,5 +1,5 @@
 import { getCrmDb } from "@/lib/dal";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal";
 
 export async function setupTwilio(userId: string, params: any) {
@@ -9,7 +9,7 @@ export async function setupTwilio(userId: string, params: any) {
     throw new Error("Twilio Account SID, Auth Token, and Phone Number are all required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const user = await db.user.update({
     where: { id: userId },
@@ -34,7 +34,7 @@ export async function setupTwilio(userId: string, params: any) {
 
 export async function purchaseTwilioNumber(userId: string, params: any) {
   // Check if user has Twilio credentials configured
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -79,7 +79,7 @@ export async function createVoiceAgent(userId: string, params: any) {
     throw new Error("Voice agent name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const voiceAgent = await db.voiceAgent.create({
     data: {
@@ -112,7 +112,7 @@ export async function createVoiceAgent(userId: string, params: any) {
 export async function debugVoiceAgent(userId: string, params: any) {
   const { agentId, name } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Find the agent
@@ -269,7 +269,7 @@ export async function fixVoiceAgent(userId: string, params: any) {
   const updateData: any = {};
 
   // Get the agent
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const agent = await db.voiceAgent.findFirst({
     where: diagnostics.agent?.id ? { id: diagnostics.agent.id } : { userId: ctx.userId, name: { contains: name, mode: "insensitive" } },
@@ -370,7 +370,7 @@ export async function fixVoiceAgent(userId: string, params: any) {
 export async function getVoiceAgent(userId: string, params: any) {
   const { agentId, name } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let agent;
@@ -395,7 +395,7 @@ export async function getVoiceAgent(userId: string, params: any) {
 }
 
 export async function listVoiceAgents(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const agents = await db.voiceAgent.findMany({
     where: { userId: ctx.userId },
@@ -425,7 +425,7 @@ export async function updateVoiceAgent(userId: string, params: any) {
     throw new Error("Agent ID or name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Find the agent
@@ -475,7 +475,7 @@ export async function assignPhoneToVoiceAgent(userId: string, params: any) {
     throw new Error("Agent ID or name is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Find the agent
@@ -524,7 +524,7 @@ export async function configureAutoReply(userId: string, params: any) {
     throw new Error("Auto-reply message is required when enabling");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const user = await db.user.update({
     where: { id: userId },
@@ -607,7 +607,7 @@ export async function draftSMSAction(userId: string, params: any) {
   if (!contactName || !message) {
     throw new Error("contactName and message are required");
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: {
@@ -652,7 +652,7 @@ export async function scheduleSMSAction(userId: string, params: any) {
   if (!contactName || !message || !scheduledFor) {
     throw new Error("contactName, message, and scheduledFor are required");
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: {
@@ -692,7 +692,7 @@ export async function draftEmailAction(userId: string, params: any) {
   if (!contactName || !subject || !body) {
     throw new Error("contactName, subject, and body are required");
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: {
@@ -739,7 +739,7 @@ export async function scheduleEmailAction(userId: string, params: any) {
   if (!contactName || !subject || !body || !scheduledFor) {
     throw new Error("contactName, subject, body, and scheduledFor are required");
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: {
@@ -916,7 +916,7 @@ export async function summarizeCall(userId: string, params: any) {
 
 export async function getSmartReplies(userId: string, params: any) {
   const { leadId, context } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const lead = leadId ? await leadService.findUnique(ctx, leadId, {
     deals: { take: 1 },

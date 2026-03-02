@@ -3,7 +3,7 @@
  * Handles pre-orders for out-of-stock products
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, websiteService } from '@/lib/dal';
 
 export interface CreatePreOrderParams {
@@ -72,7 +72,7 @@ export class WebsitePreOrderService {
       throw new Error('Pre-orders are not enabled for this website');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     // Create pre-order record
@@ -216,7 +216,7 @@ export class WebsitePreOrderService {
       return { fulfilled: 0, preOrders: [] };
     }
 
-    const fulfillCtx = createDalContext(website.userId);
+    const fulfillCtx = await resolveDalContext(website.userId);
 
     const preOrders = (website.integrationsConfig as any)?.preOrders || [];
     const pendingPreOrders = preOrders

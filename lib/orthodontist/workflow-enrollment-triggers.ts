@@ -4,7 +4,7 @@
  * Uses startWorkflowInstance for immediate execution (WorkflowInstance + TaskExecutions)
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { startWorkflowInstance } from '@/lib/workflows/workflow-engine';
 import type { OrthodontistEnrollmentTrigger } from './workflow-templates';
@@ -28,7 +28,7 @@ export async function processOrthodontistWorkflowEnrollment(
   triggerType: OrthodontistTriggerType,
   metadata?: { appointmentId?: string; referralId?: string; dealId?: string }
 ) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Verify user industry is orthodontist

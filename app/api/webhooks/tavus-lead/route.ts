@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService, noteService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { apiErrors } from '@/lib/api-error';
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('At least name or email required');
     }
 
-    const ctx = createDalContext(leadOwnerId);
+    const ctx = await resolveDalContext(leadOwnerId);
     const db = getCrmDb(ctx);
 
     // Validate user exists

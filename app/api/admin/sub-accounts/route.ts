@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     // Calculate performance metrics for each sub-account
     const subAccountsWithMetrics = await Promise.all(
       subAccounts.map(async (account) => {
-        const accountCtx = createDalContext(account.id);
+        const accountCtx = await resolveDalContext(account.id);
         const db = getCrmDb(accountCtx);
         const deals = await db.deal.findMany({
           where: {

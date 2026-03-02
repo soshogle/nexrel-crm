@@ -4,7 +4,7 @@
  * Mirrors RE behavior: start most recent non-auto-run workflow + auto-run workflows
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { startWorkflowInstance } from '@/lib/workflows/workflow-engine';
@@ -21,7 +21,7 @@ export async function detectIndustryLeadWorkflowTriggers(
   industry: Industry
 ): Promise<void> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId, undefined);
 
     if (!lead) return;

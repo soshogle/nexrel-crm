@@ -3,7 +3,7 @@
  * Manages connections and relationships between CRM entities
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { EntityType, RelationshipType } from '@prisma/client';
 
@@ -314,7 +314,7 @@ export class RelationshipService {
       appointments: [] as any[],
     };
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     // Search leads
     const leads = await leadService.findMany(ctx, {

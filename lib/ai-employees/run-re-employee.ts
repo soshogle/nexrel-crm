@@ -5,7 +5,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import type { REAIEmployeeType } from '@prisma/client';
 import { sendSMSToLead } from '@/lib/ai-employees/outreach-helper';
@@ -28,7 +28,7 @@ async function executeSpeedToLead(
   userId: string,
   template?: { smsTemplate?: string | null } | null
 ): Promise<REExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const newLeads = await leadService.findMany(ctx, {
     where: {
       status: 'NEW',
@@ -201,7 +201,7 @@ async function executeMarketReport(
 }
 
 async function executeColdReactivation(userId: string): Promise<REExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const coldLeads = await leadService.findMany(ctx, {
     where: {
@@ -225,7 +225,7 @@ async function executeColdReactivation(userId: string): Promise<REExecutionResul
 }
 
 async function executeSphereNurture(userId: string): Promise<REExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
   const pastClients = await leadService.findMany(ctx, {
     where: {

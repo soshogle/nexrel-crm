@@ -4,7 +4,7 @@
  * Phase 2: Uses custom templates when provided
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, dealService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
@@ -46,7 +46,7 @@ async function executeAppointmentScheduler(
   industry: Industry,
   template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const tomorrow = new Date();
   tomorrow.setHours(0, 0, 0, 0);
@@ -96,7 +96,7 @@ async function executePatientCoordinator(
 ): Promise<ExecutionResult> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const newPatients = await leadService.findMany(ctx, {
     where: { createdAt: { gte: sevenDaysAgo } },
     take: 15,
@@ -126,7 +126,7 @@ async function executeTreatmentCoordinator(
   _industry: Industry,
   template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const deals = await dealService.findMany(ctx, {
@@ -159,7 +159,7 @@ async function executeBillingSpecialist(
   _industry: Industry,
   template?: { emailSubject?: string | null; emailBody?: string | null } | null
 ): Promise<ExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const invoices = await db.invoice
     .findMany({
@@ -217,7 +217,7 @@ async function executeCustomTask(
   description: string,
   template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const leads = await leadService.findMany(ctx, {

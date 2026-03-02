@@ -5,7 +5,7 @@
  */
 
 import axios from 'axios';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, conversationService } from '@/lib/dal';
 
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
@@ -137,7 +137,7 @@ export class WhatsAppService {
             break;
         }
 
-        const ctx = createDalContext(userId);
+        const ctx = await resolveDalContext(userId);
         const db = getCrmDb(ctx);
         // Find or create conversation
         let conversation = await db.conversation.findUnique({

@@ -4,7 +4,7 @@
  */
 
 import OpenAI from 'openai';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, noteService } from '@/lib/dal';
 
 function getOpenAI(): OpenAI {
@@ -26,7 +26,7 @@ export async function summarizeCallAndAddNote(
   callLogId: string,
   userId: string
 ): Promise<CallSummaryResult> {
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   const call = await db.callLog.findFirst({
     where: { id: callLogId, userId },
     include: { lead: true },
@@ -66,7 +66,7 @@ export async function summarizeCallAndAddNote(
       `\nSentiment: ${sentiment}`,
     ].join('\n');
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const note = await noteService.create(ctx, {
       leadId: call.leadId,
       content: noteContent,

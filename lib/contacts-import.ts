@@ -1,4 +1,4 @@
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal';
 
 export interface ImportResult {
@@ -116,7 +116,7 @@ export async function importContactsFromCSV(
         continue;
       }
 
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       // Create contact
       const contact = await leadService.create(ctx, {
         businessName: businessName,

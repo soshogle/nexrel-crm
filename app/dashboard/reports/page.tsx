@@ -159,7 +159,11 @@ export default function ReportsPage() {
               >
                 <p className="text-sm text-gray-600 capitalize mb-1">{(key ?? '').toString().replace(/_/g, ' ')}</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                  {key === 'total_revenue' && typeof value === 'number'
+                    ? `$${value.toLocaleString()}`
+                    : typeof value === 'number'
+                      ? value.toLocaleString()
+                      : String(value)}
                 </p>
               </div>
             ))}

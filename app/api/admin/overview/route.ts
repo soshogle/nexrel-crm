@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const ctx = createDalContext(session.user.id!);
+    const ctx = getDalContextFromSession(session);
     const db = getCrmDb(ctx);
 
     // Get total revenue across all sub-accounts (deals with actualCloseDate are considered won)

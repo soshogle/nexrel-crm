@@ -10,7 +10,7 @@ import { waitUntil } from '@vercel/functions';
 export const maxDuration = 300;
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession, createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
@@ -41,7 +41,7 @@ async function processImportAllInBackground(
   userId: string
 ) {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
       where: { id: websiteId },
@@ -157,7 +157,7 @@ async function processImportAllInBackground(
     });
   } catch (error: any) {
     console.error('[Import all background]', error);
-    const db = getCrmDb(createDalContext(userId));
+    const db = getCrmDb(await resolveDalContext(userId));
     await db.websiteBuild.update({
       where: { id: buildId },
       data: {
@@ -217,7 +217,7 @@ export async function POST(
 
     const normalizedUrl = normalizeUrl(baseUrl);
 
-    const buildDb = getCrmDb(createDalContext(session?.user?.id || website.userId));
+    const buildDb = getCrmDb(await resolveDalContext(session?.user?.id || website.userId));
     const build = await buildDb.websiteBuild.create({
       data: {
         websiteId,

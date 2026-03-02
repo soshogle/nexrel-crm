@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb, leadService, dealService, campaignService, conversationService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -54,7 +54,7 @@ export async function GET(
       return apiErrors.notFound('Sub-account not found');
     }
 
-    const ctx = createDalContext(subAccountId);
+    const ctx = await resolveDalContext(subAccountId);
     const db = getCrmDb(ctx);
 
     // Get detailed metrics

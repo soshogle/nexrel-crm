@@ -4,7 +4,7 @@
  * Provides intelligent task suggestions and automation
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 
 interface TaskSuggestion {
@@ -65,7 +65,7 @@ export class AITaskService {
    * Get suggestions for a new lead
    */
   private async getLeadBasedSuggestions(leadId: string, userId: string): Promise<TaskSuggestion[]> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId, {
       notes: { orderBy: { createdAt: 'desc' }, take: 5 },
     });
@@ -146,7 +146,7 @@ export class AITaskService {
    * Get suggestions for a deal
    */
   private async getDealBasedSuggestions(dealId: string, userId: string): Promise<TaskSuggestion[]> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const deal = await dealService.findUnique(ctx, dealId, {
       stage: true,
       lead: true,
@@ -335,7 +335,7 @@ export class AITaskService {
     reasoning: string;
   } | null> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
       // Get team members
       const teamMembers = await db.teamMember.findMany({
@@ -505,7 +505,7 @@ export class AITaskService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const tasks = await db.task.findMany({
       where: {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { leadService, getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context'
+import { resolveDalContext } from '@/lib/context/industry-context'
 import { apiErrors } from '@/lib/api-error';
 
 // POST /api/appointments/public/book - Public booking endpoint for widget
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60))
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
 
     // Check for conflicts
     const conflictingAppointment = await getCrmDb(ctx).bookingAppointment.findFirst({

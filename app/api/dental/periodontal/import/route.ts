@@ -6,8 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getRouteDb } from '@/lib/dal/get-route-db';
+import { getCrmDb } from '@/lib/dal';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -28,8 +28,8 @@ function validateMeasurements(m: unknown): m is Record<string, Record<string, { 
   return true;
 }
 
-// Find lead by various identifiers
-async function findLead(userId: string, body: {
+// Find lead by various identifiers (uses industry-aware db)
+async function findLead(db: ReturnType<typeof getCrmDb>, userId: string, body: {
   leadId?: string;
   patientId?: string;
   patientName?: string;
@@ -39,7 +39,7 @@ async function findLead(userId: string, body: {
 
   // 1. Direct leadId (our CRM id)
   if (leadId) {
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: { id: leadId, userId },
     });
     if (lead) return lead;
@@ -47,7 +47,7 @@ async function findLead(userId: string, body: {
 
   // 2. patientId - probe software may use our leadId or their chart number
   if (patientId) {
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: { id: patientId, userId },
     });
     if (lead) return lead;
@@ -56,7 +56,7 @@ async function findLead(userId: string, body: {
   // 3. patientName - match contactPerson or businessName (case-insensitive, trimmed)
   if (patientName && patientName.trim()) {
     const name = patientName.trim();
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: {
         userId,
         OR: [
@@ -72,7 +72,7 @@ async function findLead(userId: string, body: {
 
   // 4. patientEmail
   if (patientEmail && patientEmail.trim()) {
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: {
         userId,
         email: { equals: patientEmail.trim(), mode: 'insensitive' },
@@ -123,7 +123,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const lead = await findLead(userId, {
+    const ctx = await resolveDalContext(userId);
+    const db = getCrmDb(ctx);
+    const lead = await findLead(db, userId, {
       leadId,
       patientId,
       patientName,
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
       createData.clinicId = clinicId;
     }
 
-    const chart = await prisma.dentalPeriodontalChart.create({
+    const chart = await db.dentalPeriodontalChart.create({
       data: createData,
     });
 

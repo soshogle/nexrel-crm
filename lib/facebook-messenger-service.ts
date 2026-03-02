@@ -5,7 +5,7 @@
 
 import { prisma } from './db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { decrypt } from '@/lib/encryption';
 
 export class FacebookMessengerService {
@@ -14,7 +14,7 @@ export class FacebookMessengerService {
    */
   async syncConversations(userId: string): Promise<{ success: boolean; synced: number; error?: string }> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Get all active Messenger connections for this user

@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 
 export interface VisitorEvent {
   websiteId: string;
@@ -41,7 +41,7 @@ export class WebsiteVisitorTrackingService {
     });
     if (!website) return;
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     // Get or create visitor session
@@ -188,7 +188,7 @@ export class WebsiteVisitorTrackingService {
     });
     if (!website) return null;
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     const visitor = await db.websiteVisitor.findFirst({
@@ -259,7 +259,7 @@ export class WebsiteVisitorTrackingService {
       const userId = website?.userId;
       if (!userId) return;
 
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Wait 30 minutes - if no purchase, trigger abandonment

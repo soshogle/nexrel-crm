@@ -3,7 +3,7 @@
  * Manages Google Analytics and Facebook Pixel integrations
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, websiteService } from '@/lib/dal';
 
 export interface AnalyticsConfig {
@@ -25,7 +25,7 @@ export class WebsiteAnalyticsIntegrationService {
       throw new Error('Website not found');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     return await websiteService.update(ctx, websiteId, {
       googleAnalyticsId: config.googleAnalyticsId || null,
       facebookPixelId: config.facebookPixelId || null,

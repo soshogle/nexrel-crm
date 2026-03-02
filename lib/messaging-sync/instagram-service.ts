@@ -6,7 +6,7 @@
 
 import axios from 'axios';
 import { getCrmDb, conversationService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 
 const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v18.0';
 
@@ -82,7 +82,7 @@ export class InstagramService {
       // Get sender info
       const senderInfo = await this.getUserInfo(senderId);
 
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Find or create conversation

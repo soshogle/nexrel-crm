@@ -3,7 +3,7 @@
  * Handles single and bulk outbound calls with smart agent selection
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 
 export interface MakeOutboundCallParams {
@@ -54,7 +54,7 @@ export async function selectBestAgentForTask(
   preferAgentId?: string,
   preferAgentName?: string
 ): Promise<string | null> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   // Explicit preference wins
   if (preferAgentId) {
@@ -126,7 +126,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
   let finalLeadId = leadId;
 
   if (!finalPhoneNumber) {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const leads = await leadService.findMany(ctx, {
       where: {
         OR: [
@@ -166,7 +166,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     voiceAgentName
   );
 
-  const outboundCtx = createDalContext(userId);
+  const outboundCtx = await resolveDalContext(userId);
   const outboundDb = getCrmDb(outboundCtx);
   if (!agentId) {
     const defaultAgent = await outboundDb.voiceAgent.findFirst({
@@ -326,7 +326,7 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
 
   let leads: { id: string; contactPerson: string | null; businessName: string; phone: string | null }[] = [];
 
-  const bulkCtx = createDalContext(userId);
+  const bulkCtx = await resolveDalContext(userId);
   const bulkDb = getCrmDb(bulkCtx);
   if (leadIds?.length) {
     leads = await bulkDb.lead.findMany({

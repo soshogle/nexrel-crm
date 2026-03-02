@@ -9,7 +9,7 @@
  */
 
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 
 export interface ChannelPreference {
   channel: 'SMS' | 'EMAIL' | 'WHATSAPP' | 'FACEBOOK_MESSENGER' | 'INSTAGRAM';
@@ -23,7 +23,7 @@ export class MultiChannelOrchestrator {
    * Select the best channel for reaching a lead
    */
   async selectChannel(leadId: string, userId: string): Promise<ChannelPreference> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Get lead's contact information
@@ -201,7 +201,7 @@ export class MultiChannelOrchestrator {
     message: string,
     channel: ChannelPreference['channel']
   ): Promise<boolean> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) return false;

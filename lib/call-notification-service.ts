@@ -4,7 +4,7 @@
  * Uses existing call data from the database instead of webhooks
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { emailService } from '@/lib/email-service';
 
@@ -33,7 +33,7 @@ export class CallNotificationService {
       whereClause.userId = userId;
     }
 
-    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+    const db = userId ? getCrmDb(await resolveDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
     // Find completed calls that need email notifications
     const callLogs = await db.callLog.findMany({
       where: whereClause,
@@ -134,7 +134,7 @@ export class CallNotificationService {
 
     try {
       const cleanPhone = (callLog.fromNumber || '').replace(/[\s\-\+\(\)]/g, '');
-      const leadDb = getCrmDb(createDalContext(voiceAgent.userId));
+      const leadDb = getCrmDb(await resolveDalContext(voiceAgent.userId));
       const lead = await leadDb.lead.findFirst({
         where: {
           userId: voiceAgent.userId,
@@ -193,7 +193,7 @@ export class CallNotificationService {
       whereClause.userId = userId;
     }
 
-    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+    const db = userId ? getCrmDb(await resolveDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
     const [pendingCount, totalCompleted, emailsSent] = await Promise.all([
       // Pending notifications
       db.callLog.count({

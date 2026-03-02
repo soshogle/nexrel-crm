@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 import { getCrmDb, conversationService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 
 const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v18.0';
 
@@ -73,7 +73,7 @@ export class FacebookService {
     channelConnectionId: string,
     userId: string
   ): Promise<void> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     try {
       const messaging = webhookData.entry[0]?.messaging[0];

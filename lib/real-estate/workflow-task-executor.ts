@@ -5,7 +5,7 @@
 
 import { REWorkflowTask, REWorkflowInstance, REAIEmployeeType } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
@@ -25,7 +25,7 @@ export async function executeTask(
   instance: REWorkflowInstance,
   industry?: string | null
 ): Promise<TaskResult> {
-  const ctx = createDalContext(instance.userId, industry);
+  const ctx = await resolveDalContext(instance.userId);
   const db = getCrmDb(ctx);
 
   const actionConfig = task.actionConfig as any;
@@ -277,7 +277,7 @@ async function executeSMS(
   task: REWorkflowTask,
   instance: REWorkflowInstance
 ): Promise<TaskResult> {
-  const ctx = createDalContext(instance.userId);
+  const ctx = await resolveDalContext(instance.userId);
   const lead = instance.leadId 
     ? await leadService.findUnique(ctx, instance.leadId)
     : null;

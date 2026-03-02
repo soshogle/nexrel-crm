@@ -5,7 +5,7 @@
 
 import Stripe from 'stripe';
 import { getCrmDb, websiteService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { websiteOrderService } from './order-service';
 
 // Use platform Stripe account (your CRM's account)
@@ -28,7 +28,7 @@ export class WebsiteStripeConnectService {
       throw new Error('Website not found');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     let connectAccountId = website.stripeConnectAccountId;
@@ -125,7 +125,7 @@ export class WebsiteStripeConnectService {
       throw new Error('Stripe account not connected');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     // Verify account is active
@@ -194,7 +194,7 @@ export class WebsiteStripeConnectService {
           return;
         }
 
-        const ctx = createDalContext(website.userId);
+        const ctx = await resolveDalContext(website.userId);
         const db = getCrmDb(ctx);
 
         // Update integration status

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService, campaignService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
         campaignsActive,
         upcomingAppointments,
       ] = await Promise.all([
-        leadService.count(createDalContext(user.id)),
-        leadService.count(createDalContext(user.id), { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }),
+        leadService.count(await resolveDalContext(user.id)),
+        leadService.count(await resolveDalContext(user.id), { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }),
         db.deal.count({ where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } } as any }),
         db.deal.aggregate({
           where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } },
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
           },
         }),
-        campaignService.count(createDalContext(user.id), { status: 'ACTIVE' }),
+        campaignService.count(await resolveDalContext(user.id), { status: 'ACTIVE' }),
         db.bookingAppointment.count({
           where: {
             userId: user.id,

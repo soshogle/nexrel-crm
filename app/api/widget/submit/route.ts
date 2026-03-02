@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { processReferralTriggers } from '@/lib/referral-triggers';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { apiErrors } from '@/lib/api-error';
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Missing required fields');
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Validate that the user exists

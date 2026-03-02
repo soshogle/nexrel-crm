@@ -6,7 +6,7 @@
  */
 
 import { getCrmDb, leadService, dealService, taskService, conversationService, noteService, websiteService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { workflowJobQueue } from './workflow-job-queue';
 import { conditionEvaluator, type ConditionalBranch } from './workflow-conditions';
 import { executeDentalAction } from './dental/workflow-actions';
@@ -37,12 +37,13 @@ export interface ExecutionContext {
   variables?: Record<string, any>;
 }
 
-function getDb(context: ExecutionContext) {
-  return getCrmDb(createDalContext(context.userId));
+async function getDb(context: ExecutionContext) {
+  const ctx = await resolveDalContext(context.userId);
+  return getCrmDb(ctx);
 }
 
-function getCtx(context: ExecutionContext) {
-  return createDalContext(context.userId);
+async function getCtx(context: ExecutionContext) {
+  return resolveDalContext(context.userId);
 }
 
 export class WorkflowEngine {
@@ -54,7 +55,7 @@ export class WorkflowEngine {
     context: ExecutionContext,
     triggerData?: any
   ): Promise<void> {
-    const db = getDb(context);
+    const db = await getDb(context);
     try {
       // Find active workflows matching this trigger
       const workflows = await db.workflow.findMany({
@@ -317,7 +318,7 @@ export class WorkflowEngine {
     workflow: Workflow & { actions: WorkflowAction[] },
     context: ExecutionContext
   ): Promise<void> {
-    const db = getDb(context);
+    const db = await getDb(context);
     try {
       // Create enrollment
       const enrollment = await db.workflowEnrollment.create({
@@ -357,7 +358,7 @@ export class WorkflowEngine {
     enrollment: WorkflowEnrollment,
     context: ExecutionContext
   ): Promise<any> {
-    const db = getDb(context);
+    const db = await getDb(context);
     try {
       // Handle delay if specified - use job queue for production
       if (action.delayMinutes && action.delayMinutes > 0) {
@@ -424,7 +425,7 @@ export class WorkflowEngine {
    * Get context data for condition evaluation
    */
   private async getContextData(context: ExecutionContext): Promise<any> {
-    const ctx = getCtx(context);
+    const ctx = await getCtx(context);
     const data: any = { ...context.variables };
 
     if (context.leadId) {
@@ -563,8 +564,8 @@ export class WorkflowEngine {
       throw new Error('No conversation found for lead creation');
     }
 
-    const ctx = getCtx(context);
-    const db = getDb(context);
+    const ctx = await getCtx(context);
+    const db = await getDb(context);
 
     // Get conversation details
     const conversation = await db.conversation.findUnique({
@@ -621,8 +622,8 @@ export class WorkflowEngine {
       throw new Error('No lead found for deal creation');
     }
 
-    const ctx = getCtx(context);
-    const db = getDb(context);
+    const ctx = await getCtx(context);
+    const db = await getDb(context);
 
     const lead = await leadService.findUnique(ctx, context.leadId);
 
@@ -680,7 +681,7 @@ export class WorkflowEngine {
       throw new Error('No conversation found');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const conversation = await db.conversation.findUnique({
       where: { id: context.conversationId },
       include: { 
@@ -856,8 +857,8 @@ export class WorkflowEngine {
    * Send SMS
    */
   private async sendSMS(context: ExecutionContext, config: any) {
-    const db = getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
+    const db = await getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
 
     if (!lead?.phone) {
       throw new Error('No phone number found');
@@ -875,8 +876,8 @@ export class WorkflowEngine {
    * Send email
    */
   private async sendEmail(context: ExecutionContext, config: any) {
-    const db = getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
+    const db = await getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
 
     if (!lead?.email) {
       throw new Error('No email found');
@@ -908,7 +909,7 @@ export class WorkflowEngine {
     if (config.status) updateData.status = config.status;
     if (config.businessCategory) updateData.businessCategory = config.businessCategory;
 
-    await leadService.update(getCtx(context), context.leadId!, updateData);
+    await leadService.update(await getCtx(context), context.leadId!, updateData);
 
     return { leadId: context.leadId, action: 'updated' };
   }
@@ -921,7 +922,7 @@ export class WorkflowEngine {
       throw new Error('No lead to update');
     }
 
-    await leadService.update(getCtx(context), context.leadId!, { status: config.status });
+    await leadService.update(await getCtx(context), context.leadId!, { status: config.status });
 
     return { leadId: context.leadId, newStatus: config.status };
   }
@@ -934,7 +935,7 @@ export class WorkflowEngine {
       throw new Error('No deal to update');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const updateData: any = {};
     if (config.value) updateData.value = config.value;
     if (config.priority) updateData.priority = config.priority;
@@ -955,7 +956,7 @@ export class WorkflowEngine {
       throw new Error('No deal to move');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     await db.deal.update({
       where: { id: context.dealId },
       data: { stageId: config.stageId },
@@ -978,8 +979,8 @@ export class WorkflowEngine {
    * Create task
    */
   private async createTask(context: ExecutionContext, config: any) {
-    const db = getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
+    const db = await getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
 
     const dueDate = config.dueInDays
       ? new Date(Date.now() + config.dueInDays * 24 * 60 * 60 * 1000)
@@ -1004,7 +1005,7 @@ export class WorkflowEngine {
    * Notify user
    */
   private async notifyUser(context: ExecutionContext, config: any) {
-    const db = getDb(context);
+    const db = await getDb(context);
     const user = await db.user.findUnique({
       where: { id: context.userId },
       select: { email: true, name: true },
@@ -1055,14 +1056,14 @@ export class WorkflowEngine {
       throw new Error('Lead ID and tag are required');
     }
 
-    const ctx = getCtx(context);
+    const ctx = await getCtx(context);
     const lead = await leadService.findUnique(ctx, context.leadId);
 
     const existing: string[] = Array.isArray(lead?.tags) ? (lead!.tags as string[]) : [];
     const tagsToAdd = Array.isArray(config.tag) ? config.tag : [config.tag];
     const merged = [...new Set([...existing, ...tagsToAdd])];
 
-    await leadService.update(getCtx(context), context.leadId!, { tags: JSON.parse(JSON.stringify(merged)) });
+    await leadService.update(await getCtx(context), context.leadId!, { tags: JSON.parse(JSON.stringify(merged)) });
 
     return { action: 'tagged', tag: config.tag, leadId: context.leadId };
   }
@@ -1071,8 +1072,8 @@ export class WorkflowEngine {
    * AI Generate Message
    */
   private async aiGenerateMessage(context: ExecutionContext, config: any): Promise<any> {
-    const db = getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
+    const db = await getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
 
     // Get user's language preference
     const user = await db.user.findUnique({
@@ -1138,7 +1139,7 @@ export class WorkflowEngine {
       throw new Error('No lead to score');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const lead = await db.lead.findUnique({
       where: { id: context.leadId },
       include: {
@@ -1230,8 +1231,8 @@ export class WorkflowEngine {
    * Make outbound call via voice AI agent
    */
   private async makeOutboundCall(context: ExecutionContext, config: any): Promise<any> {
-    const db = getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!, { user: true } as any) : null;
+    const db = await getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!, { user: true } as any) : null;
 
     if (!lead?.phone) {
       throw new Error('No phone number found for lead');
@@ -1370,7 +1371,7 @@ export class WorkflowEngine {
    * Create website action
    */
   private async createWebsite(context: ExecutionContext, config: any) {
-    const db = getDb(context);
+    const db = await getDb(context);
     const { resourceProvisioning } = await import('@/lib/website-builder/provisioning');
     const { websiteBuilder } = await import('@/lib/website-builder/builder');
     
@@ -1446,7 +1447,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1485,7 +1486,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1579,7 +1580,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1659,7 +1660,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1717,7 +1718,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1775,7 +1776,7 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const website = await db.website.findFirst({
       where: {
         id: websiteId,
@@ -1824,7 +1825,7 @@ export class WorkflowEngine {
     const reviewId = (context.variables as any)?.reviewId;
     if (!reviewId) return { action: 'respond_to_review', status: 'skipped', reason: 'no reviewId' };
 
-    const db = getDb(context);
+    const db = await getDb(context);
     const { generateAutoResponse } = await import('@/lib/reviews/review-intelligence-service');
     const review = await db.review.findFirst({
       where: { id: reviewId, userId: context.userId },

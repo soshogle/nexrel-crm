@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { EmailService } from '@/lib/email-service';
 
 export interface SendSMSParams {
@@ -76,7 +76,7 @@ async function sendSMSWithConfig(
  */
 export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, message, phoneNumber, leadId } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let finalPhone = phoneNumber;
@@ -149,7 +149,7 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
  */
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, subject, body, email, leadId } = params;
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   let finalEmail = email;
@@ -250,7 +250,7 @@ async function getLeadsByCriteria(
   if (startDate && endDate) where.createdAt = { gte: startDate, lt: endDate };
   else if (startDate) where.createdAt = { gte: startDate };
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   return getCrmDb(ctx).lead.findMany({
     where,
     take: criteria?.limit || 50,

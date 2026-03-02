@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb, workflowTemplateService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { TaskExecutionStatus, WorkflowInstanceStatus } from '@prisma/client';
 import { executeTask } from './workflow-task-executor';
 import { createHITLNotification } from './hitl-notification-service';
@@ -25,7 +25,7 @@ export async function startWorkflowInstance(
   templateId: string,
   trigger: WorkflowTrigger
 ): Promise<string> {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const template = await workflowTemplateService.findUnique(ctx, templateId);
 
@@ -280,7 +280,7 @@ export async function approveHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   const execution = await db.taskExecution.findUnique({
     where: { id: executionId },
     include: { task: true, instance: true },
@@ -341,7 +341,7 @@ export async function rejectHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   const execution = await db.taskExecution.findUnique({
     where: { id: executionId },
   });

@@ -3,7 +3,7 @@
  * Handles automated voice calling campaigns with intelligent scheduling
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { parse, format, isAfter, isBefore, addMinutes, startOfDay } from 'date-fns';
 
@@ -22,7 +22,7 @@ export class VoiceCampaignScheduler {
         where.userId = userId;
       }
 
-      const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+      const db = userId ? getCrmDb(await resolveDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
       const campaigns = await db.campaign.findMany({
         where,
         include: {
@@ -108,7 +108,7 @@ export class VoiceCampaignScheduler {
    */
   private async getCallsToday(campaignId: string, userId?: string): Promise<number> {
     const today = startOfDay(new Date());
-    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+    const db = userId ? getCrmDb(await resolveDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
     const count = await db.campaignMessage.count({
       where: {
         campaignId,
@@ -168,7 +168,7 @@ export class VoiceCampaignScheduler {
 
     try {
       // Create campaign message record
-      const db = getCrmDb(createDalContext(campaign.userId));
+      const db = getCrmDb(await resolveDalContext(campaign.userId));
       const message = await db.campaignMessage.create({
         data: {
           campaignId: campaign.id,
@@ -227,7 +227,7 @@ export class VoiceCampaignScheduler {
     } catch (error: any) {
       console.error(`❌ Failed to initiate call:`, error.message);
 
-      const db = getCrmDb(createDalContext(campaign.userId));
+      const db = getCrmDb(await resolveDalContext(campaign.userId));
       // Update campaign message
       await db.campaignMessage.updateMany({
         where: {

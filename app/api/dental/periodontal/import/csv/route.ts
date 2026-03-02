@@ -15,8 +15,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { getRouteDb } from '@/lib/dal/get-route-db';
+import { getCrmDb } from '@/lib/dal';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import {
   parseFloridaProbeCSV,
   collapseTo4Sites,
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve userId
+    // Resolve userId and DB (industry-aware)
     const resolvedUserId = userId || bodyUserId;
     if (!resolvedUserId) {
       return NextResponse.json(
@@ -115,6 +116,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const session = await getServerSession(authOptions);
+    const db = session?.user?.id
+      ? getRouteDb(session)
+      : getCrmDb(await resolveDalContext(resolvedUserId));
 
     // Parse CSV
     const rows = parseFloridaProbeCSV(csvContent);
@@ -148,11 +153,11 @@ export async function POST(request: NextRequest) {
     let lead: any = null;
 
     if (leadId) {
-      lead = await prisma.lead.findFirst({ where: { id: leadId, userId: resolvedUserId } });
+      lead = await db.lead.findFirst({ where: { id: leadId, userId: resolvedUserId } });
     }
     if (!lead && patientName?.trim()) {
       const name = patientName.trim();
-      lead = await prisma.lead.findFirst({
+      lead = await db.lead.findFirst({
         where: {
           userId: resolvedUserId,
           OR: [
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
       });
     }
     if (!lead && patientEmail?.trim()) {
-      lead = await prisma.lead.findFirst({
+      lead = await db.lead.findFirst({
         where: { userId: resolvedUserId, email: { equals: patientEmail.trim(), mode: 'insensitive' } },
       });
     }
@@ -211,7 +216,7 @@ export async function POST(request: NextRequest) {
     };
     if (clinicId) createData.clinicId = clinicId;
 
-    const chart = await prisma.dentalPeriodontalChart.create({ data: createData });
+    const chart = await db.dentalPeriodontalChart.create({ data: createData });
 
     return NextResponse.json({
       success: true,

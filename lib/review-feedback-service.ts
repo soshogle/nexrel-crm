@@ -10,7 +10,7 @@
 
 import { prisma } from './db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { campaignService } from '@/lib/dal';
 import { taskService } from '@/lib/dal';
 import { elevenLabsService } from './elevenlabs';
@@ -38,7 +38,7 @@ export class ReviewFeedbackService {
    */
   async triggerFeedbackCollection(request: FeedbackRequest): Promise<void> {
     try {
-      const ctx = createDalContext(request.userId);
+      const ctx = await resolveDalContext(request.userId);
       const db = getCrmDb(ctx);
 
       const lead = await db.lead.findUnique({
@@ -120,7 +120,7 @@ export class ReviewFeedbackService {
         return;
       }
 
-      const ctx = createDalContext(feedback.userId);
+      const ctx = await resolveDalContext(feedback.userId);
       const db = getCrmDb(ctx);
 
       // Use your SMS service here (Twilio, etc.)
@@ -149,7 +149,7 @@ export class ReviewFeedbackService {
     userId: string
   ): Promise<void> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Get an active voice agent for the user
@@ -215,7 +215,7 @@ export class ReviewFeedbackService {
         return;
       }
 
-      const ctx = createDalContext(feedback.userId);
+      const ctx = await resolveDalContext(feedback.userId);
       const db = getCrmDb(ctx);
 
       // Update feedback record
@@ -271,7 +271,7 @@ export class ReviewFeedbackService {
     feedback: FeedbackResponse
   ): Promise<void> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Get review URL from user's review campaign (or any campaign with reviewUrl)
@@ -329,7 +329,7 @@ export class ReviewFeedbackService {
     feedback: FeedbackResponse
   ): Promise<void> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
 
       // Send resolution offer message

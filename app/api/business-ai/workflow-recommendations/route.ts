@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const ctx = createDalContext(session.user.id);
+    const ctx = getDalContextFromSession(session);
     const db = getCrmDb(ctx);
     const [leadCount, dealCount] = await Promise.all([
       leadService.count(ctx),

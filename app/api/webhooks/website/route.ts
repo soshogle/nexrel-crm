@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { apiErrors } from '@/lib/api-error';
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     // Store visitor data if it's a visitor event

@@ -1,5 +1,5 @@
 import { getCrmDb, websiteService } from "@/lib/dal";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 
 function normalizeUrl(url: string): string {
   let u = url.trim();
@@ -104,7 +104,7 @@ export async function createWebsite(userId: string, params: any) {
 }
 
 export async function listWebsites(userId: string, params: any) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const websites = await db.website.findMany({
     where: { userId: ctx.userId },
@@ -140,7 +140,7 @@ export async function modifyWebsite(userId: string, params: any) {
     throw new Error("websiteId and message are required. Describe the change you want (e.g. 'Change the hero title to Welcome')");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
     throw new Error("Website not found");
@@ -179,7 +179,7 @@ export async function getWebsiteStructure(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -201,7 +201,7 @@ export async function updateHero(userId: string, params: any) {
     throw new Error("At least one of title, subtitle, ctaText, ctaLink is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -239,7 +239,7 @@ export async function addSection(userId: string, params: any) {
   const { websiteId, sectionType, pagePath = "/", title, content, ctaText, ctaLink } = params;
   if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -289,7 +289,7 @@ export async function updateSectionContent(userId: string, params: any) {
     throw new Error("At least one of title, content, ctaText, ctaLink is required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -324,7 +324,7 @@ export async function addCTA(userId: string, params: any) {
   const { websiteId, title, description, ctaText, ctaLink, pagePath = "/" } = params;
   if (!websiteId || !ctaText || !ctaLink) throw new Error("websiteId, ctaText, and ctaLink are required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -388,7 +388,7 @@ export async function reorderSection(userId: string, params: any) {
     throw new Error("websiteId, fromIndex, and toIndex are required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -402,7 +402,7 @@ export async function deleteSection(userId: string, params: any) {
   const { websiteId, sectionType, pagePath = "/" } = params;
   if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -416,7 +416,7 @@ export async function listWebsiteMedia(userId: string, params: any) {
   const { websiteId, type } = params;
   if (!websiteId) throw new Error("websiteId is required");
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -439,7 +439,7 @@ export async function addWebsiteImage(userId: string, params: any) {
     throw new Error("websiteId, sectionType, and imageUrl are required");
   }
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
@@ -460,7 +460,7 @@ export async function makeItLookLike(userId: string, params: any) {
   if (!websiteId || !referenceUrl) {
     throw new Error("websiteId and referenceUrl are required");
   }
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const { analyzeReferenceAndSuggest } = await import("@/lib/website-builder/make-it-look-like-service");
@@ -475,7 +475,7 @@ export async function makeItLookLike(userId: string, params: any) {
 export async function suggestHeroVariants(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const hero = (website.structure as any)?.pages?.[0]?.components?.find((c: any) => c.type === "Hero" || c.type === "HeroSection");
@@ -495,7 +495,7 @@ export async function suggestHeroVariants(userId: string, params: any) {
 export async function checkWebsiteAccessibility(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const { checkWebsiteAccessibility } = await import("@/lib/website-builder/accessibility-checker");

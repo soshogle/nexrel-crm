@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { conversationService } from '@/lib/dal/conversation-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -93,7 +93,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const senderProfile = await getSenderProfile(senderId, channelConnection.accessToken!);
     const senderName = senderProfile?.name || `Messenger User ${senderId}`;
 
-    const ctx = createDalContext(channelConnection.userId);
+    const ctx = await resolveDalContext(channelConnection.userId);
     let conversation: any = await conversationService.findFirst(ctx, {
       channelConnectionId: channelConnection.id,
       contactIdentifier: senderId,

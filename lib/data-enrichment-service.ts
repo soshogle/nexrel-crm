@@ -4,7 +4,7 @@
  * Includes intelligent caching to minimize API costs
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import fs from 'fs';
 import path from 'path';
@@ -482,7 +482,7 @@ export class DataEnrichmentService {
       }
       const existingLead = await getCrmDb(createDalContext('bootstrap')).lead.findUnique({ where: { id: leadId }, select: { userId: true } });
       if (existingLead) {
-        const ctx = createDalContext(existingLead.userId);
+        const ctx = await resolveDalContext(existingLead.userId);
         await leadService.update(ctx, leadId, updateData);
       }
 

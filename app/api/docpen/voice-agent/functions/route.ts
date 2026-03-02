@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -41,7 +41,7 @@ async function lookupPatientHistory(params: {
 }) {
   const { patientName, historyType = 'all', userId } = params;
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [

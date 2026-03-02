@@ -9,7 +9,7 @@
  */
 
 import { getAssistantPrompt, DocpenProfessionType } from './prompts';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { chatCompletion } from '@/lib/openai-client';
 
@@ -79,7 +79,7 @@ export async function processAssistantQuery(
 async function getPatientHistory(leadId: string, userId: string): Promise<string> {
   try {
     // Fetch lead with notes and previous sessions
-    const db = getCrmDb(createDalContext(userId));
+    const db = getCrmDb(await resolveDalContext(userId));
     const lead = await db.lead.findFirst({
       where: {
         id: leadId,

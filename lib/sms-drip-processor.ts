@@ -1,4 +1,4 @@
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 
@@ -40,7 +40,7 @@ async function processCampaignSms(campaign: any) {
     console.log(`[SMS Drip] Processing campaign: ${campaign.name} (${campaign.id})`);
 
     const now = new Date();
-    const db = getCrmDb(createDalContext(campaign.userId));
+    const db = getCrmDb(await resolveDalContext(campaign.userId));
     const readyEnrollments = await db.smsEnrollment.findMany({
       where: {
         campaignId: campaign.id,
@@ -65,7 +65,7 @@ async function processCampaignSms(campaign: any) {
 
 async function processEnrollment(enrollment: any, campaign: any) {
   try {
-    const ctx = createDalContext(campaign.userId);
+    const ctx = await resolveDalContext(campaign.userId);
     const db = getCrmDb(ctx);
     const lead = await leadService.findUnique(ctx, enrollment.leadId);
 
@@ -181,7 +181,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
 }
 
 async function moveToNextSequence(enrollment: any, campaign: any, currentSequence: any) {
-  const db = getCrmDb(createDalContext(campaign.userId));
+  const db = getCrmDb(await resolveDalContext(campaign.userId));
   const nextStep = enrollment.currentStep + 1;
   const nextSequence = campaign.sequences.find(
     (s: any) => s.sequenceOrder === nextStep

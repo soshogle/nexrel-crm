@@ -5,7 +5,7 @@
  */
 
 import twilio from 'twilio';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, conversationService } from '@/lib/dal';
 
 export class TwilioService {
@@ -55,7 +55,7 @@ export class TwilioService {
     try {
       const { MessageSid, From, To, Body, NumMedia, MediaUrl0, MediaContentType0 } = webhookData;
 
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
       // Find or create conversation
       let conversation = await db.conversation.findUnique({
@@ -144,7 +144,7 @@ export class TwilioService {
    */
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
     try {
-      const ctx = createDalContext(userId);
+      const ctx = await resolveDalContext(userId);
       const db = getCrmDb(ctx);
       const messages = await this.fetchMessageHistory();
       let syncedCount = 0;

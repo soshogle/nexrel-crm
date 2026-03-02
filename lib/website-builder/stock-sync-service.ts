@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb, taskService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { websiteStockNotificationService } from './stock-notification-service';
 import { workflowEngine } from '@/lib/workflow-engine';
 
@@ -58,7 +58,7 @@ export class WebsiteStockSyncService {
     }> = [];
 
     for (const wp of websiteProducts) {
-      const ctx = createDalContext(wp.website.userId);
+      const ctx = await resolveDalContext(wp.website.userId);
       const db = getCrmDb(ctx);
       const settings = wp.website.stockSettings;
       const product = wp.product;
@@ -264,7 +264,7 @@ export class WebsiteStockSyncService {
    */
   private async checkAndSendLowStockAlert(alert: LowStockAlert) {
     const { productId, websiteId, userId } = alert;
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
 
     // Store alert in database (we'll create a simple table or use existing structure)
@@ -332,7 +332,7 @@ export class WebsiteStockSyncService {
     });
     if (!website) throw new Error('Website not found');
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     const websiteFull = await db.website.findUnique({
@@ -407,7 +407,7 @@ export class WebsiteStockSyncService {
     });
     if (!website) throw new Error('Website not found');
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
     return await db.websiteStockSettings.upsert({

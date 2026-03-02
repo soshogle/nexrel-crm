@@ -2,12 +2,14 @@
  * AI-Generated Reports API
  * GET - List user's generated reports
  * POST - Create a new report (from AI assistant)
+ * Uses industry DB when user has industry set (same as createReport).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -20,11 +22,15 @@ export async function GET(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     const { searchParams } = new URL(req.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
 
-    const reports = await prisma.aiGeneratedReport.findMany({
-      where: { userId: session.user.id },
+    const db = getCrmDb(ctx);
+    const reports = await db.aiGeneratedReport.findMany({
+      where: { userId: ctx.userId },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
@@ -43,6 +49,9 @@ export async function POST(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     const body = await req.json();
     const { title, reportType, content, period } = body;
 
@@ -50,9 +59,10 @@ export async function POST(req: NextRequest) {
       return apiErrors.badRequest('Title and content are required');
     }
 
-    const report = await prisma.aiGeneratedReport.create({
+    const db = getCrmDb(ctx);
+    const report = await db.aiGeneratedReport.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         title,
         reportType: reportType || 'custom',
         content,

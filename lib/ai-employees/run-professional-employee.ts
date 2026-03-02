@@ -5,7 +5,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import type { ProfessionalAIEmployeeType } from '@prisma/client';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 
@@ -37,7 +37,7 @@ export async function executeProfessionalEmployee(
   }
 
   const enabledTaskKeys = options?.enabledTaskKeys ?? new Set<string>(['run']);
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Per-capability: create a task for each enabled capability

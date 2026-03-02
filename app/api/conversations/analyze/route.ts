@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
 import { apiErrors } from '@/lib/api-error';
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       const newScore = Math.max(0, Math.min(100, currentLeadScore + scoreAdjustment));
       const newStatus = determineNextLeadStatus(callLog.lead.status, analysis.callOutcome.outcome);
 
-      const ctx = createDalContext(callLog.userId);
+      const ctx = await resolveDalContext(callLog.userId);
       await leadService.update(ctx, callLog.leadId, {
         leadScore: newScore,
         status: newStatus,

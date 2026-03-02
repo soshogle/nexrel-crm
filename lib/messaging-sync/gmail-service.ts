@@ -5,7 +5,7 @@
 
 import { google } from 'googleapis';
 import { getCrmDb, leadService, conversationService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 
 const gmail = google.gmail('v1');
 
@@ -165,7 +165,7 @@ export class GmailService {
    * Sync messages to database for a specific channel connection
    */
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     try {
       // Get channel connection

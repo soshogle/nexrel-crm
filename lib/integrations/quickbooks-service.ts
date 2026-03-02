@@ -4,7 +4,7 @@
  */
 
 import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { leadService, noteService } from '@/lib/dal';
 import { decrypt } from '@/lib/encryption';
 const db = getCrmDb({ userId: '', industry: null })
@@ -386,7 +386,7 @@ export async function syncContactToQuickBooks(
   contactId: string
 ): Promise<{ success: boolean; customerId?: string; error?: string }> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     // Get lead from database
     const lead = await leadService.findUnique(ctx, contactId);
 

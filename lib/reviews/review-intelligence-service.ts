@@ -6,7 +6,7 @@
  * - Review request orchestration via SMS/email
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 
 interface ReviewAnalysis {
@@ -173,7 +173,7 @@ Return JSON with: {"response": "the response text"}`;
 }
 
 export async function generateBrandInsights(userId: string): Promise<BrandInsightsReport> {
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   const reviews = await db.review.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -399,7 +399,7 @@ export async function sendReviewRequest(
   customMessage?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const [user, lead] = await Promise.all([
       db.user.findUnique({ where: { id: userId }, select: { name: true, legalEntityName: true } }),
@@ -482,7 +482,7 @@ export async function processIncomingReview(
         summary: '',
       };
 
-  const db = getCrmDb(createDalContext(userId));
+  const db = getCrmDb(await resolveDalContext(userId));
   // Create the review record
   const review = await db.review.create({
     data: {

@@ -9,6 +9,7 @@
 
 import type { Session } from 'next-auth';
 import type { Industry } from '@/lib/industry-menu-config';
+import { prisma } from '@/lib/db';
 
 /**
  * Get industry from session for DAL context.
@@ -46,4 +47,20 @@ export function createDalContext(
     userId,
     industry: (industry as Industry) ?? null,
   };
+}
+
+/**
+ * Resolve DAL context with user industry when you only have userId (no session).
+ * Looks up user.industry from the main DB so getCrmDb(ctx) routes to the correct industry DB.
+ * Use in libs, background jobs, and AI handlers where session is not available.
+ */
+export async function resolveDalContext(userId: string): Promise<{
+  userId: string;
+  industry: Industry | null;
+}> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { industry: true },
+  });
+  return createDalContext(userId, user?.industry ?? null);
 }

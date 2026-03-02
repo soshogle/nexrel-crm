@@ -4,7 +4,7 @@
  * Powers the "reviews + referral" flow: feedback → review link → ask for referral.
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
@@ -27,7 +27,7 @@ export async function processServiceCompletedTriggers(
     metadata: metadata as any,
   });
 
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   // Workflow template enrollments
   const workflows = await db.workflowTemplate.findMany({

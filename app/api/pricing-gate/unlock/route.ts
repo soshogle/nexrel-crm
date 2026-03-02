@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createDalContext } from "@/lib/context/industry-context";
+import { resolveDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
 import { emailService } from "@/lib/email-service";
 import { apiErrors } from '@/lib/api-error';
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID || "";
     if (leadOwnerId) {
       try {
-        const ctx = createDalContext(leadOwnerId);
+        const ctx = await resolveDalContext(leadOwnerId);
         await leadService.create(ctx, {
           businessName: "Pricing Gate",
           contactPerson: email,

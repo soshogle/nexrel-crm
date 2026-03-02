@@ -4,7 +4,7 @@
  * Not entity-specific - focuses on overall patterns and predictions
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 import { crmEvents } from './crm-event-emitter';
 
@@ -96,7 +96,7 @@ export class AIBrainService {
     if (cached) return cached;
     const insights: GeneralInsight[] = [];
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     // Fetch all relevant data with error handling
     const results = await Promise.allSettled([
@@ -471,7 +471,7 @@ Respond ONLY with valid JSON array, no markdown.`;
     const cached = this.getCached<PredictiveAnalytics>(cacheKey);
     if (cached) return cached;
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     // Fetch data with error handling
     const results = await Promise.allSettled([
       leadService.findMany(ctx),
@@ -609,7 +609,7 @@ Respond ONLY with valid JSON array, no markdown.`;
 
     const recommendations: WorkflowRecommendation[] = [];
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     // Fetch data with error handling
     const results = await Promise.allSettled([
       leadService.findMany(ctx),

@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { addMinutes, parse, isAfter, isBefore } from 'date-fns';
 import { apiErrors } from '@/lib/api-error';
@@ -42,7 +42,7 @@ export async function POST(
       return apiErrors.notFound('Website not found');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     // Get booking settings
     const bookingSettings = await (getCrmDb(ctx) as any).bookingSettings.findUnique({
       where: { userId: website.userId },
@@ -211,7 +211,7 @@ export async function GET(
       return apiErrors.notFound('Website not found');
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = await resolveDalContext(website.userId);
     // Get booking settings
     const bookingSettings = await (getCrmDb(ctx) as any).bookingSettings.findUnique({
       where: { userId: website.userId },

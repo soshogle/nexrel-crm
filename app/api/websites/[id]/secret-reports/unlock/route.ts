@@ -4,7 +4,7 @@
  * Auth: x-website-secret header (template server proxy)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
@@ -63,7 +63,7 @@ export async function POST(
       return apiErrors.notFound('Report not found');
     }
 
-    const userCtx = createDalContext(website.userId);
+    const userCtx = await resolveDalContext(website.userId);
     // Create lead
     const lead = await getCrmDb(userCtx).lead.create({
       data: {

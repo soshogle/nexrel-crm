@@ -5,7 +5,7 @@
 
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { ensureIndustryAgentProvisioned } from '@/lib/ai-employee-lazy-provision';
 import { Industry } from '@prisma/client';
@@ -38,7 +38,7 @@ export async function sendSMSToLead(
   message: string
 ): Promise<OutreachResult> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead?.phone) {
       return { channel: 'sms', success: false, leadId, error: 'No phone number' };
@@ -84,7 +84,7 @@ export async function sendEmailToLead(
   body: string
 ): Promise<OutreachResult> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead?.email) {
       return { channel: 'email', success: false, leadId, error: 'No email' };
@@ -119,7 +119,7 @@ export async function initiateCallToLead(
   purpose?: string
 ): Promise<OutreachResult> {
   try {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead?.phone) {
       return { channel: 'call', success: false, leadId, error: 'No phone number' };

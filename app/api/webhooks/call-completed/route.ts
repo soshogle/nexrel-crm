@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
 import { apiErrors } from '@/lib/api-error';
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const transcript = callLog.transcript || callLog.transcription || 'No transcript available';
     const duration = callLog.duration || 0;
 
-    const ctx = createDalContext(callLog.userId);
+    const ctx = await resolveDalContext(callLog.userId);
     const crmDb = getCrmDb(ctx);
 
     // Get user's language preference

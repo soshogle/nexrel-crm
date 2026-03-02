@@ -4,7 +4,7 @@
  * (Workflows define the behavior; auto-run is the trigger switch)
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, workflowTemplateService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { startWorkflowInstance } from '@/lib/real-estate/workflow-engine';
@@ -48,7 +48,7 @@ export async function triggerAutoRunOnLeadCreated(
   leadId: string
 ): Promise<void> {
   try {
-    const db = getCrmDb(createDalContext(userId));
+    const db = getCrmDb(await resolveDalContext(userId));
     const settings = await db.aIEmployeeAutoRun.findMany({
       where: {
         userId,
@@ -61,7 +61,7 @@ export async function triggerAutoRunOnLeadCreated(
 
     if (settings.length === 0) return;
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) return;
 
@@ -107,7 +107,7 @@ export async function triggerIndustryAutoRunOnLeadCreated(
   industry: Industry
 ): Promise<void> {
   try {
-    const db = getCrmDb(createDalContext(userId));
+    const db = getCrmDb(await resolveDalContext(userId));
     const settings = await db.aIEmployeeAutoRun.findMany({
       where: {
         userId,
@@ -119,7 +119,7 @@ export async function triggerIndustryAutoRunOnLeadCreated(
 
     if (settings.length === 0) return;
 
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) return;
 

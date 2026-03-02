@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession, resolveDalContext } from '@/lib/context/industry-context';
 import { changeApproval } from '@/lib/website-builder/approval';
 import { aiModificationService } from '@/lib/website-builder/ai-modification-service';
 import { apiErrors } from '@/lib/api-error';
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Website ID and message are required');
     }
 
-    const ctx = isInternalCall ? createDalContext(userId) : getDalContextFromSession(session);
+    const ctx = isInternalCall ? await resolveDalContext(userId) : getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
     const website = await websiteService.findUnique(ctx, websiteId);
 

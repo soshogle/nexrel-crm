@@ -9,7 +9,7 @@ import { waitUntil } from '@vercel/functions';
 export const maxDuration = 300; // 5 min - scraping can take a while, waitUntil keeps function alive
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { getDalContextFromSession, resolveDalContext } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
@@ -33,7 +33,7 @@ async function processImportInBackground(
   pagePath: string,
   userId: string
 ) {
-  const ctx = createDalContext(userId);
+  const ctx = await resolveDalContext(userId);
   try {
     const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
     // Try simple fetch first (faster, works on Vercel). Scraper falls back to Playwright if blocked.

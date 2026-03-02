@@ -6,7 +6,7 @@
 
 import { prisma } from '../db';
 import { getCrmDb } from '@/lib/dal/db';
-import { createDalContext } from '@/lib/context/industry-context';
+import { resolveDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import sgMail from '@sendgrid/mail';
@@ -95,7 +95,7 @@ export class CustomerOnboardingAgent {
   }
 
   private async createCustomerRecord(userId: string, customerData: any) {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const lead = await db.lead.create({
       data: {
@@ -115,7 +115,7 @@ export class CustomerOnboardingAgent {
   }
 
   private async generateInvoice(userId: string, leadId: string, purchaseData: any) {
-    const ctx = createDalContext(userId);
+    const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     const amount = purchaseData.amount || 0;
