@@ -200,8 +200,9 @@ export async function POST(request: NextRequest) {
     try {
       const mktCtx = await getMarketContext(session.user.id, {
         city: propertyData.city,
-        region: propertyData.state === 'QC' ? 'Montréal' : undefined,
+        state: propertyData.state,
         propertyCategory: propertyData.propertyType,
+        months: 24,
       });
       marketBullets = marketBulletPoints(mktCtx);
     } catch { /* non-critical, fall back to defaults */ }

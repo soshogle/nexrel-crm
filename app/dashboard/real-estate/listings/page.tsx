@@ -8,6 +8,7 @@ import {
   Edit, Trash2, MoreHorizontal,
   Calendar, Tag, ChevronLeft, Download, Database, Import, Loader2,
   TrendingUp, TrendingDown, RefreshCw, ArrowUpRight, ArrowDownRight,
+  Settings, ExternalLink, Star,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import { ListingFormDialog, ListingFormState } from '@/components/real-estate/listing-form-dialog';
 
@@ -49,6 +51,8 @@ interface Property {
   listingDate?: string;
   createdAt: string;
   sellerLead?: { id: string; contactPerson?: string; email?: string; phone?: string } | null;
+  isBrokerListing?: boolean;
+  websiteListingUrl?: string;
 }
 
 const PROPERTY_TYPES = [
@@ -121,6 +125,8 @@ export default function ListingsPage() {
   const [checkingPrices, setCheckingPrices] = useState(false);
   const [priceChanges, setPriceChanges] = useState<any[]>([]);
   const [showPriceChanges, setShowPriceChanges] = useState(false);
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' || (session?.user?.isImpersonating && (session?.user as any)?.superAdminId);
   const { toast } = useToast();
 
   const fetchProperties = useCallback(async () => {
@@ -157,7 +163,7 @@ export default function ListingsPage() {
   useEffect(() => { if (listingTab === 'rent') fetchRentals(); }, [listingTab, fetchRentals]);
 
   const saleScopedProperties = saleScope === 'broker'
-    ? properties.filter((p) => !!p.sellerLead)
+    ? properties.filter((p) => p.isBrokerListing || !!p.sellerLead)
     : properties;
 
   const filtered = saleScopedProperties.filter((p) => {
@@ -435,6 +441,24 @@ export default function ListingsPage() {
     }
   }
 
+  async function toggleBrokerListing(propertyId: string, current: boolean) {
+    try {
+      const res = await fetch('/api/real-estate/properties', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: propertyId, isBrokerListing: !current }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast({
+        title: !current ? 'Marked as Broker Listing' : 'Removed Broker Flag',
+        description: !current ? 'This listing is now part of your portfolio' : 'This listing is no longer flagged as yours',
+      });
+      fetchProperties();
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update listing', variant: 'destructive' });
+    }
+  }
+
   function toggleBulk(id: string) {
     setBulkSelected((prev) => {
       const next = new Set(prev);
@@ -466,74 +490,79 @@ export default function ListingsPage() {
           <p className="text-muted-foreground">Centralized view of all your property listings</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              setCheckingPrices(true);
-              try {
-                const res = await fetch('/api/real-estate/properties/price-monitor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 50 }) });
-                const raw = await res.text();
-                let data: any = {};
-                try { data = raw ? JSON.parse(raw) : {}; } catch {}
-                if (!res.ok) throw new Error(data?.error || `Price check failed (${res.status})`);
-                if (data.changes?.length > 0) {
-                  setPriceChanges(data.changes);
-                  setShowPriceChanges(true);
-                }
-                toast({ title: 'Price Check Complete', description: data.message });
-                fetchProperties();
-              } catch (e: any) {
-                toast({ title: 'Error', description: e.message || 'Price check failed', variant: 'destructive' });
-              } finally {
-                setCheckingPrices(false);
-              }
-            }}
-            disabled={checkingPrices}
-          >
-            {checkingPrices ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Check Prices
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              setSyncingStatus(true);
-              try {
-                const res = await fetch('/api/real-estate/properties/sync-status-to-website', { method: 'POST' });
-                const raw = await res.text();
-                let data: any = {};
-                try { data = raw ? JSON.parse(raw) : {}; } catch {}
-                if (!res.ok) throw new Error(data?.error || `Sync failed (${res.status})`);
-                toast({ title: 'Synced', description: data.message || 'Status updates pushed to your website' });
-              } catch (e: any) {
-                toast({ title: 'Error', description: e.message || 'Failed to sync', variant: 'destructive' });
-              } finally {
-                setSyncingStatus(false);
-              }
-            }}
-            disabled={syncingStatus}
-          >
-            {syncingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-            Sync to Website
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={listingTab === 'sale' ? properties.length === 0 : rentals.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Export
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" /> Settings
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => {
-                window.open('/api/real-estate/properties/export?format=centris', '_blank');
-              }}>
-                Export for Centris.ca
+              <DropdownMenuItem
+                onClick={async () => {
+                  setCheckingPrices(true);
+                  try {
+                    const res = await fetch('/api/real-estate/properties/price-monitor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 50 }) });
+                    const raw = await res.text();
+                    let data: any = {};
+                    try { data = raw ? JSON.parse(raw) : {}; } catch {}
+                    if (!res.ok) throw new Error(data?.error || `Price check failed (${res.status})`);
+                    if (data.changes?.length > 0) {
+                      setPriceChanges(data.changes);
+                      setShowPriceChanges(true);
+                    }
+                    toast({ title: 'Price Check Complete', description: data.message });
+                    fetchProperties();
+                  } catch (e: any) {
+                    toast({ title: 'Error', description: e.message || 'Price check failed', variant: 'destructive' });
+                  } finally {
+                    setCheckingPrices(false);
+                  }
+                }}
+                disabled={checkingPrices}
+              >
+                {checkingPrices ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Check Prices
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                window.open('/api/real-estate/properties/export?format=realtor', '_blank');
-              }}>
-                Export for Realtor.ca (CREA DDF)
+              <DropdownMenuItem
+                onClick={async () => {
+                  setSyncingStatus(true);
+                  try {
+                    const res = await fetch('/api/real-estate/properties/sync-status-to-website', { method: 'POST' });
+                    const raw = await res.text();
+                    let data: any = {};
+                    try { data = raw ? JSON.parse(raw) : {}; } catch {}
+                    if (!res.ok) throw new Error(data?.error || `Sync failed (${res.status})`);
+                    toast({ title: 'Synced', description: data.message || 'Status updates pushed to your website' });
+                  } catch (e: any) {
+                    toast({ title: 'Error', description: e.message || 'Failed to sync', variant: 'destructive' });
+                  } finally {
+                    setSyncingStatus(false);
+                  }
+                }}
+                disabled={syncingStatus}
+              >
+                {syncingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                Sync to Website
               </DropdownMenuItem>
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => window.open('/api/real-estate/properties/export?format=centris', '_blank')}
+                    disabled={listingTab === 'sale' ? properties.length === 0 : rentals.length === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export for Centris.ca
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => window.open('/api/real-estate/properties/export?format=realtor', '_blank')}
+                    disabled={listingTab === 'sale' ? properties.length === 0 : rentals.length === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export for Realtor.ca (CREA DDF)
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={openNew}>
@@ -574,7 +603,7 @@ export default function ListingsPage() {
             size="sm"
             onClick={() => setSaleScope('broker')}
           >
-            Broker Listings ({properties.filter((p) => !!p.sellerLead).length})
+            Broker Listings ({properties.filter((p) => p.isBrokerListing || !!p.sellerLead).length})
           </Button>
         </div>
       )}
@@ -910,8 +939,13 @@ export default function ListingsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((p) => (
-                  <TableRow key={p.id} className="group">
-                    <TableCell>
+                  <TableRow
+                    key={p.id}
+                    className={`group ${p.websiteListingUrl ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                    onClick={() => p.websiteListingUrl && window.open(p.websiteListingUrl, '_blank')}
+                    title={p.websiteListingUrl ? 'Click to view on your website' : undefined}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={bulkSelected.has(p.id)}
@@ -929,12 +963,16 @@ export default function ListingsPage() {
                           </div>
                         )}
                         <div>
-                          <div className="font-medium">{p.address}{p.unit ? `, ${p.unit}` : ''}</div>
+                          <div className="font-medium flex items-center gap-1.5">
+                            {p.isBrokerListing && <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500 flex-shrink-0" />}
+                            {p.address}{p.unit ? `, ${p.unit}` : ''}
+                            {p.websiteListingUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-60" />}
+                          </div>
                           <div className="text-xs text-muted-foreground">{p.city}, {p.state} {p.zip}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Badge variant="secondary" className={`${statusColor(p.listingStatus)} text-white text-xs cursor-pointer hover:opacity-80`}>
@@ -963,14 +1001,14 @@ export default function ListingsPage() {
                     <TableCell className="text-right">{p.sqft?.toLocaleString() ?? '—'}</TableCell>
                     <TableCell className="text-sm font-mono">{p.mlsNumber || '—'}</TableCell>
                     <TableCell className="text-center">{p.daysOnMarket}</TableCell>
-                    <TableCell className="text-center text-sm">
+                    <TableCell className="text-center text-sm" onClick={(e) => e.stopPropagation()}>
                       {p.sellerLead ? (
                         <Link href={`/dashboard/leads/${p.sellerLead.id}`} className="text-primary hover:underline">
                           {p.sellerLead.contactPerson || 'View'}
                         </Link>
                       ) : '—'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
@@ -984,6 +1022,10 @@ export default function ListingsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEdit(p)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleBrokerListing(p.id, !!p.isBrokerListing)}>
+                            <Star className={`mr-2 h-4 w-4 ${p.isBrokerListing ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                            {p.isBrokerListing ? 'Remove from My Listings' : 'Mark as My Listing'}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {p.listingStatus !== 'ACTIVE' && (

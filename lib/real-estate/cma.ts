@@ -164,8 +164,8 @@ async function fetchRealComparables(subject: SubjectProperty, userId: string, li
     where: {
       userId,
       listingStatus: { in: ['SOLD', 'ACTIVE', 'PENDING'] as any },
-      ...(subject.city ? { city: { equals: subject.city, mode: 'insensitive' } } : {}),
-      ...(subject.state ? { state: { equals: subject.state, mode: 'insensitive' } } : {}),
+      ...(subject.city ? { city: { contains: subject.city, mode: 'insensitive' } } : {}),
+      ...(subject.state ? { state: { contains: subject.state, mode: 'insensitive' } } : {}),
       ...(mappedType ? { propertyType: mappedType as any } : {}),
       OR: [
         { soldPrice: { gt: 0 } },
@@ -241,8 +241,8 @@ async function generateAnalysis(
   if (userId) {
     try {
       const ctx = await getMarketContext(userId, {
-        region: subject.state === 'QC' ? 'Montréal' : undefined,
         city: subject.city,
+        state: subject.state,
         propertyCategory: subject.propertyType,
       });
       marketCtxSummary = ctx.summary;

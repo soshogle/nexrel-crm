@@ -1,6 +1,7 @@
 /**
- * Compute live market stats from real REProperty and REFSBOListing data.
- * Used by market-stats API and attraction reports. All numbers are from actual listings.
+ * Compute live market stats from real REProperty, REFSBOListing, AND stored
+ * Centris/iGEN market data. Blends both sources so reports, presentations,
+ * and CMA always reflect the most complete picture.
  */
 import { prisma } from '@/lib/db';
 
@@ -38,13 +39,46 @@ export interface LiveMarketStats {
   priceDistribution: { range: string; count: number }[];
   statusBreakdown: { status: string; count: number }[];
   monthlyTrends: { month: string; newListings: number; closedSales: number; medianPrice: number; avgPrice: number; medianDom: number }[];
-  dataSource: { properties: number; fsboListings: number; location: string };
+  dataSource: { properties: number; fsboListings: number; storedStats: number; location: string };
+  centrisContext?: {
+    region?: string;
+    medianSalePrice?: number;
+    avgSalePrice?: number;
+    dom?: number;
+    activeInventory?: number;
+    closedSales?: number;
+    newListings?: number;
+    saleVsListPct?: number;
+    monthsOfSupply?: number;
+    period?: string;
+  };
 }
 
 export interface ComputeMarketStatsResult {
   hasData: boolean;
   stats: LiveMarketStats | null;
   message?: string;
+}
+
+async function fetchStoredStats(userId: string, city?: string | null, state?: string | null) {
+  return prisma.rEMarketStats.findMany({
+    where: {
+      userId,
+      periodType: 'MONTHLY',
+      priceRange: null,
+      ...(city
+        ? {
+            OR: [
+              { city: { contains: city, mode: 'insensitive' } },
+              { region: { contains: city, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(state ? { state: { contains: state, mode: 'insensitive' } } : {}),
+    },
+    orderBy: { periodStart: 'desc' },
+    take: 24,
+  });
 }
 
 export async function computeLiveMarketStats(
@@ -56,7 +90,7 @@ export async function computeLiveMarketStats(
   if (city) (locationFilter as any).city = { contains: city, mode: 'insensitive' };
   if (state) (locationFilter as any).state = { contains: state, mode: 'insensitive' };
 
-  const [properties, fsboListings] = await Promise.all([
+  const [properties, fsboListings, storedStats] = await Promise.all([
     prisma.rEProperty.findMany({
       where: { userId, ...locationFilter },
       select: {
@@ -81,26 +115,33 @@ export async function computeLiveMarketStats(
       orderBy: { createdAt: 'desc' },
       take: 500,
     }),
+    fetchStoredStats(userId, city, state),
   ]);
 
   const totalListings = properties.length + fsboListings.length;
+  const latestStored = storedStats.length > 0 ? storedStats[0] : null;
 
-  // If no user listings, check for Centris-imported market stats as fallback
+  // Build Centris context from stored stats
+  const centrisContext = latestStored
+    ? {
+        region: latestStored.region,
+        medianSalePrice: latestStored.medianSalePrice ?? undefined,
+        avgSalePrice: latestStored.avgSalePrice ?? undefined,
+        dom: latestStored.domAvg ?? latestStored.domMedian ?? undefined,
+        activeInventory: latestStored.activeInventory ?? undefined,
+        closedSales: latestStored.closedSales ?? undefined,
+        newListings: latestStored.newListings ?? undefined,
+        saleVsListPct: latestStored.closePriceToAskingRatio ?? undefined,
+        monthsOfSupply: latestStored.monthsOfSupply ?? undefined,
+        period: latestStored.periodStart.toISOString().slice(0, 7),
+      }
+    : undefined;
+
+  // If no user listings, use stored Centris data exclusively
   if (totalListings === 0) {
-    const stored = await prisma.rEMarketStats.findMany({
-      where: {
-        userId,
-        periodType: 'MONTHLY',
-        priceRange: null,
-        ...(city ? { OR: [{ city: { contains: city, mode: 'insensitive' } }, { region: { contains: city, mode: 'insensitive' } }] } : {}),
-      },
-      orderBy: { periodStart: 'desc' },
-      take: 12,
-    });
-
-    if (stored.length > 0) {
-      const latest = stored[0];
-      const mTrends = stored.reverse().map((s) => ({
+    if (storedStats.length > 0) {
+      const latest = storedStats[0];
+      const mTrends = [...storedStats].reverse().map((s) => ({
         month: s.periodStart.toISOString().slice(0, 7),
         newListings: s.newListings ?? 0,
         closedSales: s.closedSales ?? 0,
@@ -136,8 +177,10 @@ export async function computeLiveMarketStats(
           dataSource: {
             properties: 0,
             fsboListings: 0,
+            storedStats: storedStats.length,
             location: latest.city || latest.region || 'Centris Data',
           },
+          centrisContext,
         },
       };
     }
@@ -149,6 +192,7 @@ export async function computeLiveMarketStats(
     };
   }
 
+  // Compute from live listings
   const activeListings = properties.filter((l) => l.listingStatus === 'ACTIVE');
   const soldListings = properties.filter((l) => l.listingStatus === 'SOLD');
   const pendingListings = properties.filter((l) => l.listingStatus === 'PENDING');
@@ -161,9 +205,14 @@ export async function computeLiveMarketStats(
   const soldDom = soldListings.map((l) => l.daysOnMarket).filter((d) => d != null && d > 0);
   const allDom = [...activeDom, ...soldDom];
 
-  const pricePerSqft = activeListings
-    .filter((l) => l.listPrice && l.sqft && l.sqft > 0)
-    .map((l) => (l.listPrice! / l.sqft!));
+  const pricePerSqft = [
+    ...activeListings
+      .filter((l) => l.listPrice && l.sqft && l.sqft > 0)
+      .map((l) => l.listPrice! / l.sqft!),
+    ...soldListings
+      .filter((l) => (l.soldPrice || l.listPrice) && l.sqft && l.sqft > 0)
+      .map((l) => (l.soldPrice || l.listPrice)! / l.sqft!),
+  ];
 
   const fsboActive = fsboListings.filter((f: { status: string }) =>
     ['NEW', 'CONTACTED', 'FOLLOW_UP'].includes(f.status)
@@ -189,6 +238,7 @@ export async function computeLiveMarketStats(
   const prevMedian = median(prevProperties.map((p) => p.listPrice).filter(Boolean) as number[]);
   const priceChange = prevMedian > 0 ? ((recentMedian - prevMedian) / prevMedian) * 100 : 0;
 
+  // Monthly trends: blend live listing data with stored Centris data
   const months: Record<string, { listings: number; sold: number; prices: number[]; dom: number[] }> = {};
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
@@ -210,6 +260,19 @@ export async function computeLiveMarketStats(
       if (months[sk]) months[sk].sold++;
     }
   }
+
+  // Fill gaps in monthly trends from stored Centris stats
+  for (const stored of storedStats) {
+    const key = stored.periodStart.toISOString().slice(0, 7);
+    if (months[key]) {
+      const m = months[key];
+      if (m.listings === 0 && stored.newListings) m.listings = stored.newListings;
+      if (m.sold === 0 && stored.closedSales) m.sold = stored.closedSales;
+      if (m.prices.length === 0 && stored.medianSalePrice) m.prices.push(stored.medianSalePrice);
+      if (m.dom.length === 0 && stored.domMedian) m.dom.push(stored.domMedian);
+    }
+  }
+
   const monthlyTrends = Object.entries(months).map(([month, data]) => ({
     month,
     newListings: data.listings,
@@ -238,20 +301,30 @@ export async function computeLiveMarketStats(
     count: allPrices.filter((p) => p >= r.min && p < r.max).length,
   }));
 
+  // Blend: use Centris data to fill gaps where live data is sparse
+  const liveDomMedian = median(allDom);
+  const liveDomAvg = Math.round(avg(allDom));
+  const liveMonthsOfSupply = Math.round(monthsOfSupply * 10) / 10;
+  const liveListToSale = Math.round(avgListToSale * 1000) / 1000;
+
   const stats: LiveMarketStats = {
-    medianSalePrice: median(allPrices),
-    avgSalePrice: Math.round(avg(allPrices)),
+    medianSalePrice: median(allPrices) || (latestStored?.medianSalePrice ?? 0),
+    avgSalePrice: Math.round(avg(allPrices)) || Math.round(latestStored?.avgSalePrice ?? 0),
     medianListPrice: median(activePrices),
     medianSoldPrice: median(soldPrices),
     activeListings: activeListings.length,
     closedSales: soldListings.length,
     pendingListings: pendingListings.length,
-    domMedian: median(allDom),
-    domAvg: Math.round(avg(allDom)),
+    domMedian: liveDomMedian > 0 ? liveDomMedian : (latestStored?.domMedian ?? 0),
+    domAvg: liveDomAvg > 0 ? liveDomAvg : Math.round(latestStored?.domAvg ?? 0),
     pricePerSqft: Math.round(avg(pricePerSqft)),
-    monthsOfSupply: Math.round(monthsOfSupply * 10) / 10,
-    listToSaleRatio: Math.round(avgListToSale * 1000) / 1000,
-    newListingsThisMonth: recentProperties.length,
+    monthsOfSupply: liveMonthsOfSupply > 0 && liveMonthsOfSupply < 99
+      ? liveMonthsOfSupply
+      : (latestStored?.monthsOfSupply ?? 0),
+    listToSaleRatio: liveListToSale > 0
+      ? liveListToSale
+      : (latestStored?.closePriceToAskingRatio ? latestStored.closePriceToAskingRatio / 100 : 0),
+    newListingsThisMonth: recentProperties.length || (latestStored?.newListings ?? 0),
     priceChangePercent: Math.round(priceChange * 10) / 10,
     fsboListings: fsboListings.length,
     fsboActive: fsboActive.length,
@@ -267,8 +340,10 @@ export async function computeLiveMarketStats(
     dataSource: {
       properties: properties.length,
       fsboListings: fsboListings.length,
+      storedStats: storedStats.length,
       location: city && state ? `${city}, ${state}` : city || state || 'All Areas',
     },
+    centrisContext,
   };
 
   return { hasData: true, stats };

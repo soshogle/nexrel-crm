@@ -90,6 +90,99 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
   }));
 }
 
+/**
+ * Returns website listing order (mls_number, address) for matching CRM properties.
+ * Used to sort Listing Management page to match broker's website display order.
+ */
+export async function getWebsiteListingOrderForCrmMatch(
+  websiteId: string
+): Promise<Array<{ mls_number: string | null; address: string }>> {
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) return [];
+
+  const website = await resolved.db.website.findFirst({
+    where: { id: websiteId },
+    select: { neonDatabaseUrl: true, templateType: true },
+  });
+
+  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+    return [];
+  }
+
+  const pool = getPool(website.neonDatabaseUrl);
+  const result = await pool.query(
+    `SELECT mls_number, address FROM properties
+     ORDER BY is_featured DESC, created_at DESC`
+  );
+
+  return result.rows.map((row: any) => ({
+    mls_number: row.mls_number ?? null,
+    address: row.address ?? '',
+  }));
+}
+
+/**
+ * Returns MLS numbers of listings flagged as `is_featured` on the broker's website.
+ * These are the broker's own listings (imported from their centrisBrokerUrl).
+ */
+export async function getBrokerFeaturedMlsNumbers(
+  websiteId: string
+): Promise<string[]> {
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) return [];
+
+  const website = await resolved.db.website.findFirst({
+    where: { id: websiteId },
+    select: { neonDatabaseUrl: true, templateType: true },
+  });
+
+  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+    return [];
+  }
+
+  const pool = getPool(website.neonDatabaseUrl);
+  const result = await pool.query(
+    `SELECT mls_number FROM properties WHERE is_featured = true AND mls_number IS NOT NULL`
+  );
+
+  return result.rows.map((row: any) => row.mls_number as string).filter(Boolean);
+}
+
+/**
+ * Flag CRM REProperty records as broker listings when their MLS number
+ * matches a featured listing on the broker's website.
+ */
+export async function flagBrokerListingsFromWebsite(
+  userId: string
+): Promise<{ flagged: number; error?: string }> {
+  try {
+    const ctx = createDalContext(userId, await getUserIndustry(userId));
+    const db = getCrmDb(ctx);
+    const website = await db.website.findFirst({
+      where: { userId: ctx.userId, templateType: 'SERVICE' },
+      select: { id: true },
+    });
+
+    if (!website) return { flagged: 0 };
+
+    const featuredMls = await getBrokerFeaturedMlsNumbers(website.id);
+    if (featuredMls.length === 0) return { flagged: 0 };
+
+    const result = await prisma.rEProperty.updateMany({
+      where: {
+        userId,
+        mlsNumber: { in: featuredMls },
+        isBrokerListing: false,
+      },
+      data: { isBrokerListing: true },
+    });
+
+    return { flagged: result.count };
+  } catch (e: any) {
+    return { flagged: 0, error: e.message };
+  }
+}
+
 export async function updatePropertyGallery(
   websiteId: string,
   propertyId: number,

@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const isSuperAdmin = (session.user as any)?.role === 'SUPER_ADMIN' ||
+      ((session.user as any)?.isImpersonating && (session.user as any)?.superAdminId);
+    if (!isSuperAdmin) {
+      return apiErrors.forbidden('Export is restricted to super admins');
+    }
+
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'centris';
     const status = searchParams.get('status');

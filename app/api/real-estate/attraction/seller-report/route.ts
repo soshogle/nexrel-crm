@@ -36,10 +36,19 @@ export async function POST(request: NextRequest) {
 
     if (!region) return apiErrors.badRequest('Region is required');
 
+    // Parse city/state from the region string when placeData is missing
+    let city = placeData?.city ?? null;
+    let state = placeData?.state ?? null;
+    if (!city && region) {
+      const parts = region.split(',').map((p) => p.trim());
+      city = parts[0] || null;
+      if (parts.length > 1) state = parts[parts.length - 1] || null;
+    }
+
     const { hasData, stats, message } = await computeLiveMarketStats(
       session.user.id,
-      placeData?.city ?? null,
-      placeData?.state ?? null
+      city,
+      state
     );
 
     if (!hasData || !stats) {
@@ -50,8 +59,19 @@ export async function POST(request: NextRequest) {
     }
 
     const loc = placeData?.city && placeData?.state ? `${placeData.city}, ${placeData.state}` : region;
+    const ctx = stats.centrisContext;
 
     const demandIndicators: { indicator: string; value: string; trend: 'up' | 'down' | 'stable'; insight: string }[] = [];
+
+    // Centris market-wide context
+    if (ctx?.medianSalePrice) {
+      demandIndicators.push({
+        indicator: 'Market Median Sale Price',
+        value: formatCurrency(ctx.medianSalePrice),
+        trend: 'stable',
+        insight: `Centris data for ${ctx.region || loc} (${ctx.period || 'recent'}). ${ctx.closedSales ? `${ctx.closedSales} sales recorded.` : ''}`,
+      });
+    }
 
     if (stats.activeListings > 0) {
       demandIndicators.push({
@@ -133,7 +153,7 @@ export async function POST(request: NextRequest) {
     if (stats.medianSoldPrice > 0) {
       equityParts.push(`Median sold price in ${loc} is ${formatCurrency(stats.medianSoldPrice)} based on ${stats.closedSales} closed sales.`);
     }
-    if (stats.listToSaleRatio >= 1 && stats.listToSaleRatio > 0) {
+    if (stats.listToSaleRatio >= 1) {
       equityParts.push(`Sellers are achieving ${(stats.listToSaleRatio * 100).toFixed(1)}% of list price on average.`);
     }
     if (stats.priceChangePercent > 0) {
@@ -174,7 +194,7 @@ export async function POST(request: NextRequest) {
       socialPost: socialPost.slice(0, 280),
       emailTeaser,
       callToAction,
-      dataSource: `Based on ${stats.dataSource.properties} MLS listings and ${stats.dataSource.fsboListings} FSBO listings in your CRM.`,
+      dataSource: `Based on ${stats.dataSource.properties} MLS listings, ${stats.dataSource.fsboListings} FSBO listings, and ${stats.dataSource.storedStats} months of Centris market data.`,
     };
 
     return NextResponse.json({ report, generatedAt: new Date().toISOString() });

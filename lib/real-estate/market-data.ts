@@ -32,35 +32,62 @@ export interface MarketContext {
 
 /**
  * Get recent market data for a region/category, optimised for CMA & presentations.
+ * Searches broadly: city matches both the `city` and `region` fields so Centris
+ * data (stored by municipality in `city` and admin-region in `region`) is found.
  */
 export async function getMarketContext(
   userId: string,
   opts: {
     region?: string;
     city?: string;
+    state?: string;
     propertyCategory?: string;
     months?: number;
   } = {}
 ): Promise<MarketContext> {
-  const { region, city, propertyCategory, months = 12 } = opts;
+  const { region, city, state, propertyCategory, months = 12 } = opts;
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
+
+  const locationConditions: any[] = [];
+  if (region) locationConditions.push({ region: { contains: region, mode: 'insensitive' } });
+  if (city) {
+    locationConditions.push({ city: { contains: city, mode: 'insensitive' } });
+    locationConditions.push({ region: { contains: city, mode: 'insensitive' } });
+  }
 
   const where: any = {
     userId,
     periodStart: { gte: cutoff },
-    ...(region && { region: { contains: region, mode: 'insensitive' } }),
-    ...(city && { city: { contains: city, mode: 'insensitive' } }),
+    ...(locationConditions.length > 0 && { OR: locationConditions }),
+    ...(state && { state: { equals: state, mode: 'insensitive' } }),
     ...(propertyCategory && {
       propertyCategory: { contains: propertyCategory, mode: 'insensitive' },
     }),
   };
 
-  const rows = await prisma.rEMarketStats.findMany({
+  let rows = await prisma.rEMarketStats.findMany({
     where,
     orderBy: { periodStart: 'desc' },
     take: 200,
   });
+
+  // If no results with location filter, try broader search (state-level, then all)
+  if (rows.length === 0 && (city || region)) {
+    const fallbackWhere: any = {
+      userId,
+      periodStart: { gte: cutoff },
+      ...(propertyCategory && {
+        propertyCategory: { contains: propertyCategory, mode: 'insensitive' },
+      }),
+      ...(state && { state: { equals: state, mode: 'insensitive' } }),
+    };
+    rows = await prisma.rEMarketStats.findMany({
+      where: fallbackWhere,
+      orderBy: { periodStart: 'desc' },
+      take: 200,
+    });
+  }
 
   const monthlyRows = rows.filter((r) => r.periodType === 'MONTHLY' && !r.priceRange);
   const priceRangeRows = rows.filter((r) => !!r.priceRange);
@@ -127,10 +154,12 @@ function buildMarketSummary(
     if (recentPrices.length >= 2) {
       const first = recentPrices[0];
       const last = recentPrices[recentPrices.length - 1];
-      const pctChange = ((last - first) / first) * 100;
-      const direction =
-        pctChange > 2 ? 'trending upward' : pctChange < -2 ? 'trending downward' : 'stable';
-      parts.push(`Prices are ${direction} over the past ${recentPrices.length} months`);
+      if (first > 0) {
+        const pctChange = ((last - first) / first) * 100;
+        const direction =
+          pctChange > 2 ? 'trending upward' : pctChange < -2 ? 'trending downward' : 'stable';
+        parts.push(`Prices are ${direction} over the past ${recentPrices.length} months`);
+      }
     }
   }
 
@@ -138,6 +167,7 @@ function buildMarketSummary(
     parts.push(`with ${current.activeInventory} active listings`);
   }
 
+  if (parts.length === 0) return `Limited market data available for ${region}.`;
   return parts.join(', ') + '.';
 }
 

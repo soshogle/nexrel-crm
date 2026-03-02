@@ -94,6 +94,7 @@ export default function MarketInsightsPage() {
   const [dataSource, setDataSource] = useState<any>(null);
   const [loadingReports, setLoadingReports] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [scope, setScope] = useState<'broker' | 'market'>('broker');
   const [websiteId, setWebsiteId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
@@ -128,7 +129,7 @@ export default function MarketInsightsPage() {
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const params = new URLSearchParams({ limit: '24' });
+      const params = new URLSearchParams({ limit: '24', scope });
       if (selectedCity) params.set('city', selectedCity);
       if (selectedState) params.set('state', selectedState);
 
@@ -151,7 +152,7 @@ export default function MarketInsightsPage() {
     } finally {
       setLoadingStats(false);
     }
-  }, [selectedCity, selectedState]);
+  }, [selectedCity, selectedState, scope]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -279,7 +280,11 @@ export default function MarketInsightsPage() {
               Market Insights
               <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-600">LIVE DATA</Badge>
             </h1>
-            <p className="text-muted-foreground">Real-time analytics from your listings, FSBO data, and market activity</p>
+            <p className="text-muted-foreground">
+              {scope === 'broker'
+                ? 'Analytics from your broker listings (linked to a seller)'
+                : 'Market-wide analytics from all MLS/Centris listings'}
+            </p>
           </div>
         </div>
 
@@ -344,14 +349,32 @@ export default function MarketInsightsPage() {
         </div>
       </div>
 
+      {/* Scope Toggle */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant={scope === 'broker' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setScope('broker')}
+        >
+          My Portfolio
+        </Button>
+        <Button
+          variant={scope === 'market' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setScope('market')}
+        >
+          Market Overview
+        </Button>
+      </div>
+
       {/* Data Source Indicator */}
       {dataSource && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/30 rounded-lg px-4 py-2">
           <div className="flex items-center gap-1.5">
             <Database className="w-4 h-4" />
-            <span className="font-medium">Data Sources:</span>
+            <span className="font-medium">{scope === 'broker' ? 'Broker Data:' : 'Market Data:'}</span>
           </div>
-          <span>{dataSource.properties} properties</span>
+          <span>{dataSource.properties} {scope === 'broker' ? 'broker listings' : 'properties'}</span>
           {(dataSource.rentalListings ?? 0) > 0 && (
             <>
               <span>&bull;</span>
@@ -424,7 +447,7 @@ export default function MarketInsightsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Price Trends</CardTitle>
-            <CardDescription>Median & average prices from your listings (12 months)</CardDescription>
+            <CardDescription>{scope === 'broker' ? 'Median & average prices from your broker listings (12 months)' : 'Median & average prices across all MLS listings (12 months)'}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingStats ? <ChartLoader /> : priceChartData.filter((d) => d.median > 0).length === 0 ? (
@@ -449,7 +472,7 @@ export default function MarketInsightsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Inventory & Sales</CardTitle>
-            <CardDescription>New listings vs closed sales (12 months)</CardDescription>
+            <CardDescription>{scope === 'broker' ? 'Your broker listings vs closed sales (12 months)' : 'All MLS new listings vs closed sales (12 months)'}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingStats ? <ChartLoader /> : inventoryChartData.filter((d) => d.newListings > 0 || d.closedSales > 0).length === 0 ? (
@@ -474,7 +497,7 @@ export default function MarketInsightsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Days on Market</CardTitle>
-            <CardDescription>Median DOM trend (12 months)</CardDescription>
+            <CardDescription>{scope === 'broker' ? 'Median DOM for your broker listings (12 months)' : 'Median DOM across all MLS listings (12 months)'}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingStats ? <ChartLoader /> : domChartData.filter((d) => d.dom > 0).length === 0 ? (
@@ -496,8 +519,8 @@ export default function MarketInsightsPage() {
         {/* Portfolio Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><PieIcon className="h-5 w-5" /> Portfolio Breakdown</CardTitle>
-            <CardDescription>Your listings by status</CardDescription>
+            <CardTitle className="flex items-center gap-2"><PieIcon className="h-5 w-5" /> {scope === 'broker' ? 'Portfolio Breakdown' : 'Market Breakdown'}</CardTitle>
+            <CardDescription>{scope === 'broker' ? 'Your broker listings by status' : 'All MLS listings by status'}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingStats ? <ChartLoader /> : pieData.length === 0 ? (
@@ -529,7 +552,7 @@ export default function MarketInsightsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Home className="h-5 w-5" /> Property Types</CardTitle>
-                <CardDescription>Distribution by property type</CardDescription>
+                <CardDescription>{scope === 'broker' ? 'Your broker listings by type' : 'All MLS listings by type'}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -549,7 +572,7 @@ export default function MarketInsightsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Price Distribution</CardTitle>
-                <CardDescription>Listings by price range</CardDescription>
+                <CardDescription>{scope === 'broker' ? 'Your broker listings by price range' : 'All MLS listings by price range'}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>

@@ -47,6 +47,8 @@
     "verify:listings-setup": "tsx scripts/verify-listings-setup.ts",
     "set-theodora-neon-db": "tsx scripts/set-theodora-neon-database-url.ts",
     "check-theodora-listings": "tsx scripts/check-theodora-listings.ts",
+    "ingest:centris-pdfs": "tsx scripts/ingest-centris-pdfs.ts",
+    "ingest:centris-pdfs:dry-run": "tsx scripts/ingest-centris-pdfs.ts --dry-run",
     "set-theodora-vercel-database": "tsx scripts/set-theodora-vercel-database.ts",
     "publish-theodora-to-github": "tsx scripts/publish-theodora-to-github.ts",
     "sync-theodora": "tsx scripts/sync-template-to-theodora.ts",

@@ -360,5 +360,6 @@ export async function lookupPropertyByAddress(
   const best = pickBestResult(results);
   if (!best) return null;
   const data = await scrapeGenericListingPage(best.url);
-  return { data: data || {}, sourceUrl: best.url };
+  if (!data || (!data.listPrice && !data.description && !data.bedrooms)) return null;
+  return { data, sourceUrl: best.url };
 }

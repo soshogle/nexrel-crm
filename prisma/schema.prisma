@@ -7188,12 +7188,13 @@ model REProperty {
   virtualTourUrl String?
   description    String?
   features       String[]        @default([])
-  sellerLeadId   String?
-  listingDate    DateTime?
-  soldDate       DateTime?
-  expirationDate DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  sellerLeadId    String?
+  isBrokerListing Boolean         @default(false)
+  listingDate     DateTime?
+  soldDate        DateTime?
+  expirationDate  DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   // Relations
   user          User                    @relation("REUserProperties", fields: [userId], references: [id], onDelete: Cascade)
@@ -7208,6 +7209,7 @@ model REProperty {
 
   @@index([userId])
   @@index([city, state])
+  @@index([userId, isBrokerListing])
   @@index([listingStatus])
   @@index([mlsNumber])
 }

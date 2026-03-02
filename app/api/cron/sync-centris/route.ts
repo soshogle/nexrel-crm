@@ -15,6 +15,7 @@ import { apiErrors } from '@/lib/api-error';
 import { runPriceMonitor, type PriceMonitorResult } from "@/lib/listing-enrichment/price-monitor";
 import { enrichCrmListings } from "@/lib/listing-enrichment/enrich-crm-listings";
 import { backfillPropertyCoordinates } from "@/lib/real-estate/geo-comps";
+import { syncStatusChangesToWebsite, flagBrokerListingsFromWebsite } from "@/lib/website-builder/listings-service";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -193,6 +194,50 @@ export async function GET(req: NextRequest) {
       console.warn("[backfill-coords] User lookup failed:", err);
     }
 
+    // Flag broker listings: cross-reference website featured listings with CRM properties
+    const brokerFlagResults: Array<{ userId: string; flagged: number }> = [];
+    try {
+      const reUsersFlag: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsersFlag) {
+        try {
+          const fr = await flagBrokerListingsFromWebsite(u.id);
+          if (fr.flagged > 0) {
+            brokerFlagResults.push({ userId: u.id, flagged: fr.flagged });
+          }
+        } catch (err) {
+          console.warn("[broker-flag] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[broker-flag] User lookup failed:", err);
+    }
+
+    // Bulk sync sold/rented status to website (catch-all for any missed per-update syncs)
+    const statusSyncResults: Array<{ userId: string; sold: number; rented: number }> = [];
+    try {
+      const reUsersSync: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsersSync) {
+        try {
+          const sr = await syncStatusChangesToWebsite(u.id);
+          if (sr.soldUpdated > 0 || sr.rentedUpdated > 0) {
+            statusSyncResults.push({ userId: u.id, sold: sr.soldUpdated, rented: sr.rentedUpdated });
+          }
+        } catch (err) {
+          console.warn("[status-sync] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[status-sync] User lookup failed:", err);
+    }
+
     return NextResponse.json({
       ok: true,
       centris: { fetched: result.fetched, databases: result.databases.length, details: result.databases },
@@ -215,6 +260,17 @@ export async function GET(req: NextRequest) {
         usersProcessed: coordBackfillResults.length,
         totalUpdated: coordBackfillResults.reduce((s, r) => s + r.updated, 0),
         details: coordBackfillResults,
+      },
+      statusSync: {
+        usersProcessed: statusSyncResults.length,
+        totalSold: statusSyncResults.reduce((s, r) => s + r.sold, 0),
+        totalRented: statusSyncResults.reduce((s, r) => s + r.rented, 0),
+        details: statusSyncResults,
+      },
+      brokerFlags: {
+        usersProcessed: brokerFlagResults.length,
+        totalFlagged: brokerFlagResults.reduce((s, r) => s + r.flagged, 0),
+        details: brokerFlagResults,
       },
     });
   } catch (err) {

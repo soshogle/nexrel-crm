@@ -6,7 +6,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REPropertyType, REListingStatus } from '@prisma/client';
-import { syncListingToWebsite, syncStatusToWebsite } from '@/lib/website-builder/listings-service';
+import {
+  syncListingToWebsite,
+  syncStatusToWebsite,
+  getWebsiteListingOrderForCrmMatch,
+} from '@/lib/website-builder/listings-service';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -15,6 +21,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as REListingStatus | null;
@@ -36,7 +45,43 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    return NextResponse.json({ properties });
+    // Align order with broker's website (is_featured DESC, created_at DESC)
+    const website = await websiteService.findFirst(ctx, { templateType: 'SERVICE' });
+    const baseUrl = (website as { vercelDeploymentUrl?: string | null })?.vercelDeploymentUrl?.replace(/\/$/, '');
+    if (website) {
+      try {
+        const websiteOrder = await getWebsiteListingOrderForCrmMatch(website.id);
+        if (websiteOrder.length > 0) {
+          const orderMap = new Map<string, number>();
+          websiteOrder.forEach((item, idx) => {
+            const mls = (item.mls_number || '').trim().toLowerCase();
+            const addr = (item.address || '').trim().toLowerCase();
+            if (mls && !orderMap.has(`mls:${mls}`)) orderMap.set(`mls:${mls}`, idx);
+            if (addr && !orderMap.has(`addr:${addr}`)) orderMap.set(`addr:${addr}`, idx);
+          });
+          const posFor = (p: (typeof properties)[0]) => {
+            const mls = (p.mlsNumber || '').trim().toLowerCase();
+            const fullAddr = `${p.address || ''}, ${p.city || ''}, ${p.state || ''} ${p.zip || ''}`.trim().toLowerCase();
+            return orderMap.get(`mls:${mls}`) ?? orderMap.get(`addr:${fullAddr}`) ?? orderMap.get(`addr:${(p.address || '').toLowerCase()}`) ?? 9999;
+          };
+          properties.sort((a, b) => posFor(a) - posFor(b));
+        }
+      } catch {
+        // Keep default order if website order fetch fails
+      }
+    }
+
+    // Add website listing URL for each property (opens on owner's site)
+    const slugify = (s: string) =>
+      s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 120);
+    const propsWithUrl = properties.map((p) => {
+      const fullAddr = `${p.address || ''}, ${p.city || ''}, ${p.state || ''} ${p.zip || ''}`.trim();
+      const slug = slugify(fullAddr);
+      const websiteListingUrl = baseUrl && slug ? `${baseUrl}/properties/${slug}` : undefined;
+      return { ...p, websiteListingUrl };
+    });
+
+    return NextResponse.json({ properties: propsWithUrl });
   } catch (error) {
     console.error('Properties GET error:', error);
     return apiErrors.internal('Failed to fetch properties');
@@ -103,6 +148,7 @@ export async function POST(request: NextRequest) {
         description,
         features: features || [],
         sellerLeadId,
+        isBrokerListing: body.isBrokerListing === true || !!sellerLeadId,
         listingDate: listingDate ? new Date(listingDate) : null,
         expirationDate: expirationDate ? new Date(expirationDate) : null,
       },
@@ -175,6 +221,7 @@ export async function PUT(request: NextRequest) {
         ...(updateData.photos !== undefined && { photos: updateData.photos || [] }),
         ...(updateData.virtualTourUrl !== undefined && { virtualTourUrl: updateData.virtualTourUrl || null }),
         ...(updateData.daysOnMarket !== undefined && { daysOnMarket: parseInt(updateData.daysOnMarket) }),
+        ...(updateData.isBrokerListing !== undefined && { isBrokerListing: !!updateData.isBrokerListing }),
       },
     });
 

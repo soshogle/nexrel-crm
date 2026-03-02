@@ -22,16 +22,26 @@ export async function GET(request: NextRequest) {
     const periodType = searchParams.get('periodType');
     const limit = parseInt(searchParams.get('limit') || '200');
     const mode = searchParams.get('mode') || 'auto'; // 'auto' | 'stored' | 'live'
+    const scope = searchParams.get('scope') || 'market'; // 'broker' = own listings only, 'market' = all (incl. MLS imports)
 
     // Build location filter for listings
     const locationFilter: any = {};
     if (city) locationFilter.city = { contains: city, mode: 'insensitive' };
     if (state) locationFilter.state = { contains: state, mode: 'insensitive' };
 
+    // When scope=broker, only include the broker's own listings
+    if (scope === 'broker') {
+      locationFilter.OR = [
+        { isBrokerListing: true },
+        { sellerLeadId: { not: null } },
+      ];
+    }
+
     // Fetch stored stats (previously generated/seeded + Centris imports)
     const storedStats = await prisma.rEMarketStats.findMany({
       where: {
         userId: session.user.id,
+        priceRange: null,
         ...(region && { region: { contains: region, mode: 'insensitive' } }),
         ...(city && { city: { contains: city, mode: 'insensitive' } }),
         ...(state && { state: { contains: state, mode: 'insensitive' } }),
@@ -121,8 +131,8 @@ export async function GET(request: NextRequest) {
     const fsboActive = fsboListings.filter((f: any) => f.status === 'NEW' || f.status === 'CONTACTED' || f.status === 'FOLLOW_UP');
     const fsboPrices = fsboListings.map((f: any) => f.listPrice).filter(Boolean) as number[];
 
-    // Calculate monthly trends from sold data (for charts)
-    const monthlyTrends = calculateMonthlyTrends(properties, fsboListings);
+    // Calculate monthly trends from sold data + stored Centris stats (for charts)
+    const monthlyTrends = calculateMonthlyTrends(properties, fsboListings, storedStats);
 
     // List-to-sale ratio
     const listToSaleRatios = soldListings
@@ -154,12 +164,11 @@ export async function GET(request: NextRequest) {
     }
     const locations = Array.from(locationSet).sort();
 
-    // Fallback to stored stats when live stats are sparse (DOM, months of supply, etc.)
+    // Blend stored Centris stats with live data
     const latestStored = storedStats.length > 0
       ? storedStats.reduce((a, b) => (new Date(b.periodStart) > new Date(a.periodStart) ? b : a))
       : null;
 
-    // When no live data but we have stored stats, use stored for display
     const useStoredFallback = properties.length === 0 && latestStored != null;
 
     const liveDomMedian = useStoredFallback ? (latestStored.domMedian ?? Math.round(latestStored.domAvg ?? 0)) : median(allDom);
@@ -170,14 +179,33 @@ export async function GET(request: NextRequest) {
       ? Math.round(avgListToSale * 1000) / 1000
       : (latestStored?.closePriceToAskingRatio != null ? Math.round(latestStored.closePriceToAskingRatio) / 100 : 0);
 
+    // For Market Overview, also fill monthly trend gaps from stored stats
+    const storedByMonth = new Map<string, typeof storedStats[0]>();
+    for (const s of storedStats) {
+      const key = s.periodStart.toISOString().slice(0, 7);
+      if (!storedByMonth.has(key)) storedByMonth.set(key, s);
+    }
+    for (const trend of monthlyTrends) {
+      if (trend.newListings === 0 && trend.closedSales === 0) {
+        const stored = storedByMonth.get(trend.month);
+        if (stored) {
+          if (stored.newListings) trend.newListings = stored.newListings;
+          if (stored.closedSales) trend.closedSales = stored.closedSales;
+          if (stored.medianSalePrice && trend.medianPrice === 0) trend.medianPrice = stored.medianSalePrice;
+          if (stored.avgSalePrice && trend.avgPrice === 0) trend.avgPrice = Math.round(stored.avgSalePrice);
+          if (stored.domMedian && trend.medianDom === 0) trend.medianDom = stored.domMedian;
+        }
+      }
+    }
+
     const liveStats = {
-      medianSalePrice: useStoredFallback ? (latestStored.medianSalePrice ?? 0) : median(allPrices),
-      avgSalePrice: useStoredFallback ? Math.round(latestStored.avgSalePrice ?? 0) : avg(allPrices),
+      medianSalePrice: useStoredFallback ? (latestStored.medianSalePrice ?? 0) : (median(allPrices) || (latestStored?.medianSalePrice ?? 0)),
+      avgSalePrice: useStoredFallback ? Math.round(latestStored.avgSalePrice ?? 0) : (avg(allPrices) || Math.round(latestStored?.avgSalePrice ?? 0)),
       medianListPrice: useStoredFallback ? (latestStored.medianAskingPrice ?? latestStored.medianSalePrice ?? 0) : median(activePrices),
       medianSoldPrice: useStoredFallback ? (latestStored.medianSalePrice ?? 0) : median(soldPrices),
-      activeListings: activeListings.length,
-      totalActiveListings: activeListings.length + rentalListings.filter((r: any) => r.listingStatus === 'ACTIVE').length,
-      closedSales: useStoredFallback ? (latestStored.closedSales ?? 0) : soldListings.length,
+      activeListings: activeListings.length || (latestStored?.activeInventory ?? 0),
+      totalActiveListings: (activeListings.length + rentalListings.filter((r: any) => r.listingStatus === 'ACTIVE').length) || (latestStored?.activeInventory ?? 0),
+      closedSales: useStoredFallback ? (latestStored.closedSales ?? 0) : (soldListings.length || (latestStored?.closedSales ?? 0)),
       pendingListings: pendingListings.length,
       domMedian: liveDomMedian > 0 ? liveDomMedian : (latestStored?.domMedian ?? latestStored?.domAvg) ?? 0,
       domAvg: liveDomAvg > 0 ? liveDomAvg : Math.round(latestStored?.domAvg ?? 0),
@@ -187,23 +215,33 @@ export async function GET(request: NextRequest) {
         : (latestStored?.monthsOfSupply ?? 0),
       listToSaleRatio: liveListToSale,
       totalActiveValue: activeListings.reduce((s, l) => s + (l.listPrice || 0), 0),
-      newListingsThisMonth: recentProperties.length,
+      newListingsThisMonth: recentProperties.length || (latestStored?.newListings ?? 0),
       priceChangePercent: Math.round(priceChange * 10) / 10,
       fsboListings: fsboListings.length,
       fsboActive: fsboActive.length,
       fsboMedianPrice: median(fsboPrices),
       rentalListings: rentalListings.length,
       rentalActive: rentalListings.filter((r: any) => r.listingStatus === 'ACTIVE').length,
-      // Property type breakdown
       typeBreakdown: getPropertyTypeBreakdown(properties),
-      // Price range distribution
       priceDistribution: getPriceDistribution(allPrices),
-      // Status breakdown
       statusBreakdown: [
         { status: 'ACTIVE', count: activeListings.length },
         { status: 'PENDING', count: pendingListings.length },
         { status: 'SOLD', count: soldListings.length },
       ],
+      centrisContext: latestStored ? {
+        region: latestStored.region,
+        medianSalePrice: latestStored.medianSalePrice ?? undefined,
+        avgSalePrice: latestStored.avgSalePrice ?? undefined,
+        dom: latestStored.domAvg ?? latestStored.domMedian ?? undefined,
+        activeInventory: latestStored.activeInventory ?? undefined,
+        closedSales: latestStored.closedSales ?? undefined,
+        newListings: latestStored.newListings ?? undefined,
+        saleVsListPct: latestStored.closePriceToAskingRatio ?? undefined,
+        monthsOfSupply: latestStored.monthsOfSupply ?? undefined,
+        period: latestStored.periodStart.toISOString().slice(0, 7),
+        source: latestStored.source ?? undefined,
+      } : undefined,
     };
 
     const myStats = {
@@ -233,12 +271,14 @@ export async function GET(request: NextRequest) {
       myStats,
       monthlyTrends,
       locations,
+      scope,
       dataSource: {
         properties: properties.length,
         fsboListings: fsboListings.length,
         rentalListings: rentalListings.length,
         storedStats: storedStats.length,
         location: city || state || region || 'All Areas',
+        scope,
       },
     });
   } catch (error) {
@@ -430,11 +470,11 @@ function getDomForTrend(p: { daysOnMarket: number | null; listingDate: Date | nu
   return Math.max(0, Math.floor((endDate.getTime() - listDate.getTime()) / 86400000));
 }
 
-function calculateMonthlyTrends(properties: any[], fsboListings: any[]) {
+function calculateMonthlyTrends(properties: any[], fsboListings: any[], storedStats?: any[]) {
   const months: Record<string, { listings: number; sold: number; fsboNew: number; medianPrice: number; prices: number[]; dom: number[] }> = {};
   const now = new Date();
 
-  for (let i = 11; i >= 0; i--) {
+  for (let i = 23; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     months[key] = { listings: 0, sold: 0, fsboNew: 0, medianPrice: 0, prices: [], dom: [] };
@@ -461,6 +501,20 @@ function calculateMonthlyTrends(properties: any[], fsboListings: any[]) {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (months[key]) {
       months[key].fsboNew++;
+    }
+  }
+
+  // Fill gaps from stored Centris/imported stats
+  if (storedStats) {
+    for (const s of storedStats) {
+      const key = s.periodStart.toISOString().slice(0, 7);
+      if (months[key]) {
+        const m = months[key];
+        if (m.listings === 0 && s.newListings) m.listings = s.newListings;
+        if (m.sold === 0 && s.closedSales) m.sold = s.closedSales;
+        if (m.prices.length === 0 && s.medianSalePrice) m.prices.push(s.medianSalePrice);
+        if (m.dom.length === 0 && s.domMedian) m.dom.push(s.domMedian);
+      }
     }
   }
 

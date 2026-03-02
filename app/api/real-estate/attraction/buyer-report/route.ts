@@ -40,10 +40,19 @@ export async function POST(request: NextRequest) {
 
     if (!region) return apiErrors.badRequest('Region is required');
 
+    // Parse city/state from the region string when placeData is missing
+    let city = placeData?.city ?? null;
+    let state = placeData?.state ?? null;
+    if (!city && region) {
+      const parts = region.split(',').map((p) => p.trim());
+      city = parts[0] || null;
+      if (parts.length > 1) state = parts[parts.length - 1] || null;
+    }
+
     const { hasData, stats, message } = await computeLiveMarketStats(
       session.user.id,
-      placeData?.city ?? null,
-      placeData?.state ?? null
+      city,
+      state
     );
 
     if (!hasData || !stats) {
@@ -54,8 +63,19 @@ export async function POST(request: NextRequest) {
     }
 
     const loc = placeData?.city && placeData?.state ? `${placeData.city}, ${placeData.state}` : region;
+    const ctx = stats.centrisContext;
 
     const opportunities: { type: string; description: string; potentialSavings: string | null; urgency: 'high' | 'medium' | 'low' }[] = [];
+
+    // Centris market-wide context (from imported PDFs/stats)
+    if (ctx?.activeInventory && ctx.activeInventory > stats.activeListings) {
+      opportunities.push({
+        type: 'Market-Wide Inventory',
+        description: `${ctx.activeInventory} active listings across ${ctx.region || loc} (Centris data, ${ctx.period || 'recent'}). Median sale price: ${ctx.medianSalePrice ? formatCurrency(ctx.medianSalePrice) : 'N/A'}.`,
+        potentialSavings: null,
+        urgency: (ctx.monthsOfSupply ?? 6) < 3 ? 'high' : (ctx.monthsOfSupply ?? 6) < 6 ? 'medium' : 'low',
+      });
+    }
 
     if (stats.activeListings > 0) {
       opportunities.push({
@@ -114,17 +134,25 @@ export async function POST(request: NextRequest) {
     }
 
     const marketInsightParts: string[] = [];
+    if (ctx?.medianSalePrice) marketInsightParts.push(`Centris median sale price: ${formatCurrency(ctx.medianSalePrice)}`);
     if (stats.medianListPrice > 0) marketInsightParts.push(`Median list price: ${formatCurrency(stats.medianListPrice)}`);
     if (stats.medianSoldPrice > 0) marketInsightParts.push(`median sold price: ${formatCurrency(stats.medianSoldPrice)}`);
     if (stats.domMedian > 0) marketInsightParts.push(`median days on market: ${stats.domMedian}`);
+    if (ctx?.dom && ctx.dom !== stats.domMedian) marketInsightParts.push(`market-wide DOM: ${ctx.dom} days`);
     if (stats.activeListings > 0) marketInsightParts.push(`${stats.activeListings} active listings`);
     if (stats.closedSales > 0) marketInsightParts.push(`${stats.closedSales} closed sales`);
-    if (stats.listToSaleRatio > 0 && stats.listToSaleRatio < 1) marketInsightParts.push(`list-to-sale ratio ${(stats.listToSaleRatio * 100).toFixed(1)}% (buyers paying below ask)`);
+    if (ctx?.saleVsListPct) marketInsightParts.push(`market sale-to-list ratio: ${ctx.saleVsListPct}%`);
+    else if (stats.listToSaleRatio > 0 && stats.listToSaleRatio < 1) marketInsightParts.push(`list-to-sale ratio ${(stats.listToSaleRatio * 100).toFixed(1)}% (buyers paying below ask)`);
     if (stats.priceChangePercent !== 0) marketInsightParts.push(`${stats.priceChangePercent > 0 ? '+' : ''}${stats.priceChangePercent}% price change vs prior period`);
 
+    const dataSources = [];
+    if (stats.dataSource.properties > 0) dataSources.push(`${stats.dataSource.properties} MLS listings`);
+    if (stats.dataSource.fsboListings > 0) dataSources.push(`${stats.dataSource.fsboListings} FSBO listings`);
+    if (stats.dataSource.storedStats > 0) dataSources.push(`${stats.dataSource.storedStats} months of Centris market data`);
+
     const marketInsight = marketInsightParts.length > 0
-      ? `${loc} market: ${marketInsightParts.join('; ')}. Data from ${stats.dataSource.properties} MLS listings and ${stats.dataSource.fsboListings} FSBO listings.`
-      : `Market data for ${loc} from ${stats.dataSource.properties} listings.`;
+      ? `${loc} market: ${marketInsightParts.join('; ')}. Data from ${dataSources.join(' and ')}.`
+      : `Market data for ${loc} from ${dataSources.join(' and ')}.`;
 
     const buyerTips = [
       'Get pre-approved before touring to strengthen your offers.',
@@ -146,7 +174,7 @@ export async function POST(request: NextRequest) {
       socialPost: socialPost.slice(0, 280),
       emailTeaser,
       callToAction,
-      dataSource: `Based on ${stats.dataSource.properties} MLS listings and ${stats.dataSource.fsboListings} FSBO listings in your CRM.`,
+      dataSource: `Based on ${dataSources.join(', ')} in your CRM.`,
     };
 
     return NextResponse.json({ report, generatedAt: new Date().toISOString() });

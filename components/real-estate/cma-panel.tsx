@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocaleLabels } from '@/hooks/use-locale-labels';
 import {
@@ -58,6 +58,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete';
 import { SellerNetSheetCalculator } from './seller-net-sheet-calculator';
 
 interface PropertyData {
@@ -110,11 +111,6 @@ interface CMAResult {
   aiInsights: string;
 }
 
-interface PlacePrediction {
-  place_id: string;
-  description: string;
-}
-
 export function CMAPanel() {
   const locale = useLocaleLabels();
   const [step, setStep] = useState(1);
@@ -140,64 +136,6 @@ export function CMAPanel() {
   const [editingComp, setEditingComp] = useState<string | null>(null);
   const [showNetSheet, setShowNetSheet] = useState(false);
   
-  // Server-side Places autocomplete state
-  const [addressPredictions, setAddressPredictions] = useState<PlacePrediction[]>([]);
-  const [showAddressPredictions, setShowAddressPredictions] = useState(false);
-
-  // Handle address input change
-  const handleAddressChange = useCallback((value: string) => {
-    setPropertyData(prev => ({ ...prev, address: value }));
-
-    if (!value || value.length < 3) {
-      setAddressPredictions([]);
-      setShowAddressPredictions(false);
-      return;
-    }
-
-    (async () => {
-      try {
-        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(value)}&types=address`);
-        if (!res.ok) {
-          setAddressPredictions([]);
-          setShowAddressPredictions(false);
-          return;
-        }
-        const data = await res.json();
-        const preds = Array.isArray(data?.predictions) ? data.predictions : [];
-        setAddressPredictions(preds);
-        setShowAddressPredictions(preds.length > 0);
-      } catch {
-        setAddressPredictions([]);
-        setShowAddressPredictions(false);
-      }
-    })();
-  }, []);
-
-  // Handle prediction selection
-  const handleSelectPrediction = useCallback(async (prediction: PlacePrediction) => {
-    try {
-      const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const place = data?.place;
-        setPropertyData(prev => ({
-          ...prev,
-          address: place?.description || prediction.description,
-          city: place?.city || '',
-          state: place?.state || '',
-          zip: place?.zip || '',
-        }));
-      } else {
-        setPropertyData(prev => ({ ...prev, address: prediction.description }));
-      }
-    } catch {
-      setPropertyData(prev => ({ ...prev, address: prediction.description }));
-    } finally {
-      setShowAddressPredictions(false);
-      setAddressPredictions([]);
-    }
-  }, []);
-
   const propertyFeatures = [
     'Hardwood Floors', 'Granite Counters', 'Stainless Appliances', 'Updated Kitchen',
     'Updated Bathrooms', 'Finished Basement', 'Central AC', 'Fireplace',
@@ -354,32 +292,23 @@ export function CMAPanel() {
                   >
                     <h3 className="text-lg font-semibold text-gray-900">Property Address</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2 relative">
+                      <div className="md:col-span-2">
                         <Label className="text-gray-700">Street Address</Label>
-                        <Input
-                          placeholder="Start typing an address..."
+                        <PlaceAutocomplete
                           value={propertyData.address}
-                          onChange={(e) => handleAddressChange(e.target.value)}
-                          onFocus={() => addressPredictions.length > 0 && setShowAddressPredictions(true)}
-                          onBlur={() => setTimeout(() => setShowAddressPredictions(false), 200)}
+                          onChange={(value, placeData) => {
+                            setPropertyData(prev => ({
+                              ...prev,
+                              address: value,
+                              city: placeData?.city ?? prev.city,
+                              state: placeData?.state ?? prev.state,
+                              zip: placeData?.zip ?? prev.zip,
+                            }));
+                          }}
+                          placeholder="Start typing an address..."
+                          types="address"
                           className="mt-1 bg-white/80 border-purple-200 text-gray-900"
-                          autoComplete="off"
                         />
-                        {showAddressPredictions && addressPredictions.length > 0 && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border border-purple-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                            {addressPredictions.map((prediction) => (
-                              <button
-                                key={prediction.place_id}
-                                type="button"
-                                className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-slate-700 flex items-center gap-2"
-                                onMouseDown={() => handleSelectPrediction(prediction)}
-                              >
-                                <MapPin className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                                <span>{prediction.description}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                       <div>
                         <Label className="text-gray-700">City</Label>
