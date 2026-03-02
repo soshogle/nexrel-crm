@@ -80,6 +80,68 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const body = await request.json();
+    const { action, listingId } = body;
+
+    if (action === 'convert' && listingId) {
+      const listing = await getCrmDb(ctx).rEFSBOListing.findFirst({
+        where: { id: listingId },
+      });
+
+      if (!listing) {
+        return apiErrors.notFound('FSBO listing not found');
+      }
+
+      if (listing.convertedLeadId) {
+        return NextResponse.json({ success: true, leadId: listing.convertedLeadId, message: 'Already converted' });
+      }
+
+      const lead = await leadService.create(ctx, {
+        businessName: listing.sellerName || listing.address,
+        contactPerson: listing.sellerName || null,
+        email: listing.sellerEmail || null,
+        phone: listing.sellerPhone || null,
+        source: `FSBO - ${listing.source}`,
+        status: 'NEW',
+        address: listing.address,
+        city: listing.city || undefined,
+        state: listing.state || undefined,
+        enrichedData: {
+          source: 'fsbo_conversion',
+          fsboListingId: listing.id,
+          listPrice: listing.listPrice,
+          beds: listing.beds,
+          baths: listing.baths,
+          sqft: listing.sqft,
+          daysOnMarket: listing.daysOnMarket,
+        },
+      } as any);
+
+      await getCrmDb(ctx).rEFSBOListing.update({
+        where: { id: listingId },
+        data: { convertedLeadId: lead.id, status: 'CONVERTED' },
+      });
+
+      return NextResponse.json({ success: true, leadId: lead.id });
+    }
+
+    return apiErrors.badRequest('Invalid action. Supported: convert');
+  } catch (error) {
+    console.error('[FSBO] POST error:', error);
+    return apiErrors.internal('Failed to process request');
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

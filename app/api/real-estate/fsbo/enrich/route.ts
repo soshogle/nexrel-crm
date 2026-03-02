@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 interface EnrichmentJob {
@@ -30,14 +31,14 @@ setInterval(() => {
   });
 }, 60000);
 
-async function runEnrichment(jobId: string, listingId: string, userId: string) {
+async function runEnrichment(jobId: string, listingId: string, db: any) {
   const job = enrichmentJobs.get(jobId);
   if (!job) return;
 
   try {
     job.status = 'processing';
 
-    const listing = await prisma.rEFSBOListing.findFirst({
+    const listing = await db.rEFSBOListing.findFirst({
       where: { id: listingId },
     });
 
@@ -133,7 +134,7 @@ async function runEnrichment(jobId: string, listingId: string, userId: string) {
     if (extractedName) updateData.sellerName = extractedName;
 
     if (Object.keys(updateData).length > 0) {
-      await prisma.rEFSBOListing.update({
+      await db.rEFSBOListing.update({
         where: { id: listingId },
         data: updateData,
       });
@@ -162,6 +163,10 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
 
     // Check status of existing job
@@ -186,7 +191,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('listingIds array required');
     }
 
-    const listingId = listingIds[0]; // Process one at a time
+    const listingId = listingIds[0];
     const jobId = `enrich_${listingId}_${Date.now()}`;
 
     const job: EnrichmentJob = {
@@ -197,8 +202,7 @@ export async function POST(request: NextRequest) {
     };
     enrichmentJobs.set(jobId, job);
 
-    // Fire and forget — enrichment runs in background
-    runEnrichment(jobId, listingId, session.user.id).catch((err) => {
+    runEnrichment(jobId, listingId, db).catch((err) => {
       console.error('[FSBO Enrich] Background job error:', err);
       const j = enrichmentJobs.get(jobId);
       if (j) {

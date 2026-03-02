@@ -32,7 +32,7 @@ export function CreditScoreCard() {
       const response = await fetch('/api/credit-scoring/score');
       if (response.ok) {
         const data = await response.json();
-        setCreditScore(data.creditScore);
+        setCreditScore(data);
       }
     } catch (error) {
       console.error('Failed to fetch credit score:', error);

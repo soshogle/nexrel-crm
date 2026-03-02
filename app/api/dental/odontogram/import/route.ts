@@ -5,6 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import {
   validateToothData,
   findLeadForImport,
@@ -21,8 +23,15 @@ export async function POST(request: NextRequest) {
     const apiKey =
       process.env.ODONTOGRAM_IMPORT_API_KEY || process.env.PERIODONTAL_PROBE_API_KEY;
 
-    if (apiKey && authHeader !== `Bearer ${apiKey}`) {
-      return NextResponse.json({ success: false, error: 'Invalid or missing API key' }, { status: 401 });
+    if (apiKey) {
+      if (authHeader !== `Bearer ${apiKey}`) {
+        return NextResponse.json({ success: false, error: 'Invalid or missing API key' }, { status: 401 });
+      }
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     const body = await request.json();

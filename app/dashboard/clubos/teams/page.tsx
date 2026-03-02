@@ -144,8 +144,9 @@ export default function TeamsManagementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...programForm,
-          registrationFee: parseInt(programForm.registrationFee) || 0,
-          earlyBirdFee: programForm.earlyBirdFee ? parseInt(programForm.earlyBirdFee) : undefined,
+          programType: programForm.sport,
+          baseFee: parseInt(programForm.registrationFee) || 0,
+          earlyBirdDiscount: programForm.earlyBirdFee ? parseInt(programForm.earlyBirdFee) : undefined,
         }),
       });
 

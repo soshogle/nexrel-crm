@@ -98,7 +98,7 @@ export function CreateEmailCampaignDialog({
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        setLeads(data.filter((lead: any) => lead.email));
+        setLeads((data.leads || data.data || []).filter((lead: any) => lead.email));
       }
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -110,7 +110,7 @@ export function CreateEmailCampaignDialog({
       const response = await fetch('/api/deals');
       if (response.ok) {
         const data = await response.json();
-        setDeals(data.filter((deal: any) => deal.lead?.email));
+        setDeals((data.deals || data.data || []).filter((deal: any) => deal.lead?.email));
       }
     } catch (error) {
       console.error('Error fetching deals:', error);

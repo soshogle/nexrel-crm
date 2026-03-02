@@ -77,6 +77,19 @@ interface SearchFilters {
   maxDaysOnMarket?: number;
 }
 
+// Map UI source IDs → Prisma REFSBOSource enum
+const SOURCE_TO_ENUM: Record<string, string> = {
+  duproprio: 'DUPROPRIO',
+  'fsbo.com': 'FSBO_COM',
+  zillow: 'ZILLOW_FSBO',
+  forsalebyowner: 'FSBO_COM',
+  kijiji: 'KIJIJI',
+  craigslist: 'CRAIGSLIST',
+  'realtor.ca': 'OTHER',
+  purplebricks: 'PURPLEBRICKS',
+  rightmove: 'OTHER',
+};
+
 // Source configurations with branding
 const FSBO_SOURCES = [
   { id: 'duproprio', name: 'DuProprio', country: 'Canada', color: '#00a651', logo: '🏠' },
@@ -217,13 +230,18 @@ export function FSBOLeadsFull() {
     setSearchErrors([]);
 
     try {
+      const apiSources = selectedSources.map(s => SOURCE_TO_ENUM[s] || 'OTHER');
       const response = await fetch('/api/real-estate/fsbo-scraper', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sources: selectedSources,
-          location,
-          filters,
+          sources: apiSources,
+          targetCities: location?.city ? [location.city] : [],
+          targetStates: location?.state ? [location.state] : [],
+          targetZipCodes: [],
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          maxListings: 100,
         }),
       });
 
@@ -261,7 +279,27 @@ export function FSBOLeadsFull() {
       const response = await fetch('/api/real-estate/fsbo-leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead, action: 'import' }),
+        body: JSON.stringify({
+          source: SOURCE_TO_ENUM[lead.source] || 'OTHER',
+          sourceUrl: lead.url || `manual-${lead.id}`,
+          address: lead.address || `${lead.city}, ${lead.state}`,
+          city: lead.city,
+          state: lead.state,
+          zip: lead.zipCode,
+          country: lead.country,
+          listPrice: lead.price,
+          beds: lead.beds,
+          baths: lead.baths,
+          sqft: lead.sqft,
+          lotSize: lead.lotSize,
+          yearBuilt: lead.yearBuilt,
+          propertyType: lead.propertyType,
+          photos: lead.photos,
+          description: lead.description,
+          sellerName: lead.sellerName,
+          sellerPhone: lead.sellerPhone,
+          sellerEmail: lead.sellerEmail,
+        }),
       });
 
       const data = await response.json();
@@ -473,7 +511,7 @@ export function FSBOLeadsFull() {
                   <button
                     key={source.id}
                     onClick={() => toggleSource(source.id)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    className={`relative p-4 rounded-lg border-2 transition-all text-left ${
                       selectedSources.includes(source.id)
                         ? 'border-blue-500 bg-blue-500/20'
                         : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
@@ -707,7 +745,11 @@ export function FSBOLeadsFull() {
                     key={lead.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500/50 transition-all group"
+                    className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500/50 transition-all group cursor-pointer"
+                    onClick={() => {
+                      setSelectedLead(lead);
+                      setShowLeadDetail(true);
+                    }}
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-slate-900">
@@ -782,7 +824,7 @@ export function FSBOLeadsFull() {
 
                       {/* Seller Contact */}
                       {(lead.sellerName || lead.sellerPhone) && (
-                        <div className="bg-slate-900/50 rounded-lg p-3 space-y-1">
+                        <div className="bg-slate-900/50 rounded-lg p-3 space-y-1" onClick={(e) => e.stopPropagation()}>
                           {lead.sellerName && (
                             <div className="flex items-center gap-2 text-sm">
                               <User className="h-4 w-4 text-green-400" />
@@ -801,7 +843,7 @@ export function FSBOLeadsFull() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="sm"
                           className="flex-1 bg-blue-600 hover:bg-blue-500"

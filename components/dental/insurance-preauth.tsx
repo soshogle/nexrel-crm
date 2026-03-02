@@ -162,6 +162,7 @@ export function InsurancePreAuth({ leadId, compact = false }: InsurancePreAuthPr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: session?.user?.id || '',
           leadId,
           claimType: 'PREAUTH',
           type: 'PREAUTH',

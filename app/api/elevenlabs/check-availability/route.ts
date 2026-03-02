@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { checkAvailability } from '@/lib/elevenlabs-booking-functions';
 import { apiErrors } from '@/lib/api-error';
 
@@ -11,6 +13,12 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const apiSecret = request.headers.get('x-api-secret');
+    if (!session?.user?.id && apiSecret !== process.env.INTERNAL_API_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { userId, date, time } = body;
 
@@ -45,6 +53,12 @@ export async function POST(request: NextRequest) {
 
 // Allow GET for testing purposes
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const apiSecret = request.headers.get('x-api-secret');
+  if (!session?.user?.id && apiSecret !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const userId = searchParams.get('userId');
   const date = searchParams.get('date');

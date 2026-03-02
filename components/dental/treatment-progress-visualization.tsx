@@ -88,8 +88,8 @@ export function TreatmentProgressVisualization({
         // Add procedures
         const procResponse = await fetch(`/api/dental/procedures?leadId=${leadId}`);
         if (procResponse.ok) {
-          const procedures = await procResponse.json();
-          procedures.forEach((proc: any) => {
+          const procData = await procResponse.json();
+          (procData.procedures || []).forEach((proc: any) => {
             progressSnapshots.push({
               id: proc.id,
               date: new Date(proc.performedDate),

@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import crypto from 'crypto';
@@ -29,8 +31,11 @@ export async function GET(request: NextRequest) {
       return apiErrors.badRequest('Token required');
     }
 
-    // TODO: Validate token from database and extract leadId/userId
-    // For demo, fetch first lead to get userId - in production use proper token validation
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return apiErrors.unauthorized();
+    }
+
     const db = getCrmDb(createDalContext('bootstrap'));
     const firstLead = await db.lead.findFirst({
       take: 1,

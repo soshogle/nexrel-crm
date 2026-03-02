@@ -246,10 +246,15 @@ export function CMAPanel() {
       
       // Transform API response to component format
       setCMAResult({
-        suggestedListPrice: cma.suggestedPrice?.suggested || cma.suggestedListPrice || 485000,
-        priceRangeLow: cma.suggestedPrice?.low || cma.priceRange?.low || 465000,
-        priceRangeHigh: cma.suggestedPrice?.high || cma.priceRange?.high || 505000,
-        confidence: cma.confidenceScore || cma.confidence || 85,
+        suggestedListPrice: cma.suggestedPrice || cma.suggestedListPrice || 485000,
+        priceRangeLow: cma.priceRange?.low || 465000,
+        priceRangeHigh: cma.priceRange?.high || 505000,
+        confidence: (() => {
+          const raw = cma.confidenceScore ?? cma.confidence;
+          if (typeof raw === 'number') return raw;
+          const map: Record<string, number> = { high: 90, medium: 70, low: 50 };
+          return map[String(raw).toLowerCase()] ?? 85;
+        })(),
         comparables: (cma.comparables || []).map((comp: any, i: number) => ({
           id: comp.id || `comp-${i}`,
           address: comp.address,

@@ -11,7 +11,7 @@ interface PlaceAutocompleteProps {
   onChange: (value: string, placeData?: PlaceData) => void;
   placeholder?: string;
   className?: string;
-  types?: string; // e.g., 'geocode', 'address', '(cities)', '(regions)'
+  types?: string;
   disabled?: boolean;
 }
 
@@ -26,10 +26,38 @@ export interface PlaceData {
   lng?: number;
 }
 
-/** Prediction shape from server API (matches Google format) */
-interface ServerPrediction {
-  description: string;
-  place_id: string;
+const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+
+let googleMapsPromise: Promise<void> | null = null;
+
+function loadGoogleMaps(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.google?.maps?.places) return Promise.resolve();
+  if (googleMapsPromise) return googleMapsPromise;
+
+  googleMapsPromise = new Promise<void>((resolve, reject) => {
+    if (!MAPS_API_KEY) {
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+    const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      if (window.google?.maps?.places) resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      googleMapsPromise = null;
+      reject(new Error('Failed to load Google Maps'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
 }
 
 export function PlaceAutocomplete({
@@ -41,30 +69,37 @@ export function PlaceAutocomplete({
   disabled = false,
 }: PlaceAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value);
-  const [predictions, setPredictions] = useState<ServerPrediction[]>([]);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(true);
-  const [useServerApi] = useState(true);
-  
+  const [mapsReady, setMapsReady] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesRef = useRef<google.maps.places.PlacesService | null>(null);
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
 
-  // Use server-side Places API only to avoid client SDK legacy warnings.
   useEffect(() => {
-    setIsGoogleLoaded(true);
+    loadGoogleMaps()
+      .then(() => {
+        autocompleteRef.current = new google.maps.places.AutocompleteService();
+        const dummyDiv = document.createElement('div');
+        placesRef.current = new google.maps.places.PlacesService(dummyDiv);
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+        setMapsReady(true);
+      })
+      .catch(() => {
+        setMapsReady(true);
+      });
   }, []);
 
-  // Update input when value prop changes
   useEffect(() => {
     setInputValue(value);
   }, [value]);
 
-  // Update dropdown position when shown (for portal rendering inside dialogs)
   useEffect(() => {
     if (showDropdown && predictions.length > 0 && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
@@ -78,7 +113,6 @@ export function PlaceAutocomplete({
     }
   }, [showDropdown, predictions.length]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -101,44 +135,30 @@ export function PlaceAutocomplete({
       return;
     }
 
-    if (useServerApi) {
-      setIsLoading(true);
-      fetch(`/api/places/autocomplete?input=${encodeURIComponent(input)}&types=${encodeURIComponent(types)}`)
-        .then((r) => r.json())
-        .then((data) => {
-          setPredictions(data.predictions || []);
-          setShowDropdown((data.predictions?.length ?? 0) > 0);
-        })
-        .catch(() => setPredictions([]))
-        .finally(() => setIsLoading(false));
+    if (!autocompleteRef.current) {
+      setPredictions([]);
+      setShowDropdown(false);
       return;
     }
-
-    if (!autocompleteServiceRef.current) return;
 
     setIsLoading(true);
     const request: google.maps.places.AutocompletionRequest = {
       input,
       types: types ? [types] : undefined,
+      sessionToken: sessionTokenRef.current ?? undefined,
     };
 
-    autocompleteServiceRef.current.getPlacePredictions(
-      request,
-      (results, status) => {
-        setIsLoading(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          setPredictions(results);
-          setShowDropdown(true);
-        } else {
-          if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-            console.warn('[PlaceAutocomplete] Places API status:', status);
-          }
-          setPredictions([]);
-          setShowDropdown(false);
-        }
+    autocompleteRef.current.getPlacePredictions(request, (results, status) => {
+      setIsLoading(false);
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        setPredictions(results);
+        setShowDropdown(true);
+      } else {
+        setPredictions([]);
+        setShowDropdown(false);
       }
-    );
-  }, [types, useServerApi]);
+    });
+  }, [types, mapsReady]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -159,61 +179,35 @@ export function PlaceAutocomplete({
     }, 300);
   };
 
-  const handleSelectPrediction = (prediction: ServerPrediction) => {
+  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
     const desc = prediction.description;
-    const placeId = prediction.place_id ?? (prediction as any).place_id;
+    const placeId = prediction.place_id;
     setInputValue(desc);
     setShowDropdown(false);
     setPredictions([]);
 
-    if (useServerApi && placeId) {
-      fetch(`/api/places/details?placeId=${encodeURIComponent(placeId)}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const p = data.place;
-          if (p) {
-            onChange(desc, {
-              description: p.description || desc,
-              placeId,
-              city: p.city,
-              state: p.state,
-              country: p.country,
-              zip: p.zip,
-              lat: p.lat,
-              lng: p.lng,
-            });
-          } else {
-            onChange(desc, { description: desc, placeId });
-          }
-        })
-        .catch(() => onChange(desc, { description: desc, placeId }));
-      return;
-    }
-
-    if (!placesServiceRef.current) {
+    if (!placesRef.current) {
       onChange(desc, { description: desc, placeId });
       return;
     }
 
-    placesServiceRef.current.getDetails(
-      { placeId, fields: ['address_components', 'geometry', 'formatted_address'] },
+    placesRef.current.getDetails(
+      {
+        placeId,
+        fields: ['address_components', 'geometry', 'formatted_address'],
+        sessionToken: sessionTokenRef.current ?? undefined,
+      },
       (place, status) => {
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
           let city = '', state = '', country = '', zip = '';
-          
+
           place.address_components?.forEach((component) => {
-            if (component.types.includes('locality')) {
-              city = component.long_name;
-            }
-            if (component.types.includes('administrative_area_level_1')) {
-              state = component.short_name;
-            }
-            if (component.types.includes('country')) {
-              country = component.long_name;
-            }
-            if (component.types.includes('postal_code')) {
-              zip = component.long_name;
-            }
+            if (component.types.includes('locality')) city = component.long_name;
+            if (component.types.includes('administrative_area_level_1')) state = component.short_name;
+            if (component.types.includes('country')) country = component.long_name;
+            if (component.types.includes('postal_code')) zip = component.long_name;
           });
 
           onChange(desc, {
@@ -229,7 +223,7 @@ export function PlaceAutocomplete({
         } else {
           onChange(desc, { description: desc, placeId });
         }
-      }
+      },
     );
   };
 
@@ -251,8 +245,8 @@ export function PlaceAutocomplete({
           onChange={handleInputChange}
           onFocus={() => predictions.length > 0 && setShowDropdown(true)}
           onBlur={handleBlur}
-          placeholder={isGoogleLoaded ? placeholder : 'Loading...'}
-          disabled={disabled || !isGoogleLoaded}
+          placeholder={placeholder}
+          disabled={disabled}
           className={cn('pl-10 pr-8', className)}
           autoComplete="off"
         />

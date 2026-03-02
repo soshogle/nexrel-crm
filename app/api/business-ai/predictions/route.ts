@@ -50,19 +50,52 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Generate predictions based on CRM data
+    // Compute revenue predictions from actual deal data
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const deals = await db.deal.findMany({
+      where: { userId: session.user.id },
+      select: { value: true, probability: true, currency: true, createdAt: true, actualCloseDate: true },
+    });
+
+    const recentDeals = deals.filter(d => d.createdAt >= thirtyDaysAgo);
+    const closedRecentRevenue = recentDeals
+      .filter(d => d.actualCloseDate)
+      .reduce((sum, d) => sum + d.value, 0);
+
+    // Weighted pipeline value: sum(value * probability/100) for open deals
+    const openDeals = deals.filter(d => !d.actualCloseDate);
+    const weightedPipeline = openDeals.reduce(
+      (sum, d) => sum + d.value * (d.probability / 100),
+      0,
+    );
+
+    const weeklyRevenueEstimate = Math.round(weightedPipeline * 0.25);
+    const monthlyRevenueEstimate = Math.round(weightedPipeline + closedRecentRevenue * 0.5);
+
+    const currency = deals[0]?.currency || 'USD';
+    const revenueConfidence = Math.min(40 + deals.length * 3, 85);
+
+    const growthTrend =
+      recentDeals.length > deals.length * 0.4
+        ? 'growing'
+        : recentDeals.length < deals.length * 0.15
+          ? 'declining'
+          : 'steady';
+
     return NextResponse.json({
       nextWeekForecast: {
         newLeads: { predicted: Math.max(1, Math.floor(leadCount * 0.2)), confidence: 70 },
         dealConversions: { predicted: Math.max(1, Math.floor(dealCount * 0.15)), confidence: 65 },
-        revenue: { predicted: 15000, confidence: 68, currency: 'USD' },
+        revenue: { predicted: weeklyRevenueEstimate, confidence: revenueConfidence, currency },
       },
       nextMonthForecast: {
         newLeads: { predicted: Math.max(3, Math.floor(leadCount * 0.5)), confidence: 68 },
         dealConversions: { predicted: Math.max(2, Math.floor(dealCount * 0.25)), confidence: 62 },
-        revenue: { predicted: 25000, confidence: 65, currency: 'USD' },
+        revenue: { predicted: monthlyRevenueEstimate, confidence: Math.max(revenueConfidence - 5, 40), currency },
       },
-      growthTrend: 'steady',
+      growthTrend,
       seasonalPatterns: [],
     });
   } catch (error: any) {

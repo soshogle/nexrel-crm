@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
 import { resolveDalContext } from '@/lib/context/industry-context';
@@ -266,6 +268,12 @@ Be professional, use standard medical terminology, and be concise.`,
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const apiSecret = req.headers.get('x-api-secret');
+    if (!session && apiSecret !== process.env.INTERNAL_API_SECRET) {
+      return apiErrors.unauthorized();
+    }
+
     const body = await req.json();
     const { function_name, parameters, user_id } = body;
 

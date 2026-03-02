@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(campaigns);
+    return NextResponse.json({ campaigns });
   } catch (error: unknown) {
     console.error('Error fetching drip campaigns:', error);
     return apiErrors.internal('Failed to fetch campaigns');
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(campaign, { status: 201 });
+    return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating drip campaign:', error);
     return apiErrors.internal('Failed to create campaign');

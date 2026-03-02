@@ -42,6 +42,18 @@ import { toast } from 'sonner';
 import { LocationSearch, LocationData } from '@/components/ui/location-search';
 
 
+// Map widget source keys → Prisma REFSBOSource enum
+const SOURCE_TO_ENUM: Record<string, string> = {
+  duproprio: 'DUPROPRIO',
+  fsbo: 'FSBO_COM',
+  zillow_fsbo: 'ZILLOW_FSBO',
+  forsalebyowner: 'FSBO_COM',
+  kijiji: 'KIJIJI',
+  craigslist: 'CRAIGSLIST',
+  purplebricks: 'PURPLEBRICKS',
+  rightmove: 'OTHER',
+};
+
 // FSBO Source configurations with country mappings
 interface FSBOSourceConfig {
   name: string;
@@ -208,18 +220,49 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
       const response = await fetch('/api/real-estate/fsbo');
       if (response.ok) {
         const data = await response.json();
-        setLeads(data.leads || []);
-        setSummary(data.summary || null);
-        // Get stale days threshold from settings (default 21)
-        if (data.settings?.staleDaysThreshold) {
-          setStaleDaysThreshold(data.settings.staleDaysThreshold);
+        const listings = (data.listings || []).map((l: any) => ({
+          id: l.id,
+          address: l.address || '',
+          city: l.city || '',
+          state: l.state || '',
+          zip: l.zip,
+          price: l.listPrice || 0,
+          beds: l.beds || 0,
+          baths: l.baths || 0,
+          sqft: l.sqft || 0,
+          yearBuilt: l.yearBuilt,
+          propertyType: l.propertyType,
+          daysOnMarket: l.daysOnMarket || 0,
+          isStale: (l.daysOnMarket || 0) >= staleDaysThreshold,
+          firstSeenAt: l.firstSeenAt || l.createdAt,
+          lastSeenAt: l.lastSeenAt,
+          source: l.source || '',
+          sellerName: l.sellerName,
+          phone: l.sellerPhone,
+          email: l.sellerEmail,
+          status: (l.status || 'NEW').toLowerCase(),
+          photos: l.photos,
+          listingUrl: l.sourceUrl,
+          description: l.description,
+          notes: l.notes,
+          contactAttempts: l.contactAttempts,
+          lastContactedAt: l.lastContactedAt,
+        }));
+        setLeads(listings);
+        const stats = data.stats;
+        if (stats) {
+          setSummary({
+            total: data.total || listings.length,
+            stale: stats.stale || 0,
+            withContact: stats.withContact || 0,
+            newToday: stats.newToday || 0,
+          });
         }
       } else {
         throw new Error('Failed to fetch');
       }
     } catch (error) {
       console.error('Error fetching FSBO leads:', error);
-      // No sample data - show empty state
       setLeads([]);
     } finally {
       setIsLoading(false);
@@ -390,10 +433,19 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
     setShowNewScrapeDialog(false);
 
     try {
+      const apiSources = filters.sources.map(s => SOURCE_TO_ENUM[s] || 'OTHER');
       const response = await fetch('/api/real-estate/fsbo/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(filters),
+        body: JSON.stringify({
+          sources: apiSources,
+          targetCities: filters.location?.city ? [filters.location.city] : [],
+          targetStates: filters.location?.state ? [filters.location.state] : [],
+          targetZipCodes: [],
+          minPrice: filters.priceMin || undefined,
+          maxPrice: filters.priceMax < 5000000 ? filters.priceMax : undefined,
+          maxListings: 100,
+        }),
       });
 
       if (!response.ok) throw new Error('Scraping failed');

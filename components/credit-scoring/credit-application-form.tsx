@@ -29,8 +29,9 @@ export function CreditApplicationForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          applicationType: 'personal',
           requestedAmount: parseFloat(formData.requestedAmount),
-          monthlyIncome: parseFloat(formData.monthlyIncome),
+          annualIncome: parseFloat(formData.monthlyIncome) * 12,
           employmentStatus: formData.employmentStatus,
           existingDebt: parseFloat(formData.existingDebt) || 0,
           purpose: formData.purpose,

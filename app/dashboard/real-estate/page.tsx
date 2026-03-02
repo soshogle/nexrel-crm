@@ -109,7 +109,7 @@ export default function RealEstateDashboard() {
           fetch('/api/real-estate/analytics/at-risk'),
         ]);
 
-        const fsboData = fsboRes.ok ? await fsboRes.json() : { pagination: { total: 0 } };
+        const fsboData = fsboRes.ok ? await fsboRes.json() : { total: 0 };
         const activityData = activityRes.ok ? await activityRes.json() : { activities: [] };
         const marketData = marketRes.ok ? await marketRes.json() : { liveStats: {} };
         const atRiskData = atRiskRes.ok ? await atRiskRes.json() : { summary: { highRisk: 0 } };
@@ -139,7 +139,7 @@ export default function RealEstateDashboard() {
           { label: 'Active Listings', value: live.totalActiveListings > 0 ? String(live.totalActiveListings) : String(live.activeListings || 0), change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', icon: Building2 },
           { label: 'Median Price', value: formatPrice(live.medianSalePrice), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', icon: DollarSign },
           { label: 'Days on Market', value: live.domMedian > 0 ? `${live.domMedian}` : (live.domAvg > 0 ? `${live.domAvg}` : '—'), change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', icon: Clock },
-          { label: 'FSBO Leads', value: String(fsboData.pagination?.total || live.fsboListings || 0), change: fsboTrend, trend: fsboTrend > 0 ? 'up' : fsboTrend < 0 ? 'down' : 'neutral', icon: Users },
+          { label: 'FSBO Leads', value: String(fsboData?.total || live.fsboListings || 0), change: fsboTrend, trend: fsboTrend > 0 ? 'up' : fsboTrend < 0 ? 'down' : 'neutral', icon: Users },
         ]);
 
         setRecentActivity(Array.isArray(activityData?.activities) ? activityData.activities : []);

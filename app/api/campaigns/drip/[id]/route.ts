@@ -64,7 +64,7 @@ export async function GET(
       return apiErrors.notFound('Campaign not found');
     }
 
-    return NextResponse.json(campaign);
+    return NextResponse.json({ campaign });
   } catch (error: unknown) {
     console.error('Error fetching campaign:', error);
     return apiErrors.internal('Failed to fetch campaign');
@@ -138,7 +138,7 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(campaign);
+    return NextResponse.json({ campaign });
   } catch (error: unknown) {
     console.error('Error updating campaign:', error);
     return apiErrors.internal('Failed to update campaign');

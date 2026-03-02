@@ -161,7 +161,7 @@ export function VoiceAIPanel() {
         const response = await fetch('/api/real-estate/fsbo');
         if (response.ok) {
           const data = await response.json();
-          const fsboLeads = (data.leads || []).map((lead: any) => ({
+          const fsboLeads = (data.listings || []).map((lead: any) => ({
             id: lead.id,
             name: lead.sellerName || 'Unknown Seller',
             phone: lead.phone || '',

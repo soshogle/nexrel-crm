@@ -7,6 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { createVoiceReservation } from '@/lib/voice-reservation-helper';
 
 
@@ -15,6 +17,12 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const apiSecret = request.headers.get('x-api-secret');
+    if (!session?.user?.id && apiSecret !== process.env.INTERNAL_API_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
     const {

@@ -26,14 +26,38 @@ interface LocationSearchProps {
   countryRestriction?: string[];
 }
 
-interface PlacePrediction {
-  place_id: string;
-  description: string;
+const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+
+let googleMapsPromise: Promise<void> | null = null;
+
+function loadGoogleMaps(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.google?.maps?.places) return Promise.resolve();
+  if (googleMapsPromise) return googleMapsPromise;
+
+  googleMapsPromise = new Promise<void>((resolve, reject) => {
+    if (!MAPS_API_KEY) {
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      googleMapsPromise = null;
+      reject(new Error('Failed to load Google Maps'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
 }
 
 /**
  * Location Search Component
- * Uses server-side Google Places endpoints to avoid legacy JS SDK warnings.
+ * Uses the Google Maps JavaScript SDK client-side for autocomplete,
+ * so the referer-restricted API key works correctly from the browser.
  */
 export function LocationSearch({
   value: controlledValue,
@@ -50,14 +74,32 @@ export function LocationSearch({
     `Enter city, ${locale.stateLabel.toLowerCase()} or ${locale.zipLabel.toLowerCase()}`;
 
   const [inputValue, setInputValue] = useState(defaultValue || '');
-  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [mapsReady, setMapsReady] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastControlledValueRef = useRef(controlledValue);
+  const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesRef = useRef<google.maps.places.PlacesService | null>(null);
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+
+  useEffect(() => {
+    loadGoogleMaps()
+      .then(() => {
+        autocompleteRef.current = new google.maps.places.AutocompleteService();
+        const dummyDiv = document.createElement('div');
+        placesRef.current = new google.maps.places.PlacesService(dummyDiv);
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+        setMapsReady(true);
+      })
+      .catch(() => {
+        /* key missing or load failed – input stays as plain text */
+      });
+  }, []);
 
   // Sync controlled value
   useEffect(() => {
@@ -83,40 +125,44 @@ export function LocationSearch({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const countryRestrictionKey = countryRestriction?.join(',') ?? '';
+
   const fetchPredictions = useCallback(
-    async (input: string) => {
-      if (!input || input.length < 2) {
+    (input: string) => {
+      if (!input || input.length < 2 || !autocompleteRef.current) {
         setPredictions([]);
         setShowDropdown(false);
         return;
       }
 
       setIsLoading(true);
-      try {
-        const params = new URLSearchParams({ input, types: '(cities)' });
-        if (Array.isArray(countryRestriction) && countryRestriction.length > 0) {
-          params.set('country', countryRestriction.join(','));
-        }
 
-        const res = await fetch(`/api/places/autocomplete?${params.toString()}`);
-        if (!res.ok) {
+      const request: google.maps.places.AutocompletionRequest = {
+        input,
+        types: ['(cities)'],
+        sessionToken: sessionTokenRef.current ?? undefined,
+      };
+      if (countryRestriction && countryRestriction.length > 0) {
+        request.componentRestrictions = { country: countryRestriction };
+      }
+
+      autocompleteRef.current.getPlacePredictions(request, (results, status) => {
+        setIsLoading(false);
+        if (
+          status === google.maps.places.PlacesServiceStatus.OK &&
+          results &&
+          results.length > 0
+        ) {
+          setPredictions(results);
+          setShowDropdown(true);
+        } else {
           setPredictions([]);
           setShowDropdown(false);
-          return;
         }
-
-        const data = await res.json();
-        const nextPreds = Array.isArray(data?.predictions) ? data.predictions : [];
-        setPredictions(nextPreds);
-        setShowDropdown(nextPreds.length > 0);
-      } catch {
-        setPredictions([]);
-        setShowDropdown(false);
-      } finally {
-        setIsLoading(false);
-      }
+      });
     },
-    [countryRestriction]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [countryRestrictionKey, mapsReady],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,38 +181,62 @@ export function LocationSearch({
     }
   };
 
-  const handleSelectPrediction = async (prediction: PlacePrediction) => {
+  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
     const desc = prediction.description;
     setInputValue(desc);
     setShowDropdown(false);
     setPredictions([]);
 
-    try {
-      const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const p = data?.place;
-        if (p) {
-          const locationData: LocationData = {
-            city: p.city || '',
-            state: p.state || '',
-            country: p.country || '',
-            countryCode: p.countryCode || '',
-            formatted: p.description || desc,
-            lat: p.lat,
-            lng: p.lng,
-            placeId: p.placeId || prediction.place_id,
-          };
-          if (onChange) onChange(locationData);
-          if (onSelect) onSelect(locationData);
-          return;
-        }
-      }
-    } catch {
-      // Ignore and use fallback
-    }
+    if (placesRef.current) {
+      placesRef.current.getDetails(
+        {
+          placeId: prediction.place_id,
+          fields: ['place_id', 'formatted_address', 'address_components', 'geometry'],
+          sessionToken: sessionTokenRef.current ?? undefined,
+        },
+        (place, status) => {
+          // Refresh session token after a details call (per Google billing best practice)
+          sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
 
-    // Fallback parsing from description
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            let city = '';
+            let state = '';
+            let country = '';
+            let countryCode = '';
+
+            place.address_components?.forEach((comp) => {
+              if (comp.types.includes('locality')) city = comp.long_name;
+              if (comp.types.includes('administrative_area_level_1')) state = comp.short_name;
+              if (comp.types.includes('country')) {
+                country = comp.long_name;
+                countryCode = comp.short_name;
+              }
+            });
+
+            const locationData: LocationData = {
+              city,
+              state,
+              country,
+              countryCode,
+              formatted: place.formatted_address || desc,
+              lat: place.geometry?.location?.lat(),
+              lng: place.geometry?.location?.lng(),
+              placeId: prediction.place_id,
+            };
+            if (onChange) onChange(locationData);
+            if (onSelect) onSelect(locationData);
+            return;
+          }
+
+          emitFallback(desc, prediction.place_id);
+        },
+      );
+    } else {
+      emitFallback(desc, prediction.place_id);
+    }
+  };
+
+  const emitFallback = (desc: string, placeId: string) => {
     const parts = desc.split(',').map((p) => p.trim());
     const locationData: LocationData = {
       city: parts[0] || '',
@@ -174,7 +244,7 @@ export function LocationSearch({
       country: parts[2] || '',
       countryCode: '',
       formatted: desc,
-      placeId: prediction.place_id,
+      placeId,
     };
     if (onChange) onChange(locationData);
     if (onSelect) onSelect(locationData);

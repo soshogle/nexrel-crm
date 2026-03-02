@@ -46,6 +46,7 @@ export default function SchedulesPage() {
 
       // Fetch schedules with filters
       const params = new URLSearchParams();
+      if (selectedProgram !== 'all') params.append('programId', selectedProgram);
       if (selectedVenue !== 'all') params.append('venueId', selectedVenue);
       if (selectedEventType !== 'all') params.append('eventType', selectedEventType);
 

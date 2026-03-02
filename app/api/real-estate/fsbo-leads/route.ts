@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { REFSBOSource, REFSBOStatus } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
     const source = searchParams.get('source') as REFSBOSource | null;
     const status = searchParams.get('status') as REFSBOStatus | null;
@@ -22,12 +27,12 @@ export async function GET(request: NextRequest) {
     const assignedOnly = searchParams.get('assignedOnly') === 'true';
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const fsboListings = await prisma.rEFSBOListing.findMany({
+    const fsboListings = await db.rEFSBOListing.findMany({
       where: {
         ...(assignedOnly && { assignedUserId: session.user.id }),
         ...(source && { source }),
         ...(status && { status }),
-        ...(city && { city: { contains: city, mode: 'insensitive' } }),
+        ...(city && { city: { contains: city, mode: 'insensitive' as const } }),
       },
       include: {
         assignedUser: {
@@ -41,7 +46,6 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    // Get summary stats
     const stats = {
       total: fsboListings.length,
       new: fsboListings.filter(l => l.status === 'NEW').length,
@@ -63,6 +67,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -92,13 +100,12 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Source, sourceUrl, address, and city are required');
     }
 
-    // Check if already exists
-    const existing = await prisma.rEFSBOListing.findUnique({
+    const existing = await db.rEFSBOListing.findUnique({
       where: { sourceUrl },
     });
 
     if (existing) {
-      const updated = await prisma.rEFSBOListing.update({
+      const updated = await db.rEFSBOListing.update({
         where: { sourceUrl },
         data: {
           lastSeenAt: new Date(),
@@ -108,7 +115,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ listing: updated, isUpdate: true });
     }
 
-    const listing = await prisma.rEFSBOListing.create({
+    const listing = await db.rEFSBOListing.create({
       data: {
         source: source as REFSBOSource,
         sourceUrl,
@@ -149,6 +156,10 @@ export async function PUT(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
     const { id, status, notes, sellerPhone, sellerEmail, sellerName, convertedLeadId, assignedUserId } = body;
 
@@ -156,7 +167,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.badRequest('Listing ID required');
     }
 
-    const existing = await prisma.rEFSBOListing.findFirst({
+    const existing = await db.rEFSBOListing.findFirst({
       where: { id },
     });
 
@@ -164,7 +175,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.notFound('FSBO listing not found');
     }
 
-    const listing = await prisma.rEFSBOListing.update({
+    const listing = await db.rEFSBOListing.update({
       where: { id },
       data: {
         ...(status && { status: status as REFSBOStatus }),
@@ -192,6 +203,10 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -199,7 +214,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Listing ID required');
     }
 
-    const existing = await prisma.rEFSBOListing.findFirst({
+    const existing = await db.rEFSBOListing.findFirst({
       where: { id },
     });
 
@@ -207,7 +222,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('FSBO listing not found');
     }
 
-    await prisma.rEFSBOListing.delete({ where: { id } });
+    await db.rEFSBOListing.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

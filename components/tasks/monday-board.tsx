@@ -96,7 +96,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
     }
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
@@ -116,7 +116,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
     }
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priority })
       });

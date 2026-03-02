@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const db = getRouteDb(session);
 
     const body = await request.json();
-    const { type, formId, leadId, formData, formName, formSchema, isTemplate, clinicId } = body;
+    const { type, formId, leadId, formData, formName, formSchema, isTemplate, clinicId, category, description } = body;
 
     // Get clinicId from request or user's primary clinic
     let finalClinicId = clinicId;
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
           clinicId: finalClinicId,
           formName,
           formSchema,
+          category: category || null,
+          description: description || null,
           isActive: true,
         },
       });

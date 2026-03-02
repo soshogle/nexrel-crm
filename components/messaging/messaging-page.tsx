@@ -115,7 +115,7 @@ export function MessagingPage() {
 
       const results = [
         ...(contactsData.contacts || []).map((c: any) => ({ ...c, type: 'contact' })),
-        ...(leadsData || []).map((l: any) => ({ ...l, type: 'lead' }))
+        ...(leadsData?.leads || leadsData?.data || []).map((l: any) => ({ ...l, type: 'lead' }))
       ];
 
       setSearchResults(results);

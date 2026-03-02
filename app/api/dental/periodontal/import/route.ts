@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { getCrmDb } from '@/lib/dal';
 import { resolveDalContext } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
@@ -87,12 +89,18 @@ async function findLead(db: ReturnType<typeof getCrmDb>, userId: string, body: {
 // POST /api/dental/periodontal/import - Probe software pushes data here
 export async function POST(request: NextRequest) {
   try {
-    // Auth: Bearer token (same pattern as DICOM webhook)
     const authHeader = request.headers.get('authorization');
     const apiKey = process.env.PERIODONTAL_PROBE_API_KEY;
 
-    if (apiKey && authHeader !== `Bearer ${apiKey}`) {
-      return apiErrors.unauthorized('Invalid or missing API key');
+    if (apiKey) {
+      if (authHeader !== `Bearer ${apiKey}`) {
+        return apiErrors.unauthorized('Invalid or missing API key');
+      }
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return apiErrors.unauthorized();
+      }
     }
 
     const body = await request.json();

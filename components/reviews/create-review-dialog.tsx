@@ -72,7 +72,7 @@ export default function CreateReviewDialog({
 
       if (leadsRes.ok) {
         const leadsData = await leadsRes.json();
-        setLeads(Array.isArray(leadsData) ? leadsData : []);
+        setLeads(leadsData?.contacts || leadsData?.data || []);
       }
 
       if (campaignsRes.ok) {

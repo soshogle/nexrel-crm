@@ -180,8 +180,14 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
   const patterns = [];
   for (const [sequence, stats] of patternMap.entries()) {
     if (stats.count >= 2) {
-      // Pattern must occur at least twice
-      const successRate = 0.85; // Placeholder - calculate from actual data
+      const sessionActions = sessions
+        .filter(s => s.map((a: any) => a.actionType).join('->') === sequence);
+      const totalActions = sessionActions.reduce((sum, s) => sum + s.length, 0);
+      const successfulActions = sessionActions.reduce(
+        (sum, s) => sum + s.filter((a: any) => a.success).length,
+        0,
+      );
+      const successRate = totalActions > 0 ? successfulActions / totalActions : 0;
       const confidence = Math.min(stats.count / 5, 1);
 
       const existing = await prisma.toolUsagePattern.findFirst({
