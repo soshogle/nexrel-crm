@@ -113,7 +113,7 @@ export function SalesConfigStep({ data, onChange, currency = 'USD' }: SalesConfi
         <div className="space-y-2">
           <Label htmlFor="averageDealValue">Average Deal Value *</Label>
           <div className="relative">
-            <span className="absolute left-3 top-3 text-muted-foreground">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
               {getCurrencySymbol(currency)}
             </span>
             <Input
@@ -122,7 +122,7 @@ export function SalesConfigStep({ data, onChange, currency = 'USD' }: SalesConfi
               placeholder="0.00"
               value={formData.averageDealValue}
               onChange={(e) => updateField('averageDealValue', e.target.value)}
-              className="pl-8"
+              className="pl-[3.5rem]"
               min="0"
               step="0.01"
               required

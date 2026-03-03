@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import { MapPin, X, Loader2, Globe } from 'lucide-react';
+import { MapPin, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LOCATION_COUNTRIES, getTimezoneForLocation, PROVINCE_ABBREV } from '@/lib/location-data';
 
 interface LocationAutocompleteProps {
   value: string;
@@ -12,227 +13,136 @@ interface LocationAutocompleteProps {
   onTimezoneDetected?: (timezone: string) => void;
 }
 
-interface PlacePrediction {
-  place_id: string;
-  description: string;
+/** Parse stored value into country and province (e.g. "Quebec, Canada", "Montréal, QC, Canada", or "Online/Remote") */
+function parseLocationValue(value: string): { country: string; province: string } {
+  if (!value || value === 'Online/Remote') return { country: '', province: '' };
+  const parts = value.split(',').map((p) => p.trim()).filter(Boolean);
+  const countryNames = new Set(LOCATION_COUNTRIES.map((c) => c.name));
+
+  // Find which part is the country (last match in our list)
+  let country = '';
+  let countryIdx = -1;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const candidate = parts.slice(i).join(', ');
+    if (countryNames.has(candidate) || countryNames.has(parts[i])) {
+      country = countryNames.has(parts[i]) ? parts[i] : candidate;
+      countryIdx = i;
+      break;
+    }
+  }
+  if (!country && parts.length > 0) {
+    country = parts[parts.length - 1];
+    countryIdx = parts.length - 1;
+  }
+
+  // Province is the part before country, or empty
+  let province = '';
+  if (countryIdx > 0) {
+    const raw = parts[countryIdx - 1];
+    province = PROVINCE_ABBREV[raw] ?? raw;
+    const entry = LOCATION_COUNTRIES.find((c) => c.name === country);
+    if (entry?.provinces && !entry.provinces.includes(province)) {
+      province = entry.provinces.find((p) => p.toLowerCase().includes(province.toLowerCase())) ?? province;
+    }
+  }
+
+  return { country, province };
+}
+
+/** Build display value for operatingLocation */
+function buildLocationValue(country: string, province: string): string {
+  if (!country) return '';
+  if (province) return `${province}, ${country}`;
+  return country;
 }
 
 export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: LocationAutocompleteProps) {
-  const [inputValue, setInputValue] = useState(value);
+  const [country, setCountry] = useState('');
+  const [province, setProvince] = useState('');
   const [isOnline, setIsOnline] = useState(value === 'Online/Remote');
-  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Close dropdown when clicking outside
+  const countryEntry = LOCATION_COUNTRIES.find((c) => c.name === country);
+  const provinces = countryEntry?.provinces ?? [];
+
+  // Parse incoming value on mount and when value prop changes
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const fetchPredictions = useCallback((input: string) => {
-    if (!input || input.length < 2) {
-      setPredictions([]);
-      setShowDropdown(false);
+    if (value === 'Online/Remote') {
+      setIsOnline(true);
+      setCountry('');
+      setProvince('');
       return;
     }
+    const parsed = parseLocationValue(value);
+    setCountry(parsed.country);
+    setProvince(parsed.province);
+    setIsOnline(false);
+  }, [value]);
 
-    setIsLoading(true);
-
-    (async () => {
-      try {
-        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(input)}&types=(cities)`);
-        if (!res.ok) {
-          setPredictions([]);
-          setShowDropdown(false);
-          return;
-        }
-        const data = await res.json();
-        const results = Array.isArray(data?.predictions) ? data.predictions : [];
-        setPredictions(results);
-        setShowDropdown(results.length > 0);
-      } catch {
-        setPredictions([]);
-        setShowDropdown(false);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputValue(val);
-
-    if (!val) {
-      onChange('', false);
-      setPredictions([]);
-      setShowDropdown(false);
+  // Sync to parent when country/province/online changes
+  useEffect(() => {
+    if (isOnline) {
+      onChange('Online/Remote', true);
+      onTimezoneDetected?.('UTC');
       return;
     }
-
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+    const loc = buildLocationValue(country, province);
+    onChange(loc, false);
+    if (loc && onTimezoneDetected) {
+      onTimezoneDetected(getTimezoneForLocation(country, province));
     }
-    debounceRef.current = setTimeout(() => {
-      fetchPredictions(val);
-    }, 300);
-  };
+  }, [country, province, isOnline, onChange, onTimezoneDetected]);
 
-  const handleSelectPrediction = async (prediction: PlacePrediction) => {
-    const desc = prediction.description;
-    setInputValue(desc);
-    onChange(desc, false);
-    setShowDropdown(false);
-    setPredictions([]);
-
-    if (onTimezoneDetected) {
-      try {
-        const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`);
-        const data = res.ok ? await res.json() : null;
-        const place = data?.place || {};
-        const country = place.country || '';
-        const timezone = guessTimezoneFromLocation(place.description || desc, country);
-        onTimezoneDetected(timezone);
-      } catch {
-        onTimezoneDetected(guessTimezoneFromLocation(desc));
-      }
-    }
-  };
-
-  const guessTimezoneFromLocation = (location: string, country?: string): string => {
-    const lowerLocation = location.toLowerCase();
-    const lowerCountry = (country || '').toLowerCase();
-
-    // US cities
-    if (lowerLocation.includes('new york') || lowerLocation.includes('boston') || lowerLocation.includes('philadelphia') || lowerLocation.includes('atlanta') || lowerLocation.includes('miami')) return 'America/New_York';
-    if (lowerLocation.includes('chicago') || lowerLocation.includes('dallas') || lowerLocation.includes('houston')) return 'America/Chicago';
-    if (lowerLocation.includes('denver') || lowerLocation.includes('phoenix')) return 'America/Denver';
-    if (lowerLocation.includes('los angeles') || lowerLocation.includes('san francisco') || lowerLocation.includes('seattle')) return 'America/Los_Angeles';
-
-    // Canada
-    if (lowerLocation.includes('toronto') || lowerLocation.includes('montreal') || lowerLocation.includes('ottawa')) return 'America/Toronto';
-    if (lowerLocation.includes('vancouver')) return 'America/Vancouver';
-    if (lowerLocation.includes('calgary') || lowerLocation.includes('edmonton')) return 'America/Edmonton';
-
-    // Europe
-    if (lowerLocation.includes('london')) return 'Europe/London';
-    if (lowerLocation.includes('paris')) return 'Europe/Paris';
-    if (lowerLocation.includes('berlin')) return 'Europe/Berlin';
-    if (lowerLocation.includes('madrid')) return 'Europe/Madrid';
-    if (lowerLocation.includes('rome')) return 'Europe/Rome';
-
-    // Asia
-    if (lowerLocation.includes('tokyo')) return 'Asia/Tokyo';
-    if (lowerLocation.includes('mumbai') || lowerLocation.includes('delhi') || lowerLocation.includes('bangalore')) return 'Asia/Kolkata';
-    if (lowerLocation.includes('singapore')) return 'Asia/Singapore';
-    if (lowerLocation.includes('hong kong')) return 'Asia/Hong_Kong';
-    if (lowerLocation.includes('dubai')) return 'Asia/Dubai';
-
-    // Australia
-    if (lowerLocation.includes('sydney') || lowerLocation.includes('melbourne')) return 'Australia/Sydney';
-    if (lowerLocation.includes('perth')) return 'Australia/Perth';
-
-    // Country-based fallback
-    if (lowerCountry.includes('canada')) return 'America/Toronto';
-    if (lowerCountry.includes('united states')) return 'America/New_York';
-    if (lowerCountry.includes('united kingdom')) return 'Europe/London';
-    if (lowerCountry.includes('france')) return 'Europe/Paris';
-    if (lowerCountry.includes('germany')) return 'Europe/Berlin';
-    if (lowerCountry.includes('india')) return 'Asia/Kolkata';
-    if (lowerCountry.includes('australia')) return 'Australia/Sydney';
-
-    // Default
-    return 'UTC';
+  const handleCountryChange = (val: string) => {
+    setCountry(val);
+    setProvince('');
   };
 
   const handleOnlineToggle = () => {
     const newIsOnline = !isOnline;
     setIsOnline(newIsOnline);
     if (newIsOnline) {
-      setInputValue('Online/Remote');
-      onChange('Online/Remote', true);
-      setPredictions([]);
-      setShowDropdown(false);
-      if (onTimezoneDetected) {
-        onTimezoneDetected('UTC');
-      }
-    } else {
-      setInputValue('');
-      onChange('', false);
+      setCountry('');
+      setProvince('');
     }
-  };
-
-  const handleClear = () => {
-    setInputValue('');
-    setIsOnline(false);
-    onChange('', false);
-    setPredictions([]);
-    setShowDropdown(false);
   };
 
   return (
     <div className="space-y-2">
       <Label>Business Location</Label>
       <div className="flex gap-2">
-        <div className="relative flex-1">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={handleInputChange}
-            onFocus={() => predictions.length > 0 && setShowDropdown(true)}
-            placeholder={isOnline ? 'Online/Remote' : 'Search city...'}
-            disabled={isOnline}
-            className="pl-10 pr-8"
-            autoComplete="off"
-          />
-          {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-          )}
-          {inputValue && !isLoading && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+            <Select value={country} onValueChange={handleCountryChange} disabled={isOnline}>
+              <SelectTrigger className="pl-10">
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {LOCATION_COUNTRIES.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {provinces.length > 0 && (
+            <Select
+              value={province}
+              onValueChange={setProvince}
+              disabled={isOnline}
             >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-
-          {showDropdown && predictions.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-            >
-              {predictions.map((prediction, idx) => (
-                <button
-                  key={prediction.place_id || idx}
-                  type="button"
-                  onClick={() => handleSelectPrediction(prediction)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
-                >
-                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 dark:text-gray-200 truncate">
-                    {prediction.description}
-                  </span>
-                </button>
-              ))}
-            </div>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Province / State" />
+              </SelectTrigger>
+              <SelectContent>
+                {provinces.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
         <Button
@@ -246,7 +156,7 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        {isOnline ? 'Business operates online/remotely' : 'Enter your city or business location'}
+        {isOnline ? 'Business operates online/remotely' : 'Select your country and province or state'}
       </p>
     </div>
   );

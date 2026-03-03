@@ -690,28 +690,36 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   };
 
   // Determine which menu items to show based on role
+  const onboardingCompleted = session?.user?.onboardingCompleted === true;
   const visibleMainItems = isParent
     ? parentItems // Show parent items if user has a household
     : merchantItems
-        .filter((item) => isMenuItemVisible(item.id, userIndustry)) // Filter by industry
+        .filter((item) => isMenuItemVisible(item.id, userIndustry))
         .filter((item) => {
-          // Hide onboarding menu item if user has completed onboarding
-          if (item.id === 'onboarding' && session?.user?.onboardingCompleted) {
-            return false;
-          }
+          // Onboarding: main menu only when NOT completed (new users); when completed, moves to Admin
+          if (item.id === 'onboarding' && onboardingCompleted) return false;
           return true;
-        }); // Show merchant items otherwise
+        });
 
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' ||
+    (session?.user?.isImpersonating && session?.user?.superAdminId);
+  const hasAdminAccess = isSuperAdmin || session?.user?.role === 'BUSINESS_OWNER' || session?.user?.role === 'ADMIN';
   const visibleAdminItems = isParent
     ? [] // Parents don't see admin section
-    : adminItems.filter((item) => {
-        // Check if item requires super admin access
-        // Allow access if user is SUPER_ADMIN directly OR if they're impersonating (superAdminId present)
-        const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' || 
-          (session?.user?.isImpersonating && session?.user?.superAdminId);
-        if ((item as any).requiresSuperAdmin && !isSuperAdmin) {
-          return false;
-        }
+    : [
+        // Onboarding Wizard in Admin when completed (admin/super admin only)
+        ...(onboardingCompleted && hasAdminAccess
+          ? [{
+              id: 'onboarding' as MenuItemId,
+              title: 'Onboarding Wizard',
+              href: '/onboarding',
+              icon: Rocket,
+              requiresAdmin: true,
+            }]
+          : []),
+        ...adminItems,
+      ].filter((item) => {
+        if ((item as any).requiresSuperAdmin && !isSuperAdmin) return false;
         return isMenuItemVisible(item.id, userIndustry);
       });
 

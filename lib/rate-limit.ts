@@ -15,7 +15,7 @@ export interface RateLimitConfig {
 export const RATE_LIMITS = {
   api: { maxRequests: 100, windowMs: 60_000 } as RateLimitConfig,
   apiHeavy: { maxRequests: 300, windowMs: 60_000 } as RateLimitConfig, // dental, clinical, treatment plans
-  auth: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
+  auth: { maxRequests: 120, windowMs: 60_000 } as RateLimitConfig, // NextAuth polls session often
   webhook: { maxRequests: 200, windowMs: 60_000 } as RateLimitConfig,
   public: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
 } as const
