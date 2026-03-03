@@ -132,10 +132,7 @@ export class CrmVoiceAgentService {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
           model_id: 'eleven_multilingual_v2', // Best accent quality for multilingual (matches landing page)
         },
-        turn: {
-          mode: 'turn',
-          turn_timeout_seconds: 30, // Max — prevents premature cutoff when user pauses
-        },
+        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: {
           max_duration_seconds: 1800, // 30 min
           turn_timeout_seconds: 30,

@@ -34,7 +34,24 @@ export const maxDuration = 60;
 
 Routes: crm-voice-agent, docpen/voice-agent, voice-agents (POST), voice-agents/[id]/auto-configure, industry-ai-employees/provision, real-estate/ai-employees/provision, professional-ai-employees/provision.
 
-## 3. Per-Call Overrides
+## 3. Turn Timeout (CRITICAL)
+
+**Always** include `turn: { mode: 'turn', turn_timeout: 30 }` in `conversation_config` when creating or updating agents. When unset, ElevenLabs defaults to `turn_timeout: 7`, causing premature disconnect after 7 seconds of silence.
+
+```typescript
+// ❌ BAD — agent defaults to 7s, disconnects quickly
+conversation_config: { agent: {...}, conversation: {...} }
+
+// ✅ GOOD — use TURN_CONFIG from @/lib/elevenlabs-constants
+import { TURN_CONFIG } from '@/lib/elevenlabs-constants';
+conversation_config: {
+  turn: TURN_CONFIG,  // { mode: 'turn', turn_timeout: 30 }
+  agent: {...},
+  conversation: {...},
+}
+```
+
+## 4. Per-Call Overrides
 
 When building `voiceOverride.agent = { language: lang }` for workflow calls or dynamic variables, normalize the language:
 
@@ -42,3 +59,7 @@ When building `voiceOverride.agent = { language: lang }` for workflow calls or d
 const { getElevenLabsLanguageCode } = await import('@/lib/voice-languages');
 voiceOverride.agent = { language: getElevenLabsLanguageCode(lang) };
 ```
+
+## 5. Shared Constants
+
+Use `lib/elevenlabs-constants.ts` for `TURN_CONFIG` and `CONVERSATION_CONFIG` when patching agent timeouts.

@@ -341,6 +341,7 @@ class ElevenLabsProvisioningService {
             similarity_boost: 0.75, // Voice similarity (0-1)
             optimize_streaming_latency: 3, // Optimize for real-time (0-4)
           },
+          turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
           conversation: {
             max_duration_seconds: options.maxCallDuration || 1800, // 30 minutes default
             turn_timeout_seconds: 30, // Max — prevents premature cutoff when user pauses

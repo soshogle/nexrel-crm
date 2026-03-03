@@ -334,6 +334,7 @@ If you don't know something, politely direct them to our contact form or website
 
       // ElevenLabs API: cannot specify both tools and tool_ids — use tools only
       const conv = currentAgent.conversation_config?.conversation || {};
+      const turn = currentAgent.conversation_config?.turn || {};
       const existingPrompt = currentAgent.conversation_config?.agent?.prompt || {};
       const { tool_ids: _omit, ...promptWithoutToolIds } = existingPrompt;
       const updatePayload = {
@@ -346,6 +347,7 @@ If you don't know something, politely direct them to our contact form or website
               tools,
             },
           },
+          turn: { ...turn, mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
           conversation: {
             ...conv,
             max_duration_seconds: conv.max_duration_seconds ?? 1800,

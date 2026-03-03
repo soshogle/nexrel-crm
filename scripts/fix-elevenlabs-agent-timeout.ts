@@ -7,13 +7,13 @@
  */
 
 import { prisma } from '@/lib/db';
+import { TURN_CONFIG, CONVERSATION_CONFIG } from '@/lib/elevenlabs-constants';
 import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
-const TURN_TIMEOUT_SECONDS = 30; // Max allowed — gives users most time before agent prompts/ends
 
 async function patchAgentTurnTimeout(agentId: string, apiKey: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -27,14 +27,17 @@ async function patchAgentTurnTimeout(agentId: string, apiKey: string): Promise<{
     const current = await getRes.json();
     const convConfig = current.conversation_config || {};
     const conversation = convConfig.conversation || {};
+    const turn = convConfig.turn || {};
 
-    // Minimal PATCH — only conversation to avoid "both tools and tool_ids" error
+    // CRITICAL: ElevenLabs uses turn.turn_timeout (not conversation.turn_timeout_seconds).
+    // When unset, it defaults to 7 seconds — causing premature disconnect.
     const updatePayload = {
       conversation_config: {
+        turn: { ...turn, ...TURN_CONFIG },
         conversation: {
           ...conversation,
-          max_duration_seconds: conversation.max_duration_seconds ?? 1800,
-          turn_timeout_seconds: TURN_TIMEOUT_SECONDS,
+          max_duration_seconds: conversation.max_duration_seconds ?? CONVERSATION_CONFIG.max_duration_seconds,
+          turn_timeout_seconds: CONVERSATION_CONFIG.turn_timeout_seconds,
         },
       },
     };
@@ -120,7 +123,7 @@ async function main() {
     return;
   }
 
-  console.log(`\n🔧 Setting turn_timeout_seconds=${TURN_TIMEOUT_SECONDS} for ${agentIds.length} agent(s)\n`);
+  console.log(`\n🔧 Setting turn.turn_timeout=${TURN_CONFIG.turn_timeout}s for ${agentIds.length} agent(s)\n`);
 
   let ok = 0;
   let fail = 0;

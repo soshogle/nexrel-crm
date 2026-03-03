@@ -53,7 +53,7 @@ async function createElevenLabsAgent(
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
           model_id: 'eleven_multilingual_v2', // Best accent quality (matches landing page)
         },
-        turn: { mode: 'turn' },
+        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
       },
       name: config.name,
       platform_settings: {

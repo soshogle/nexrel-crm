@@ -318,8 +318,10 @@ class DocpenAgentProvisioning {
           similarity_boost: 0.8,
           optimize_streaming_latency: 3,
         },
+        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: {
           max_duration_seconds: 3600, // 1 hour max
+          turn_timeout_seconds: 30,
         },
         asr: {
           quality: 'high',
