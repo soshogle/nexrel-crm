@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService } from '@/lib/dal';
-import { updatePropertyGallery } from '@/lib/website-builder/listings-service';
+import { updatePropertyGallery, updatePropertySecret } from '@/lib/website-builder/listings-service';
 import { apiErrors } from '@/lib/api-error';
 
 export async function PATCH(
@@ -33,13 +33,19 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { galleryImages } = body;
+    const { galleryImages, isSecret } = body;
 
-    if (!Array.isArray(galleryImages)) {
-      return apiErrors.badRequest('galleryImages must be an array');
+    if (galleryImages !== undefined) {
+      if (!Array.isArray(galleryImages)) {
+        return apiErrors.badRequest('galleryImages must be an array');
+      }
+      await updatePropertyGallery(params.id, propertyId, galleryImages);
     }
 
-    await updatePropertyGallery(params.id, propertyId, galleryImages);
+    if (typeof isSecret === 'boolean') {
+      await updatePropertySecret(params.id, propertyId, isSecret);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Listings PATCH error:', error);

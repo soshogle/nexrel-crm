@@ -17,8 +17,10 @@ export interface PropertyListing {
   title: string;
   slug: string;
   address: string;
+  price: string | null;
   mainImageUrl: string | null;
   galleryImages: GalleryItem[] | null;
+  isSecret: boolean;
 }
 
 let poolCache = new Map<string, Pool>();
@@ -75,7 +77,7 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
   const pool = getPool(website.neonDatabaseUrl);
 
   const result = await pool.query(
-    `SELECT id, title, slug, address, main_image_url, gallery_images
+    `SELECT id, title, slug, address, price, main_image_url, gallery_images, COALESCE(is_secret, false) as is_secret
      FROM properties
      ORDER BY is_featured DESC, created_at DESC`
   );
@@ -85,8 +87,10 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
     title: row.title,
     slug: row.slug,
     address: row.address,
+    price: row.price,
     mainImageUrl: row.main_image_url,
     galleryImages: row.gallery_images as GalleryItem[] | null,
+    isSecret: row.is_secret ?? false,
   }));
 }
 
@@ -181,6 +185,30 @@ export async function flagBrokerListingsFromWebsite(
   } catch (e: any) {
     return { flagged: 0, error: e.message };
   }
+}
+
+export async function updatePropertySecret(
+  websiteId: string,
+  propertyId: number,
+  isSecret: boolean
+): Promise<void> {
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) throw new Error('Website not found');
+
+  const website = await resolved.db.website.findFirst({
+    where: { id: websiteId },
+    select: { neonDatabaseUrl: true, templateType: true },
+  });
+
+  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+    throw new Error('Listings are only available for service template websites');
+  }
+
+  const pool = getPool(website.neonDatabaseUrl);
+  await pool.query(
+    `UPDATE properties SET is_secret = $1, updated_at = NOW() WHERE id = $2`,
+    [isSecret, propertyId]
+  );
 }
 
 export async function updatePropertyGallery(

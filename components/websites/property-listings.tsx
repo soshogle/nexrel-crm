@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Home, Pencil, RefreshCw, ImageIcon, ArrowLeft } from 'lucide-react';
+import { Home, Pencil, RefreshCw, ImageIcon, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,8 +25,10 @@ interface PropertyListing {
   title: string;
   slug: string;
   address: string;
+  price: string | null;
   mainImageUrl: string | null;
   galleryImages: (string | GalleryItem)[] | null;
+  isSecret: boolean;
 }
 
 interface PropertyListingsProps {
@@ -106,6 +108,27 @@ export function PropertyListings({ websiteId }: PropertyListingsProps) {
     }
   };
 
+  const toggleSecret = async (listing: PropertyListing) => {
+    const newValue = !listing.isSecret;
+    try {
+      const res = await fetch(`/api/websites/${websiteId}/listings/${listing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isSecret: newValue }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update');
+      }
+      setListings((prev) =>
+        prev.map((l) => (l.id === listing.id ? { ...l, isSecret: newValue } : l))
+      );
+      toast.success(newValue ? 'Property marked as secret' : 'Property is now public');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -123,8 +146,7 @@ export function PropertyListings({ websiteId }: PropertyListingsProps) {
             Property Listings
           </CardTitle>
           <CardDescription>
-            Manage the Ken Burns motion effect for each property&apos;s gallery images. Disable motion for
-            specific photos (e.g. floor plans, documents).
+            Manage listings: toggle secret/exclusive access and control gallery motion effects.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -139,11 +161,13 @@ export function PropertyListings({ websiteId }: PropertyListingsProps) {
               {listings.map((listing) => (
                 <Card
                   key={listing.id}
-                  className="cursor-pointer transition-colors hover:bg-muted/50"
-                  onClick={() => openEditor(listing)}
+                  className={`transition-colors hover:bg-muted/50 ${listing.isSecret ? 'ring-2 ring-amber-400/50' : ''}`}
                 >
                   <CardContent className="p-0">
-                    <div className="aspect-video bg-muted relative overflow-hidden rounded-t-lg">
+                    <div
+                      className="aspect-video bg-muted relative overflow-hidden rounded-t-lg cursor-pointer"
+                      onClick={() => openEditor(listing)}
+                    >
                       {listing.mainImageUrl ? (
                         <img
                           src={listing.mainImageUrl}
@@ -155,14 +179,34 @@ export function PropertyListings({ websiteId }: PropertyListingsProps) {
                           <ImageIcon className="h-12 w-12 text-muted-foreground" />
                         </div>
                       )}
+                      {listing.isSecret && (
+                        <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-medium text-white">
+                          <Lock className="h-3 w-3" />
+                          Secret
+                        </div>
+                      )}
                       <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-xs text-white">
                         <Pencil className="h-3 w-3" />
                         Edit gallery
                       </div>
                     </div>
                     <div className="p-3">
-                      <p className="font-medium truncate">{listing.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{listing.address}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{listing.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{listing.address}</p>
+                        </div>
+                        <Button
+                          variant={listing.isSecret ? 'default' : 'outline'}
+                          size="sm"
+                          className={`shrink-0 gap-1.5 ${listing.isSecret ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); toggleSecret(listing); }}
+                          title={listing.isSecret ? 'Remove from Secret Properties' : 'Add to Secret Properties'}
+                        >
+                          {listing.isSecret ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                          {listing.isSecret ? 'Secret' : 'Public'}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
