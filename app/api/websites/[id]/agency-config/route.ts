@@ -3,9 +3,13 @@
  * Returns agency config for a website (logo, name, contact, nav, page labels).
  * Used by owner-deployed templates to fetch config at runtime.
  * Auth: session OR x-website-secret header (for template server fetches)
+ *
+ * Preview mode: ?previewToken=JWT — when present and valid, returns draft config
+ * from the JWT payload instead of saved config. Used for "preview before publish".
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import jwt from 'jsonwebtoken';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
@@ -27,9 +31,8 @@ const DEFAULT_NAV_CONFIG = {
   topLinks: [
     { label: 'Home', href: '/' },
     { label: 'Properties', href: '/properties' },
-    { label: 'Get A Quote', href: '/get-a-quote' },
+    { label: 'Secret Properties', href: '/secret-properties' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Testimonials', href: '/testimonials' },
   ],
   footerLinks: [
     { label: 'Properties', href: '/properties' },
@@ -39,8 +42,6 @@ const DEFAULT_NAV_CONFIG = {
     { label: 'About', href: '/about' },
     { label: 'Blog', href: '/blog' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Awards', href: '/awards' },
-    { label: 'Testimonials', href: '/testimonials' },
   ],
 };
 
@@ -66,9 +67,63 @@ export async function GET(
       return apiErrors.badRequest('Website ID required');
     }
 
-    const session = await getServerSession(authOptions);
+    const { searchParams } = new URL(request.url);
+    const previewToken = searchParams.get('previewToken');
     const secret = request.headers.get('x-website-secret');
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+
+    // Preview mode: valid JWT with draft config overrides saved config
+    if (previewToken && expectedSecret) {
+      try {
+        const decoded = jwt.verify(previewToken, expectedSecret) as {
+          websiteId: string;
+          config: Record<string, unknown>;
+          exp?: number;
+        };
+        if (decoded.websiteId === websiteId && decoded.config) {
+          const draft = decoded.config;
+          const navConfig = (draft.navConfig as Record<string, unknown>) || DEFAULT_NAV_CONFIG;
+          const pageLabels = (draft.pageLabels as Record<string, string>) || DEFAULT_PAGE_LABELS;
+          const crmOrigin = request.nextUrl?.origin || process.env.NEXREL_PUBLIC_URL || process.env.NEXREL_CRM_URL || '';
+          const mapsScriptUrl =
+            process.env.GOOGLE_MAPS_API_KEY && crmOrigin
+              ? `${crmOrigin.replace(/\/$/, '')}/api/maps/js`
+              : null;
+
+          const config = {
+            brokerName: (draft.brokerName as string) || 'Real Estate Professional',
+            name: (draft.name as string) || 'Your Agency',
+            logoUrl: (draft.logoUrl as string) || '/placeholder-logo.svg',
+            mapsScriptUrl: (draft.mapsScriptUrl as string) || mapsScriptUrl,
+            tagline: (draft.tagline as string) || 'Your trusted real estate partner',
+            address: (draft.address as string) || '',
+            neighborhood: (draft.neighborhood as string) || '',
+            city: (draft.city as string) || '',
+            province: (draft.province as string) || '',
+            postalCode: (draft.postalCode as string) || '',
+            fullAddress: (draft.fullAddress as string) || (draft.address as string) || '',
+            phone: (draft.phone as string) || '',
+            fax: (draft.fax as string) || '',
+            email: (draft.email as string) || '',
+            languages: Array.isArray(draft.languages) ? draft.languages : ['English'],
+            remaxProfileUrl: (draft.remaxProfileUrl as string) || '',
+            tranquilliT: draft.tranquilliT === true,
+            tranquilliTUrl: (draft.tranquilliTUrl as string) || '',
+            fullAgencyMode: draft.fullAgencyMode !== false,
+            navConfig,
+            pageLabels,
+          };
+
+          return NextResponse.json(config, {
+            headers: { 'Cache-Control': 'no-store, max-age=0' },
+          });
+        }
+      } catch {
+        // Invalid or expired token — fall through to normal flow
+      }
+    }
+
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.id && !(expectedSecret && secret === expectedSecret)) {
       return apiErrors.unauthorized();

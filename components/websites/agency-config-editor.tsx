@@ -61,6 +61,19 @@ export function AgencyConfigEditor({
     });
   }, [agencyConfig]);
 
+  // Notify parent of draft changes for preview-before-publish
+  useEffect(() => {
+    onUpdateLocal({
+      brokerName: form.brokerName,
+      name: form.name,
+      tagline: form.tagline,
+      logoUrl: form.logoUrl,
+      phone: form.phone,
+      email: form.email,
+      address: form.address,
+    });
+  }, [form, onUpdateLocal]);
+
   const handleSave = async () => {
     setSaving(true);
     try {

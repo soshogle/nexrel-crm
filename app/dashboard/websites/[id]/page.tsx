@@ -88,6 +88,9 @@ export default function WebsiteEditorPage() {
   const [listingsCount, setListingsCount] = useState<number | null>(null);
   const [listingsCountLoading, setListingsCountLoading] = useState(false);
   const [syncCentrisLoading, setSyncCentrisLoading] = useState(false);
+  const [draftAgencyConfig, setDraftAgencyConfig] = useState<Partial<AgencyConfigForm> | null>(null);
+  const [previewToken, setPreviewToken] = useState<string | null>(null);
+  const [previewTokenLoading, setPreviewTokenLoading] = useState(false);
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const showNeonDatabaseSection =
@@ -141,6 +144,42 @@ export default function WebsiteEditorPage() {
     }
     prevImportInProgressRef.current = isImportInProgress;
   }, [isImportInProgress, importBuild?.status, importBuild?.buildData]);
+
+  const draftAgencyConfigRef = useRef<Partial<AgencyConfigForm> | null>(null);
+  draftAgencyConfigRef.current = draftAgencyConfig;
+
+  const handleAgencyDraftUpdate = useCallback((updates: Partial<AgencyConfigForm>) => {
+    setDraftAgencyConfig((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  // Fetch preview token when preview tab is active (for preview-before-publish)
+  const fetchPreviewToken = useCallback(async () => {
+    if (!website?.id || !website.vercelDeploymentUrl) return null;
+    setPreviewTokenLoading(true);
+    try {
+      const saved = (website.agencyConfig as Record<string, unknown>) || {};
+      const draft = draftAgencyConfigRef.current;
+      const merged = { ...saved, ...draft };
+      const res = await fetch(`/api/websites/${website.id}/preview-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: merged }),
+      });
+      if (!res.ok) throw new Error('Failed to get preview token');
+      const { token } = await res.json();
+      return token;
+    } catch {
+      toast.error('Could not load preview');
+      return null;
+    } finally {
+      setPreviewTokenLoading(false);
+    }
+  }, [website?.id, website?.vercelDeploymentUrl, website?.agencyConfig]);
+
+  useEffect(() => {
+    if (activeTab !== 'preview' || !website?.vercelDeploymentUrl) return;
+    fetchPreviewToken().then((token) => token && setPreviewToken(token));
+  }, [activeTab, website?.vercelDeploymentUrl, fetchPreviewToken]);
 
   // Fetch listings count when opening settings (SERVICE template only)
   const fetchListingsCount = useCallback(async () => {
@@ -485,28 +524,50 @@ export default function WebsiteEditorPage() {
             <CardHeader>
               <CardTitle>Website Preview</CardTitle>
               <CardDescription>
-                Preview your website before publishing
+                Preview your website before publishing. Changes in Agency / Brand (logo, colors, etc.) appear here before you save.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {website.vercelDeploymentUrl ? (
                 <div className="space-y-4">
-                  <a
-                    href={website.vercelDeploymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <Button>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Open Preview
-                    </Button>
-                  </a>
-                  <iframe
-                    src={website.vercelDeploymentUrl}
-                    className="w-full h-[600px] border rounded-lg"
-                    title="Website Preview"
-                  />
+                  {previewTokenLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading preview…
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={previewToken ? `${website.vercelDeploymentUrl}?previewToken=${previewToken}` : website.vercelDeploymentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Open Preview
+                          </Button>
+                        </a>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPreviewToken(null);
+                            fetchPreviewToken().then((token) => token && setPreviewToken(token));
+                          }}
+                          disabled={previewTokenLoading}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Refresh Preview
+                        </Button>
+                      </div>
+                      <iframe
+                        src={previewToken ? `${website.vercelDeploymentUrl}?previewToken=${previewToken}` : website.vercelDeploymentUrl}
+                        className="w-full h-[600px] border rounded-lg"
+                        title="Website Preview"
+                      />
+                    </>
+                  )}
                 </div>
               ) : extractPages(website.structure)[0]?.components?.length ? (
                 <div className="space-y-4">
@@ -877,8 +938,9 @@ export default function WebsiteEditorPage() {
                         }
                       : null
                   );
+                  setDraftAgencyConfig(null);
                 }}
-                onUpdateLocal={() => {}}
+                onUpdateLocal={handleAgencyDraftUpdate}
               />
             </div>
             <div className="pt-4 border-t space-y-4">

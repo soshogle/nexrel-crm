@@ -188,11 +188,35 @@ export async function DELETE(
       return apiErrors.unauthorized();
     }
 
+    // SERVICE websites with active deployments require SUPER_ADMIN or explicit confirmation
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return apiErrors.notFound('Website not found');
     }
+
+    const isServiceSite = (website as any).templateType === 'SERVICE' && (website as any).status === 'READY';
+    if (isServiceSite && session?.user?.role !== 'SUPER_ADMIN') {
+      const url = new URL(request.url);
+      const confirm = url.searchParams.get('confirm');
+      if (confirm !== 'true') {
+        return NextResponse.json(
+          { error: 'Active SERVICE website deletion requires ?confirm=true. This will remove the live site, Vercel project, and database.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Log critical config before deletion for recovery
+    console.log(`[Website Delete] Archiving config for ${params.id}:`, JSON.stringify({
+      id: params.id,
+      name: (website as any).name,
+      userId: (website as any).userId,
+      templateType: (website as any).templateType,
+      vercelDeploymentUrl: (website as any).vercelDeploymentUrl,
+      agencyConfig: (website as any).agencyConfig,
+      navConfig: (website as any).navConfig,
+    }));
 
     // Delete related records first (cascading deletes)
     // Use a transaction to ensure atomicity

@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
+import { processWebsiteTriggers } from '@/lib/website-triggers';
+import { processCampaignTriggers } from '@/lib/campaign-triggers';
+import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -91,6 +94,21 @@ export async function POST(
         content: `Viewed report: ${report.title} (${report.id})`,
       },
     });
+
+    // Trigger campaigns and workflows for secret property leads
+    try {
+      await processWebsiteTriggers(website.userId, lead.id, 'WEBSITE_SECRET_REPORT_LEAD' as any, { websiteId });
+    } catch (e) { console.warn('[secret-reports/unlock] trigger error:', e); }
+    try {
+      await processCampaignTriggers({
+        leadId: lead.id,
+        userId: website.userId,
+        triggerType: 'WEBSITE_SECRET_REPORT_LEAD',
+        metadata: { websiteId, reportId, reportTitle: report.title } as any,
+      });
+    } catch (e) { console.warn('[secret-reports/unlock] campaign trigger error:', e); }
+
+    syncLeadCreatedToPipeline(website.userId, lead).catch(() => {});
 
     return NextResponse.json({ report, leadId: lead.id });
   } catch (error: any) {

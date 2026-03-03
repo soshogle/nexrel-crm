@@ -1,14 +1,15 @@
 #!/usr/bin/env tsx
 /**
  * One-command deploy for Theodora's website.
- * 1. Sync template → Theodora (applies latest template updates)
- * 2. Push to GitHub (triggers Vercel auto-deploy)
+ * Pushes Theodora-Stavropoulos-Remax to GitHub (triggers Vercel auto-deploy).
+ *
+ * By default, NEVER syncs from template — Theodora's site is never overwritten.
+ * To sync template → Theodora (overwrites local files): SYNC=1 npx tsx scripts/deploy-theodora.ts
  *
  * Prerequisites:
  *   - GITHUB_TOKEN (repo scope)
  *
  * Run: npx tsx scripts/deploy-theodora.ts
- * Skip sync (only push): SKIP_SYNC=1 npx tsx scripts/deploy-theodora.ts
  */
 
 import { execSync } from "child_process";
@@ -26,7 +27,7 @@ const TARGET_REPO = "Theodora-Stavropoulos-Remax";
 
 function main() {
   const dryRun = process.env.DRY_RUN === "1";
-  const skipSync = process.env.SKIP_SYNC === "1";
+  const doSync = process.env.SYNC === "1"; // Default: no sync. Theodora's site is never overwritten.
 
   console.log("🚀 Deploy Theodora's website\n");
 
@@ -41,8 +42,8 @@ function main() {
     process.exit(1);
   }
 
-  // Step 1: Sync template → Theodora
-  if (!skipSync && existsSync(TEMPLATE)) {
+  // Step 1: Sync template → Theodora (only if SYNC=1)
+  if (doSync && existsSync(TEMPLATE)) {
     console.log("1️⃣  Syncing template...");
     const theodoraEnv = existsSync(join(THEODORA, ".env"))
       ? readFileSync(join(THEODORA, ".env"), "utf-8")
@@ -61,10 +62,8 @@ function main() {
       if (theodoraEnv) writeFileSync(join(THEODORA, ".env"), theodoraEnv);
     }
     console.log("   ✅ Done\n");
-  } else if (skipSync) {
-    console.log("1️⃣  Skipping sync (SKIP_SYNC=1)\n");
   } else {
-    console.log("1️⃣  Template not found, skipping sync\n");
+    console.log("1️⃣  Skipping sync (Theodora's site preserved). Use SYNC=1 to sync from template.\n");
   }
 
   // Step 2: Publish to GitHub

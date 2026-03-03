@@ -18,6 +18,7 @@ interface TriggerContext {
     | 'FEEDBACK_POSITIVE'
     | 'WEBSITE_VOICE_AI_LEAD'
     | 'WEBSITE_SECRET_REPORT_LEAD'
+    | 'WEBSITE_CONTACT_FORM_LEAD'
     | 'TRIAL_ENDED'
     | 'WORKFLOW_TASK_COMPLETED';
   metadata?: {
@@ -57,7 +58,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
     const smsCampaigns = await db.smsCampaign.findMany({
       where: {
         userId,
-        status: 'ACTIVE' as any,
+        status: 'ACTIVE',
         isSequence: true,
         triggerType: triggerType,
       },

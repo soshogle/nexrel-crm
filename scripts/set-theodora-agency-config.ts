@@ -35,19 +35,29 @@ const THEODORA_AGENCY_CONFIG = {
 };
 
 async function main() {
-  const theodora = await prisma.user.findUnique({
-    where: { email: THEODORA_EMAIL },
-    include: { websites: true },
-  });
+  // Try by user email first
+  let website = await prisma.user
+    .findUnique({
+      where: { email: THEODORA_EMAIL },
+      include: { websites: true },
+    })
+    .then((u) => u?.websites[0]);
 
-  if (!theodora) {
-    console.error('❌ User not found:', THEODORA_EMAIL);
-    return;
+  // Fallback: find website by name (Stavropoulos, Theodora, etc.)
+  if (!website) {
+    website = await prisma.website.findFirst({
+      where: {
+        OR: [
+          { name: { contains: 'Theodora', mode: 'insensitive' } },
+          { name: { contains: 'Stavropoulos', mode: 'insensitive' } },
+          { name: { contains: 'Stavropou', mode: 'insensitive' } },
+        ],
+      },
+    });
   }
 
-  const website = theodora.websites[0];
   if (!website) {
-    console.error('❌ No website found for Theodora');
+    console.error('❌ No website found for Theodora. Tried: user email, website name containing Theodora/Stavropoulos.');
     return;
   }
 

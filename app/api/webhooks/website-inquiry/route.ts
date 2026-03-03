@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger workflows
     try {
-      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_CONTACT_FORM_LEAD' as any, { websiteId });
+      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_CONTACT_FORM_LEAD', { websiteId });
     } catch (wfErr) {
       console.warn('[website-inquiry] processWebsiteTriggers error:', wfErr);
     }
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
       await processCampaignTriggers({
         leadId: lead.id,
         userId: leadOwnerId,
-        triggerType: 'WEBSITE_CONTACT_FORM_LEAD' as any,
-        metadata: { websiteId, propertyId } as any,
+        triggerType: 'WEBSITE_CONTACT_FORM_LEAD',
+        metadata: { websiteId } as any,
       });
     } catch (campErr) {
       console.warn('[website-inquiry] processCampaignTriggers error:', campErr);

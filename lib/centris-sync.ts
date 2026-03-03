@@ -39,8 +39,27 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
   const priceNum = parsePrice(item.price as string);
   const category = (item.category as string) || "";
   const fromUrl = (item.from_url as string) || "";
-  const listingType =
-    category.toLowerCase().includes("rent") || fromUrl.includes("rent") ? "rent" : "sale";
+  const titleLower = title.toLowerCase();
+  const categoryLower = category.toLowerCase();
+  const titleIndicatesSale = titleLower.includes("for sale") || titleLower.includes("à vendre") || titleLower.includes("a vendre");
+  const titleIndicatesRent = titleLower.includes("for rent") || titleLower.includes("à louer") || titleLower.includes("a louer");
+
+  let listingType: "sale" | "rent";
+  if (titleIndicatesSale) {
+    listingType = "sale";
+  } else if (titleIndicatesRent) {
+    listingType = "rent";
+  } else if (categoryLower.includes("rent") || fromUrl.includes("rent")) {
+    listingType = "rent";
+  } else {
+    listingType = "sale";
+  }
+
+  // Sanity check: residential rentals above $50k/mo are almost certainly misclassified sales
+  if (listingType === "rent" && priceNum && priceNum > 50000) {
+    listingType = "sale";
+  }
+
   const priceLabel = listingType === "rent" ? "mo" : "";
   const priceVal = priceNum ?? 0;
   const isPrestige = listingType === "sale" && priceVal >= 1_000_000;
