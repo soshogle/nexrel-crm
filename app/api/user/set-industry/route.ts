@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getMetaDb } from '@/lib/db/meta-db';
 import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
 import { apiErrors } from '@/lib/api-error';
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
       return apiErrors.badRequest('Invalid industry value');
     }
 
-    // Update user's industry
+    // Update user's industry in main DB
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: { industry },
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest) {
         industry: true,
       },
     });
+
+    // Also update Meta DB (auth source) - session/JWT reads industry from here
+    try {
+      await getMetaDb().user.update({
+        where: { id: session.user.id },
+        data: { industry },
+      });
+    } catch (metaErr) {
+      // Meta may be same as main when DATABASE_URL_META not set; ignore
+    }
 
     // Auto-provision AI employees in background (Real Estate, Dental, etc.)
     provisionAIEmployeesForUser(session.user.id);

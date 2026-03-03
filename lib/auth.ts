@@ -133,6 +133,12 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account, trigger, session }): Promise<any> {
+      // When client calls update({ industry }) after set-industry, merge into token
+      if (trigger === 'update' && session) {
+        const newIndustry = session.industry ?? (session as any).user?.industry;
+        if (newIndustry) token.industry = newIndustry;
+      }
+
       const originalUserId = token.originalUserId || token.id;
       const wasImpersonating = token.isImpersonating === true;
       // Only run impersonation DB queries for super admins (or when resetting from impersonation)
@@ -308,6 +314,30 @@ export const authOptions: NextAuthOptions = {
       }
       if (token.originalUserIsSuperAdmin === undefined) {
         token.originalUserIsSuperAdmin = token.role === 'SUPER_ADMIN'
+      }
+
+      // Refresh industry from DB when token has none (e.g. DB was updated after login)
+      const effectiveId = token.isImpersonating ? token.id : (token.originalUserId || token.id)
+      if (
+        effectiveId &&
+        (token.industry === null || token.industry === undefined) &&
+        !user &&
+        token.role !== 'SUPER_ADMIN'
+      ) {
+        try {
+          const dbUser = await authDb.user.findUnique({
+            where: { id: effectiveId as string },
+            select: { industry: true, onboardingCompleted: true, accountStatus: true, country: true },
+          })
+          if (dbUser?.industry) {
+            token.industry = dbUser.industry
+            token.onboardingCompleted = dbUser.onboardingCompleted ?? token.onboardingCompleted
+            token.accountStatus = dbUser.accountStatus ?? token.accountStatus
+            token.country = dbUser.country ?? token.country ?? 'CA'
+          }
+        } catch {
+          // Ignore - keep existing token
+        }
       }
 
       return token

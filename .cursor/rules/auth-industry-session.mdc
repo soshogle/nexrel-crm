@@ -1,0 +1,14 @@
+# Auth, Industry & Welcome Page
+
+## Why the Welcome Redirect Loop Happened
+
+1. **JWT stores industry** – The session token is created at sign-in. `session.user.industry` comes from the JWT, not a live DB query.
+2. **set-industry only updated main DB** – Auth reads from Meta DB (`getMetaDb()`). If they differ, the auth DB was never updated.
+3. **No session refresh after save** – After set-industry, we did `router.push('/dashboard')` but the JWT still had `industry: null`. The layout checked the session and redirected back to `/welcome`.
+
+## Rules to Prevent This
+
+- **set-industry** must update both main prisma and `getMetaDb()` (auth source).
+- **Welcome page** must call `update({ industry })` from useSession after set-industry succeeds, before `router.push('/dashboard')`.
+- **JWT callback** must handle `trigger === 'update'` and merge `session.industry` into the token.
+- **New user creation** – Scripts that create users (e.g. `create-orthodontist-admin.ts`) should set `industry` when creating the user so the initial JWT has it.

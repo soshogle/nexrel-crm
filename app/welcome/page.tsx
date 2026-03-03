@@ -29,7 +29,7 @@ const INDUSTRIES = [
 ];
 
 export default function WelcomePage() {
-  const { data: session, status } = useSession() || {};
+  const { data: session, status, update } = useSession() || {};
   const router = useRouter();
   const [selectedIndustry, setSelectedIndustry] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,12 +64,14 @@ export default function WelcomePage() {
         throw new Error('Failed to save industry');
       }
 
+      // Refresh session so JWT gets the new industry (prevents redirect loop back to /welcome)
+      if (typeof update === 'function') {
+        await update({ industry: selectedIndustry });
+      }
+
       toast.success('Industry saved! Redirecting to your dashboard...');
-      
-      // Small delay for better UX
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
+      // Full page nav ensures the new session cookie is sent (client nav can use stale cookie)
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error saving industry:', error);
       toast.error('Failed to save industry. Please try again.');
