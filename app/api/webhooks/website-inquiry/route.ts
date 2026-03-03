@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const secret = request.headers.get('x-website-secret');
     const body = await request.json();
-    const { websiteId, name, email, phone, message, propertyId, propertyAddress } = body;
+    const { websiteId, name, email, phone, message, propertyId, propertyAddress, language } = body;
 
     if (!websiteId) {
       return apiErrors.badRequest('websiteId required');
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
           propertyId: propertyId || null,
           propertyAddress: propertyAddress || null,
           receivedAt: new Date().toISOString(),
+          preferredLanguage: language || 'en',
         },
         contactType: 'CUSTOMER',
       } as any);

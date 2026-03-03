@@ -1,0 +1,48 @@
+---
+description: Rules for deploying owner websites (Theodora, Darksword Armory) — NEVER overwrite, use selective cherry-pick from template
+alwaysApply: true
+---
+
+# Owner Website Deployments
+
+## Critical Rules
+
+- **NEVER overwrite** Theodora's or Darksword Armory's websites with the full template.
+- **NEVER use SYNC=1** with deploy scripts unless the user explicitly asks for an overwrite.
+- When template changes are needed on their sites, **cherry-pick specific commits** — do not merge or copy the whole template.
+
+## Site Map
+
+| Site | Local Folder | GitHub Repo | Template | Template Remote |
+|------|-------------|-------------|----------|-----------------|
+| Theodora | `Theodora-Stavropoulos-Remax/` | `soshogle/Theodora-Stavropoulos-Remax` | `nexrel-service-template` | `template` (local) |
+| Darksword Armory | `darksword-armory/` | `soshogle/darksword-armory` | `nexrel-ecommerce-template` | `template` (local) |
+
+## How to Apply Template Changes
+
+```bash
+# 1. Fetch latest template commits
+cd Theodora-Stavropoulos-Remax   # or darksword-armory
+git fetch template
+
+# 2. See available template commits
+git log template/main --oneline
+
+# 3. Cherry-pick specific feature commits
+git cherry-pick <commit-hash>
+# Resolve conflicts if any — keep site customizations
+
+# 4. Deploy (pushes local folder to GitHub, Vercel auto-deploys)
+GITHUB_TOKEN=xxx npx tsx scripts/deploy-theodora.ts
+# For Darksword: push directly from darksword-armory/
+```
+
+## How to Commit & Push
+
+- **Theodora:** Commit inside `Theodora-Stavropoulos-Remax/`, then run `deploy-theodora.ts` (pushes to `soshogle/Theodora-Stavropoulos-Remax`).
+- **Darksword:** Commit inside `darksword-armory/`, then `git push origin` (pushes to `soshogle/darksword-armory`).
+- **CRM changes** (APIs, dashboard, shared lib): Commit in the nexrel-crm root, push to `soshogle/nexrel-crm`.
+
+## Onboarded Users (everyone else)
+
+Sites created via CRM onboarding are identical to the template. Full template redeploy is safe for them.

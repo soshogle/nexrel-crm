@@ -32,7 +32,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { reportId, name, email, phone } = body;
+    const { reportId, name, email, phone, language } = body;
 
     if (!reportId || !name?.trim() || !email?.trim() || !phone?.trim()) {
       return apiErrors.badRequest('reportId, name, email, and phone are required');
@@ -83,6 +83,7 @@ export async function POST(
           reportId,
           reportTitle: report.title,
           receivedAt: new Date().toISOString(),
+          preferredLanguage: language || 'en',
         },
       },
     });
