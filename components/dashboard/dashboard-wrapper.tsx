@@ -81,8 +81,12 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
           )}
         </div>
 
-        {/* Navigation - Fills remaining space */}
-        {mounted && <SidebarNav isExpanded={isSidebarExpanded} />}
+        {/* Navigation - Fills remaining space, min-h-0 ensures flex child can shrink so user section stays visible */}
+        {mounted && (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <SidebarNav isExpanded={isSidebarExpanded} />
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}

@@ -369,9 +369,12 @@ export async function scrapeCentrisDetail(url: string): Promise<EnrichedData | n
     data.longitude = coords.lng;
   }
 
-  // NOTE: Centris masks image IDs in server-rendered HTML (anti-scraping).
-  // The extracted IDs return 0-byte responses. Do NOT overwrite images here.
-  // Images should come from RE/MAX or the original Apify sync.
+  // --- Gallery Images ---
+  const imageIds = extractCentrisImageIds(html);
+  if (imageIds.length > 0) {
+    data.galleryImages = imageIds.map((id) => buildImageUrl(id, 640, 480));
+    data.mainImageUrl = data.galleryImages[0];
+  }
 
   // --- Build features object ---
   if (amenities.length > 0 || data.buildingStyle || data.parking) {

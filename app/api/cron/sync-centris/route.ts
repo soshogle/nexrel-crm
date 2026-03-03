@@ -14,7 +14,7 @@ import { createDalContext } from "@/lib/context/industry-context";
 import { prisma } from "@/lib/db";
 import { apiErrors } from '@/lib/api-error';
 import { runPriceMonitor, type PriceMonitorResult } from "@/lib/listing-enrichment/price-monitor";
-import { enrichCrmListings } from "@/lib/listing-enrichment/enrich-crm-listings";
+import { enrichCrmListings, resyncEnrichedToWebsite } from "@/lib/listing-enrichment/enrich-crm-listings";
 import { backfillPropertyCoordinates } from "@/lib/real-estate/geo-comps";
 import { syncStatusChangesToWebsite, flagBrokerListingsFromWebsite } from "@/lib/website-builder/listings-service";
 import { importApifyListingsToCrm } from "@/lib/real-estate/apify-crm-import";
@@ -194,6 +194,28 @@ export async function GET(req: NextRequest) {
       console.warn("[enrich-crm] User lookup failed:", err);
     }
 
+    // Re-sync enriched CRM listings to website (repairs Apify overwrites)
+    const resyncResults: Array<{ userId: string; synced: number; failed: number }> = [];
+    try {
+      const reUsersResync: any[] = await db.user.findMany({
+        where: { industry: 'real_estate' },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of reUsersResync) {
+        try {
+          const rr = await resyncEnrichedToWebsite(u.id, { limit: 200, verbose: true });
+          if (rr.synced > 0) {
+            resyncResults.push({ userId: u.id, synced: rr.synced, failed: rr.failed });
+          }
+        } catch (err) {
+          console.warn("[resync] Failed for user", u.id, err);
+        }
+      }
+    } catch (err) {
+      console.warn("[resync] User lookup failed:", err);
+    }
+
     // Backfill lat/lng coordinates for properties missing them
     const coordBackfillResults: Array<{ userId: string; updated: number }> = [];
     try {
@@ -283,6 +305,11 @@ export async function GET(req: NextRequest) {
         usersProcessed: enrichmentResults.length,
         totalEnriched: enrichmentResults.reduce((s, r) => s + r.enriched, 0),
         details: enrichmentResults,
+      },
+      resync: {
+        usersProcessed: resyncResults.length,
+        totalSynced: resyncResults.reduce((s, r) => s + r.synced, 0),
+        details: resyncResults,
       },
       coordBackfill: {
         usersProcessed: coordBackfillResults.length,

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -471,6 +471,10 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status, update } = useSession();
+  // Cache last known session to prevent user/logout section disappearing during session refetch (e.g. 429)
+  const lastSessionRef = useRef<typeof session>(session);
+  if (session?.user) lastSessionRef.current = session;
+  const displaySession = session?.user ? session : lastSessionRef.current;
   const t = useTranslations('navigation');
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [isParent, setIsParent] = useState(false);
@@ -624,7 +628,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
 
   const handleLogout = async () => {
     // When impersonating, end impersonation and return to platform-admin (don't full sign out)
-    if (session?.user?.isImpersonating) {
+    if (displaySession?.user?.isImpersonating) {
       try {
         const sessionToken = localStorage.getItem('impersonationToken');
         if (sessionToken) {
@@ -878,7 +882,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
 
       {/* User Profile / Logout Section - Fixed at bottom, always visible when authenticated */}
       <div className="border-t border-gray-800 py-2 flex-shrink-0 bg-gray-900 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-        {status === 'authenticated' && (
+        {displaySession?.user && (
           <div className="space-y-1">
             {/* User Profile */}
             <div
@@ -886,7 +890,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                 'flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200',
                 'text-gray-300'
               )}
-              title={!isExpanded ? session?.user?.name || session?.user?.email || 'User' : undefined}
+              title={!isExpanded ? displaySession?.user?.name || displaySession?.user?.email || 'User' : undefined}
             >
               <div className="w-[18px] h-[18px] rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
                 <User className="h-[10px] w-[10px] text-white" />
@@ -894,10 +898,10 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               {isExpanded && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">
-                    {session?.user?.name || 'User'}
+                    {displaySession?.user?.name || 'User'}
                   </p>
                   <p className="text-xs text-gray-400 truncate">
-                    {session?.user?.email || ''}
+                    {displaySession?.user?.email || ''}
                   </p>
                 </div>
               )}

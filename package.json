@@ -38,6 +38,7 @@
     "seed:orthodontist-demo:phase11": "tsx scripts/seed-orthodontist-demo-phase11.ts",
     "seed:orthodontist-demo:phase12": "tsx scripts/seed-orthodontist-demo-phase12.ts",
     "seed:orthodontist-demo:phase13": "tsx scripts/seed-orthodontist-demo-phase13.ts",
+    "seed:reports-page": "tsx scripts/seed-reports-page-mock-data.ts",
     "seed:orthodontist-demo:all": "npm run seed:orthodontist-demo:phase1 && npx tsx scripts/create-orthodontist-team-members.ts && npm run seed:orthodontist-demo:phase2 && npm run seed:orthodontist-demo:phase3 && npm run seed:orthodontist-demo:phase4 && npm run seed:orthodontist-demo:phase5 && npm run seed:orthodontist-demo:phase6 && npm run seed:orthodontist-demo:phase7 && npm run seed:orthodontist-demo:phase8 && npm run seed:orthodontist-demo:phase9 && npm run seed:orthodontist-demo:phase10 && npm run seed:orthodontist-demo:phase11 && npm run seed:orthodontist-demo:phase12 && npm run seed:orthodontist-demo:phase13 && npx tsx scripts/fix-orthodontist-industry.ts",
     "seed:darksword-ecommerce": "tsx owner-websites/eyal-darksword/scripts/export-ecommerce-data.ts && tsx scripts/seed-darksword-ecommerce-content.ts",
     "verify:elevenlabs-overrides": "tsx scripts/verify-elevenlabs-call-overrides.ts",

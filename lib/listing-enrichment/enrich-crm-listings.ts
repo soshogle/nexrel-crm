@@ -309,3 +309,82 @@ function buildRemaxUrl(prop: { address: string; city: string; mlsNumber?: string
   const slug = slugify(`${prop.address}-${prop.city}-${prop.mlsNumber}`);
   return `https://www.remax-quebec.com/en/properties/house-for-sale/${slug}`;
 }
+
+/**
+ * Re-sync all enriched CRM listings to the owner's website DB.
+ * Use after Apify overwrites enriched data on the website.
+ */
+export async function resyncEnrichedToWebsite(
+  userId: string,
+  opts: { limit?: number; verbose?: boolean } = {}
+): Promise<{ synced: number; failed: number }> {
+  const { limit = 200, verbose = false } = opts;
+
+  const properties = await prisma.rEProperty.findMany({
+    where: {
+      userId,
+      listingStatus: 'ACTIVE',
+      mlsNumber: { not: null },
+      OR: [
+        { photos: { not: { equals: null } } },
+        { description: { not: null } },
+      ],
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+  });
+
+  if (verbose) console.log(`[resync] Found ${properties.length} enriched listings to re-sync`);
+
+  let synced = 0;
+  let failed = 0;
+
+  for (const prop of properties) {
+    if (!prop.mlsNumber) continue;
+
+    const photos = Array.isArray(prop.photos) ? prop.photos as string[] : [];
+    try {
+      const result = await syncListingToWebsite(userId, {
+        address: prop.address,
+        city: prop.city,
+        state: prop.state,
+        zip: prop.zip,
+        country: prop.country,
+        beds: prop.beds,
+        baths: prop.baths ? Math.round(prop.baths) : null,
+        sqft: prop.sqft,
+        propertyType: prop.propertyType,
+        listingStatus: prop.listingStatus,
+        listPrice: prop.listPrice,
+        listingType: 'sale',
+        mlsNumber: prop.mlsNumber,
+        photos,
+        description: prop.description,
+        features: prop.features as string[] | null,
+        lat: prop.latitude,
+        lng: prop.longitude,
+        virtualTourUrl: prop.virtualTourUrl,
+        yearBuilt: prop.yearBuilt,
+        lotSize: prop.lotSize ? String(prop.lotSize) : null,
+        rooms: null,
+        areaUnit: 'ft²',
+        addendum: null,
+        featuresJson: null,
+        roomDetails: null,
+      });
+
+      if (result.success) {
+        synced++;
+        if (verbose) console.log(`  [resync] ✅ ${prop.mlsNumber}`);
+      } else {
+        failed++;
+        if (verbose) console.log(`  [resync] ❌ ${prop.mlsNumber}: ${result.error}`);
+      }
+    } catch (e: any) {
+      failed++;
+      if (verbose) console.log(`  [resync] ❌ ${prop.mlsNumber}: ${e.message}`);
+    }
+  }
+
+  return { synced, failed };
+}

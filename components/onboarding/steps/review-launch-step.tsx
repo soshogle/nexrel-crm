@@ -78,9 +78,9 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
       {/* Configuration Summary */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Business Profile */}
-        <div className="border border-border rounded-lg p-4 space-y-3">
+        <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50/30">
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" />
+            <Building2 className="h-5 w-5 text-purple-500" />
             <h3 className="font-semibold">Business Profile</h3>
           </div>
           <div className="space-y-2 text-sm">
@@ -104,9 +104,9 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
         </div>
 
         {/* Sales Configuration */}
-        <div className="border border-border rounded-lg p-4 space-y-3">
+        <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50/30">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
+            <DollarSign className="h-5 w-5 text-purple-500" />
             <h3 className="font-semibold">Sales Setup</h3>
           </div>
           <div className="space-y-2 text-sm">
@@ -128,9 +128,9 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
         </div>
 
         {/* Communication */}
-        <div className="border border-border rounded-lg p-4 space-y-3">
+        <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50/30">
           <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
+            <Mail className="h-5 w-5 text-purple-500" />
             <h3 className="font-semibold">Communication</h3>
           </div>
           <div className="space-y-2 text-sm">
@@ -152,9 +152,9 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
         </div>
 
         {/* Payment */}
-        <div className="border border-border rounded-lg p-4 space-y-3">
+        <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50/30">
           <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
+            <CreditCard className="h-5 w-5 text-purple-500" />
             <h3 className="font-semibold">Payment Processing</h3>
           </div>
           <div className="space-y-2 text-sm">
@@ -170,9 +170,9 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
       </div>
 
       {/* AI Testing */}
-      <div className="border border-border rounded-lg p-4 space-y-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+      <div className="border border-purple-200 rounded-xl p-4 space-y-4 bg-purple-50/50">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <Sparkles className="h-5 w-5 text-purple-500" />
           <h3 className="font-semibold">Test Your AI Assistant</h3>
         </div>
 
@@ -192,7 +192,7 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
             type="button"
             onClick={testAI}
             disabled={testing || !testQuestion.trim()}
-            className="w-full"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           >
             {testing ? (
               <>
@@ -208,7 +208,7 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
           </Button>
 
           {aiResponse && (
-            <div className="bg-card border border-border rounded-lg p-4">
+            <div className="bg-white border border-purple-200 rounded-xl p-4">
               <p className="text-sm font-medium mb-2">AI Response:</p>
               <p className="text-sm text-muted-foreground whitespace-pre-line">{aiResponse}</p>
             </div>
@@ -222,7 +222,7 @@ export function ReviewLaunchStep({ allData, onComplete }: ReviewLaunchStepProps)
         onClick={launchCRM}
         disabled={launching}
         size="lg"
-        className="w-full text-lg h-14"
+        className="w-full text-lg h-14 bg-purple-600 hover:bg-purple-700 text-white"
       >
         {launching ? (
           <>

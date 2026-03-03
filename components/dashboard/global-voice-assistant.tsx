@@ -107,17 +107,23 @@ export function GlobalVoiceAssistant() {
   const fetchAgent = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch('/api/crm-voice-agent');
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      if (response.ok && data.agentId) {
         setAgentId(data.agentId);
         setPreferredLanguage(data.preferredLanguage || 'English');
+        setError(null);
       } else {
-        throw new Error('Failed to get voice agent');
+        const errMsg = data?.error || (response.ok ? 'Voice agent not available' : 'Failed to get voice agent');
+        setAgentId(null);
+        setError(errMsg);
+        if (!response.ok) toast.error('Failed to initialize voice assistant');
       }
     } catch (err: any) {
       console.error('Error fetching CRM voice agent:', err);
-      setError(err.message);
+      setError(err?.message || 'Connection error');
+      setAgentId(null);
       toast.error('Failed to initialize voice assistant');
     } finally {
       setLoading(false);
@@ -145,8 +151,24 @@ export function GlobalVoiceAssistant() {
     return null; // Don't show anything while loading
   }
 
+  // Show button even when error/no agentId — user can retry (was: return null, which hid the widget entirely)
   if (error || !agentId) {
-    return null; // Don't show widget if there's an error
+    return React.createElement(
+      'div',
+      { className: 'fixed bottom-6 right-6 z-[9999]' },
+      React.createElement('button', {
+        onClick: () => {
+          setError(null);
+          fetchAgent();
+        },
+        title: error || 'Voice assistant unavailable. Click to retry.',
+        className: 'h-16 w-16 rounded-full shadow-xl flex items-center justify-center transition-all hover:scale-110 border-2 border-amber-400/50 bg-amber-500/10',
+        'aria-label': 'Retry voice assistant',
+        children: React.createElement(Mic, {
+          className: 'h-8 w-8 text-amber-600',
+        }),
+      })
+    );
   }
 
   const dynamicVars = {

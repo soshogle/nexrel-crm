@@ -483,14 +483,22 @@ export default function OnboardingClientWrapper() {
   }
 
   return (
-    <div className="min-h-screen bg-background" suppressHydrationWarning>
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden" suppressHydrationWarning>
+      {/* Animated background effects - match My Voice Agents page */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome to Soshogle CRM</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+                <span className="text-gray-700">Welcome to</span>
+                <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">Soshogle CRM</span>
+              </h1>
+              <p className="text-gray-600">
                 Let's set up your CRM in just a few steps. We'll configure everything for you.
               </p>
             </div>
@@ -512,7 +520,7 @@ export default function OnboardingClientWrapper() {
             </div>
             <p className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</p>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 [&>div]:bg-purple-600" />
         </div>
 
         {/* Steps Navigation */}
@@ -531,14 +539,14 @@ export default function OnboardingClientWrapper() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`text-center p-3 rounded-md transition-all ${
+                className={`text-center p-3 rounded-xl transition-all border ${
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-md'
+                    ? 'bg-purple-600 text-white border-purple-500 shadow-md'
                     : isCompleted
-                    ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                    ? 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
                     : isClickable
-                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-white/80 border-purple-200 text-gray-600 hover:bg-purple-50 hover:border-purple-300'
+                    : 'bg-gray-100 border-gray-200 text-gray-400'
                 } ${isClickable ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed opacity-60'}`}
                 title={isClickable ? `Go to ${step.name}` : 'Complete previous steps first'}
               >
@@ -550,7 +558,7 @@ export default function OnboardingClientWrapper() {
         </div>
 
         {/* Main Content */}
-        <Card className="p-6 mb-6" suppressHydrationWarning>
+        <Card className="p-6 mb-6 border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm" suppressHydrationWarning>
           {/* Step 1: Website & Company */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -847,6 +855,7 @@ export default function OnboardingClientWrapper() {
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 1 || saving}
+              className="border-purple-200 text-gray-700 hover:bg-purple-50"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -854,6 +863,7 @@ export default function OnboardingClientWrapper() {
             <Button
               onClick={handleNext}
               disabled={saving}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {saving ? (
                 <>

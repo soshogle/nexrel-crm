@@ -375,11 +375,12 @@ export async function syncListingToWebsite(
         bedrooms = EXCLUDED.bedrooms, bathrooms = EXCLUDED.bathrooms,
         rooms = EXCLUDED.rooms, area = EXCLUDED.area, area_unit = EXCLUDED.area_unit,
         lot_area = EXCLUDED.lot_area, year_built = EXCLUDED.year_built,
-        main_image_url = EXCLUDED.main_image_url, gallery_images = EXCLUDED.gallery_images,
+        main_image_url = COALESCE(EXCLUDED.main_image_url, properties.main_image_url),
+        gallery_images = CASE WHEN jsonb_array_length(COALESCE(EXCLUDED.gallery_images, '[]'::jsonb)) >= jsonb_array_length(COALESCE(properties.gallery_images, '[]'::jsonb)) THEN EXCLUDED.gallery_images ELSE properties.gallery_images END,
         features = COALESCE(EXCLUDED.features, properties.features),
         room_details = COALESCE(EXCLUDED.room_details, properties.room_details),
         latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude,
-        description = EXCLUDED.description,
+        description = CASE WHEN length(COALESCE(EXCLUDED.description, '')) >= length(COALESCE(properties.description, '')) THEN EXCLUDED.description ELSE properties.description END,
         addendum = COALESCE(EXCLUDED.addendum, properties.addendum),
         is_featured = EXCLUDED.is_featured, updated_at = NOW()
     `;

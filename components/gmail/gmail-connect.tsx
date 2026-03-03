@@ -173,9 +173,9 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
 
   if (isLoading) {
     return (
-      <Card className="bg-gradient-to-br from-red-500/5 via-gray-900 to-pink-500/5 border-gray-800">
+      <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-red-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
         </CardContent>
       </Card>
     );
@@ -183,16 +183,16 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
 
   if (isConnected) {
     return (
-      <Card className="bg-gradient-to-br from-red-500/10 via-gray-900 to-pink-500/10 border-red-500/20">
+      <Card className="border border-purple-200 bg-purple-50/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/20">
-                <Mail className="h-6 w-6 text-red-400" />
+              <div className="p-2 rounded-lg bg-pink-500/20">
+                <Mail className="h-6 w-6 text-pink-500" />
               </div>
               <div>
-                <CardTitle className="text-lg">Gmail Connected</CardTitle>
-                <CardDescription className="text-sm text-gray-400">
+                <CardTitle className="text-lg text-gray-900">Gmail Connected</CardTitle>
+                <CardDescription className="text-sm text-gray-600">
                   Gmail Account
                 </CardDescription>
               </div>
@@ -202,18 +202,18 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-600">
               Your Gmail account is connected and ready to send/receive emails.
             </p>
             
             {/* Connected Email Address */}
-            <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-lg border border-red-500/30">
-              <div className="p-1.5 rounded bg-red-500/20">
-                <Mail className="h-4 w-4 text-red-400" />
+            <div className="flex items-center gap-2 px-4 py-3 bg-pink-50 rounded-lg border border-purple-200">
+              <div className="p-1.5 rounded bg-pink-500/20">
+                <Mail className="h-4 w-4 text-pink-500" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-gray-400 mb-0.5">Connected Email</p>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-xs text-gray-500 mb-0.5">Connected Email</p>
+                <p className="text-sm font-semibold text-gray-900">
                   {emailAddress || 'Loading email...'}
                 </p>
               </div>
@@ -226,7 +226,7 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
               <Button
                 variant="outline"
                 disabled={isDisconnecting}
-                className="w-full border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 text-red-400 hover:text-red-300"
+                className="w-full border-purple-200 text-gray-700 hover:bg-purple-50 hover:border-purple-300"
               >
                 {isDisconnecting ? (
                   <>
@@ -241,13 +241,13 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
                 )}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-gray-900 border-gray-800">
+            <AlertDialogContent className="bg-white border-purple-200">
               <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2 text-white">
+                <AlertDialogTitle className="flex items-center gap-2 text-gray-900">
                   <AlertTriangle className="h-5 w-5 text-yellow-500" />
                   Disconnect Gmail?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-400">
+                <AlertDialogDescription className="text-gray-600">
                   Are you sure you want to disconnect your Gmail account? You will no longer be able to:
                   <ul className="list-disc list-inside mt-2 space-y-1">
                     <li>Send emails from your Gmail account</li>
@@ -260,7 +260,7 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-white">
+                <AlertDialogCancel className="border-purple-200 text-gray-700 hover:bg-purple-50">
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
@@ -278,22 +278,22 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
   }
 
   return (
-    <Card className="bg-gradient-to-br from-red-500/5 via-gray-900 to-pink-500/5 border-gray-800">
+    <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-red-500/10">
-            <Mail className="h-6 w-6 text-red-400" />
+          <div className="p-2 rounded-lg bg-pink-500/20">
+            <Mail className="h-6 w-6 text-pink-500" />
           </div>
           <div>
-            <CardTitle className="text-lg">Connect Gmail</CardTitle>
-            <CardDescription className="text-sm text-gray-400">
+            <CardTitle className="text-lg text-gray-900">Connect Gmail</CardTitle>
+            <CardDescription className="text-sm text-gray-600">
               Connect your Gmail account to send and receive emails
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2 text-sm text-gray-400">
+        <div className="space-y-2 text-sm text-gray-600">
           <p className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             Send emails directly from your Gmail account
@@ -314,7 +314,7 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
         <Button
           onClick={handleConnect}
           disabled={isConnecting}
-          className="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           size="lg"
         >
           {isConnecting ? (
@@ -329,7 +329,7 @@ export function GmailConnect({ isConnected: initialIsConnected, onConnectionSucc
             </>
           )}
         </Button>
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-600 text-center">
           Secure OAuth 2.0 authentication • No password storage
         </p>
       </CardContent>
