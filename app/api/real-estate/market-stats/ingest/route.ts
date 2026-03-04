@@ -7,13 +7,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
-import { parseAllCentrisPdfs, type CentrisStatRow } from '@/lib/real-estate/centris-pdf-parser';
+import { parseAllCentrisPdfs, parseAllJlrMonthlyReports, type CentrisStatRow } from '@/lib/real-estate/centris-pdf-parser';
 import path from 'path';
 
 /**
  * POST /api/real-estate/market-stats/ingest
- * Triggers Centris PDF ingestion from data/market-reports/
+ * Triggers Centris PDF + JLR Monthly Report ingestion from data/market-reports/
  * Restricted to super admins.
+ * Writes to shared Quebec stats (isShared=true, userId=null) — visible to all RE users.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,15 +30,19 @@ export async function POST(request: NextRequest) {
     }
 
     const dataDir = path.resolve(process.cwd(), 'data/market-reports');
-    const rows = await parseAllCentrisPdfs(dataDir);
+    const [centrisRows, jlrRows] = await Promise.all([
+      parseAllCentrisPdfs(dataDir),
+      parseAllJlrMonthlyReports(dataDir),
+    ]);
+    const rows = [...centrisRows, ...jlrRows];
 
     if (rows.length === 0) {
-      return NextResponse.json({ success: true, message: 'No data extracted from PDFs', created: 0 });
+      return NextResponse.json({ success: true, message: 'No data extracted from PDFs. Ensure PDFs are in data/market-reports/', created: 0 });
     }
 
     const deduped = new Map<string, CentrisStatRow>();
     for (const row of rows) {
-      const key = `${row.periodYear}-${row.periodMonth}|${row.region}|${row.municipality}|${row.propertyType || 'All Types'}`;
+      const key = `${row.periodYear}-${row.periodMonth}|${row.region}|${row.municipality}|${row.propertyType || 'All Types'}|${row.source || 'centris_pdf'}`;
       const existing = deduped.get(key);
       if (!existing) {
         deduped.set(key, row);
@@ -50,8 +55,12 @@ export async function POST(request: NextRequest) {
 
     const records = Array.from(deduped.values());
 
+    // Delete existing shared Quebec stats (Centris + JLR)
     await prisma.rEMarketStats.deleteMany({
-      where: { userId: session.user.id, source: 'centris_pdf' },
+      where: {
+        isShared: true,
+        source: { in: ['centris_pdf', 'jlr_monthly_report'] },
+      },
     });
 
     const INT4_MAX = 2_147_483_647;
@@ -71,7 +80,8 @@ export async function POST(request: NextRequest) {
       if (row.saleVsAssessPct) rawData.saleVsAssessPct = row.saleVsAssessPct;
 
       return {
-        userId: session.user.id,
+        userId: null,
+        isShared: true,
         periodStart: new Date(row.periodYear, row.periodMonth - 1, 1),
         periodEnd: new Date(row.periodYear, row.periodMonth, 0),
         periodType: 'MONTHLY' as const,
@@ -94,7 +104,7 @@ export async function POST(request: NextRequest) {
           ? Math.round((row.activeListings / row.numberOfSales) * 10) / 10
           : null,
         sampleSize: safeInt(row.numberOfSales),
-        source: 'centris_pdf',
+        source: row.source || 'centris_pdf',
         sourceFile: row.sourceFile,
         rawData: Object.keys(rawData).length > 0 ? rawData : undefined,
       };
@@ -110,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Ingested ${created} stat records from Centris PDFs`,
+      message: `Ingested ${created} Quebec market stat records from Centris + JLR PDFs (shared across all RE users)`,
       created,
       totalRows: rows.length,
       uniqueRecords: records.length,

@@ -88,6 +88,8 @@ export default function RealEstateDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [marketStats, setMarketStats] = useState<MarketStat[]>([]);
+  const [globalMarketStats, setGlobalMarketStats] = useState<MarketStat[]>([]);
+  const [statsView, setStatsView] = useState<'broker' | 'global'>('broker');
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [alertCount, setAlertCount] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -111,11 +113,12 @@ export default function RealEstateDashboard() {
 
         const fsboData = fsboRes.ok ? await fsboRes.json() : { total: 0 };
         const activityData = activityRes.ok ? await activityRes.json() : { activities: [] };
-        const marketData = marketRes.ok ? await marketRes.json() : { liveStats: {} };
+        const marketData = marketRes.ok ? await marketRes.json() : { myStats: {}, globalStats: null };
         const atRiskData = atRiskRes.ok ? await atRiskRes.json() : { summary: { highRisk: 0 } };
 
-        const live = marketData.liveStats || {};
-        const monthlyTrends = Array.isArray(marketData.monthlyTrends) ? marketData.monthlyTrends : [];
+        const my = marketData.myStats || {};
+        const live = my; // My Portfolio stats (prefer over global)
+        const monthlyTrends = Array.isArray(marketData.myMonthlyTrends || marketData.monthlyTrends) ? (marketData.myMonthlyTrends || marketData.monthlyTrends) : [];
         const lastTrend = monthlyTrends[monthlyTrends.length - 1];
         const prevTrend = monthlyTrends[monthlyTrends.length - 2];
 
@@ -135,12 +138,27 @@ export default function RealEstateDashboard() {
           return `$${p.toLocaleString()}`;
         };
 
+        const activeCount = live.activeCount ?? live.activeListings ?? 0;
+        const global = marketData.globalStats;
+        const globalTrends = Array.isArray(marketData.globalMonthlyTrends) ? marketData.globalMonthlyTrends : [];
+        const gLast = globalTrends[globalTrends.length - 1];
+        const gPrev = globalTrends[globalTrends.length - 2];
+        const gActiveChange = gLast && gPrev ? pct(gLast.newListings || 0, gPrev.newListings || 0) : 0;
+        const gDomChange = gLast && gPrev ? pct(gLast.medianDom || 0, gPrev.medianDom || 0) : 0;
+
         setMarketStats([
-          { label: 'Active Listings', value: live.totalActiveListings > 0 ? String(live.totalActiveListings) : String(live.activeListings || 0), change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', icon: Building2 },
-          { label: 'Median Price', value: formatPrice(live.medianSalePrice), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', icon: DollarSign },
-          { label: 'Days on Market', value: live.domMedian > 0 ? `${live.domMedian}` : (live.domAvg > 0 ? `${live.domAvg}` : '—'), change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', icon: Clock },
+          { label: 'Active Listings', value: String(activeCount), change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', icon: Building2 },
+          { label: 'Median Price', value: formatPrice(live.medianSalePrice ?? live.medianSoldPrice ?? 0), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', icon: DollarSign },
+          { label: 'Days on Market', value: (live.domMedian ?? live.domAvg ?? 0) > 0 ? `${live.domMedian ?? live.domAvg}` : '—', change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', icon: Clock },
           { label: 'FSBO Leads', value: String(fsboData?.total || live.fsboListings || 0), change: fsboTrend, trend: fsboTrend > 0 ? 'up' : fsboTrend < 0 ? 'down' : 'neutral', icon: Users },
         ]);
+
+        setGlobalMarketStats(global ? [
+          { label: 'Active Listings', value: String(global.activeListings ?? 0), change: gActiveChange, trend: gActiveChange > 0 ? 'up' : gActiveChange < 0 ? 'down' : 'neutral', icon: Building2 },
+          { label: 'Median Price', value: formatPrice(global.medianSalePrice ?? 0), change: 0, trend: 'neutral' as const, icon: DollarSign },
+          { label: 'Days on Market', value: (global.domMedian ?? global.domAvg ?? 0) > 0 ? `${global.domMedian ?? global.domAvg}` : '—', change: gDomChange, trend: gDomChange < 0 ? 'up' : gDomChange > 0 ? 'down' : 'neutral', icon: Clock },
+          { label: 'Closed Sales', value: String(global.closedSales ?? 0), change: 0, trend: 'neutral' as const, icon: Target },
+        ] : []);
 
         setRecentActivity(Array.isArray(activityData?.activities) ? activityData.activities : []);
         setAlertCount(Number(atRiskData?.summary?.highRisk || 0));
@@ -248,15 +266,13 @@ export default function RealEstateDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
-              <Bell className="w-4 h-4 mr-2" />
-              Alerts
-              <Badge className="ml-2 bg-red-500/20 text-red-500 border-red-500/30">{alertCount}</Badge>
-            </Button>
-            <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Sync MLS
-            </Button>
+            <Link href="/dashboard/real-estate/analytics">
+              <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
+                <Bell className="w-4 h-4 mr-2" />
+                Alerts
+                <Badge className="ml-2 bg-red-500/20 text-red-500 border-red-500/30">{alertCount}</Badge>
+              </Button>
+            </Link>
             <Link href="/dashboard/real-estate/settings">
               <Button variant="outline" size="sm" className="border-purple-200 text-gray-700 hover:bg-purple-50">
                 <Settings className="w-4 h-4" />
@@ -270,9 +286,27 @@ export default function RealEstateDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          className="space-y-3"
         >
-          {marketStats.map((stat) => (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Stats:</span>
+            <Button
+              variant={statsView === 'broker' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatsView('broker')}
+            >
+              My Portfolio
+            </Button>
+            <Button
+              variant={statsView === 'global' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatsView('global')}
+            >
+              Quebec Market (MLS)
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {(statsView === 'broker' ? marketStats : globalMarketStats).map((stat) => (
             <div
               key={stat.label}
               className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm"
@@ -303,6 +337,7 @@ export default function RealEstateDashboard() {
               </div>
             </div>
           ))}
+          </div>
         </motion.div>
 
         {/* Quick Actions */}

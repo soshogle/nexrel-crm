@@ -36,6 +36,8 @@ export interface CentrisStatRow {
   saleVsListPct?: number;
   saleVsAssessPct?: number;
   sourceFile: string;
+  /** 'centris_pdf' | 'jlr_monthly_report' — used for ingest source field */
+  source?: string;
 }
 
 const REGIONS = [
@@ -73,13 +75,25 @@ function parseNumber(s: string): number {
 }
 
 function extractPeriod(filename: string): { year: number; month: number; type: 'MONTHLY' | 'CUMULATIVE' } | null {
-  const match = filename.match(/(\d{4})(\d{2})([NO])/);
-  if (!match) return null;
-  return {
-    year: parseInt(match[1]),
-    month: parseInt(match[2]),
-    type: match[3] === 'N' ? 'MONTHLY' : 'CUMULATIVE',
-  };
+  // Format 1: pdf_en_statistics_STATS_MUNGENRE_202510N.pdf (YYYYMM + N/O)
+  const mungenre = filename.match(/(\d{4})(\d{2})([NO])/);
+  if (mungenre) {
+    return {
+      year: parseInt(mungenre[1]),
+      month: parseInt(mungenre[2]),
+      type: mungenre[3] === 'N' ? 'MONTHLY' : 'CUMULATIVE',
+    };
+  }
+  // Format 2: 2025-10_Monthly_Report-novermeberb.pdf (YYYY-MM + Monthly)
+  const monthlyReport = filename.match(/(\d{4})-(\d{2})_.*[Mm]onthly/i);
+  if (monthlyReport) {
+    return {
+      year: parseInt(monthlyReport[1]),
+      month: parseInt(monthlyReport[2]),
+      type: 'MONTHLY',
+    };
+  }
+  return null;
 }
 
 function isRegionLine(line: string): string | null {
@@ -352,15 +366,16 @@ export async function parseCentrisPdf(filePath: string): Promise<CentrisStatRow[
 
 /**
  * Parse all Centris PDFs in a directory.
+ * Includes: STATS_MUNGENRE PDFs (Centris QPAREB) and JLR Monthly_Report PDFs.
  */
 export async function parseAllCentrisPdfs(dirPath: string): Promise<CentrisStatRow[]> {
-  const files = fs.readdirSync(dirPath)
+  const statFiles = fs.readdirSync(dirPath)
     .filter(f => f.endsWith('.pdf') && f.includes('STATS_MUNGENRE'))
     .sort();
 
   const allResults: CentrisStatRow[] = [];
 
-  for (const file of files) {
+  for (const file of statFiles) {
     const filePath = path.join(dirPath, file);
     console.log(`Parsing ${file}...`);
     try {
@@ -369,6 +384,49 @@ export async function parseAllCentrisPdfs(dirPath: string): Promise<CentrisStatR
       console.log(`  → ${rows.length} stat rows extracted`);
     } catch (err) {
       console.error(`  Error parsing ${file}:`, err);
+    }
+  }
+
+  return allResults;
+}
+
+/**
+ * Parse JLR Monthly Report PDFs (e.g. 2025-10_Monthly_Report-novermeberb.pdf).
+ * Returns rows in CentrisStatRow-compatible format for unified ingest.
+ */
+export async function parseAllJlrMonthlyReports(dirPath: string): Promise<CentrisStatRow[]> {
+  const { parseJlrMonthlyReport } = await import('./jlr-monthly-report-parser');
+  const files = fs.readdirSync(dirPath)
+    .filter(f => f.endsWith('.pdf') && /^\d{4}-\d{2}_.*[Mm]onthly/i.test(f))
+    .sort();
+
+  const allResults: CentrisStatRow[] = [];
+
+  for (const file of files) {
+    const filePath = path.join(dirPath, file);
+    console.log(`Parsing JLR ${file}...`);
+    try {
+      const jlrRows = await parseJlrMonthlyReport(filePath);
+      for (const r of jlrRows) {
+        allResults.push({
+          region: r.region,
+          municipality: r.municipality,
+          propertyType: r.propertyType,
+          periodYear: r.periodYear,
+          periodMonth: r.periodMonth,
+          periodType: 'MONTHLY',
+          medianSalePrice: r.medianSalePrice,
+          numberOfSales: r.numberOfSales,
+          volumeOfSales: r.sales12Months && r.numberOfSales && r.medianSalePrice
+            ? r.numberOfSales * r.medianSalePrice
+            : undefined,
+          sourceFile: r.sourceFile,
+          source: 'jlr_monthly_report',
+        });
+      }
+      console.log(`  → ${jlrRows.length} stat rows extracted`);
+    } catch (err) {
+      console.error(`  Error parsing JLR ${file}:`, err);
     }
   }
 

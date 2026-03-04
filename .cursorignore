@@ -1,0 +1,39 @@
+# Dependencies and build output (heavy, not useful for AI context)
+node_modules/
+.next/
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# Nested projects (developed in separate repos - exclude from CRM indexing)
+Theodora-Stavropoulos-Remax/
+darksword-armory/
+nexrel-service-template/
+nexrel-ecommerce-template/
+owner-websites/
+
+# Backups and temp files
+backups/
+.tmp-*/
+*.backup
+*.bak
+
+# Vercel and deployment artifacts
+.vercel/
+
+# Market data (large files, imported into DB)
+data/market-reports/
+
+# Git
+.git/
+
+# Playwright test artifacts
+playwright/.auth/
+test-results/
+playwright-report/
+
+# Environment (sensitive)
+.env
+.env.local
+.env.*.local

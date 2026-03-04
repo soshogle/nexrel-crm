@@ -49,6 +49,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ mentions });
     }
 
+    if (action === 'running') {
+      const running = await prisma.brandScan.findFirst({
+        where: { userId: session.user.id, status: { in: ['PENDING', 'RUNNING'] } },
+        select: { id: true },
+      });
+      return NextResponse.json({ scanId: running?.id ?? null });
+    }
+
     const scans = await getUserScans(session.user.id);
     return NextResponse.json({ scans });
   } catch (error: any) {
@@ -87,6 +95,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Mark stuck scans as FAILED so they don't block forever
+    const STUCK_PENDING_MS = 5 * 60 * 1000;   // 5 min - never started
+    const STUCK_RUNNING_MS = 30 * 60 * 1000; // 30 min - likely crashed
+    const now = new Date();
+    const stuckPendingBefore = new Date(now.getTime() - STUCK_PENDING_MS);
+    const stuckRunningBefore = new Date(now.getTime() - STUCK_RUNNING_MS);
+    await prisma.brandScan.updateMany({
+      where: {
+        userId: session.user.id,
+        status: 'PENDING',
+        createdAt: { lt: stuckPendingBefore },
+      },
+      data: { status: 'FAILED', error: 'Scan timed out (never started)', completedAt: now },
+    });
+    await prisma.brandScan.updateMany({
+      where: {
+        userId: session.user.id,
+        status: 'RUNNING',
+        OR: [
+          { startedAt: { lt: stuckRunningBefore } },
+          { startedAt: null, createdAt: { lt: stuckRunningBefore } },
+        ],
+      },
+      data: { status: 'FAILED', error: 'Scan timed out', completedAt: now },
+    });
+
     // Prevent concurrent scans
     const running = await prisma.brandScan.findFirst({
       where: { userId: session.user.id, status: { in: ['PENDING', 'RUNNING'] } },
@@ -111,5 +145,55 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Brand scan POST error:', error);
     return apiErrors.internal(error.message || 'Failed to start scan');
+  }
+}
+
+/**
+ * PATCH /api/reviews/brand-scan
+ * Body: { scanId: string, action: 'cancel' }
+ * Cancels an in-progress scan so the user can start a new one.
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { scanId, action } = body;
+    if (action !== 'cancel' || !scanId) {
+      return NextResponse.json(
+        { error: 'Invalid request. Pass { scanId, action: "cancel" }' },
+        { status: 400 },
+      );
+    }
+
+    const scan = await prisma.brandScan.findFirst({
+      where: { id: scanId, userId: session.user.id },
+    });
+    if (!scan) {
+      return apiErrors.notFound('Scan not found');
+    }
+    if (scan.status !== 'PENDING' && scan.status !== 'RUNNING') {
+      return NextResponse.json(
+        { error: 'Scan is not running. It may have already completed.' },
+        { status: 400 },
+      );
+    }
+
+    await prisma.brandScan.update({
+      where: { id: scanId },
+      data: {
+        status: 'FAILED',
+        error: 'Cancelled by user',
+        completedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true, message: 'Scan cancelled' });
+  } catch (error: any) {
+    console.error('Brand scan PATCH error:', error);
+    return apiErrors.internal(error.message || 'Failed to cancel scan');
   }
 }

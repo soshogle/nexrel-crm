@@ -7385,7 +7385,8 @@ model REScrapingJob {
 
 model REMarketStats {
   id               String       @id @default(cuid())
-  userId           String
+  userId           String?      // null when isShared=true (Quebec-wide Centris data)
+  isShared         Boolean      @default(false) // true = Quebec market stats (Centris PDFs), shared across all RE users
   periodStart      DateTime
   periodEnd        DateTime
   periodType       REPeriodType @default(MONTHLY)
@@ -7422,13 +7423,15 @@ model REMarketStats {
   createdAt                DateTime @default(now())
   updatedAt                DateTime? @updatedAt
 
-  user User @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([isShared])
   @@index([region])
   @@index([propertyCategory])
   @@index([periodStart, periodEnd])
   @@index([userId, region, propertyCategory, periodType])
+  @@index([isShared, region, propertyCategory, periodType])
 }
 
 model REMarketReport {

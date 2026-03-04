@@ -53,6 +53,7 @@ import {
   Radar,
   Newspaper,
   Hash,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -195,6 +196,8 @@ export function ReviewsPage() {
   const [scanning, setScanning] = useState(false);
   const [scanId, setScanId] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<string | null>(null);
+  const [blockingScanId, setBlockingScanId] = useState<string | null>(null);
+  const [cancellingScan, setCancellingScan] = useState(false);
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);
@@ -237,26 +240,6 @@ export function ReviewsPage() {
     } catch { /* non-critical */ }
   }, []);
 
-  const startBrandScan = useCallback(async () => {
-    setScanning(true);
-    setScanStatus('RUNNING');
-    try {
-      const res = await fetch('/api/reviews/brand-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to start scan');
-      }
-      const data = await res.json();
-      setScanId(data.scanId);
-      toast.success(`Scanning the web for "${data.businessName}"...`);
-      pollScanStatus(data.scanId);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to start brand scan');
-      setScanning(false);
-      setScanStatus(null);
-    }
-  }, []);
-
   const pollScanStatus = useCallback((id: string) => {
     const poll = async () => {
       try {
@@ -273,7 +256,9 @@ export function ReviewsPage() {
         }
         if (data.status === 'FAILED') {
           setScanning(false);
-          toast.error('Scan failed: ' + (data.error || 'Unknown error'));
+          setScanId(null);
+          const msg = data.error || 'Unknown error';
+          toast.error(msg.includes('Cancelled') ? 'Scan cancelled' : 'Scan failed: ' + msg);
           return;
         }
         setTimeout(poll, 5000);
@@ -284,12 +269,76 @@ export function ReviewsPage() {
     setTimeout(poll, 3000);
   }, [fetchInsights, fetchReviews]);
 
+  const startBrandScan = useCallback(async () => {
+    setBlockingScanId(null);
+    setScanning(true);
+    setScanStatus('RUNNING');
+    try {
+      const res = await fetch('/api/reviews/brand-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!res.ok) {
+        const err = await res.json();
+        if (res.status === 409 && err.scanId) {
+          setBlockingScanId(err.scanId);
+          toast.error(err.error || 'A scan is already running.');
+        } else {
+          toast.error(err.error || 'Failed to start brand scan');
+        }
+        setScanning(false);
+        setScanStatus(null);
+        return;
+      }
+      const data = await res.json();
+      setScanId(data.scanId);
+      toast.success(`Scanning the web for "${data.businessName}"...`);
+      pollScanStatus(data.scanId);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start brand scan');
+      setScanning(false);
+      setScanStatus(null);
+    }
+  }, [pollScanStatus]);
+
+  const cancelBrandScan = useCallback(async () => {
+    const id = scanId || blockingScanId;
+    if (!id) return;
+    setCancellingScan(true);
+    try {
+      const res = await fetch('/api/reviews/brand-scan', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scanId: id, action: 'cancel' }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to cancel');
+      }
+      setScanId(null);
+      setBlockingScanId(null);
+      setScanning(false);
+      setScanStatus(null);
+      toast.success('Scan cancelled');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel scan');
+    } finally {
+      setCancellingScan(false);
+    }
+  }, [scanId, blockingScanId]);
+
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
   useEffect(() => {
-    if (activeTab === 'insights') fetchInsights();
+    if (activeTab === 'insights') {
+      fetchInsights();
+      // Check if a scan is already running (e.g. from another tab)
+      fetch('/api/reviews/brand-scan?action=running')
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.scanId && !scanning) setBlockingScanId(data.scanId);
+        })
+        .catch(() => {});
+    }
     if (activeTab === 'request') fetchLeads();
-  }, [activeTab, fetchInsights, fetchLeads]);
+  }, [activeTab, fetchInsights, fetchLeads, scanning]);
 
   const generateAIResponse = async (reviewId: string) => {
     setGeneratingResponse(reviewId);
@@ -716,25 +765,51 @@ export function ReviewsPage() {
                     <p className="text-xs text-muted-foreground">
                       {scanning
                         ? `Scanning... ${scanStatus === 'RUNNING' ? 'Collecting reviews & mentions from across the web' : scanStatus}`
-                        : insights?.lastScanAt
-                          ? `Last scan: ${format(new Date(insights.lastScanAt), 'MMM d, yyyy h:mm a')}`
-                          : 'Scrape Google, Yelp, Trustpilot, Reddit, forums & more for what people say about your brand'}
+                        : blockingScanId
+                          ? 'A scan is already running. Cancel it to start a new one.'
+                          : insights?.lastScanAt
+                            ? `Last scan: ${format(new Date(insights.lastScanAt), 'MMM d, yyyy h:mm a')}`
+                            : 'Scrape Google, Yelp, Trustpilot, Reddit, forums & more for what people say about your brand'}
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={startBrandScan}
-                  disabled={scanning}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  {scanning ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Globe className="h-4 w-4 mr-2" />
+                <div className="flex items-center gap-2">
+                  {(scanning || blockingScanId) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={cancelBrandScan}
+                      disabled={cancellingScan}
+                      className="border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      {cancellingScan ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      ) : (
+                        <X className="h-4 w-4 mr-1.5" />
+                      )}
+                      Cancel scan
+                    </Button>
                   )}
-                  {scanning ? 'Scanning...' : 'Scan the Web'}
-                </Button>
+                  <Button
+                    onClick={startBrandScan}
+                    disabled={scanning}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {scanning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Globe className="h-4 w-4 mr-2" />
+                    )}
+                    {scanning ? 'Scanning...' : 'Scan the Web'}
+                  </Button>
+                </div>
               </div>
+              {blockingScanId && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>A scan is already running. Wait for it to complete or cancel it above.</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   TrendingUp,
   TrendingDown,
@@ -13,12 +14,15 @@ import {
   Database,
   Search,
   X,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface MarketMetric {
   label: string;
@@ -48,6 +52,7 @@ interface LiveStats {
 }
 
 export function MarketInsightsWidget() {
+  const { data: session } = useSession();
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedState, setSelectedState] = useState('');
@@ -57,8 +62,16 @@ export function MarketInsightsWidget() {
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<MarketMetric[]>([]);
   const [monthlyTrends, setMonthlyTrends] = useState<any[]>([]);
+  const [globalMonthlyTrends, setGlobalMonthlyTrends] = useState<any[]>([]);
+  const [globalStats, setGlobalStats] = useState<any>(null);
+  const [myStats, setMyStats] = useState<any>(null);
+  const [globalMetrics, setGlobalMetrics] = useState<MarketMetric[]>([]);
+  const [statsView, setStatsView] = useState<'broker' | 'global'>('broker');
   const [dataSource, setDataSource] = useState<any>(null);
+  const [ingesting, setIngesting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) return `$${(price / 1000000).toFixed(1)}M`;
@@ -78,26 +91,46 @@ export function MarketInsightsWidget() {
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
 
-      const live: LiveStats = data.liveStats || {};
+      const my: LiveStats = data.myStats || {};
+      const global = data.globalStats || null;
       setAvailableLocations(data.locations || []);
       setDataSource(data.dataSource);
-      setMonthlyTrends(data.monthlyTrends || []);
+      setMonthlyTrends(data.myMonthlyTrends || data.monthlyTrends || []);
+      setGlobalMonthlyTrends(data.globalMonthlyTrends || []);
+      setGlobalStats(global);
+      setMyStats(my);
 
-      const hasData = (live.activeListings || 0) + (live.closedSales || 0) + (live.rentalActive || 0) + (live.rentalListings || 0) > 0;
-      const trends = Array.isArray(data.monthlyTrends) ? data.monthlyTrends : [];
+      const hasMyData = (my.activeCount ?? my.activeListings ?? 0) + (my.soldCount ?? my.closedSales ?? 0) + (my.rentalActive ?? 0) + (my.rentalListings ?? 0) > 0;
+      const trends = Array.isArray(data.myMonthlyTrends || data.monthlyTrends) ? (data.myMonthlyTrends || data.monthlyTrends) : [];
       const last = trends[trends.length - 1];
       const prev = trends[trends.length - 2];
       const pct = (current: number, previous: number) => (previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : 0);
       const activeChange = last && prev ? pct(last.newListings || 0, prev.newListings || 0) : 0;
       const domChange = last && prev ? pct(last.medianDom || 0, prev.medianDom || 0) : 0;
 
-      setMetrics(hasData ? [
-        { label: 'Median Sale Price', value: formatPrice(live.medianSalePrice || 0), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', hasData: live.medianSalePrice > 0 },
-        { label: 'Avg Days on Market', value: (live.domMedian > 0 || live.domAvg > 0) ? `${live.domMedian || live.domAvg} days` : '—', change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', hasData: (live.domMedian > 0 || live.domAvg > 0) },
-        { label: 'Active Listings', value: `${live.totalActiveListings ?? live.activeListings ?? 0}`, change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', hasData: (live.totalActiveListings ?? live.activeListings ?? 0) > 0 },
-        { label: 'Closed Sales', value: `${live.closedSales || 0}`, change: 0, trend: live.closedSales > 0 ? 'up' : 'neutral', hasData: live.closedSales > 0 },
-        { label: 'Price per Sq Ft', value: live.pricePerSqft > 0 ? `$${live.pricePerSqft}` : '—', change: 0, trend: 'neutral', hasData: live.pricePerSqft > 0 },
-        { label: 'Months of Supply', value: live.monthsOfSupply > 0 ? `${live.monthsOfSupply}` : '—', change: 0, trend: live.monthsOfSupply < 3 ? 'down' : live.monthsOfSupply > 6 ? 'up' : 'neutral', hasData: live.monthsOfSupply > 0 },
+      setMetrics(hasMyData ? [
+        { label: 'Median Sale Price', value: formatPrice(my.medianSalePrice || my.medianSoldPrice || 0), change: my.priceChangePercent || 0, trend: (my.priceChangePercent || 0) > 0 ? 'up' : (my.priceChangePercent || 0) < 0 ? 'down' : 'neutral', hasData: (my.medianSalePrice || my.medianSoldPrice || 0) > 0 },
+        { label: 'Avg Days on Market', value: (my.domMedian > 0 || my.domAvg > 0) ? `${my.domMedian || my.domAvg} days` : '—', change: domChange, trend: domChange < 0 ? 'up' : domChange > 0 ? 'down' : 'neutral', hasData: (my.domMedian > 0 || my.domAvg > 0) },
+        { label: 'Active Listings', value: `${my.activeCount ?? my.activeListings ?? 0}`, change: activeChange, trend: activeChange > 0 ? 'up' : activeChange < 0 ? 'down' : 'neutral', hasData: (my.activeCount ?? my.activeListings ?? 0) > 0 },
+        { label: 'Closed Sales', value: `${my.soldCount ?? my.closedSales ?? 0}`, change: 0, trend: (my.soldCount ?? my.closedSales ?? 0) > 0 ? 'up' : 'neutral', hasData: (my.soldCount ?? my.closedSales ?? 0) > 0 },
+        { label: 'Price per Sq Ft', value: (my.pricePerSqft ?? 0) > 0 ? `$${my.pricePerSqft}` : '—', change: 0, trend: 'neutral', hasData: (my.pricePerSqft ?? 0) > 0 },
+        { label: 'Months of Supply', value: (my.monthsOfSupply ?? 0) > 0 ? `${my.monthsOfSupply}` : '—', change: 0, trend: (my.monthsOfSupply ?? 0) < 3 ? 'down' : (my.monthsOfSupply ?? 0) > 6 ? 'up' : 'neutral', hasData: (my.monthsOfSupply ?? 0) > 0 },
+      ] : [
+        { label: 'Median Sale Price', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Avg Days on Market', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Active Listings', value: '0', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Closed Sales', value: '0', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Price per Sq Ft', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Months of Supply', value: '—', change: 0, trend: 'neutral', hasData: false },
+      ]);
+
+      setGlobalMetrics(global ? [
+        { label: 'Median Sale Price', value: formatPrice(global.medianSalePrice || 0), change: 0, trend: 'neutral', hasData: (global.medianSalePrice ?? 0) > 0 },
+        { label: 'Avg Days on Market', value: (global.domMedian > 0 || global.domAvg > 0) ? `${global.domMedian || global.domAvg} days` : '—', change: 0, trend: 'neutral', hasData: (global.domMedian ?? global.domAvg ?? 0) > 0 },
+        { label: 'Active Listings', value: `${global.activeListings ?? 0}`, change: 0, trend: 'neutral', hasData: (global.activeListings ?? 0) > 0 },
+        { label: 'Closed Sales', value: `${global.closedSales ?? 0}`, change: 0, trend: 'neutral', hasData: (global.closedSales ?? 0) > 0 },
+        { label: 'Price per Sq Ft', value: '—', change: 0, trend: 'neutral', hasData: false },
+        { label: 'Months of Supply', value: (global.monthsOfSupply ?? 0) > 0 ? `${global.monthsOfSupply}` : '—', change: 0, trend: 'neutral', hasData: (global.monthsOfSupply ?? 0) > 0 },
       ] : [
         { label: 'Median Sale Price', value: '—', change: 0, trend: 'neutral', hasData: false },
         { label: 'Avg Days on Market', value: '—', change: 0, trend: 'neutral', hasData: false },
@@ -112,6 +145,26 @@ export function MarketInsightsWidget() {
       setIsLoading(false);
     }
   }, [selectedCity, selectedState]);
+
+  const handleIngestPdfs = useCallback(async () => {
+    if (!session?.user?.id) return;
+    setIngesting(true);
+    try {
+      const res = await fetch('/api/real-estate/market-stats/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Ingest failed');
+      toast.success(data.message || `Ingested ${data.created} records`);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to ingest PDFs');
+    } finally {
+      setIngesting(false);
+    }
+  }, [session?.user?.id, fetchData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -143,7 +196,8 @@ export function MarketInsightsWidget() {
     (l) => l.toLowerCase().includes(locationQuery.toLowerCase())
   );
 
-  const trendPrices = monthlyTrends.map((t: any) => t.medianPrice || 0);
+  const displayTrends = statsView === 'broker' ? monthlyTrends : globalMonthlyTrends;
+  const trendPrices = displayTrends.map((t: any) => t.medianPrice || 0);
   const maxPrice = Math.max(...trendPrices, 1);
 
   return (
@@ -189,24 +243,52 @@ export function MarketInsightsWidget() {
                 </div>
               )}
             </div>
+            {isSuperAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleIngestPdfs}
+                disabled={ingesting || isLoading}
+                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              >
+                {ingesting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 mr-1.5" />}
+                Ingest PDFs
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={fetchData} disabled={isLoading} className="border-purple-200 bg-slate-800/50">
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
-        {dataSource && (
-          <div className="flex items-center gap-2 mt-2">
-            <Database className="w-3 h-3 text-gray-500" />
-            <span className="text-xs text-gray-500">
-              {dataSource.properties} listings + {dataSource.fsboListings} FSBO
-              {dataSource.location !== 'All Areas' && ` in ${dataSource.location}`}
-            </span>
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex gap-1.5">
+            <Button
+              variant={statsView === 'broker' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setStatsView('broker')}
+            >
+              My Portfolio
+            </Button>
+            <Button
+              variant={statsView === 'global' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setStatsView('global')}
+            >
+              Quebec Market
+            </Button>
           </div>
-        )}
+          {dataSource && (
+            <span className="text-xs text-gray-500">
+              {statsView === 'broker' ? 'Your listings' : 'Centris MLS'}{dataSource.location !== 'All Areas' && ` • ${dataSource.location}`}
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {metrics.map((metric) => (
+          {(statsView === 'broker' ? metrics : globalMetrics).map((metric) => (
             <div key={metric.label} className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50 hover:border-purple-300 transition-colors">
               <p className="text-gray-500 text-sm mb-1">{metric.label}</p>
               <p className={`text-xl font-bold ${metric.hasData === false ? 'text-gray-500' : 'text-gray-900'}`}>{metric.value}</p>
@@ -225,15 +307,15 @@ export function MarketInsightsWidget() {
         <div className="mt-6 p-4 rounded-lg bg-purple-50/50 border border-purple-200/50">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-500 text-sm">Price Trend (12 Months)</span>
-            {metrics[0]?.change !== 0 && (
-              <Badge className={`${metrics[0]?.trend === 'up' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
-                {metrics[0]?.trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                {metrics[0]?.change > 0 ? '+' : ''}{metrics[0]?.change}%
+            {(statsView === 'broker' ? metrics : globalMetrics)[0]?.change !== 0 && (
+              <Badge className={`${(statsView === 'broker' ? metrics : globalMetrics)[0]?.trend === 'up' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                {(statsView === 'broker' ? metrics : globalMetrics)[0]?.trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                {((statsView === 'broker' ? metrics : globalMetrics)[0]?.change ?? 0) > 0 ? '+' : ''}{(statsView === 'broker' ? metrics : globalMetrics)[0]?.change ?? 0}%
               </Badge>
             )}
           </div>
           <div className="h-24 flex items-end gap-1">
-            {monthlyTrends.length > 0 ? monthlyTrends.map((t: any, i: number) => {
+            {displayTrends.length > 0 ? displayTrends.map((t: any, i: number) => {
               const height = maxPrice > 0 ? Math.max((t.medianPrice / maxPrice) * 100, 5) : 5;
               return (
                 <div key={i} className="flex-1 relative group cursor-pointer">
@@ -248,8 +330,12 @@ export function MarketInsightsWidget() {
               );
             }) : null}
           </div>
-          {monthlyTrends.length === 0 && (
-            <p className="text-center text-xs text-gray-500 mt-2">Add listings to see price trends</p>
+          {displayTrends.length === 0 && (
+            <p className="text-center text-xs text-gray-500 mt-2">
+              {isSuperAdmin
+                ? 'Place Centris PDFs in data/market-reports/ and click Ingest PDFs above'
+                : 'Add listings or sync Centris data to see price trends'}
+            </p>
           )}
         </div>
       </CardContent>

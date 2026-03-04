@@ -3,14 +3,15 @@
  * Comprehensive Centris data ingestion — PDFs, XLSX listings, and summary reports.
  *
  * Usage:
- *   npx tsx scripts/ingest-centris-pdfs.ts                    # ingest everything
+ *   npx tsx scripts/ingest-centris-pdfs.ts                    # ingest for first RE user
+ *   npx tsx scripts/ingest-centris-pdfs.ts --user <email>      # ingest for specific user by email
  *   npx tsx scripts/ingest-centris-pdfs.ts --dry-run          # preview without writing
  *   npx tsx scripts/ingest-centris-pdfs.ts --file <filename>  # ingest a single PDF
  */
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
-import { parseAllCentrisPdfs, parseCentrisPdf, type CentrisStatRow } from '../lib/real-estate/centris-pdf-parser';
+import { parseAllCentrisPdfs, parseAllJlrMonthlyReports, parseCentrisPdf, type CentrisStatRow } from '../lib/real-estate/centris-pdf-parser';
 
 const prisma = new PrismaClient();
 const DATA_DIR = path.resolve(__dirname, '../data/market-reports');
@@ -25,7 +26,26 @@ const safeDom = (v: number | undefined | null): number | null => {
   return v;
 };
 
-async function findRealEstateUserId(): Promise<string | null> {
+async function findRealEstateUserId(emailOrId?: string): Promise<string | null> {
+  if (emailOrId) {
+    const byEmail = await prisma.user.findFirst({
+      where: { email: { equals: emailOrId, mode: 'insensitive' } },
+      select: { id: true, industry: true },
+    });
+    if (byEmail) {
+      if (byEmail.industry !== 'REAL_ESTATE') {
+        console.warn(`User ${emailOrId} is not REAL_ESTATE industry, using anyway.`);
+      }
+      return byEmail.id;
+    }
+    const byId = await prisma.user.findUnique({
+      where: { id: emailOrId },
+      select: { id: true },
+    });
+    if (byId) return byId.id;
+    console.error(`User not found: ${emailOrId}`);
+    return null;
+  }
   const user = await prisma.user.findFirst({
     where: { industry: 'REAL_ESTATE' },
     select: { id: true },
@@ -42,21 +62,43 @@ async function findRealEstateUserId(): Promise<string | null> {
 // ─── PART 1: Centris STATS_MUNGENRE PDFs → REMarketStats ───
 
 function periodKey(row: CentrisStatRow): string {
-  return `${row.periodYear}-${String(row.periodMonth).padStart(2, '0')}|${row.region}|${row.municipality}|${row.propertyType || 'All Types'}`;
+  return `${row.periodYear}-${String(row.periodMonth).padStart(2, '0')}|${row.region}|${row.municipality}|${row.propertyType || 'All Types'}|${row.source || 'centris_pdf'}`;
 }
 
-async function ingestCentrisPdfs(userId: string, dryRun: boolean, singleFile?: string) {
+async function ingestCentrisPdfs(_userId: string, dryRun: boolean, singleFile?: string) {
   console.log('\n══════════════════════════════════════');
-  console.log('PART 1: Centris STATS_MUNGENRE PDFs');
+  console.log('PART 1: Centris + JLR PDFs → shared Quebec stats');
   console.log('══════════════════════════════════════');
 
   let rows: CentrisStatRow[];
   if (singleFile) {
     const filePath = path.resolve(DATA_DIR, singleFile);
     console.log(`Parsing single file: ${singleFile}`);
-    rows = await parseCentrisPdf(filePath);
+    if (/^\d{4}-\d{2}_.*[Mm]onthly/i.test(singleFile)) {
+      const { parseJlrMonthlyReport } = await import('../lib/real-estate/jlr-monthly-report-parser');
+      const jlrRows = await parseJlrMonthlyReport(filePath);
+      rows = jlrRows.map(r => ({
+        region: r.region,
+        municipality: r.municipality,
+        propertyType: r.propertyType,
+        periodYear: r.periodYear,
+        periodMonth: r.periodMonth,
+        periodType: 'MONTHLY' as const,
+        medianSalePrice: r.medianSalePrice,
+        numberOfSales: r.numberOfSales,
+        volumeOfSales: r.sales12Months && r.numberOfSales && r.medianSalePrice ? r.numberOfSales * r.medianSalePrice : undefined,
+        sourceFile: r.sourceFile,
+        source: 'jlr_monthly_report' as const,
+      }));
+    } else {
+      rows = await parseCentrisPdf(filePath);
+    }
   } else {
-    rows = await parseAllCentrisPdfs(DATA_DIR);
+    const [centrisRows, jlrRows] = await Promise.all([
+      parseAllCentrisPdfs(DATA_DIR),
+      parseAllJlrMonthlyReports(DATA_DIR),
+    ]);
+    rows = [...centrisRows, ...jlrRows];
   }
 
   console.log(`Total rows extracted: ${rows.length}`);
@@ -87,8 +129,19 @@ async function ingestCentrisPdfs(userId: string, dryRun: boolean, singleFile?: s
     return records.length;
   }
 
-  console.log('Clearing existing centris_pdf records...');
-  await prisma.rEMarketStats.deleteMany({ where: { userId, source: 'centris_pdf' } });
+  // When ingesting only a JLR file, don't wipe Centris data
+  const isJlrOnly = singleFile && /^\d{4}-\d{2}_.*[Mm]onthly/i.test(singleFile);
+  if (isJlrOnly) {
+    console.log('Clearing existing JLR records only (preserving Centris)...');
+    await prisma.rEMarketStats.deleteMany({
+      where: { isShared: true, source: 'jlr_monthly_report' },
+    });
+  } else {
+    console.log('Clearing existing shared Centris + JLR records...');
+    await prisma.rEMarketStats.deleteMany({
+      where: { isShared: true, source: { in: ['centris_pdf', 'jlr_monthly_report'] } },
+    });
+  }
 
   const batchData = records.map(row => {
     const periodStart = new Date(row.periodYear, row.periodMonth - 1, 1);
@@ -99,7 +152,8 @@ async function ingestCentrisPdfs(userId: string, dryRun: boolean, singleFile?: s
     if (row.saleVsAssessPct) rawData.saleVsAssessPct = row.saleVsAssessPct;
 
     return {
-      userId,
+      userId: null,
+      isShared: true,
       periodStart,
       periodEnd,
       periodType: 'MONTHLY' as const,
@@ -122,7 +176,7 @@ async function ingestCentrisPdfs(userId: string, dryRun: boolean, singleFile?: s
         ? Math.round((row.activeListings / row.numberOfSales) * 10) / 10
         : null,
       sampleSize: safeInt(row.numberOfSales),
-      source: 'centris_pdf',
+      source: row.source || 'centris_pdf',
       sourceFile: row.sourceFile,
       rawData: Object.keys(rawData).length > 0 ? rawData : undefined,
     };
@@ -264,10 +318,11 @@ async function ingestSummaryPdf(userId: string, dryRun: boolean) {
     return records.length;
   }
 
-  await prisma.rEMarketStats.deleteMany({ where: { userId, source: 'centris_summary_pdf' } });
+  await prisma.rEMarketStats.deleteMany({ where: { isShared: true, source: 'centris_summary_pdf' } });
 
   const batchData = records.map(r => ({
-    userId,
+    userId: null,
+    isShared: true,
     periodStart: new Date(r.year, (r.month ?? 1) - 1, 1),
     periodEnd: new Date(r.year, r.month ?? 12, 0),
     periodType: 'MONTHLY' as const,
@@ -468,12 +523,15 @@ async function main() {
   const dryRun = args.includes('--dry-run');
   const fileIdx = args.indexOf('--file');
   const singleFile = fileIdx >= 0 ? args[fileIdx + 1] : null;
+  const userIdx = args.indexOf('--user');
+  const targetUser = userIdx >= 0 ? args[userIdx + 1] : undefined;
 
   console.log('Centris Complete Data Ingestion');
   console.log('==============================');
   if (dryRun) console.log('(DRY RUN — no database writes)\n');
+  if (targetUser) console.log(`Target user: ${targetUser}\n`);
 
-  const userId = await findRealEstateUserId();
+  const userId = await findRealEstateUserId(targetUser);
   if (!userId && !dryRun) {
     console.error('No real estate user found. Cannot ingest without a userId.');
     process.exit(1);

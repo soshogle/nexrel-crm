@@ -27,7 +27,7 @@ const STEPS = [
 ];
 
 export default function OnboardingClientWrapper() {
-  const { data: session, status } = useSession() || {};
+  const { data: session, status, update } = useSession() || {};
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -411,9 +411,12 @@ export default function OnboardingClientWrapper() {
       // Clear the localStorage draft since onboarding is complete
       clearLocalStorageDraft();
       toast.success('🎉 Welcome to your CRM!');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      // Refresh session so sidebar updates (onboarding moves to Admin section)
+      if (typeof update === 'function') {
+        await update();
+      }
+      // Redirect to Settings (admin section) - onboarding now lives under Admin
+      router.push('/dashboard/settings');
     }
   };
 

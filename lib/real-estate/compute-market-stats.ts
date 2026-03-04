@@ -1,7 +1,6 @@
 /**
- * Compute live market stats from real REProperty, REFSBOListing, AND stored
- * Centris/iGEN market data. Blends both sources so reports, presentations,
- * and CMA always reflect the most complete picture.
+ * Compute market stats — separate global Quebec (Centris) from user's portfolio.
+ * No mixing: globalStats = shared Centris data, myStats = user listings only.
  */
 import { prisma } from '@/lib/db';
 
@@ -57,13 +56,15 @@ export interface LiveMarketStats {
 export interface ComputeMarketStatsResult {
   hasData: boolean;
   stats: LiveMarketStats | null;
+  globalStats?: { medianSalePrice: number; region: string; period?: string } | null;
+  myStats?: LiveMarketStats | null;
   message?: string;
 }
 
-async function fetchStoredStats(userId: string, city?: string | null, state?: string | null) {
+async function fetchSharedStats(city?: string | null, state?: string | null) {
   return prisma.rEMarketStats.findMany({
     where: {
-      userId,
+      isShared: true,
       periodType: 'MONTHLY',
       priceRange: null,
       ...(city
@@ -90,7 +91,7 @@ export async function computeLiveMarketStats(
   if (city) (locationFilter as any).city = { contains: city, mode: 'insensitive' };
   if (state) (locationFilter as any).state = { contains: state, mode: 'insensitive' };
 
-  const [properties, fsboListings, storedStats] = await Promise.all([
+  const [properties, fsboListings, sharedStats] = await Promise.all([
     prisma.rEProperty.findMany({
       where: { userId, ...locationFilter },
       select: {
@@ -115,33 +116,39 @@ export async function computeLiveMarketStats(
       orderBy: { createdAt: 'desc' },
       take: 500,
     }),
-    fetchStoredStats(userId, city, state),
+    fetchSharedStats(city, state),
   ]);
 
   const totalListings = properties.length + fsboListings.length;
-  const latestStored = storedStats.length > 0 ? storedStats[0] : null;
+  const latestShared = sharedStats.length > 0 ? sharedStats[0] : null;
 
-  // Build Centris context from stored stats
-  const centrisContext = latestStored
+  // Build Centris context from shared Quebec stats
+  const centrisContext = latestShared
     ? {
-        region: latestStored.region,
-        medianSalePrice: latestStored.medianSalePrice ?? undefined,
-        avgSalePrice: latestStored.avgSalePrice ?? undefined,
-        dom: latestStored.domAvg ?? latestStored.domMedian ?? undefined,
-        activeInventory: latestStored.activeInventory ?? undefined,
-        closedSales: latestStored.closedSales ?? undefined,
-        newListings: latestStored.newListings ?? undefined,
-        saleVsListPct: latestStored.closePriceToAskingRatio ?? undefined,
-        monthsOfSupply: latestStored.monthsOfSupply ?? undefined,
-        period: latestStored.periodStart.toISOString().slice(0, 7),
+        region: latestShared.region,
+        medianSalePrice: latestShared.medianSalePrice ?? undefined,
+        avgSalePrice: latestShared.avgSalePrice ?? undefined,
+        dom: latestShared.domAvg ?? latestShared.domMedian ?? undefined,
+        activeInventory: latestShared.activeInventory ?? undefined,
+        closedSales: latestShared.closedSales ?? undefined,
+        newListings: latestShared.newListings ?? undefined,
+        saleVsListPct: latestShared.closePriceToAskingRatio ?? undefined,
+        monthsOfSupply: latestShared.monthsOfSupply ?? undefined,
+        period: latestShared.periodStart.toISOString().slice(0, 7),
       }
     : undefined;
 
-  // If no user listings, use stored Centris data exclusively
+  const globalStats = latestShared ? {
+    medianSalePrice: latestShared.medianSalePrice ?? 0,
+    region: latestShared.region,
+    period: latestShared.periodStart.toISOString().slice(0, 7),
+  } : null;
+
+  // If no user listings, use shared Quebec stats for report context (stats = global)
   if (totalListings === 0) {
-    if (storedStats.length > 0) {
-      const latest = storedStats[0];
-      const mTrends = [...storedStats].reverse().map((s) => ({
+    if (sharedStats.length > 0) {
+      const latest = sharedStats[0];
+      const mTrends = [...sharedStats].reverse().map((s) => ({
         month: s.periodStart.toISOString().slice(0, 7),
         newListings: s.newListings ?? 0,
         closedSales: s.closedSales ?? 0,
@@ -177,17 +184,21 @@ export async function computeLiveMarketStats(
           dataSource: {
             properties: 0,
             fsboListings: 0,
-            storedStats: storedStats.length,
-            location: latest.city || latest.region || 'Centris Data',
+            storedStats: sharedStats.length,
+            location: latest.city || latest.region || 'Quebec Market',
           },
           centrisContext,
         },
+        globalStats,
+        myStats: null,
       };
     }
 
     return {
       hasData: false,
       stats: null,
+      globalStats: null,
+      myStats: null,
       message: 'No listings found for this region. Add properties or sync your MLS/Centris data to generate reports from real market data.',
     };
   }
@@ -261,18 +272,6 @@ export async function computeLiveMarketStats(
     }
   }
 
-  // Fill gaps in monthly trends from stored Centris stats
-  for (const stored of storedStats) {
-    const key = stored.periodStart.toISOString().slice(0, 7);
-    if (months[key]) {
-      const m = months[key];
-      if (m.listings === 0 && stored.newListings) m.listings = stored.newListings;
-      if (m.sold === 0 && stored.closedSales) m.sold = stored.closedSales;
-      if (m.prices.length === 0 && stored.medianSalePrice) m.prices.push(stored.medianSalePrice);
-      if (m.dom.length === 0 && stored.domMedian) m.dom.push(stored.domMedian);
-    }
-  }
-
   const monthlyTrends = Object.entries(months).map(([month, data]) => ({
     month,
     newListings: data.listings,
@@ -301,30 +300,20 @@ export async function computeLiveMarketStats(
     count: allPrices.filter((p) => p >= r.min && p < r.max).length,
   }));
 
-  // Blend: use Centris data to fill gaps where live data is sparse
-  const liveDomMedian = median(allDom);
-  const liveDomAvg = Math.round(avg(allDom));
-  const liveMonthsOfSupply = Math.round(monthsOfSupply * 10) / 10;
-  const liveListToSale = Math.round(avgListToSale * 1000) / 1000;
-
   const stats: LiveMarketStats = {
-    medianSalePrice: median(allPrices) || (latestStored?.medianSalePrice ?? 0),
-    avgSalePrice: Math.round(avg(allPrices)) || Math.round(latestStored?.avgSalePrice ?? 0),
+    medianSalePrice: median(allPrices),
+    avgSalePrice: Math.round(avg(allPrices)),
     medianListPrice: median(activePrices),
     medianSoldPrice: median(soldPrices),
     activeListings: activeListings.length,
     closedSales: soldListings.length,
     pendingListings: pendingListings.length,
-    domMedian: liveDomMedian > 0 ? liveDomMedian : (latestStored?.domMedian ?? 0),
-    domAvg: liveDomAvg > 0 ? liveDomAvg : Math.round(latestStored?.domAvg ?? 0),
+    domMedian: median(allDom),
+    domAvg: Math.round(avg(allDom)),
     pricePerSqft: Math.round(avg(pricePerSqft)),
-    monthsOfSupply: liveMonthsOfSupply > 0 && liveMonthsOfSupply < 99
-      ? liveMonthsOfSupply
-      : (latestStored?.monthsOfSupply ?? 0),
-    listToSaleRatio: liveListToSale > 0
-      ? liveListToSale
-      : (latestStored?.closePriceToAskingRatio ? latestStored.closePriceToAskingRatio / 100 : 0),
-    newListingsThisMonth: recentProperties.length || (latestStored?.newListings ?? 0),
+    monthsOfSupply: Math.round(monthsOfSupply * 10) / 10,
+    listToSaleRatio: Math.round(avgListToSale * 1000) / 1000,
+    newListingsThisMonth: recentProperties.length,
     priceChangePercent: Math.round(priceChange * 10) / 10,
     fsboListings: fsboListings.length,
     fsboActive: fsboActive.length,
@@ -340,11 +329,11 @@ export async function computeLiveMarketStats(
     dataSource: {
       properties: properties.length,
       fsboListings: fsboListings.length,
-      storedStats: storedStats.length,
+      storedStats: sharedStats.length,
       location: city && state ? `${city}, ${state}` : city || state || 'All Areas',
     },
     centrisContext,
   };
 
-  return { hasData: true, stats };
+  return { hasData: true, stats, globalStats, myStats: stats };
 }

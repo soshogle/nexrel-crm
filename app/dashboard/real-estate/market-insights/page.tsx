@@ -89,12 +89,15 @@ export default function MarketInsightsPage() {
   const locale = useLocaleLabels();
   const [marketReports, setMarketReports] = useState<MarketReport[]>([]);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
+  const [globalStats, setGlobalStats] = useState<any>(null);
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
+  const [globalMonthlyTrends, setGlobalMonthlyTrends] = useState<MonthlyTrend[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [dataSource, setDataSource] = useState<any>(null);
   const [loadingReports, setLoadingReports] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [scope, setScope] = useState<'broker' | 'market'>('broker');
+  const [scope, setScope] = useState<'broker' | 'market'>('market');
+  const [statsView, setStatsView] = useState<'broker' | 'global'>('broker');
   const [websiteId, setWebsiteId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
@@ -142,8 +145,10 @@ export default function MarketInsightsPage() {
         throw new Error('Invalid JSON from market stats API');
       }
 
-      setLiveStats(data.liveStats || null);
-      setMonthlyTrends(Array.isArray(data?.monthlyTrends) ? data.monthlyTrends : []);
+      setLiveStats(data.myStats || null);
+      setGlobalStats(data.globalStats || null);
+      setMonthlyTrends(Array.isArray(data?.myMonthlyTrends || data?.monthlyTrends) ? (data.myMonthlyTrends || data.monthlyTrends) : []);
+      setGlobalMonthlyTrends(Array.isArray(data?.globalMonthlyTrends) ? data.globalMonthlyTrends : []);
       setLocations(Array.isArray(data?.locations) ? data.locations : []);
       setDataSource(data.dataSource || null);
     } catch (err: any) {
@@ -240,27 +245,31 @@ export default function MarketInsightsPage() {
     }
   };
 
-  const hasData = liveStats && ((liveStats.activeListings || 0) + (liveStats.closedSales || 0) + (liveStats.rentalActive || 0) + (liveStats.rentalListings || 0) > 0);
+  const displayStats = statsView === 'broker' ? liveStats : globalStats;
+  const displayTrends = statsView === 'broker' ? monthlyTrends : globalMonthlyTrends;
+  const hasData = statsView === 'broker'
+    ? (liveStats && ((liveStats.activeListings || 0) + (liveStats.closedSales || 0) + (liveStats.rentalActive || 0) + (liveStats.rentalListings || 0) > 0))
+    : (globalStats && ((globalStats.activeListings ?? 0) + (globalStats.closedSales ?? 0) > 0));
 
-  // Chart data from monthly trends (live calculated)
-  const priceChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
+  // Chart data from monthly trends
+  const priceChartData = Array.isArray(displayTrends) ? displayTrends.map((t: any) => ({
     period: t.month,
     median: t.medianPrice,
     avg: t.avgPrice,
   })) : [];
 
-  const inventoryChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
+  const inventoryChartData = Array.isArray(displayTrends) ? displayTrends.map((t: any) => ({
     period: t.month,
     newListings: t.newListings,
     closedSales: t.closedSales,
   })) : [];
 
-  const domChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
+  const domChartData = Array.isArray(displayTrends) ? displayTrends.map((t: any) => ({
     period: t.month,
     dom: t.medianDom,
   })) : [];
 
-  const pieData = Array.isArray(liveStats?.statusBreakdown) ? liveStats!.statusBreakdown.filter((s) => s.count > 0).map((s) => ({
+  const pieData = statsView === 'broker' && Array.isArray(liveStats?.statusBreakdown) ? liveStats!.statusBreakdown.filter((s) => s.count > 0).map((s) => ({
     name: s.status.replace(/_/g, ' '), value: s.count,
   })) : [];
 
@@ -281,9 +290,9 @@ export default function MarketInsightsPage() {
               <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-600">LIVE DATA</Badge>
             </h1>
             <p className="text-muted-foreground">
-              {scope === 'broker'
-                ? 'Analytics from your broker listings (linked to a seller)'
-                : 'Market-wide analytics from all MLS/Centris listings'}
+              {statsView === 'broker'
+                ? 'Your portfolio: listings, FSBOs, rentals'
+                : 'Quebec market: Centris MLS data (shared)'}
             </p>
           </div>
         </div>
@@ -349,22 +358,42 @@ export default function MarketInsightsPage() {
         </div>
       </div>
 
-      {/* Scope Toggle */}
-      <div className="flex items-center gap-2">
+      {/* Stats View Toggle: Broker vs Global MLS */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-muted-foreground">Data source:</span>
         <Button
-          variant={scope === 'broker' ? 'default' : 'outline'}
+          variant={statsView === 'broker' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setScope('broker')}
+          onClick={() => setStatsView('broker')}
         >
           My Portfolio
         </Button>
         <Button
-          variant={scope === 'market' ? 'default' : 'outline'}
+          variant={statsView === 'global' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setScope('market')}
+          onClick={() => setStatsView('global')}
         >
-          Market Overview
+          Quebec Market (MLS)
         </Button>
+        {statsView === 'broker' && (
+          <>
+            <span className="text-sm text-muted-foreground mx-1">|</span>
+            <Button
+              variant={scope === 'broker' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setScope('broker')}
+            >
+              Broker only
+            </Button>
+            <Button
+              variant={scope === 'market' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setScope('market')}
+            >
+              All my listings
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Data Source Indicator */}
@@ -372,38 +401,46 @@ export default function MarketInsightsPage() {
         <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/30 rounded-lg px-4 py-2">
           <div className="flex items-center gap-1.5">
             <Database className="w-4 h-4" />
-            <span className="font-medium">{scope === 'broker' ? 'Broker Data:' : 'Market Data:'}</span>
+            <span className="font-medium">
+              {statsView === 'broker' ? 'Broker stats (your listings)' : 'Quebec Market (Centris MLS)'}:
+            </span>
           </div>
-          <span>{dataSource.properties} {scope === 'broker' ? 'broker listings' : 'properties'}</span>
-          {(dataSource.rentalListings ?? 0) > 0 && (
+          {statsView === 'broker' ? (
             <>
+              <span>{dataSource.properties} {scope === 'broker' ? 'broker listings' : 'properties'}</span>
+              {(dataSource.rentalListings ?? 0) > 0 && (
+                <>
+                  <span>&bull;</span>
+                  <span>{dataSource.rentalListings} rentals</span>
+                </>
+              )}
               <span>&bull;</span>
-              <span>{dataSource.rentalListings} rentals</span>
+              <span>{dataSource.fsboListings} FSBO listings</span>
+              {dataSource.location !== 'All Areas' && (
+                <>
+                  <span>&bull;</span>
+                  <Badge variant="outline" className="text-xs"><MapPin className="w-3 h-3 mr-1" />{dataSource.location}</Badge>
+                </>
+              )}
             </>
-          )}
-          <span>&bull;</span>
-          <span>{dataSource.fsboListings} FSBO listings</span>
-          {dataSource.location !== 'All Areas' && (
-            <>
-              <span>&bull;</span>
-              <Badge variant="outline" className="text-xs"><MapPin className="w-3 h-3 mr-1" />{dataSource.location}</Badge>
-            </>
+          ) : (
+            <span>Centris PDF data • {globalStats?.region || 'Quebec'} • {globalStats?.period || 'recent'}</span>
           )}
         </div>
       )}
 
       {/* Live Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatsCard label="Median Sale Price" value={hasData ? formatK(liveStats!.medianSalePrice) : '—'} change={liveStats?.priceChangePercent} icon={DollarSign} loading={loadingStats} />
-        <StatsCard label="Active Listings" value={hasData ? String(liveStats!.totalActiveListings ?? liveStats!.activeListings) : '0'} subtext={`${liveStats?.newListingsThisMonth || 0} new this month`} icon={Building2} loading={loadingStats} positive={!!(liveStats?.totalActiveListings ?? liveStats?.activeListings)} />
-        <StatsCard label="Closed Sales" value={hasData ? String(liveStats!.closedSales) : '0'} subtext={hasData ? `Median ${formatK(liveStats!.medianSoldPrice)}` : undefined} icon={Target} loading={loadingStats} positive={!!liveStats?.closedSales} />
-        <StatsCard label="Days on Market" value={hasData && (liveStats!.domMedian > 0 || liveStats!.domAvg > 0) ? `${liveStats!.domMedian || liveStats!.domAvg}` : '—'} subtext={hasData && liveStats!.domAvg > 0 ? `Avg ${liveStats!.domAvg} days` : undefined} icon={Clock} loading={loadingStats} />
-        <StatsCard label="Price / Sq Ft" value={hasData && liveStats!.pricePerSqft > 0 ? `$${liveStats!.pricePerSqft}` : '—'} icon={Layers} loading={loadingStats} />
-        <StatsCard label="Months of Supply" value={hasData && liveStats!.monthsOfSupply > 0 ? `${liveStats!.monthsOfSupply}` : '—'} subtext={liveStats?.monthsOfSupply ? (liveStats.monthsOfSupply < 3 ? "Seller's market" : liveStats.monthsOfSupply > 6 ? "Buyer's market" : 'Balanced') : undefined} icon={Activity} loading={loadingStats} />
+        <StatsCard label="Median Sale Price" value={hasData ? formatK(displayStats?.medianSalePrice ?? displayStats?.medianListPrice ?? 0) : '—'} change={statsView === 'broker' ? liveStats?.priceChangePercent : undefined} icon={DollarSign} loading={loadingStats} />
+        <StatsCard label="Active Listings" value={hasData ? String(displayStats?.totalActiveListings ?? displayStats?.activeListings ?? 0) : '0'} subtext={statsView === 'broker' ? `${liveStats?.newListingsThisMonth || 0} new this month` : (displayStats?.newListings ? `${displayStats.newListings} new` : undefined)} icon={Building2} loading={loadingStats} positive={!!(displayStats?.totalActiveListings ?? displayStats?.activeListings)} />
+        <StatsCard label="Closed Sales" value={hasData ? String(displayStats?.closedSales ?? 0) : '0'} subtext={hasData && (displayStats?.medianSoldPrice ?? displayStats?.medianSalePrice) ? `Median ${formatK(displayStats.medianSoldPrice ?? displayStats.medianSalePrice)}` : undefined} icon={Target} loading={loadingStats} positive={!!displayStats?.closedSales} />
+        <StatsCard label="Days on Market" value={hasData && (displayStats?.domMedian > 0 || displayStats?.domAvg > 0) ? `${displayStats?.domMedian || displayStats?.domAvg}` : '—'} subtext={hasData && displayStats?.domAvg > 0 ? `Avg ${displayStats.domAvg} days` : undefined} icon={Clock} loading={loadingStats} />
+        <StatsCard label="Price / Sq Ft" value={hasData && (displayStats?.pricePerSqft ?? 0) > 0 ? `$${displayStats!.pricePerSqft}` : '—'} icon={Layers} loading={loadingStats} />
+        <StatsCard label="Months of Supply" value={hasData && (displayStats?.monthsOfSupply ?? 0) > 0 ? `${displayStats!.monthsOfSupply}` : '—'} subtext={displayStats?.monthsOfSupply ? (displayStats.monthsOfSupply < 3 ? "Seller's market" : displayStats.monthsOfSupply > 6 ? "Buyer's market" : 'Balanced') : undefined} icon={Activity} loading={loadingStats} />
       </div>
 
-      {/* FSBO & Portfolio Value Bar */}
-      {hasData && (
+      {/* FSBO & Portfolio Value Bar — broker only */}
+      {hasData && statsView === 'broker' && liveStats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
@@ -447,7 +484,7 @@ export default function MarketInsightsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Price Trends</CardTitle>
-            <CardDescription>{scope === 'broker' ? 'Median & average prices from your broker listings (12 months)' : 'Median & average prices across all MLS listings (12 months)'}</CardDescription>
+            <CardDescription>{statsView === 'broker' ? 'Median & average prices from your portfolio (12 months)' : 'Median & average prices from Quebec MLS / Centris (12 months)'}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingStats ? <ChartLoader /> : priceChartData.filter((d) => d.median > 0).length === 0 ? (
@@ -548,7 +585,7 @@ export default function MarketInsightsPage() {
       {/* Property Type & Price Distribution */}
       {hasData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {liveStats!.typeBreakdown?.length > 0 && (
+          {statsView === 'broker' && liveStats!.typeBreakdown?.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Home className="h-5 w-5" /> Property Types</CardTitle>
@@ -568,7 +605,7 @@ export default function MarketInsightsPage() {
             </Card>
           )}
 
-          {liveStats!.priceDistribution?.filter((p) => p.count > 0).length > 0 && (
+          {statsView === 'broker' && liveStats!.priceDistribution?.filter((p) => p.count > 0).length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Price Distribution</CardTitle>
