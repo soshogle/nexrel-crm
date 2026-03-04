@@ -335,6 +335,25 @@ export async function scrapeRemaxDetail(url: string): Promise<EnrichedData | nul
   if (sidingMatch) amenities.push(`Siding: ${sidingMatch[1].trim()}`);
   if (roofMatch) amenities.push(`Roofing: ${roofMatch[1].trim()}`);
 
+  // --- Price ---
+  const pricePatterns = [
+    /(?:"price"|"listPrice"|"askingPrice")\s*:\s*"?\$?\s*([\d,\s]+)"?/i,
+    /class="[^"]*price[^"]*"[^>]*>\s*\$?\s*([\d,\s]+)\s*\$?\s*</i,
+    /(?:asking|price|prix)\s*:?\s*\$\s*([\d,\s]+)/i,
+    /\$\s*([\d]{1,3}(?:[,\s]\d{3})+)\s*(?:\$|CAD|<)/,
+    /([\d]{1,3}(?:[\s,]\d{3})+)\s*\$/,
+  ];
+  for (const p of pricePatterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const num = parseInt(m[1].replace(/[\s,]/g, ""), 10);
+      if (num > 10_000 && num < 100_000_000) {
+        data.listPrice = num;
+        break;
+      }
+    }
+  }
+
   // --- Financial details ---
   const munTaxMatch = text.match(/Municipal\s*\(\d{4}\)\s*\$\s*([\d,]+)/i);
   if (munTaxMatch) data.municipalTax = `$${munTaxMatch[1]}`;

@@ -369,6 +369,26 @@ export async function scrapeCentrisDetail(url: string): Promise<EnrichedData | n
     data.longitude = coords.lng;
   }
 
+  // --- Price ---
+  const pricePatterns = [
+    /(?:"price"|"listPrice"|"askingPrice")\s*:\s*"?\$?\s*([\d,\s]+)"?/i,
+    /itemprop="price"\s+content="(\d+)"/i,
+    /class="[^"]*price[^"]*"[^>]*>\s*\$?\s*([\d,\s]+)\s*\$?\s*</i,
+    /(?:asking|price|prix)\s*:?\s*\$\s*([\d,\s]+)/i,
+    /\$\s*([\d]{1,3}(?:[,\s]\d{3})+)\s*(?:\$|CAD|<)/,
+    /([\d]{1,3}(?:[\s,]\d{3})+)\s*\$/,
+  ];
+  for (const p of pricePatterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const num = parseInt(m[1].replace(/[\s,]/g, ""), 10);
+      if (num > 10_000 && num < 100_000_000) {
+        data.listPrice = num;
+        break;
+      }
+    }
+  }
+
   // --- Gallery Images ---
   const imageIds = extractCentrisImageIds(html);
   if (imageIds.length > 0) {

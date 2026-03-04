@@ -95,4 +95,5 @@ export interface ListingRow {
   city: string | null;
   propertyType: string | null;
   listingType: string | null;
+  price: string | null;
 }

@@ -59,7 +59,7 @@ async function fetchSparseListings(
            original_url AS "originalUrl", features, room_details AS "roomDetails",
            year_built AS "yearBuilt", area, lot_area AS "lotArea",
            main_image_url AS "mainImageUrl", gallery_images AS "galleryImages",
-           latitude, longitude, addendum,
+           latitude, longitude, addendum, price,
            address, city, property_type AS "propertyType", listing_type AS "listingType"
     FROM properties
     WHERE status = 'active'
@@ -69,9 +69,14 @@ async function fetchSparseListings(
         OR lower(trim(description)) IN (${GENERIC_DESCRIPTIONS.map((_, i) => `$${i + 1}`).join(", ")})
         -- Or missing key fields
         OR (year_built IS NULL AND area IS NULL AND features IS NULL)
+        -- Or missing/zero price
+        OR price IS NULL OR price = '0'
+        -- Or missing gallery (single image or none)
+        OR gallery_images IS NULL OR jsonb_array_length(COALESCE(gallery_images, '[]'::jsonb)) <= 1
       )
     ORDER BY
-      -- Prioritize listings with originalUrl (Tier 1 will work)
+      -- Prioritize price-less listings, then those with originalUrl
+      CASE WHEN price IS NULL OR price = '0' THEN 0 ELSE 1 END,
       CASE WHEN original_url IS NOT NULL THEN 0 ELSE 1 END,
       created_at DESC
     LIMIT $${GENERIC_DESCRIPTIONS.length + 1}
@@ -109,6 +114,10 @@ async function updateListingWithEnrichedData(
   addField("addendum", data.addendum);
   addField("latitude", data.latitude);
   addField("longitude", data.longitude);
+
+  if (data.listPrice != null && data.listPrice > 0) {
+    addField("price", String(data.listPrice));
+  }
 
   if (data.bedrooms != null) addField("bedrooms", data.bedrooms);
   if (data.bathrooms != null) addField("bathrooms", data.bathrooms);
@@ -359,6 +368,7 @@ async function enrichSingleListing(
 
   // Return whatever we got (even partial data is better than nothing)
   const hasAnyData = enrichedData.description || enrichedData.yearBuilt || enrichedData.area ||
+    enrichedData.listPrice ||
     (enrichedData.galleryImages && enrichedData.galleryImages.length > 1);
 
   return {
@@ -491,7 +501,7 @@ export async function enrichSingleListingById(
              original_url AS "originalUrl", features, room_details AS "roomDetails",
              year_built AS "yearBuilt", area, lot_area AS "lotArea",
              main_image_url AS "mainImageUrl", gallery_images AS "galleryImages",
-             latitude, longitude, addendum,
+             latitude, longitude, addendum, price,
              address, city, property_type AS "propertyType", listing_type AS "listingType"
       FROM properties WHERE id = $1
     `;

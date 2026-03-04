@@ -146,7 +146,24 @@ async function importToDatabase(
     "latitude", "longitude", "postal_code",
   ];
   const updateCols = cols.filter((c) => c !== "mls_number");
-  const updateSet = updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(", ");
+  const updateSet = updateCols.map((c) => {
+    if (c === "main_image_url") {
+      return `main_image_url = COALESCE(EXCLUDED.main_image_url, properties.main_image_url)`;
+    }
+    if (c === "gallery_images") {
+      return `gallery_images = CASE WHEN jsonb_array_length(COALESCE(EXCLUDED.gallery_images, '[]'::jsonb)) >= jsonb_array_length(COALESCE(properties.gallery_images, '[]'::jsonb)) THEN EXCLUDED.gallery_images ELSE properties.gallery_images END`;
+    }
+    if (c === "description") {
+      return `description = CASE WHEN length(COALESCE(EXCLUDED.description, '')) >= length(COALESCE(properties.description, '')) THEN EXCLUDED.description ELSE properties.description END`;
+    }
+    if (c === "room_details") {
+      return `room_details = COALESCE(EXCLUDED.room_details, properties.room_details)`;
+    }
+    if (c === "price") {
+      return `price = CASE WHEN COALESCE(EXCLUDED.price, '0') != '0' THEN EXCLUDED.price ELSE COALESCE(NULLIF(properties.price, '0'), EXCLUDED.price) END`;
+    }
+    return `${c} = EXCLUDED.${c}`;
+  }).join(", ");
 
   const client = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: true } });
   try {
