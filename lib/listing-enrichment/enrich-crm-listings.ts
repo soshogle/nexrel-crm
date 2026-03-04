@@ -71,6 +71,9 @@ export async function enrichCrmListings(
         { yearBuilt: null },
         { sqft: null },
         { photos: { equals: null } },
+        { photos: { equals: [] } },
+        { listPrice: null },
+        { listPrice: 0 },
       ],
     },
     orderBy: { updatedAt: 'asc' },
@@ -184,7 +187,12 @@ export async function enrichCrmListings(
       updateData.baths = data.bathrooms;
       fieldsUpdated.push('baths');
     }
-    if (data.galleryImages?.length && !Array.isArray(prop.photos)) {
+    if (data.listPrice && data.listPrice > 0 && (!prop.listPrice || prop.listPrice === 0)) {
+      updateData.listPrice = data.listPrice;
+      fieldsUpdated.push('listPrice');
+    }
+    if (data.galleryImages?.length &&
+        (!Array.isArray(prop.photos) || prop.photos.length === 0)) {
       updateData.photos = data.galleryImages;
       fieldsUpdated.push('photos');
     }
@@ -258,7 +266,7 @@ export async function enrichCrmListings(
         sqft: updateData.sqft || prop.sqft,
         propertyType: prop.propertyType,
         listingStatus: prop.listingStatus,
-        listPrice: prop.listPrice,
+        listPrice: updateData.listPrice || prop.listPrice,
         listingType: 'sale',
         mlsNumber: prop.mlsNumber,
         photos,
