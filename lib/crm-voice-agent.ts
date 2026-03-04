@@ -291,6 +291,8 @@ SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it des
 CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when available. When user is viewing a contact (active_lead_id), use it for add_note, create_deal. When viewing a deal (active_deal_id), use it for add_note, update_deal_stage.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
+REAL ESTATE / CMA CALLS: When market_median_price, market_dom_avg, market_inventory, or market_sales_volume are provided in context (e.g. for a property/valuation call), use them to inform CMA discussions. E.g. "The median sale price in this area is $X" or "Properties typically sell in Y days."
+
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
 ${EASTERN_TIME_SYSTEM_INSTRUCTION}
 ${getConfidentialityGuard()}`;

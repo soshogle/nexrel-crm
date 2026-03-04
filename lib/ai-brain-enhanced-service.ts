@@ -7,6 +7,7 @@
 import { prisma } from './db';
 import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, taskService } from '@/lib/dal';
+import { getMarketContext } from '@/lib/real-estate/market-data';
 
 export interface BrainDataPoint {
   id: string;
@@ -76,10 +77,44 @@ export class AIBrainEnhancedService {
     this.cache.set(key, { data, expiresAt: Date.now() + ttl });
   }
 
+  /** Empty brain data for real estate when no CRM data exists (no mock data). */
+  private buildEmptyBrainData(): ComprehensiveBrainData {
+    return {
+      core: {
+        overallHealth: 0,
+        keyMetrics: {
+          totalRevenue: 0,
+          activeLeads: 0,
+          openDeals: 0,
+          conversionRate: 0,
+          customerSatisfaction: 0,
+        },
+        criticalAlerts: [],
+      },
+      leftHemisphere: {
+        name: 'Current Operations',
+        dataPoints: [],
+        overallHealth: 0,
+        criticalAlerts: 0,
+        opportunities: 0,
+      },
+      rightHemisphere: {
+        name: 'Future Predictions',
+        dataPoints: [],
+        overallHealth: 0,
+        criticalAlerts: 0,
+        opportunities: 0,
+      },
+      connections: [],
+    };
+  }
+
   /**
    * Get comprehensive brain data from all sources
+   * @param userId - User ID
+   * @param industry - Optional industry; when REAL_ESTATE, never returns mock data
    */
-  async getComprehensiveBrainData(userId: string): Promise<ComprehensiveBrainData> {
+  async getComprehensiveBrainData(userId: string, industry?: string | null): Promise<ComprehensiveBrainData> {
     const cacheKey = `${userId}:enhanced`;
     const cached = this.getCached<ComprehensiveBrainData>(cacheKey);
     if (cached) return cached;
@@ -453,8 +488,13 @@ export class AIBrainEnhancedService {
     const deals = getResult(results[1], 'deals');
     const tasks = getResult(results[2], 'tasks');
 
-    // Return mock comprehensive data when database is empty for demo purposes
+    // Return mock comprehensive data when database is empty for demo purposes.
+    // Never use mock data for real estate agents (Theodora, etc.).
     if (leads.length === 0 && deals.length === 0 && tasks.length === 0) {
+      const isRealEstate = industry === 'REAL_ESTATE' || industry === 'real_estate';
+      if (isRealEstate) {
+        return this.buildEmptyBrainData();
+      }
       const { MOCK_AI_BRAIN_COMPREHENSIVE } = await import('@/lib/mock-data');
       this.setCache(cacheKey, MOCK_AI_BRAIN_COMPREHENSIVE as ComprehensiveBrainData);
       return MOCK_AI_BRAIN_COMPREHENSIVE as ComprehensiveBrainData;
@@ -532,6 +572,26 @@ export class AIBrainEnhancedService {
           marketStats: reResults[4].status === 'fulfilled' ? reResults[4].value : 0,
         };
         industryData = { type: 'REAL_ESTATE', ...reData };
+        // Fetch market stats summaries (median price, sales volume) from REMarketStats
+        try {
+          const topCity = await db.rEProperty.findFirst({
+            where: { userId },
+            select: { city: true },
+            orderBy: { createdAt: 'desc' },
+          });
+          const region = topCity?.city || 'Montreal';
+          const marketCtx = await getMarketContext(userId, { region, city: region, months: 6 });
+          const curr = marketCtx.current;
+          if (curr) {
+            industryData.marketMedianPrice = curr.medianSalePrice ?? undefined;
+            industryData.marketSalesVolume = curr.numberOfSales ?? undefined;
+            industryData.marketDOM = curr.domAvg ?? curr.sellingTimeMedian ?? undefined;
+            industryData.marketInventory = curr.activeInventory ?? undefined;
+            industryData.marketRegion = curr.region;
+          }
+        } catch (e) {
+          console.warn('[AI Brain] RE market context fetch failed:', e);
+        }
       }
 
       if ((industry as string) === 'DENTAL' || (industry as string) === 'HEALTHCARE' || (industry as string) === 'MEDICAL') {
@@ -627,7 +687,7 @@ export class AIBrainEnhancedService {
     );
 
     // Build extended data bundle for hemisphere builders
-    const extData = {
+    const extData: Record<string, any> = {
       soshogleTransactions, soshogleWallets, creditScores, achSettlements,
       bnplApplications, cashTransactions, fraudAlerts,
       products, orders, storefronts, inventoryItems, inventoryAlerts,
@@ -635,6 +695,9 @@ export class AIBrainEnhancedService {
       teamMembers, voiceAgents, voiceUsage, channelConnections, calendarConnections,
       scheduledEmails, scheduledSms, referrals, pipelines, auditLogs, directMessageCount,
     };
+    if (Object.keys(industryData).length > 0) {
+      extData.industryData = industryData;
+    }
 
     // Build LEFT HEMISPHERE: Current Operations
     const leftHemisphere = this.buildCurrentOperationsHemisphere(
@@ -1018,6 +1081,40 @@ export class AIBrainEnhancedService {
       timestamp: now,
       metadata: { hot: hotLeads, warm: warmLeads, cold: coldLeads, total: scores.length },
     });
+
+    // --- REAL ESTATE MARKET STATS ---
+    const reIndustry = ext.industryData;
+    if (reIndustry?.type === 'REAL_ESTATE' && (reIndustry.marketMedianPrice != null || reIndustry.marketSalesVolume != null)) {
+      const region = reIndustry.marketRegion || 'Market';
+      if (reIndustry.marketMedianPrice != null) {
+        dataPoints.push({
+          id: 're-market-median',
+          category: 'Real Estate',
+          subcategory: 'Market',
+          label: `Median Price (${region})`,
+          value: reIndustry.marketMedianPrice,
+          unit: 'CAD',
+          trend: 'stable',
+          status: 'healthy',
+          timestamp: now,
+          metadata: { region },
+        });
+      }
+      if (reIndustry.marketSalesVolume != null) {
+        dataPoints.push({
+          id: 're-market-sales',
+          category: 'Real Estate',
+          subcategory: 'Market',
+          label: `Sales Volume (${region})`,
+          value: reIndustry.marketSalesVolume,
+          unit: 'sales',
+          trend: 'stable',
+          status: 'healthy',
+          timestamp: now,
+          metadata: { region, dom: reIndustry.marketDOM, inventory: reIndustry.marketInventory },
+        });
+      }
+    }
 
     // --- FINANCIAL INTELLIGENCE ---
     const txns = ext.soshogleTransactions || [];

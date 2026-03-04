@@ -1,5 +1,6 @@
 import { getCrmDb } from "@/lib/dal";
 import { createDalContext, resolveDalContext } from "@/lib/context/industry-context";
+import { getMarketContext } from "@/lib/real-estate/market-data";
 
 export async function getStatistics(userId: string, params: any = {}) {
   const ctx = await resolveDalContext(userId);
@@ -142,6 +143,32 @@ export async function getStatistics(userId: string, params: any = {}) {
       }
     }
 
+    // Market stats for REAL_ESTATE (median price, sales volume from REMarketStats)
+    let marketStats: { medianPrice?: number; salesVolume?: number; dom?: number; region?: string } | null = null;
+    const user = await db.user.findUnique({ where: { id: ctx.userId }, select: { industry: true } });
+    if (user?.industry === 'REAL_ESTATE') {
+      try {
+        const topCity = await (db as any).rEProperty.findFirst({
+          where: { userId: ctx.userId },
+          select: { city: true },
+          orderBy: { createdAt: 'desc' },
+        });
+        const region = topCity?.city || 'Montreal';
+        const marketCtx = await getMarketContext(userId, { region, city: region, months: 6 });
+        const curr = marketCtx.current;
+        if (curr) {
+          marketStats = {
+            medianPrice: curr.medianSalePrice ?? undefined,
+            salesVolume: curr.numberOfSales ?? undefined,
+            dom: curr.domAvg ?? curr.sellingTimeMedian ?? undefined,
+            region: curr.region,
+          };
+        }
+      } catch (e) {
+        console.warn('[getStatistics] RE market stats fetch failed:', e);
+      }
+    }
+
     // Dynamic charts based on user's chart intent
     let dynamicCharts: { chartType: 'pie' | 'bar' | 'line'; dimension: string; title: string; data: { name: string; value: number }[] }[] = [];
     if (chartIntent) {
@@ -175,6 +202,12 @@ export async function getStatistics(userId: string, params: any = {}) {
       }
     }
 
+    const baseMessage = `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`;
+    const marketMessage = marketStats?.medianPrice != null
+      ? ` In ${marketStats.region || 'your market'}, median sale price is $${marketStats.medianPrice.toLocaleString()}${marketStats.salesVolume != null ? ` with ${marketStats.salesVolume} recent sales` : ''}.`
+      : '';
+    const extraMessage = `${additionalStats.campaignPerformance ? ` Email open rate: ${additionalStats.campaignPerformance.emailOpenRate.toFixed(1)}%, SMS reply rate: ${additionalStats.campaignPerformance.smsReplyRate.toFixed(1)}%.` : ''}${additionalStats.voiceCallAnalytics ? ` Voice calls: ${additionalStats.voiceCallAnalytics.totalCalls}, answer rate: ${additionalStats.voiceCallAnalytics.answerRate.toFixed(1)}%.` : ''}`;
+
     // Return format matching CRM voice agent functions route
     return {
       success: true,
@@ -195,9 +228,10 @@ export async function getStatistics(userId: string, params: any = {}) {
         })),
         dynamicCharts,
         scenarioResult,
+        marketStats,
         ...additionalStats,
       },
-      message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.${additionalStats.campaignPerformance ? ` Email open rate: ${additionalStats.campaignPerformance.emailOpenRate.toFixed(1)}%, SMS reply rate: ${additionalStats.campaignPerformance.smsReplyRate.toFixed(1)}%.` : ''}${additionalStats.voiceCallAnalytics ? ` Voice calls: ${additionalStats.voiceCallAnalytics.totalCalls}, answer rate: ${additionalStats.voiceCallAnalytics.answerRate.toFixed(1)}%.` : ''}`,
+      message: baseMessage + marketMessage + extraMessage,
       triggerVisualization: true,
     };
   } catch (error: any) {
@@ -431,6 +465,13 @@ export async function createReport(userId: string, params: any) {
       total_campaigns: stats.totalCampaigns,
     },
   };
+
+  if (stats.marketStats && (stats.marketStats.medianPrice != null || stats.marketStats.salesVolume != null)) {
+    content.marketStats = stats.marketStats;
+    content.metrics.market_median_price = stats.marketStats.medianPrice;
+    content.metrics.market_sales_volume = stats.marketStats.salesVolume;
+    content.metrics.market_region = stats.marketStats.region;
+  }
 
   if (agentStats.length > 0) {
     content.agentStats = agentStats;
@@ -1111,13 +1152,37 @@ export async function getIndustryAnalytics(userId: string, params: any) {
   const industry = user?.industry || 'GENERAL';
 
   if (industry === 'REAL_ESTATE') {
-    const [props, fsbo, cma, presentations] = await Promise.all([
+    const [props, fsbo, cma, presentations, topCity] = await Promise.all([
       (db as any).rEProperty.count({ where: { userId: ctx.userId } }).catch(() => 0),
       (db as any).rEFSBOListing.count({ where: { userId: ctx.userId } }).catch(() => 0),
       (db as any).rECMAReport.count({ where: { userId: ctx.userId } }).catch(() => 0),
       (db as any).rEListingPresentation.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).rEProperty.findFirst({ where: { userId: ctx.userId }, select: { city: true }, orderBy: { createdAt: 'desc' } }).catch(() => null),
     ]);
-    return { success: true, statistics: { industry, properties: props, fsboLeads: fsbo, cmaReports: cma, presentations }, message: `Real Estate: ${props} properties, ${fsbo} FSBO leads, ${cma} CMA reports, ${presentations} listing presentations.` };
+    let marketStats: { medianPrice?: number; salesVolume?: number; dom?: number; region?: string } | null = null;
+    const regionName = topCity?.city || 'Montreal';
+    try {
+      const marketCtx = await getMarketContext(userId, { region: regionName, city: regionName, months: 6 });
+      const curr = marketCtx.current;
+      if (curr) {
+        marketStats = {
+          medianPrice: curr.medianSalePrice ?? undefined,
+          salesVolume: curr.numberOfSales ?? undefined,
+          dom: curr.domAvg ?? curr.sellingTimeMedian ?? undefined,
+          region: curr.region,
+        };
+      }
+    } catch (e) {
+      console.warn('[getIndustryAnalytics] RE market stats fetch failed:', e);
+    }
+    const marketMsg = marketStats?.medianPrice != null
+      ? ` Market: median $${marketStats.medianPrice.toLocaleString()} in ${marketStats.region || regionName}${marketStats.salesVolume != null ? `, ${marketStats.salesVolume} sales` : ''}.`
+      : '';
+    return {
+      success: true,
+      statistics: { industry, properties: props, fsboLeads: fsbo, cmaReports: cma, presentations, marketStats },
+      message: `Real Estate: ${props} properties, ${fsbo} FSBO leads, ${cma} CMA reports, ${presentations} listing presentations.${marketMsg}`,
+    };
   }
 
   if (industry === 'RESTAURANT' || (industry as string) === 'FOOD_SERVICE') {

@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
 
     console.log('[AI Brain API] Fetching comprehensive data for user:', session.user.id);
     
-    const brainData = await aiBrainEnhancedService.getComprehensiveBrainData(session.user.id);
+    const industry = session.user.industry ?? null;
+    const brainData = await aiBrainEnhancedService.getComprehensiveBrainData(session.user.id, industry);
 
     console.log('[AI Brain API] Data fetched successfully:', {
       coreHealth: brainData.core.overallHealth,

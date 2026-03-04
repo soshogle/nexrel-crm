@@ -7,12 +7,23 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
+import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
+    }
+
+    // Never allow mock/sample data seeding for real estate agents (Theodora, etc.)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { industry: true },
+    });
+    const industry = user?.industry ?? (session as any)?.user?.industry;
+    if (industry === 'REAL_ESTATE' || industry === 'real_estate') {
+      return apiErrors.forbidden('Sample data seeding is disabled for real estate accounts. Use real leads and listings only.');
     }
 
     const ctx = getDalContextFromSession(session);

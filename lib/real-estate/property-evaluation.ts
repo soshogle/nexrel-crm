@@ -8,6 +8,7 @@ import { createDalContext } from "@/lib/context/industry-context";
 import { websiteService } from "@/lib/dal";
 import { Pool } from "pg";
 import { getRegionalMedianPrice } from "./centris-regional-stats";
+import { getLiveRegionalMedian } from "./market-data";
 
 let poolCache = new Map<string, Pool>();
 
@@ -246,7 +247,22 @@ export async function runPropertyEvaluation(
   const propType = details.propertyType || "house";
 
   if (comparables.length === 0) {
-    const regionalMedian = getRegionalMedianPrice(city || "Montreal", propType);
+    // Prefer live REMarketStats (Centris + JLR); fallback to hardcoded REGIONAL_MEDIANS
+    const propertyCategory = mapPropertyTypeToCategory(propType);
+    let regionalMedian: number | null = null;
+    try {
+      regionalMedian = await getLiveRegionalMedian(userId, {
+        city: city || "Montreal",
+        region: city || "Montreal",
+        state: "QC",
+        propertyCategory,
+      });
+    } catch {
+      // Ignore — fall back to hardcoded
+    }
+    if (regionalMedian == null) {
+      regionalMedian = getRegionalMedianPrice(city || "Montreal", propType);
+    }
     return {
       estimatedValue: regionalMedian ?? 0,
       comparables: [],
@@ -284,4 +300,11 @@ function extractCityFromAddress(address: string): string {
   // Simple: last part after comma is often city (e.g. "123 Main St, Montreal, QC")
   const parts = address.split(",").map((p) => p.trim());
   return parts.length >= 2 ? parts[parts.length - 2] : "";
+}
+
+function mapPropertyTypeToCategory(propertyType: string): string {
+  const t = propertyType?.toLowerCase() || "";
+  if (t.includes("condo") || t.includes("apartment")) return "Condo";
+  if (t.includes("plex") || t.includes("duplex") || t.includes("triplex")) return "Plex";
+  return "Single-family";
 }

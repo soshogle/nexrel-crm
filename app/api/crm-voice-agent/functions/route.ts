@@ -16,6 +16,7 @@ import { authOptions } from '@/lib/auth';
 import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
 import { parseScenarioIntent, calculateScenario } from '@/lib/crm-scenario-predictor';
 import { makeOutboundCall, makeBulkOutboundCalls } from '@/lib/outbound-call-service';
+import { getMarketContext } from '@/lib/real-estate/market-data';
 import { sendSMS, sendEmail, sendSMSToLeads, sendEmailToLeads } from '@/lib/messaging-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -503,6 +504,32 @@ async function getStatistics(userId: string, params: any = {}, industry: Industr
       }
     }
 
+    // Market stats for REAL_ESTATE (median price, sales volume) for voice/analytics
+    let marketStats: { medianPrice?: number; salesVolume?: number; dom?: number; region?: string } | null = null;
+    if (industry === 'REAL_ESTATE') {
+      try {
+        const db = getCrmDb(ctx);
+        const topCity = await db.rEProperty.findFirst({
+          where: { userId },
+          select: { city: true },
+          orderBy: { createdAt: 'desc' },
+        });
+        const region = topCity?.city || 'Montreal';
+        const marketCtx = await getMarketContext(userId, { region, city: region, months: 6 });
+        const curr = marketCtx.current;
+        if (curr) {
+          marketStats = {
+            medianPrice: curr.medianSalePrice ?? undefined,
+            salesVolume: curr.numberOfSales ?? undefined,
+            dom: curr.domAvg ?? curr.sellingTimeMedian ?? undefined,
+            region: curr.region,
+          };
+        }
+      } catch (e) {
+        console.warn('[CRM Voice] Market stats fetch failed:', e);
+      }
+    }
+
     return {
       success: true,
       navigateTo: '/dashboard/business-ai?mode=voice',
@@ -527,10 +554,14 @@ async function getStatistics(userId: string, params: any = {}, industry: Industr
         dynamicCharts,
         // "What if" scenario projection
         scenarioResult,
+        // Market stats for REAL_ESTATE (median price, sales volume)
+        marketStats,
       },
       message: scenarioResult
         ? `Scenario: ${scenarioResult.scenario}. ${scenarioResult.assumption} → $${scenarioResult.impact.toLocaleString()} ${scenarioResult.unit === 'revenue' ? 'additional revenue' : 'potential'}.`
-        : `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
+        : marketStats?.medianPrice != null
+          ? `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns. In ${marketStats.region || 'your market'}, median sale price is $${marketStats.medianPrice.toLocaleString()}${marketStats.salesVolume != null ? ` with ${marketStats.salesVolume} recent sales` : ''}.`
+          : `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
     };
   } catch (error: any) {
     console.error('Error getting statistics:', error);

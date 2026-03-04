@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REReportType } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
+import { getMarketContext } from '@/lib/real-estate/market-data';
 
 interface MarketReportRequest {
   region: string;
@@ -47,10 +48,39 @@ export async function POST(request: NextRequest) {
     const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
     const body: MarketReportRequest = await request.json();
-    const { region, reportType, marketData, customPrompt } = body;
+    let { region, reportType, marketData, customPrompt } = body;
 
     if (!region || !reportType) {
       return apiErrors.badRequest('Region and report type are required');
+    }
+
+    // Auto-fetch market data from getMarketContext when not provided
+    if (!marketData || Object.keys(marketData).length === 0) {
+      try {
+        const ctx = await getMarketContext(session.user.id, { region, city: region, months: 6 });
+        const current = ctx.current;
+        if (current) {
+          marketData = {
+            medianPrice: current.medianSalePrice ?? undefined,
+            averagePrice: current.avgSalePrice ?? undefined,
+            totalSales: current.numberOfSales ?? undefined,
+            newListings: current.newListings ?? undefined,
+            daysOnMarket: current.domAvg ?? current.sellingTimeMedian ?? undefined,
+            inventoryMonths: current.activeInventory && current.numberOfSales
+              ? Math.round((current.activeInventory / current.numberOfSales) * 10) / 10
+              : undefined,
+          };
+          if (ctx.trend.length >= 2) {
+            const first = ctx.trend[0]?.medianSalePrice;
+            const last = ctx.trend[ctx.trend.length - 1]?.medianSalePrice;
+            if (first && last && first > 0) {
+              marketData.priceChangePercent = Math.round(((last - first) / first) * 100);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Market Report] Auto-fetch market context failed:', e);
+      }
     }
 
     const currentDate = new Date();

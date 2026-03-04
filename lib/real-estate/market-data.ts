@@ -32,11 +32,12 @@ export interface MarketContext {
 
 /**
  * Get recent market data for a region/category, optimised for CMA & presentations.
+ * Uses shared Quebec stats (Centris PDFs) — not user-specific data.
  * Searches broadly: city matches both the `city` and `region` fields so Centris
  * data (stored by municipality in `city` and admin-region in `region`) is found.
  */
 export async function getMarketContext(
-  userId: string,
+  _userId: string,
   opts: {
     region?: string;
     city?: string;
@@ -56,8 +57,9 @@ export async function getMarketContext(
     locationConditions.push({ region: { contains: city, mode: 'insensitive' } });
   }
 
+  // Use shared Quebec stats (Centris) — not user-specific
   const where: any = {
-    userId,
+    isShared: true,
     periodStart: { gte: cutoff },
     ...(locationConditions.length > 0 && { OR: locationConditions }),
     ...(state && { state: { equals: state, mode: 'insensitive' } }),
@@ -75,7 +77,7 @@ export async function getMarketContext(
   // If no results with location filter, try broader search (state-level, then all)
   if (rows.length === 0 && (city || region)) {
     const fallbackWhere: any = {
-      userId,
+      isShared: true,
       periodStart: { gte: cutoff },
       ...(propertyCategory && {
         propertyCategory: { contains: propertyCategory, mode: 'insensitive' },
@@ -169,6 +171,26 @@ function buildMarketSummary(
 
   if (parts.length === 0) return `Limited market data available for ${region}.`;
   return parts.join(', ') + '.';
+}
+
+/**
+ * Get live median sale price from REMarketStats (Centris + JLR) for a region/city.
+ * Returns null if no data found — caller should fall back to hardcoded REGIONAL_MEDIANS.
+ */
+export async function getLiveRegionalMedian(
+  userId: string,
+  opts: { city?: string; region?: string; state?: string; propertyCategory?: string }
+): Promise<number | null> {
+  const ctx = await getMarketContext(userId, {
+    city: opts.city || opts.region,
+    region: opts.region || opts.city,
+    state: opts.state,
+    propertyCategory: opts.propertyCategory,
+    months: 3,
+  });
+  const current = ctx.current;
+  if (!current?.medianSalePrice) return null;
+  return current.medianSalePrice;
 }
 
 /**

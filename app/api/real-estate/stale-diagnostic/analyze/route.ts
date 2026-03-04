@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
+import { getMarketContext } from '@/lib/real-estate/market-data';
 
 interface PropertyData {
   address: string;
@@ -132,6 +133,30 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
       ? `Local sold comparables median DOM is ${domBaseline} days.`
       : 'Local sold comparable DOM baseline is unavailable.';
 
+    // Fetch market context (median price, DOM, inventory) for better AI analysis
+    let marketContextLine = '';
+    try {
+      const marketCtx = await getMarketContext(session.user.id, {
+        city: city || undefined,
+        region: city || undefined,
+        state: state || undefined,
+        months: 6,
+      });
+      const curr = marketCtx.current;
+      if (curr) {
+        const parts: string[] = [];
+        if (curr.medianSalePrice) parts.push(`Median sale price: $${curr.medianSalePrice.toLocaleString()}`);
+        if (curr.domAvg) parts.push(`Market avg DOM: ${curr.domAvg} days`);
+        if (curr.activeInventory) parts.push(`Active inventory: ${curr.activeInventory}`);
+        if (curr.numberOfSales) parts.push(`Recent sales: ${curr.numberOfSales}`);
+        if (parts.length > 0) {
+          marketContextLine = `\n\nMarket context for this area: ${parts.join('; ')}.`;
+        }
+      }
+    } catch (e) {
+      console.warn('[Stale Diagnostic] Market context fetch failed:', e);
+    }
+
     const userPrompt = `Analyze this stale listing:
 
 Property: ${address}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}
@@ -145,7 +170,7 @@ ${propertyType ? `Property Type: ${propertyType}` : ''}
 ${description ? `Description: ${description}` : ''}
 ${priceHistory && priceHistory.length > 0 ? `Price History: ${JSON.stringify(priceHistory)}` : ''}
 
-${baselineLine} This listing is currently at ${daysOnMarket} days on market.
+${baselineLine} This listing is currently at ${daysOnMarket} days on market.${marketContextLine}
 
 Provide a detailed stale listing diagnostic.`;
 

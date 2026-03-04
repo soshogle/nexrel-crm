@@ -11,6 +11,7 @@ import { authOptions } from "@/lib/auth";
 import { CrmVoiceAgentService } from "@/lib/crm-voice-agent";
 import { ElevenLabsService } from "@/lib/elevenlabs";
 import { apiErrors } from '@/lib/api-error';
+import { getMarketContext } from "@/lib/real-estate/market-data";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +40,28 @@ export async function POST(req: NextRequest) {
     if (context?.daysOnMarket) dynamicVariables.days_on_market = String(context.daysOnMarket);
     if (context?.script && Array.isArray(context.script)) {
       dynamicVariables.call_script = context.script.slice(0, 5).join(" | ");
+    }
+
+    // Add market stats for CMA/valuation calls when region or city is provided
+    const regionOrCity = context?.region || context?.city;
+    if (regionOrCity) {
+      try {
+        const marketCtx = await getMarketContext(session.user.id, {
+          region: String(regionOrCity),
+          city: String(regionOrCity),
+          state: context?.state ? String(context.state) : undefined,
+          months: 6,
+        });
+        const curr = marketCtx.current;
+        if (curr) {
+          if (curr.medianSalePrice) dynamicVariables.market_median_price = String(curr.medianSalePrice);
+          if (curr.domAvg) dynamicVariables.market_dom_avg = String(curr.domAvg);
+          if (curr.activeInventory) dynamicVariables.market_inventory = String(curr.activeInventory);
+          if (curr.numberOfSales) dynamicVariables.market_sales_volume = String(curr.numberOfSales);
+        }
+      } catch (e) {
+        console.warn("[RE Voice] Market context fetch failed:", e);
+      }
     }
 
     const signedUrl = await elevenLabsService.getSignedWebSocketUrl(
