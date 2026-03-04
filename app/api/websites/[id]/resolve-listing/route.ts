@@ -134,6 +134,7 @@ export async function POST(
         neighborhood: null,
         featuresJson: enriched?.features || buildFeaturesJson(prop.features),
         roomDetails: enriched?.roomDetails || null,
+        isBrokerListing: prop.isBrokerListing ?? false,
       };
 
       const result = await syncListingToWebsite(userId, syncInput);
@@ -177,6 +178,7 @@ export async function POST(
         addendum: enriched?.addendum || null,
         featuresJson: enriched?.features || null,
         roomDetails: enriched?.roomDetails || null,
+        isBrokerListing: false, // RERentalListing has no isBrokerListing; only manual CRM create = broker's
       };
 
       const result = await syncListingToWebsite(userId, syncInput);
@@ -302,6 +304,7 @@ export async function POST(
       addendum: enriched.addendum || null,
       featuresJson: enriched.features || null,
       roomDetails: enriched.roomDetails || null,
+      isBrokerListing: false, // From Centris/Google search — not broker's listing
     };
 
     const syncResult = await syncListingToWebsite(userId, syncInput);

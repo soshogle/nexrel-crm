@@ -3,8 +3,9 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, MapPin, Phone, Mail, Building2, Key, Bell, Zap, Globe } from 'lucide-react';
+import { ArrowLeft, Save, MapPin, Phone, Mail, Building2, Key, Bell, Zap, Globe, RefreshCw, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +18,12 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
 export default function RealEstateSettingsPage() {
+  const { data: session } = useSession();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const isSuperAdmin = (session?.user as { role?: string })?.role === 'SUPER_ADMIN';
 
   // Profile settings
   const [profile, setProfile] = useState({
@@ -164,6 +168,12 @@ export default function RealEstateSettingsPage() {
               <Zap className="w-4 h-4 mr-2" />
               Voice AI
             </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="admin" className="data-[state=active]:bg-amber-600">
+                <Shield className="w-4 h-4 mr-2" />
+                Admin
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Profile Tab */}
@@ -369,6 +379,58 @@ export default function RealEstateSettingsPage() {
               </Card>
             </motion.div>
           </TabsContent>
+
+          {/* Admin Tab — SUPER_ADMIN only */}
+          {isSuperAdmin && (
+            <TabsContent value="admin">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="bg-slate-900/50 border-slate-800 border-amber-500/30">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-amber-500" />
+                      Sync MLS / Centris
+                    </CardTitle>
+                    <CardDescription>
+                      Manually trigger the full Centris + Realtor.ca sync. Listings are normally synced daily by cron.
+                      Use this only when you need to run sync outside the schedule.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={async () => {
+                        setSyncLoading(true);
+                        try {
+                          const res = await fetch('/api/admin/sync-centris', { method: 'POST' });
+                          const data = await res.json().catch(() => ({}));
+                          if (!res.ok) throw new Error(data.error || 'Sync failed');
+                          toast({
+                            title: 'Sync completed',
+                            description: data.message || `Imported to ${data.centris?.imported ?? 0} broker DBs`,
+                          });
+                        } catch (e: any) {
+                          toast({
+                            title: 'Sync failed',
+                            description: e?.message || 'Failed to run sync',
+                            variant: 'destructive',
+                          });
+                        } finally {
+                          setSyncLoading(false);
+                        }
+                      }}
+                      disabled={syncLoading}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
+                      {syncLoading ? 'Syncing...' : 'Run Sync Now'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+          )}
 
           {/* Voice AI Tab */}
           <TabsContent value="voice-ai">

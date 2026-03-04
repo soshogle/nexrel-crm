@@ -274,6 +274,7 @@ export async function enrichCrmListings(
         addendum: data.addendum || null,
         featuresJson: data.features || null,
         roomDetails: data.roomDetails || null,
+        isBrokerListing: prop.isBrokerListing ?? false,
       });
 
       syncedToWebsite = syncResult.success;
@@ -371,6 +372,7 @@ export async function resyncEnrichedToWebsite(
         addendum: null,
         featuresJson: null,
         roomDetails: null,
+        isBrokerListing: prop.isBrokerListing ?? false,
       });
 
       if (result.success) {

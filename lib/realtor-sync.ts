@@ -3,6 +3,9 @@
  * Used for brokers who list on Realtor.ca (e.g. Theodora).
  * Set realtorBrokerUrl in agency config to the agent page URL.
  *
+ * Listings on the agent's page are the agent's own; we mark them is_featured.
+ * Future: verify listing agent name matches broker full name when scraped.
+ *
  * Uses memo23/realtor-canada-search-cheerio ($25/mo) — accepts agent profile URLs
  * as startUrls and extracts property listings. Fallback: scrapemind/realtor-ca-scraper.
  * Uses fetch (not apify-client) to avoid proxy-agent dependency in Vercel serverless.

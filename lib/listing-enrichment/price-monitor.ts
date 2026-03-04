@@ -187,6 +187,7 @@ export async function runPriceMonitor(
         address: true,
         city: true,
         listPrice: true,
+        isBrokerListing: true,
       },
       take: limit,
       orderBy: { updatedAt: 'asc' },
@@ -279,6 +280,7 @@ export async function runPriceMonitor(
               mlsNumber: listing.mlsNumber,
               listingType: 'sale',
               listingStatus: newStatus,
+              isBrokerListing: listing.isBrokerListing ?? false,
             });
           } catch {}
 
@@ -337,6 +339,7 @@ export async function runPriceMonitor(
               mlsNumber: listing.mlsNumber,
               listingType: 'sale',
               listingStatus: 'ACTIVE',
+              isBrokerListing: listing.isBrokerListing ?? false,
             });
           } catch {}
 

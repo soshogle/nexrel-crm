@@ -281,7 +281,9 @@ export async function runCentralCentrisSync(
     });
   }
 
-  // Broker-specific sync: fetch from broker URLs and mark as featured; optionally fetch sold listings
+  // Broker-specific sync: fetch from broker profile URL — listings on that page are the broker's.
+  // We trust centrisBrokerUrl (broker profile page) as source of truth; listings there = broker's own.
+  // Future: verify listing agent name matches broker full name via detail-page scrape.
   if (brokerOverrides && brokerOverrides.length > 0) {
     for (const { databaseUrl, centrisBrokerUrl, centrisBrokerSoldUrl } of brokerOverrides) {
       if (centrisBrokerUrl?.trim()) {

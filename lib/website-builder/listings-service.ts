@@ -293,6 +293,8 @@ export interface SyncListingInput {
     flooring?: string;
     details?: string;
   }> | null;
+  /** Only true for: (1) manually created in CRM, (2) listings from centrisBrokerUrl/realtorBrokerUrl where agent name matches. Otherwise false. */
+  isBrokerListing?: boolean;
 }
 
 export async function syncListingToWebsite(
@@ -411,7 +413,7 @@ export async function syncListingToWebsite(
       listing.roomDetails ? JSON.stringify(listing.roomDetails) : null, // $23 room_details
       listing.lat || null,                                     // $24
       listing.lng || null,                                     // $25
-      true,                                                    // $26 is_featured
+      listing.isBrokerListing === true,                        // $26 is_featured — only broker's own listings
       listing.mlsNumber || null,                               // $27
       listing.description || null,                             // $28
       listing.addendum || null,                                // $29

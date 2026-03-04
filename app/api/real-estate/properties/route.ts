@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
       listPrice: listPrice ? parseFloat(listPrice) : null,
       mlsNumber, photos, description, features,
       lat: body.lat, lng: body.lng, virtualTourUrl,
+      isBrokerListing: true, // Manual create in CRM = broker's listing
     }).then((r) => {
       if (r.success) console.log(`[Properties POST] Synced to website ${r.websiteId}`);
       else if (r.error) console.warn('[Properties POST] Website sync skipped:', r.error);
@@ -243,6 +244,7 @@ export async function PUT(request: NextRequest) {
       description: property.description,
       features: property.features,
       virtualTourUrl: property.virtualTourUrl,
+      isBrokerListing: property.isBrokerListing ?? false,
     }).then((r) => {
       if (r.success) console.log(`[Properties PUT] Re-synced to website ${r.websiteId}`);
     }).catch((e) => console.warn('[Properties PUT] Website sync error:', e.message));
