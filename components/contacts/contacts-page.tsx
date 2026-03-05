@@ -1,20 +1,25 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
   UserPlus,
@@ -30,13 +35,13 @@ import {
   Copy,
   Check,
   AlertTriangle,
-} from 'lucide-react';
-import ContactsList from './contacts-list';
-import ImportContactsDialog from './import-contacts-dialog';
-import CreateContactDialog from './create-contact-dialog';
-import DuplicatesDialog from './duplicates-dialog';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+} from "lucide-react";
+import ContactsList from "./contacts-list";
+import ImportContactsDialog from "./import-contacts-dialog";
+import CreateContactDialog from "./create-contact-dialog";
+import DuplicatesDialog from "./duplicates-dialog";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface ContactStats {
   total: number;
@@ -49,7 +54,7 @@ interface ContactStats {
 
 export default function ContactsPage() {
   const { data: session, status } = useSession() || {};
-  const tToasts = useTranslations('toasts.general');
+  const tToasts = useTranslations("toasts.general");
   const [stats, setStats] = useState<ContactStats>({
     total: 0,
     newThisMonth: 0,
@@ -58,10 +63,10 @@ export default function ContactsPage() {
     partners: 0,
     engagementRate: 0,
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDuplicatesDialogOpen, setIsDuplicatesDialogOpen] = useState(false);
@@ -74,27 +79,27 @@ export default function ContactsPage() {
   }, []);
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === "authenticated") {
       fetchStats();
     }
   }, [status, refreshKey]);
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/contacts/stats');
+      const response = await fetch("/api/contacts/stats");
       if (response.ok) {
         const data = await response.json();
         setStats(data);
       }
     } catch (error) {
-      console.error('Error fetching contact stats:', error);
+      console.error("Error fetching contact stats:", error);
     }
   };
 
   const handleImportSuccess = () => {
     setRefreshKey((prev) => prev + 1);
     fetchStats();
-    toast.success('Contacts imported successfully!');
+    toast.success("Contacts imported successfully!");
   };
 
   const handleContactCreated = () => {
@@ -104,41 +109,42 @@ export default function ContactsPage() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/contacts/export');
+      const response = await fetch("/api/contacts/export");
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `contacts-${new Date().toISOString().split("T")[0]}.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        toast.success(tToasts('contactsExported'));
+        toast.success(tToasts("contactsExported"));
       } else {
-        toast.error(tToasts('exportFailed'));
+        toast.error(tToasts("exportFailed"));
       }
     } catch (error) {
-      console.error('Error exporting contacts:', error);
-      toast.error(tToasts('exportFailed'));
+      console.error("Error exporting contacts:", error);
+      toast.error(tToasts("exportFailed"));
     }
   };
 
   const handleCopyBookingLink = () => {
     if (!session?.user?.id) return;
-    
-    const bookingUrl = mounted && typeof window !== 'undefined' 
-      ? `${window.location.origin}/booking/${session.user.id}`
-      : `/booking/${session.user.id}`;
-    
+
+    const bookingUrl =
+      mounted && typeof window !== "undefined"
+        ? `${window.location.origin}/booking/${session.user.id}`
+        : `/booking/${session.user.id}`;
+
     navigator.clipboard.writeText(bookingUrl);
     setBookingLinkCopied(true);
-    toast.success('Booking link copied to clipboard!');
+    toast.success("Booking link copied to clipboard!");
     setTimeout(() => setBookingLinkCopied(false), 2000);
   };
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -180,7 +186,10 @@ export default function ContactsPage() {
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gradient-primary text-white">
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="gradient-primary text-white"
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             New Contact
           </Button>
@@ -191,7 +200,9 @@ export default function ContactsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Contacts
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -201,7 +212,9 @@ export default function ContactsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              New This Month
+            </CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -276,9 +289,9 @@ export default function ContactsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="customer">Customers</SelectItem>
-                <SelectItem value="prospect">Prospects</SelectItem>
-                <SelectItem value="partner">Partners</SelectItem>
+                <SelectItem value="CUSTOMER">Customers</SelectItem>
+                <SelectItem value="PROSPECT">Prospects</SelectItem>
+                <SelectItem value="PARTNER">Partners</SelectItem>
               </SelectContent>
             </Select>
 

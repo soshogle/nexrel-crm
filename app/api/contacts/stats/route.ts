@@ -1,33 +1,24 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { leadService } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { leadService } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
 
-    // Debug logging
-    console.log('=== CONTACTS STATS API DEBUG ===');
-    console.log('Session:', session ? 'exists' : 'null');
-    console.log('Session.user.id:', session?.user?.id);
-    console.log('Session.user.email:', session?.user?.email);
-
     if (!ctx) {
-      console.log('ERROR: No user ID in session for stats - returning 401');
       return apiErrors.unauthorized();
     }
 
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    console.log('Fetching stats for userId:', ctx.userId);
 
     const [
       total,
@@ -43,9 +34,15 @@ export async function GET(request: Request) {
           gte: firstDayOfMonth,
         },
       }),
-      leadService.count(ctx, { contactType: 'customer' }),
-      leadService.count(ctx, { contactType: 'prospect' }),
-      leadService.count(ctx, { contactType: 'partner' }),
+      leadService.count(ctx, {
+        OR: [{ contactType: "CUSTOMER" }, { contactType: "customer" }],
+      }),
+      leadService.count(ctx, {
+        OR: [{ contactType: "PROSPECT" }, { contactType: "prospect" }],
+      }),
+      leadService.count(ctx, {
+        OR: [{ contactType: "PARTNER" }, { contactType: "partner" }],
+      }),
       leadService.count(ctx, {
         lastContactedAt: {
           not: null,
@@ -53,17 +50,19 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    const engagementRate = total > 0 ? Math.round((totalWithActivity / total) * 100) : 0;
+    const engagementRate =
+      total > 0 ? Math.round((totalWithActivity / total) * 100) : 0;
 
-    console.log('Stats results - Total:', total, 'New this month:', newThisMonth);
-
-    const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    const isOrthoDemo =
+      String(session?.user?.email || "")
+        .toLowerCase()
+        .trim() === "orthodontist@nexrel.com";
     // Preserve demo behavior only for orthodontist demo account
     if (isOrthoDemo && total === 0 && newThisMonth === 0) {
-      const { MOCK_CONTACT_STATS } = await import('@/lib/mock-data');
+      const { MOCK_CONTACT_STATS } = await import("@/lib/mock-data");
       return NextResponse.json(MOCK_CONTACT_STATS);
     }
-    
+
     return NextResponse.json({
       total,
       newThisMonth,
@@ -73,7 +72,7 @@ export async function GET(request: Request) {
       engagementRate,
     });
   } catch (error) {
-    console.error('Error fetching contact stats:', error);
-    return apiErrors.internal('Failed to fetch stats');
+    console.error("Error fetching contact stats:", error);
+    return apiErrors.internal("Failed to fetch stats");
   }
 }

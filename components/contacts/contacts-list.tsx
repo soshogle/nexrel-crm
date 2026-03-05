@@ -1,10 +1,9 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,8 +19,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Phone,
   Mail,
@@ -32,12 +31,12 @@ import {
   Eye,
   Edit,
   Tag,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import ContactDetailDialog from './contact-detail-dialog';
-import TagsManagerDialog from './tags-manager-dialog';
-import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog';
+} from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import ContactDetailDialog from "./contact-detail-dialog";
+import TagsManagerDialog from "./tags-manager-dialog";
+import { MakeCallDialog } from "@/components/voice-agents/make-call-dialog";
 
 interface Contact {
   id: string;
@@ -92,27 +91,43 @@ export default function ContactsList({
       fetchContacts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, searchQuery, selectedType, selectedStatus, selectedTags.join(','), refreshKey]);
+  }, [
+    session?.user?.id,
+    searchQuery,
+    selectedType,
+    selectedStatus,
+    selectedTags.join(","),
+    refreshKey,
+  ]);
 
   const fetchContacts = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (selectedType !== 'all') params.append('type', selectedType);
-      if (selectedStatus !== 'all') params.append('status', selectedStatus);
-      if (selectedTags.length > 0) params.append('tags', selectedTags.join(','));
+      if (searchQuery) params.append("search", searchQuery);
+      if (selectedType !== "all") params.append("type", selectedType);
+      if (selectedStatus !== "all") params.append("status", selectedStatus);
+      if (selectedTags.length > 0)
+        params.append("tags", selectedTags.join(","));
 
       const response = await fetch(`/api/contacts?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setContacts(Array.isArray(data) ? data : Array.isArray(data?.contacts) ? data.contacts : Array.isArray(data?.data) ? data.data : []);
+        setContacts(
+          Array.isArray(data)
+            ? data
+            : Array.isArray(data?.contacts)
+              ? data.contacts
+              : Array.isArray(data?.data)
+                ? data.data
+                : [],
+        );
       } else {
-        toast.error('Failed to fetch contacts');
+        toast.error("Failed to fetch contacts");
       }
     } catch (error) {
-      console.error('Error fetching contacts:', error);
-      toast.error('Failed to fetch contacts');
+      console.error("Error fetching contacts:", error);
+      toast.error("Failed to fetch contacts");
     } finally {
       setLoading(false);
     }
@@ -138,28 +153,28 @@ export default function ContactsList({
     if (!confirm(`Delete ${selectedContacts.length} contacts?`)) return;
 
     try {
-      const response = await fetch('/api/contacts/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/contacts/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contactIds: selectedContacts }),
       });
 
       if (response.ok) {
-        toast.success('Contacts deleted successfully');
+        toast.success("Contacts deleted successfully");
         setSelectedContacts([]);
         onRefresh();
       } else {
-        toast.error('Failed to delete contacts');
+        toast.error("Failed to delete contacts");
       }
     } catch (error) {
-      console.error('Error deleting contacts:', error);
-      toast.error('Failed to delete contacts');
+      console.error("Error deleting contacts:", error);
+      toast.error("Failed to delete contacts");
     }
   };
 
   const handleBulkTag = () => {
     if (selectedContacts.length === 0) {
-      toast.error('Please select contacts first');
+      toast.error("Please select contacts first");
       return;
     }
     // Open tags dialog for bulk tagging
@@ -168,22 +183,22 @@ export default function ContactsList({
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    if (!confirm('Delete this contact?')) return;
+    if (!confirm("Delete this contact?")) return;
 
     try {
       const response = await fetch(`/api/contacts/${contactId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
-        toast.success('Contact deleted');
+        toast.success("Contact deleted");
         onRefresh();
       } else {
-        toast.error('Failed to delete contact');
+        toast.error("Failed to delete contact");
       }
     } catch (error) {
-      console.error('Error deleting contact:', error);
-      toast.error('Failed to delete contact');
+      console.error("Error deleting contact:", error);
+      toast.error("Failed to delete contact");
     }
   };
 
@@ -212,22 +227,23 @@ export default function ContactsList({
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      NEW: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      CONTACTED: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-      QUALIFIED: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-      CONVERTED: 'bg-green-500/10 text-green-500 border-green-500/20',
-      LOST: 'bg-red-500/10 text-red-500 border-red-500/20',
+      NEW: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      CONTACTED: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      QUALIFIED: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      CONVERTED: "bg-green-500/10 text-green-500 border-green-500/20",
+      LOST: "bg-red-500/10 text-red-500 border-red-500/20",
     };
-    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+    return colors[status] || "bg-gray-500/10 text-gray-500 border-gray-500/20";
   };
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      customer: 'bg-green-500/10 text-green-500',
-      prospect: 'bg-blue-500/10 text-blue-500',
-      partner: 'bg-purple-500/10 text-purple-500',
+      CUSTOMER: "bg-green-500/10 text-green-500",
+      PROSPECT: "bg-blue-500/10 text-blue-500",
+      PARTNER: "bg-purple-500/10 text-purple-500",
     };
-    return colors[type] || 'bg-gray-500/10 text-gray-500';
+    const normalizedType = String(type || "").toUpperCase();
+    return colors[normalizedType] || "bg-gray-500/10 text-gray-500";
   };
 
   if (loading) {
@@ -250,8 +266,8 @@ export default function ContactsList({
         <h3 className="text-lg font-semibold mb-2">No contacts found</h3>
         <p className="text-muted-foreground mb-4">
           {searchQuery
-            ? 'Try adjusting your search filters'
-            : 'Get started by importing contacts or adding them manually'}
+            ? "Try adjusting your search filters"
+            : "Get started by importing contacts or adding them manually"}
         </p>
       </div>
     );
@@ -365,7 +381,10 @@ export default function ContactsList({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={getStatusColor(contact.status)}>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(contact.status)}
+                    >
                       {contact.status}
                     </Badge>
                   </TableCell>
@@ -373,12 +392,18 @@ export default function ContactsList({
                     <div className="flex flex-wrap gap-1">
                       {contact.tags && contact.tags.length > 0 ? (
                         contact.tags.slice(0, 2).map((tag, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-xs text-muted-foreground">No tags</span>
+                        <span className="text-xs text-muted-foreground">
+                          No tags
+                        </span>
                       )}
                       {contact.tags && contact.tags.length > 2 && (
                         <Badge variant="secondary" className="text-xs">
@@ -403,10 +428,15 @@ export default function ContactsList({
                         {new Date(contact.lastContactedAt).toLocaleDateString()}
                       </span>
                     ) : (
-                      <span className="text-sm text-muted-foreground">Never</span>
+                      <span className="text-sm text-muted-foreground">
+                        Never
+                      </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -416,20 +446,28 @@ export default function ContactsList({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleViewContact(contact)}>
+                        <DropdownMenuItem
+                          onClick={() => handleViewContact(contact)}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/dashboard/leads`)}>
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/dashboard/leads`)}
+                        >
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleManageTags(contact)}>
+                        <DropdownMenuItem
+                          onClick={() => handleManageTags(contact)}
+                        >
                           <Tag className="h-4 w-4 mr-2" />
                           Manage Tags
                         </DropdownMenuItem>
                         {contact.phone && (
-                          <DropdownMenuItem onClick={() => handleMakeCall(contact)}>
+                          <DropdownMenuItem
+                            onClick={() => handleMakeCall(contact)}
+                          >
                             <Phone className="h-4 w-4 mr-2" />
                             Make Voice AI Call
                           </DropdownMenuItem>
@@ -472,7 +510,9 @@ export default function ContactsList({
         open={isTagsDialogOpen}
         onOpenChange={setIsTagsDialogOpen}
         contact={contactForTags}
-        selectedContactIds={contactForTags ? [contactForTags.id] : selectedContacts}
+        selectedContactIds={
+          contactForTags ? [contactForTags.id] : selectedContacts
+        }
         onSuccess={() => {
           onRefresh();
           setSelectedContacts([]);
@@ -483,8 +523,10 @@ export default function ContactsList({
       <MakeCallDialog
         open={callDialogOpen}
         onOpenChange={setCallDialogOpen}
-        defaultName={contactForCall?.contactPerson || contactForCall?.businessName || ''}
-        defaultPhone={contactForCall?.phone || ''}
+        defaultName={
+          contactForCall?.contactPerson || contactForCall?.businessName || ""
+        }
+        defaultPhone={contactForCall?.phone || ""}
         defaultPurpose="Contact follow-up"
         contactId={contactForCall?.id}
       />

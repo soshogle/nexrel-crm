@@ -133,7 +133,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (type && type !== "all") {
-      where.contactType = type;
+      const normalizedType = type.toUpperCase();
+      const allowedTypes = new Set(["CUSTOMER", "PROSPECT", "PARTNER"]);
+      if (allowedTypes.has(normalizedType)) {
+        where.contactType = normalizedType;
+      }
     }
 
     if (status && status !== "all") {
