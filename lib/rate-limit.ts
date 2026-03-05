@@ -15,7 +15,7 @@ export interface RateLimitConfig {
 export const RATE_LIMITS = {
   api: { maxRequests: 100, windowMs: 60_000 } as RateLimitConfig,
   apiHeavy: { maxRequests: 300, windowMs: 60_000 } as RateLimitConfig, // dental, clinical, treatment plans
-  auth: { maxRequests: 120, windowMs: 60_000 } as RateLimitConfig, // NextAuth polls session often
+  auth: { maxRequests: 20, windowMs: 60_000 } as RateLimitConfig,  // reduced: 20/min to limit credential stuffing
   webhook: { maxRequests: 200, windowMs: 60_000 } as RateLimitConfig,
   public: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
 } as const
@@ -86,10 +86,10 @@ export async function checkRateLimit(
 ): Promise<{ allowed: boolean; remaining: number; resetMs: number }> {
   const limiter =
     config === RATE_LIMITS.auth ? limiters.auth
-    : config === RATE_LIMITS.webhook ? limiters.webhook
-    : config === RATE_LIMITS.public ? limiters.public
-    : config === RATE_LIMITS.apiHeavy ? limiters.apiHeavy
-    : limiters.api
+      : config === RATE_LIMITS.webhook ? limiters.webhook
+        : config === RATE_LIMITS.public ? limiters.public
+          : config === RATE_LIMITS.apiHeavy ? limiters.apiHeavy
+            : limiters.api
 
   if (limiter) {
     const result = await limiter.limit(key)
@@ -103,6 +103,12 @@ export async function checkRateLimit(
   return memCheck(key, config)
 }
 
-export function getRateLimitKey(ip: string, path: string): string {
-  return `${ip}:${path}`
+/**
+ * Build a rate-limit key.
+ * For authenticated requests, key on userId so users can't bypass limits by rotating IPs.
+ * Falls back to IP for unauthenticated paths (e.g. /api/auth login attempts).
+ */
+export function getRateLimitKey(ip: string, path: string, userId?: string): string {
+  const subject = userId ? `u:${userId}` : `ip:${ip}`;
+  return `${subject}:${path}`;
 }

@@ -29,7 +29,7 @@ function formatTime(d: Date, tz: string): string {
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return apiErrors.unauthorized();
   }
 
@@ -55,6 +55,9 @@ export async function GET(request: NextRequest) {
         user: { select: { id: true, name: true } },
       },
     });
+
+    const sentIds: string[] = [];
+    const errorIds: string[] = [];
 
     for (const appt of appointments) {
       const phone = appt.customerPhone || appt.lead?.phone;
@@ -97,21 +100,23 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        await prisma.bookingAppointment.update({
-          where: { id: appt.id },
-          data: {
-            reminderSent: true,
-            reminderSentAt: new Date(),
-          },
-        });
-
-        sent++;
+        sentIds.push(appt.id);
       } catch (err) {
         console.error(`Failed to send reminder for appointment ${appt.id}:`, err);
-        errors++;
+        errorIds.push(appt.id);
       }
     }
 
+    // Batch-update all successfully-sent appointments in one query instead of N individual updates
+    if (sentIds.length > 0) {
+      await prisma.bookingAppointment.updateMany({
+        where: { id: { in: sentIds } },
+        data: { reminderSent: true, reminderSentAt: new Date() },
+      });
+    }
+
+    sent += sentIds.length;
+    errors += errorIds.length;
     skipped += appointments.filter(a => !a.customerPhone && !a.lead?.phone).length;
   }
 

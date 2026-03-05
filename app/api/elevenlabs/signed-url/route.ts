@@ -3,12 +3,29 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// CORS: allow website templates (Theodora, etc.) to fetch signed URL directly — same flow as landing page
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+// CORS: restrict signed-url requests to the CRM domain and known soshogle.com subdomains.
+// Wildcards would allow any origin to obtain a signed ElevenLabs agent token.
+function buildCorsHeaders(origin: string | null) {
+  const allowedBase = process.env.NEXTAUTH_URL?.replace(/\/$/, '') || '';
+  const allowedOrigins = [
+    allowedBase,
+    'https://soshogle.com',
+    'https://www.soshogle.com',
+  ].filter(Boolean);
+
+  // Also allow *.soshogle.com subdomains (tenant websites)
+  const isAllowed = origin
+    ? allowedOrigins.includes(origin) || /^https:\/\/[a-z0-9-]+\.soshogle\.com$/.test(origin)
+    : false;
+
+  return {
+    "Access-Control-Allow-Origin": isAllowed && origin ? origin : (allowedBase || '*'),
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
+  };
+}
+
 
 /**
  * GET /api/elevenlabs/signed-url?agentId=xxx
@@ -16,6 +33,8 @@ const corsHeaders = {
  * Dynamic variables are passed client-side via Conversation.startSession.
  */
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const corsHeaders = buildCorsHeaders(origin);
   try {
     const agentId = request.nextUrl.searchParams.get("agentId");
     if (!agentId) {
@@ -41,9 +60,9 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[elevenlabs/signed-url] API error:", response.status, errorText);
+      console.error("[elevenlabs/signed-url] API error:", response.status);
       return NextResponse.json(
-        { error: errorText || `Soshogle Voice API error ${response.status}` },
+        { error: `Soshogle Voice API error ${response.status}` },
         { status: 500, headers: corsHeaders }
       );
     }
@@ -56,11 +75,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ signedUrl }, { headers: corsHeaders });
   } catch (error) {
-    console.error("Error getting ElevenLabs signed URL:", error);
+    console.error("Error getting ElevenLabs signed URL:", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ error: "Failed to get signed URL" }, { status: 500, headers: corsHeaders });
   }
 }
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: buildCorsHeaders(origin) });
 }

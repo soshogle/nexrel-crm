@@ -5,14 +5,15 @@ import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { validateBody, contactSchema } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
@@ -20,28 +21,26 @@ export async function POST(request: Request) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    const body = await request.json();
-    const {
-      name,
-      email,
-      phone,
-      company,
-      position,
-      address,
-      city,
-      state,
-      zipCode,
-      country,
-      dateOfBirth,
-      notes,
-      contactType,
-      status,
-    } = body;
+    // Validate and parse request body
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return apiErrors.badRequest('Request body must be valid JSON');
+    }
 
-    console.log('Creating contact/lead with data:', { name, email, phone, company, notes });
+    const { name, email, phone, company, position, address, city, state, zipCode, country, dateOfBirth, notes, contactType, status } = body as Record<string, unknown>;
 
     if (!name || (!email && !phone)) {
       return apiErrors.badRequest('Name and at least one of email or phone are required');
+    }
+
+    if (typeof name !== 'string' || name.length > 255) {
+      return apiErrors.badRequest('Name must be a string of up to 255 characters');
+    }
+    if (email && (typeof email !== 'string' || !/^[^@]+@[^@]+\.[^@]+$/.test(email))) {
+      return apiErrors.badRequest('Invalid email address');
+    }
+    if (notes && typeof notes === 'string' && notes.length > 10_000) {
+      return apiErrors.badRequest('Notes cannot exceed 10,000 characters');
     }
 
     const contact = await leadService.create(ctx, {
@@ -70,30 +69,19 @@ export async function POST(request: Request) {
       } as any : {}),
     });
 
-    console.log('Contact created successfully:', contact.id);
-
     return NextResponse.json(contact, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating contact:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    return apiErrors.internal('Failed to create contact', error.message);
+    console.error('Error creating contact:', error.message);
+    return apiErrors.internal('Failed to create contact');
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    // Debug logging
-    console.log('=== CONTACTS API DEBUG ===');
-    console.log('Session:', session ? 'exists' : 'null');
-    console.log('Session.user:', session?.user ? 'exists' : 'null');
-    console.log('Session.user.id:', session?.user?.id);
-    console.log('Session.user.email:', session?.user?.email);
-    
+
+
     if (!session?.user?.id) {
-      console.log('ERROR: No user ID in session - returning 401');
       return apiErrors.unauthorized();
     }
 
@@ -103,8 +91,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const tags = searchParams.get('tags');
 
-    console.log('Querying contacts for userId:', session.user.id);
-    
+
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
@@ -152,7 +139,7 @@ export async function GET(request: NextRequest) {
 
       if (contacts.length > 0) {
         const contactIds = contacts.map((c: any) => c.id);
-        
+
         const [dealsData, messagesData, callLogsData] = await Promise.all([
           db.deal.findMany({
             where: { leadId: { in: contactIds } },
@@ -204,14 +191,10 @@ export async function GET(request: NextRequest) {
         }));
       }
     } catch (dbError: any) {
-      console.error('Database query error:', dbError);
-      console.error('Database error code:', dbError?.code);
-      console.error('Database error meta:', dbError?.meta);
-      // Return empty array on error
+      console.error('Database query error:', dbError?.code);
       contacts = [];
     }
 
-    console.log('Contacts found:', contacts.length);
 
     // Filter by tags if provided
     let filteredContacts = contacts;
@@ -229,7 +212,7 @@ export async function GET(request: NextRequest) {
       tags: Array.isArray(contact.tags) ? contact.tags : [],
     }));
 
-    console.log('Returning', parsedContacts.length, 'contacts after filtering');
+
 
     const total = await leadService.count(ctx, where);
 
@@ -246,16 +229,9 @@ export async function GET(request: NextRequest) {
 
     return paginatedResponse(parsedContacts, total, pagination, 'contacts');
   } catch (error: any) {
-    console.error('Error fetching contacts:', error);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
-    console.error('Error name:', error?.name);
+    console.error('Error fetching contacts:', error?.message);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch contacts',
-        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
-        type: error?.name
-      },
+      { error: 'Failed to fetch contacts' },
       { status: 500 }
     );
   }

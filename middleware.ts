@@ -105,7 +105,14 @@ export async function middleware(request: NextRequest) {
           : isDentalPath ? RATE_LIMITS.apiHeavy
             : RATE_LIMITS.api
 
-    const rlKey = getRateLimitKey(ip, isAuthPath ? '/api/auth' : request.nextUrl.pathname)
+    // For authenticated routes, key on userId to prevent IP-rotation bypass.
+    // Auth path keys on IP only — user hasn't authenticated yet.
+    const token = !isAuthPath && !isPublicPath && !isWebhookPath
+      ? await getToken({ req: request }).catch(() => null)
+      : null;
+    const userId = token?.sub ?? undefined;
+
+    const rlKey = getRateLimitKey(ip, isAuthPath ? '/api/auth' : request.nextUrl.pathname, userId)
     const { allowed, remaining, resetMs } = await checkRateLimit(rlKey, config)
 
     if (!allowed) {

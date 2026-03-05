@@ -18,20 +18,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    // Debug endpoints are admin-only
+    const role = (session.user as any)?.role;
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const sessionUserId = session.user.id;
     const sessionEmail = session.user.email;
 
     const userByEmail = sessionEmail
       ? await prisma.user.findUnique({
-          where: { email: sessionEmail },
-          select: { id: true, email: true, name: true, industry: true },
-        })
+        where: { email: sessionEmail },
+        select: { id: true, email: true, name: true, industry: true },
+      })
       : null;
     const userById = sessionUserId && !userByEmail
       ? await prisma.user.findUnique({
-          where: { id: sessionUserId },
-          select: { id: true, email: true, name: true, industry: true },
-        })
+        where: { id: sessionUserId },
+        select: { id: true, email: true, name: true, industry: true },
+      })
       : null;
 
     const userId = userByEmail?.id ?? userById?.id ?? sessionUserId;

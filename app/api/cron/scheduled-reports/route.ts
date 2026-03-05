@@ -15,7 +15,7 @@ export const maxDuration = 120;
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return apiErrors.unauthorized();
   }
 
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log(`[scheduled-reports] Sent ${sent.length} reports, ${errors.length} errors`);
+  // removed console.log — use Vercel logs/Sentry for observability
 
   return NextResponse.json({ sent: sent.length, errors: errors.length, emails: sent });
 }

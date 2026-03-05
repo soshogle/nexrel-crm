@@ -1,6 +1,7 @@
 /**
  * Structured logging utility for API routes and server-side code.
- * Adds context (requestId, userId, component) for easier debugging.
+ * - Respects LOG_LEVEL env var (debug | info | warn | error). Default: warn in prod, info in dev.
+ * - Automatically redacts PII fields (phone, email, tokens) from context objects.
  */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -27,19 +28,50 @@ function formatEntry(entry: LogEntry): string {
   return base;
 }
 
+/** PII field names to redact from all log context */
+const PII_KEYS = new Set([
+  'phone', 'phoneNumber', 'to', 'from', 'email', 'customerPhone',
+  'customerEmail', 'patientName', 'contactPerson', 'password',
+  'token', 'secret', 'apiKey', 'authToken', 'accessToken', 'body',
+]);
+
+function redactContext(obj: LogContext, depth = 0): LogContext {
+  if (depth > 3) return obj;
+  const out: LogContext = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (PII_KEYS.has(k)) {
+      out[k] = '[REDACTED]';
+    } else if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      out[k] = redactContext(v as LogContext, depth + 1);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+const LOG_LEVEL_ORDER: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
+
+function getMinLevel(): LogLevel {
+  const env = (process.env.LOG_LEVEL ?? '').toLowerCase();
+  if (env === 'debug' || env === 'info' || env === 'warn' || env === 'error') return env;
+  return process.env.NODE_ENV === 'production' ? 'warn' : 'info';
+}
+
 function log(level: LogLevel, message: string, context?: LogContext) {
+  // Honour LOG_LEVEL — skip levels below threshold
+  if (LOG_LEVEL_ORDER[level] < LOG_LEVEL_ORDER[getMinLevel()]) return;
+
   const entry: LogEntry = {
     level,
     message,
     timestamp: new Date().toISOString(),
-    context,
+    context: context ? redactContext(context) : undefined,
   };
   const formatted = formatEntry(entry);
   switch (level) {
     case 'debug':
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(formatted);
-      }
+      console.debug(formatted);
       break;
     case 'info':
       console.info(formatted);

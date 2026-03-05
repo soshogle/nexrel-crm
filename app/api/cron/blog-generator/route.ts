@@ -15,11 +15,10 @@ export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return apiErrors.unauthorized();
     }
 
-    console.log("📝 [Cron] Starting Soshogle AI blog generation (2 posts)...");
 
     const [r1, r2] = await Promise.all([
       generateBlogPost(),
@@ -28,11 +27,10 @@ export async function POST(request: NextRequest) {
 
     const created: string[] = [];
     if (r1.success && r1.post) created.push(r1.post.slug);
-    else console.warn("[Cron] Post 1 failed:", r1.error);
+    else if (r1.error) console.error("[Cron] Blog post 1 failed:", r1.error);
     if (r2.success && r2.post) created.push(r2.post.slug);
-    else console.warn("[Cron] Post 2 failed:", r2.error);
+    else if (r2.error) console.error("[Cron] Blog post 2 failed:", r2.error);
 
-    console.log(`✅ [Cron] Blog generation done. Created: ${created.join(", ") || "none"}`);
 
     return NextResponse.json({
       success: true,

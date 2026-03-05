@@ -74,7 +74,10 @@ export async function POST(request: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return apiErrors.badRequest('Request body must be valid JSON');
+    }
     const {
       name,
       description,
@@ -97,7 +100,11 @@ export async function POST(request: NextRequest) {
       callWindowEnd,
       retryFailedCalls,
       maxRetries,
-    } = body;
+    } = body as Record<string, unknown>;
+
+    // Type-level sanitisation
+    if (name && typeof name !== 'string') return apiErrors.badRequest('name must be a string');
+    if (name && (name as string).length > 255) return apiErrors.badRequest('name cannot exceed 255 characters');
 
     // Validation
     if (!name) {
@@ -162,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating campaign:', error);
-    return apiErrors.internal(error.message || 'Failed to create campaign');
+    console.error('Error creating campaign:', error.message);
+    return apiErrors.internal('Failed to create campaign');
   }
 }

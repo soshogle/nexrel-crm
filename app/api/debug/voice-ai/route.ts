@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    // Debug endpoints are admin-only
+    const role = (session.user as any)?.role;
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      return apiErrors.forbidden('Admin access required');
+    }
+
     const diagnostics = {
       timestamp: new Date().toISOString(),
       user: {
@@ -34,7 +40,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Check Voice Agents
-    console.log('🔍 Checking voice agents...');
+
     const agents = await prisma.voiceAgent.findMany({
       where: { userId: session.user.id },
       select: {
@@ -52,7 +58,7 @@ export async function GET(request: NextRequest) {
     diagnostics.voiceAgents = agents;
 
     // Check Reservations (last 10)
-    console.log('🔍 Checking reservations...');
+
     const reservations = await prisma.reservation.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
@@ -74,7 +80,7 @@ export async function GET(request: NextRequest) {
     diagnostics.reservations = reservations;
 
     // Check Call Logs
-    console.log('🔍 Checking call logs...');
+
     const callLogs = await prisma.callLog.findMany({
       where: {
         voiceAgent: { userId: session.user.id },
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
     diagnostics.callLogs = callLogs;
 
     // Check Email Connections
-    console.log('🔍 Checking email connections...');
+
     const emailConnections = await prisma.channelConnection.findMany({
       where: {
         userId: session.user.id,
@@ -161,7 +167,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error in voice AI diagnostics:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to run diagnostics',
         details: error instanceof Error ? error.message : String(error),

@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized('Not authenticated');
     }
 
+    // Debug endpoints are admin-only
+    const role = (session.user as any)?.role;
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      return apiErrors.forbidden('Admin access required');
+    }
+
     // Get all sessions for this user
     const allSessions = await prisma.superAdminSession.findMany({
       where: {

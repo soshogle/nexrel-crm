@@ -9,9 +9,15 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return apiErrors.unauthorized('No session');
+    }
+
+    // Debug endpoints are admin-only
+    const role = (session.user as any)?.role;
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      return apiErrors.forbidden('Admin access required');
     }
 
     return NextResponse.json({
@@ -28,3 +34,4 @@ export async function GET() {
     return apiErrors.internal('Failed to get session');
   }
 }
+
