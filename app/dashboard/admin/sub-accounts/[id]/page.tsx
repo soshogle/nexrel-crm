@@ -101,7 +101,8 @@ export default function SubAccountDetailsPage() {
     }
 
     fetchDetails();
-  }, [session, status, router, params.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.role, status, params.id]);
 
   const fetchDetails = async () => {
     try {

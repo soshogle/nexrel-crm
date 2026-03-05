@@ -48,10 +48,11 @@ export default function ContactDetailDialog({
   const [showCallDialog, setShowCallDialog] = useState(false);
 
   useEffect(() => {
-    if (open && contact) {
+    if (open && contact?.id) {
       fetchContactDetails();
     }
-  }, [open, contact]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, contact?.id]);
 
   const fetchContactDetails = async () => {
     setLoading(true);

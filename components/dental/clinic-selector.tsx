@@ -34,7 +34,8 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
 
   useEffect(() => {
     fetchClinics();
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const fetchClinics = async () => {
     if (!session?.user?.id) return;
@@ -44,7 +45,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
       if (response.ok) {
         const data = await response.json();
         setClinics(Array.isArray(data?.clinics) ? data.clinics : []);
-        
+
         // Set primary clinic as default
         const primary = data.clinics?.find((c: Clinic) => c.isPrimary);
         if (primary) {
@@ -61,7 +62,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
 
   const handleClinicChange = async (clinicId: string) => {
     setSelectedClinicId(clinicId);
-    
+
     // Update active clinic context
     try {
       const response = await fetch('/api/clinics/switch', {

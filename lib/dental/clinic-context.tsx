@@ -44,7 +44,7 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         const clinicsList = data.clinics || [];
         setClinics(clinicsList);
-        
+
         // Set primary clinic as active
         const primary = clinicsList.find((c: Clinic) => c.isPrimary);
         if (primary && !activeClinic) {
@@ -60,7 +60,8 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchClinics();
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const setActiveClinic = (clinic: Clinic | null) => {
     setActiveClinicState(clinic);
@@ -74,10 +75,10 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (clinics.length > 0 && !activeClinic) {
       const savedClinicId = localStorage.getItem('activeClinicId');
-      const savedClinic = savedClinicId 
+      const savedClinic = savedClinicId
         ? clinics.find(c => c.id === savedClinicId)
         : clinics.find(c => c.isPrimary);
-      
+
       if (savedClinic) {
         setActiveClinicState(savedClinic);
       }

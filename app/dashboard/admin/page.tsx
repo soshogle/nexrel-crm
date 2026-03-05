@@ -72,7 +72,8 @@ export default function AdminDashboard() {
     }
 
     fetchData();
-  }, [session, status, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.role, status]);
 
   const fetchData = async () => {
     try {

@@ -88,10 +88,11 @@ export default function ContactsList({
   const [contactForCall, setContactForCall] = useState<Contact | null>(null);
 
   useEffect(() => {
-    if (session) {
+    if (session?.user?.id) {
       fetchContacts();
     }
-  }, [session, searchQuery, selectedType, selectedStatus, selectedTags, refreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, searchQuery, selectedType, selectedStatus, selectedTags.join(','), refreshKey]);
 
   const fetchContacts = async () => {
     setLoading(true);
@@ -307,7 +308,7 @@ export default function ContactsList({
             </TableHeader>
             <TableBody>
               {contacts.map((contact) => (
-                <TableRow 
+                <TableRow
                   key={contact.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleContactClick(contact)}

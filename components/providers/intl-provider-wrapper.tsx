@@ -58,7 +58,8 @@ export function IntlProviderWrapper({ children }: { children: React.ReactNode })
     if (status !== 'loading') {
       fetchUserLanguage();
     }
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, status]);
 
   // Always provide IntlProvider, even during loading, to prevent hook errors
   // Use default locale and messages if still loading

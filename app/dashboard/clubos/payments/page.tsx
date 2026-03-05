@@ -44,7 +44,7 @@ export default function ClubOSPaymentsPage() {
         const regResponse = await fetch('/api/clubos/registrations');
         if (!regResponse.ok) throw new Error('Failed to fetch registrations');
         const regData = await regResponse.json();
-        
+
         // Filter registrations with balances
         const withBalance = (Array.isArray(regData?.registrations) ? regData.registrations : []).filter(
           (r: Registration) => r.balanceDue > 0
@@ -68,7 +68,8 @@ export default function ClubOSPaymentsPage() {
     if (session?.user) {
       fetchData();
     }
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   if (isLoading) {
     return (
@@ -157,11 +158,10 @@ export default function ClubOSPaymentsPage() {
                       <div
                         key={registration.id}
                         onClick={() => setSelectedRegistration(registration)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary ${
-                          selectedRegistration?.id === registration.id
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary ${selectedRegistration?.id === registration.id
                             ? 'border-primary bg-accent'
                             : ''
-                        }`}
+                          }`}
                       >
                         <div className="space-y-1">
                           <p className="font-medium">

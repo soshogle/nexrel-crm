@@ -39,7 +39,7 @@ export function BookingWidgetSettings() {
       const baseUrl = window.location.origin
       const url = `${baseUrl}/booking/${session.user.id}`
       setWidgetUrl(url)
-      
+
       const code = `<iframe
   src="${url}"
   width="100%"
@@ -49,7 +49,8 @@ export function BookingWidgetSettings() {
 ></iframe>`
       setEmbedCode(code)
     }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
 
   useEffect(() => {
     const loadBookingSettings = async () => {

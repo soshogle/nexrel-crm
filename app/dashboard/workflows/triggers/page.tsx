@@ -11,12 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { 
-  Zap, 
-  DollarSign, 
-  ShoppingCart, 
-  Users, 
-  Eye, 
+import {
+  Zap,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Eye,
   Clock,
   TrendingUp,
   FileText,
@@ -158,7 +158,8 @@ export default function WorkflowTriggersPage() {
     if (session) {
       fetchWorkflows();
     }
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const fetchWorkflows = async () => {
     try {
@@ -189,14 +190,14 @@ export default function WorkflowTriggersPage() {
     const matchesSearch = getTriggerLabel(triggerType)
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    
+
     if (selectedCategory === 'all') {
       return matchesSearch;
     }
-    
+
     const category = TRIGGER_CATEGORIES[selectedCategory as keyof typeof TRIGGER_CATEGORIES];
     const matchesCategory = category?.triggers.includes(triggerType);
-    
+
     return matchesSearch && matchesCategory;
   });
 
@@ -293,8 +294,8 @@ export default function WorkflowTriggersPage() {
                                 workflow.status === 'ACTIVE'
                                   ? 'default'
                                   : workflow.status === 'PAUSED'
-                                  ? 'secondary'
-                                  : 'outline'
+                                    ? 'secondary'
+                                    : 'outline'
                               }
                             >
                               {workflow.status}

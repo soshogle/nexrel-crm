@@ -25,7 +25,7 @@ export default function ManageUsersPage() {
   useEffect(() => {
     // Check if user is SUPER_ADMIN
     if (status === 'loading') return;
-    
+
     if (!session || session.user?.role !== 'SUPER_ADMIN') {
       toast.error('Unauthorized - Admin access required');
       router.push('/dashboard');
@@ -33,7 +33,8 @@ export default function ManageUsersPage() {
     }
 
     setLoading(false);
-  }, [session, status, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.role, status]);
 
   if (status === 'loading' || loading) {
     return (

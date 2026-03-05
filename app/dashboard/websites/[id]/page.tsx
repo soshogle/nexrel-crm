@@ -103,7 +103,8 @@ export default function WebsiteEditorPage() {
       fetchWebsite();
       fetchPendingChanges();
     }
-  }, [session, params.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, params.id]);
 
   // Default to home page (path '/') when website loads
   useEffect(() => {
@@ -636,67 +637,67 @@ export default function WebsiteEditorPage() {
               </div>
             )}
             {isSuperAdmin && (
-            <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
-              <Label htmlFor="vercelDeployHookUrl" className="text-sm font-medium">Auto-deploy on save</Label>
-              <p className="text-xs text-muted-foreground">
-                Changes to structure, menu, or content trigger an automatic redeploy. If it&apos;s not working, create a Deploy Hook in Vercel (Project → Settings → Git → Deploy Hooks) and paste the URL below.
-              </p>
-              <Input
-                id="vercelDeployHookUrl"
-                type="url"
-                placeholder="https://api.vercel.com/v1/integrations/deploy/..."
-                className="text-sm font-mono"
-                defaultValue={website.vercelDeployHookUrl ?? ''}
-                onBlur={async (e) => {
-                  const val = e.target.value.trim();
-                  const current = website.vercelDeployHookUrl ?? '';
-                  if (val === current) return;
-                  try {
-                    const res = await fetch(`/api/websites/${website.id}`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ vercelDeployHookUrl: val || null }),
-                    });
-                    if (!res.ok) throw new Error('Failed to save');
-                    setWebsite((w) => (w ? { ...w, vercelDeployHookUrl: val || null } : null));
-                    toast.success(val ? 'Deploy hook saved.' : 'Deploy hook cleared');
-                  } catch {
-                    toast.error('Failed to save');
-                  }
-                }}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                disabled={deployTriggering}
-                onClick={async () => {
-                  setDeployTriggering(true);
-                  try {
-                    const res = await fetch(`/api/websites/${website.id}/trigger-deploy`, { method: 'POST' });
-                    const data = await res.json();
-                    if (data.ok) {
-                      toast.success('Deploy triggered! Check Vercel in 1–2 min.');
-                    } else {
-                      toast.error(data.error || 'Deploy failed');
+              <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+                <Label htmlFor="vercelDeployHookUrl" className="text-sm font-medium">Auto-deploy on save</Label>
+                <p className="text-xs text-muted-foreground">
+                  Changes to structure, menu, or content trigger an automatic redeploy. If it&apos;s not working, create a Deploy Hook in Vercel (Project → Settings → Git → Deploy Hooks) and paste the URL below.
+                </p>
+                <Input
+                  id="vercelDeployHookUrl"
+                  type="url"
+                  placeholder="https://api.vercel.com/v1/integrations/deploy/..."
+                  className="text-sm font-mono"
+                  defaultValue={website.vercelDeployHookUrl ?? ''}
+                  onBlur={async (e) => {
+                    const val = e.target.value.trim();
+                    const current = website.vercelDeployHookUrl ?? '';
+                    if (val === current) return;
+                    try {
+                      const res = await fetch(`/api/websites/${website.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vercelDeployHookUrl: val || null }),
+                      });
+                      if (!res.ok) throw new Error('Failed to save');
+                      setWebsite((w) => (w ? { ...w, vercelDeployHookUrl: val || null } : null));
+                      toast.success(val ? 'Deploy hook saved.' : 'Deploy hook cleared');
+                    } catch {
+                      toast.error('Failed to save');
                     }
-                  } catch {
-                    toast.error('Failed to trigger deploy');
-                  } finally {
-                    setDeployTriggering(false);
-                  }
-                }}
-              >
-                {deployTriggering ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Triggering…
-                  </>
-                ) : (
-                  'Deploy now (test)'
-                )}
-              </Button>
-            </div>
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={deployTriggering}
+                  onClick={async () => {
+                    setDeployTriggering(true);
+                    try {
+                      const res = await fetch(`/api/websites/${website.id}/trigger-deploy`, { method: 'POST' });
+                      const data = await res.json();
+                      if (data.ok) {
+                        toast.success('Deploy triggered! Check Vercel in 1–2 min.');
+                      } else {
+                        toast.error(data.error || 'Deploy failed');
+                      }
+                    } catch {
+                      toast.error('Failed to trigger deploy');
+                    } finally {
+                      setDeployTriggering(false);
+                    }
+                  }}
+                >
+                  {deployTriggering ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Triggering…
+                    </>
+                  ) : (
+                    'Deploy now (test)'
+                  )}
+                </Button>
+              </div>
             )}
             {website.vercelDeploymentUrl && (
               <a
@@ -923,19 +924,19 @@ export default function WebsiteEditorPage() {
                   setWebsite((w) =>
                     w
                       ? {
-                          ...w,
-                          agencyConfig: {
-                            ...(w.agencyConfig as Record<string, unknown> || {}),
-                            brokerName: config.brokerName,
-                            name: config.name,
-                            tagline: config.tagline,
-                            logoUrl: config.logoUrl,
-                            phone: config.phone,
-                            email: config.email,
-                            address: config.address,
-                            fullAddress: config.address,
-                          },
-                        }
+                        ...w,
+                        agencyConfig: {
+                          ...(w.agencyConfig as Record<string, unknown> || {}),
+                          brokerName: config.brokerName,
+                          name: config.name,
+                          tagline: config.tagline,
+                          logoUrl: config.logoUrl,
+                          phone: config.phone,
+                          email: config.email,
+                          address: config.address,
+                          fullAddress: config.address,
+                        },
+                      }
                       : null
                   );
                   setDraftAgencyConfig(null);
@@ -959,10 +960,10 @@ export default function WebsiteEditorPage() {
                   setWebsite((w) =>
                     w
                       ? {
-                          ...w,
-                          navConfig: updates.navConfig ?? w.navConfig,
-                          pageLabels: updates.pageLabels ?? w.pageLabels,
-                        }
+                        ...w,
+                        navConfig: updates.navConfig ?? w.navConfig,
+                        pageLabels: updates.pageLabels ?? w.pageLabels,
+                      }
                       : null
                   );
                 }}
@@ -970,10 +971,10 @@ export default function WebsiteEditorPage() {
                   setWebsite((w) =>
                     w
                       ? {
-                          ...w,
-                          navConfig: updates.navConfig ?? w.navConfig,
-                          pageLabels: updates.pageLabels ?? w.pageLabels,
-                        }
+                        ...w,
+                        navConfig: updates.navConfig ?? w.navConfig,
+                        pageLabels: updates.pageLabels ?? w.pageLabels,
+                      }
                       : null
                   );
                 }}

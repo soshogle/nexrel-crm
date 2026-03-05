@@ -46,7 +46,8 @@ export default function WebsitesPage() {
     if (session) {
       fetchWebsites();
     }
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   useEffect(() => {
     setWebsiteBuilderContext({ page: 'list' });
@@ -149,7 +150,7 @@ export default function WebsitesPage() {
       toast.success('Website deleted successfully');
       setDeleteDialogOpen(false);
       setWebsiteToDelete(null);
-      
+
       // Refresh the websites list
       await fetchWebsites();
     } catch (error: any) {
@@ -249,8 +250,8 @@ export default function WebsitesPage() {
                 )}
 
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  <Link 
-                    href={`/dashboard/websites/${website.id}`} 
+                  <Link
+                    href={`/dashboard/websites/${website.id}`}
                     className="flex-1"
                     onClick={(e) => {
                       // Prevent navigation if website is in a problematic state
@@ -277,8 +278,8 @@ export default function WebsitesPage() {
                       <AlertCircle className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
                     onClick={() => handleDeleteClick(website.id)}
                     disabled={deleting}

@@ -62,26 +62,26 @@ function BusinessAIPageContent() {
     if (modeParam === 'reports') return 'reports';
     return modeParam === 'dashboard' ? 'dashboard' : 'voice';
   });
-  
+
   // Voice Assistant Mode State
   const [healthScore, setHealthScore] = useState<any>(null);
   const [predictions, setPredictions] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
   const [crmAgentId, setCrmAgentId] = useState<string | null>(null);
   const [agentLoading, setAgentLoading] = useState(true);
-  
+
   // Visualization state for voice agent queries
   const [crmStatistics, setCrmStatistics] = useState<any>(null);
   const [showVisualizations, setShowVisualizations] = useState(false);
   const [conversationMessages, setConversationMessages] = useState<any[]>([]);
-  
+
   useEffect(() => {
     if (crmStatistics) {
       console.log('📊 [AI Brain Page] CRM Statistics updated:', crmStatistics);
       console.log('📊 [AI Brain Page] Show visualizations:', showVisualizations);
     }
   }, [crmStatistics, showVisualizations]);
-  
+
   useEffect(() => {
     const handleVisualizationUpdate = (event: CustomEvent) => {
       console.log('📊 [AI Brain Page] Received visualization update:', event.detail);
@@ -108,13 +108,13 @@ function BusinessAIPageContent() {
       };
     }
   }, []);
-  
+
   // Analytical Dashboard Mode State
   const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveBrainData | null>(null);
   const [detailedInsights, setDetailedInsights] = useState<GeneralInsight[]>([]);
   const [enhancedPredictions, setEnhancedPredictions] = useState<PredictiveAnalytics | null>(null);
   const [workflowRecommendations, setWorkflowRecommendations] = useState<WorkflowRecommendation[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
@@ -147,9 +147,10 @@ function BusinessAIPageContent() {
             setShowVisualizations(true);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
-  }, [session, mode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, mode]);
 
   const loadBusinessData = async () => {
     try {
@@ -240,7 +241,7 @@ function BusinessAIPageContent() {
               AI Brain Intelligence
             </h1>
             <p className="text-gray-600 mt-2 text-lg">
-              {mode === 'voice' 
+              {mode === 'voice'
                 ? 'Your revolutionary business brain - Ask anything, get instant insights'
                 : 'Comprehensive analytical dashboard - Deep insights and predictions'
               }

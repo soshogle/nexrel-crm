@@ -13,7 +13,7 @@ import { NewWebsiteForm } from '@/components/websites/new-website-form';
 
 function DesignerBackgroundCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+
   const slides = [
     {
       gradient: 'from-purple-400 via-pink-400 to-red-400',
@@ -51,7 +51,7 @@ function DesignerBackgroundCarousel() {
   return (
     <div className="fixed inset-0 overflow-hidden z-0">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 via-pink-50 to-cyan-50 animate-gradient-shift"></div>
-      
+
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-200/30 via-transparent to-blue-200/30 animate-pulse"></div>
         <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-pink-200/30 via-transparent to-cyan-200/30 animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -64,7 +64,7 @@ function DesignerBackgroundCarousel() {
           const scale = isActive ? 1 : 0.8;
           const opacity = isActive ? 0.25 : 0.1;
           const translateX = (offset - currentSlide) * 100;
-          
+
           return (
             <div
               key={index}
@@ -106,7 +106,7 @@ function DesignerBackgroundCarousel() {
         ))}
       </div>
 
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `
@@ -140,7 +140,8 @@ export default function NewWebsitePage() {
       }
     };
     if (session) check();
-  }, [session, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   useEffect(() => {
     setWebsiteBuilderContext({
