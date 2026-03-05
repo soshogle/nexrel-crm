@@ -34,7 +34,7 @@ export default function DeliveryMap({
     try {
       // Initialize map
       mapboxgl.accessToken = MAPBOX_TOKEN;
-      
+
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
@@ -139,7 +139,7 @@ export default function DeliveryMap({
     if (map.current && driverMarker.current && driverLocation) {
       driverMarker.current.setLngLat([driverLocation.lng, driverLocation.lat]);
       if (driverLocation.heading !== null && driverLocation.heading !== undefined) {
-        driverMarker.current.setRotation(driverLocation.heading);
+        (driverMarker.current as any).setRotation(driverLocation.heading);
       }
 
       // Update route
