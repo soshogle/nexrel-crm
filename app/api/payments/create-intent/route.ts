@@ -1,21 +1,28 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { createPaymentIntent } from '@/lib/payments/stripe-service';
-import { createPayment as createSquarePayment } from '@/lib/payments/square-service';
-import { createOrder as createPayPalOrder } from '@/lib/payments/paypal-service';
-import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rate-limiter';
-import { sanitizeEmail, sanitizeText, sanitizeNumber } from '@/lib/security/input-sanitizer';
-import { AuditLogger } from '@/lib/security/audit-logger';
-import { apiErrors } from '@/lib/api-error';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { createPaymentIntent } from "@/lib/payments/stripe-service";
+import { createPayment as createSquarePayment } from "@/lib/payments/square-service";
+import { createOrder as createPayPalOrder } from "@/lib/payments/paypal-service";
+import {
+  RateLimiters,
+  getClientIdentifier,
+  createRateLimitResponse,
+} from "@/lib/security/rate-limiter";
+import {
+  sanitizeEmail,
+  sanitizeText,
+  sanitizeNumber,
+} from "@/lib/security/input-sanitizer";
+import { AuditLogger } from "@/lib/security/audit-logger";
+import { apiErrors } from "@/lib/api-error";
+import { z } from "zod";
 
 // POST - Create a payment intent
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting (10 payment requests per minute)
@@ -33,28 +40,44 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: session.user.email },
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     const rawBody = await request.json().catch(() => null);
-    if (!rawBody || typeof rawBody !== 'object') {
-      return apiErrors.badRequest('Request body must be valid JSON');
+    if (!rawBody || typeof rawBody !== "object") {
+      return apiErrors.badRequest("Request body must be valid JSON");
     }
 
     // Zod schema validation
     const paymentBodySchema = z.object({
-      provider: z.enum(['STRIPE', 'PAYPAL', 'SQUARE']).default('STRIPE'),
-      amount: z.number().positive('Amount must be a positive number').max(1_000_000),
-      currency: z.string().length(3, 'Currency must be a 3-letter ISO code').default('USD'),
-      customerName: z.string().min(1, 'Customer name is required').max(255),
-      customerEmail: z.string().email('Invalid customer email'),
+      provider: z.enum(["STRIPE", "PAYPAL", "SQUARE"]).default("STRIPE"),
+      amount: z
+        .number()
+        .positive("Amount must be a positive number")
+        .max(1_000_000),
+      currency: z
+        .string()
+        .length(3, "Currency must be a 3-letter ISO code")
+        .default("USD"),
+      customerName: z.string().min(1, "Customer name is required").max(255),
+      customerEmail: z.string().email("Invalid customer email"),
       customerPhone: z.string().max(30).optional(),
       description: z.string().max(500).optional(),
-      paymentType: z.string().max(50).default('OTHER'),
+      paymentType: z
+        .enum([
+          "APPOINTMENT",
+          "INVOICE",
+          "SUBSCRIPTION",
+          "DEAL",
+          "SERVICE",
+          "PRODUCT",
+          "OTHER",
+        ])
+        .default("OTHER"),
       appointmentId: z.string().optional(),
       dealId: z.string().optional(),
       leadId: z.string().optional(),
@@ -63,7 +86,13 @@ export async function POST(request: NextRequest) {
 
     const parsed = paymentBodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return apiErrors.validationError('Validation failed', parsed.error.errors.map(e => ({ field: e.path.join('.'), message: e.message })));
+      return apiErrors.validationError(
+        "Validation failed",
+        parsed.error.errors.map((e) => ({
+          field: e.path.join("."),
+          message: e.message,
+        })),
+      );
     }
     const body = parsed.data;
 
@@ -73,8 +102,12 @@ export async function POST(request: NextRequest) {
     const currency = sanitizeText(body.currency);
     const customerName = sanitizeText(body.customerName);
     const customerEmail = sanitizeEmail(body.customerEmail);
-    const customerPhone = body.customerPhone ? sanitizeText(body.customerPhone) : undefined;
-    const description = body.description ? sanitizeText(body.description) : undefined;
+    const customerPhone = body.customerPhone
+      ? sanitizeText(body.customerPhone)
+      : undefined;
+    const description = body.description
+      ? sanitizeText(body.description)
+      : undefined;
     const paymentType = body.paymentType;
     const appointmentId = body.appointmentId;
     const dealId = body.dealId;
@@ -82,7 +115,7 @@ export async function POST(request: NextRequest) {
     const invoiceId = body.invoiceId;
 
     if (!amount || !customerName || !customerEmail) {
-      return apiErrors.badRequest('Missing or invalid required fields');
+      return apiErrors.badRequest("Missing or invalid required fields");
     }
 
     let paymentIntent: any;
@@ -93,20 +126,20 @@ export async function POST(request: NextRequest) {
       where: {
         userId_provider: {
           userId: user.id,
-          provider
-        }
-      }
+          provider,
+        },
+      },
     });
 
     if (!providerSettings || !providerSettings.isActive) {
       return NextResponse.json(
         { error: `${provider} is not configured or inactive` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Create payment based on provider
-    if (provider === 'STRIPE') {
+    if (provider === "STRIPE") {
       paymentIntent = await createPaymentIntent(user.id, {
         amount,
         currency,
@@ -115,22 +148,22 @@ export async function POST(request: NextRequest) {
         description,
         metadata: {
           paymentType,
-          appointmentId: appointmentId || '',
-          dealId: dealId || '',
-          leadId: leadId || ''
-        }
+          appointmentId: appointmentId || "",
+          dealId: dealId || "",
+          leadId: leadId || "",
+        },
       });
       providerPaymentId = paymentIntent.id;
-    } else if (provider === 'PAYPAL') {
+    } else if (provider === "PAYPAL") {
       paymentIntent = await createPayPalOrder(user.id, {
         amount,
         currency,
         description,
-        referenceId: appointmentId || dealId || leadId
+        referenceId: appointmentId || dealId || leadId,
       });
       providerPaymentId = paymentIntent.id;
     } else {
-      return apiErrors.badRequest('Unsupported payment provider');
+      return apiErrors.badRequest("Unsupported payment provider");
     }
 
     // Create payment record in database
@@ -142,7 +175,7 @@ export async function POST(request: NextRequest) {
         providerPaymentId,
         amount,
         currency,
-        status: 'PENDING',
+        status: "PENDING",
         paymentType,
         customerName,
         customerEmail,
@@ -150,8 +183,8 @@ export async function POST(request: NextRequest) {
         description,
         dealId,
         leadId,
-        invoiceId
-      }
+        invoiceId,
+      },
     });
 
     // Log successful payment creation
@@ -166,37 +199,39 @@ export async function POST(request: NextRequest) {
         paymentType,
         customerEmail,
       },
-      true
+      true,
     );
 
     return NextResponse.json({
       success: true,
       payment,
       clientSecret: paymentIntent.client_secret || null,
-      orderId: provider === 'PAYPAL' ? paymentIntent.id : null
+      orderId: provider === "PAYPAL" ? paymentIntent.id : null,
     });
   } catch (error: any) {
-    console.error('Error creating payment intent:', error);
+    console.error("Error creating payment intent:", error);
 
     // Log failed payment attempt
     const session = await getServerSession(authOptions);
     if (session?.user?.email) {
       const user = await prisma.user.findUnique({
-        where: { email: session.user.email }
+        where: { email: session.user.email },
       });
 
       if (user) {
         await AuditLogger.logPayment(
           user.id,
-          'unknown',
+          "unknown",
           request,
           { error: error.message },
           false,
-          error.message
+          error.message,
         );
       }
     }
 
-    return apiErrors.internal(error.message || 'Failed to create payment intent');
+    return apiErrors.internal(
+      error.message || "Failed to create payment intent",
+    );
   }
 }

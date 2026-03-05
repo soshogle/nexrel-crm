@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { leadService, getCrmDb } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
-import { validateBody, contactSchema } from '@/lib/validate';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { leadService, getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
+import { validateBody, contactSchema } from "@/lib/validate";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,25 +23,49 @@ export async function POST(request: NextRequest) {
 
     // Validate and parse request body
     const body = await request.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      return apiErrors.badRequest('Request body must be valid JSON');
+    if (!body || typeof body !== "object") {
+      return apiErrors.badRequest("Request body must be valid JSON");
     }
 
-    const { name, email, phone, company, position, address, city, state, zipCode, country, dateOfBirth, notes, contactType, status } = body as Record<string, unknown>;
+    const {
+      name,
+      email,
+      phone,
+      company,
+      position,
+      address,
+      city,
+      state,
+      zipCode,
+      country,
+      dateOfBirth,
+      notes,
+      contactType,
+      status,
+    } = body as Record<string, unknown>;
 
     if (!name || (!email && !phone)) {
-      return apiErrors.badRequest('Name and at least one of email or phone are required');
+      return apiErrors.badRequest(
+        "Name and at least one of email or phone are required",
+      );
     }
 
-    if (typeof name !== 'string' || name.length > 255) {
-      return apiErrors.badRequest('Name must be a string of up to 255 characters');
+    if (typeof name !== "string" || name.length > 255) {
+      return apiErrors.badRequest(
+        "Name must be a string of up to 255 characters",
+      );
     }
-    if (email && (typeof email !== 'string' || !/^[^@]+@[^@]+\.[^@]+$/.test(email))) {
-      return apiErrors.badRequest('Invalid email address');
+    if (
+      email &&
+      (typeof email !== "string" || !/^[^@]+@[^@]+\.[^@]+$/.test(email))
+    ) {
+      return apiErrors.badRequest("Invalid email address");
     }
-    if (notes && typeof notes === 'string' && notes.length > 10_000) {
-      return apiErrors.badRequest('Notes cannot exceed 10,000 characters');
+    if (notes && typeof notes === "string" && notes.length > 10_000) {
+      return apiErrors.badRequest("Notes cannot exceed 10,000 characters");
     }
+
+    const notesText = typeof notes === "string" ? notes.trim() : "";
 
     const contact = await leadService.create(ctx, {
       businessName: company || name,
@@ -55,24 +79,26 @@ export async function POST(request: NextRequest) {
       zipCode: zipCode || null,
       country: country || null,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth as string) : null,
-      contactType: contactType || 'CUSTOMER',
-      status: status || 'ACTIVE',
-      source: 'Manual Entry',
+      contactType: contactType || "CUSTOMER",
+      status: status || "ACTIVE",
+      source: "Manual Entry",
       tags: [],
-      ...(notes && notes.trim() ? {
-        notes: {
-          create: {
-            userId: ctx.userId,
-            content: notes.trim(),
-          },
-        },
-      } as any : {}),
+      ...(notesText
+        ? ({
+            notes: {
+              create: {
+                userId: ctx.userId,
+                content: notesText,
+              },
+            },
+          } as any)
+        : {}),
     });
 
     return NextResponse.json(contact, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating contact:', error.message);
-    return apiErrors.internal('Failed to create contact');
+    console.error("Error creating contact:", error.message);
+    return apiErrors.internal("Failed to create contact");
   }
 }
 
@@ -80,17 +106,15 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const type = searchParams.get('type');
-    const status = searchParams.get('status');
-    const tags = searchParams.get('tags');
-
+    const search = searchParams.get("search");
+    const type = searchParams.get("type");
+    const status = searchParams.get("status");
+    const tags = searchParams.get("tags");
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
@@ -101,18 +125,18 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { businessName: { contains: search, mode: 'insensitive' } },
-        { contactPerson: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
+        { businessName: { contains: search, mode: "insensitive" } },
+        { contactPerson: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    if (type && type !== 'all') {
+    if (type && type !== "all") {
       where.contactType = type;
     }
 
-    if (status && status !== 'all') {
+    if (status && status !== "all") {
       where.status = status;
     }
 
@@ -132,7 +156,7 @@ export async function GET(request: NextRequest) {
           lastContactedAt: true,
           createdAt: true,
         } as any,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: pagination.take,
         skip: pagination.skip,
       });
@@ -141,18 +165,24 @@ export async function GET(request: NextRequest) {
         const contactIds = contacts.map((c: any) => c.id);
 
         const [dealsData, messagesData, callLogsData] = await Promise.all([
-          db.deal.findMany({
-            where: { leadId: { in: contactIds } },
-            select: { leadId: true },
-          }).catch(() => []),
-          db.message.findMany({
-            where: { leadId: { in: contactIds } },
-            select: { leadId: true },
-          }).catch(() => []),
-          db.callLog.findMany({
-            where: { leadId: { in: contactIds } },
-            select: { leadId: true },
-          }).catch(() => []),
+          db.deal
+            .findMany({
+              where: { leadId: { in: contactIds } },
+              select: { leadId: true },
+            })
+            .catch(() => []),
+          db.message
+            .findMany({
+              where: { leadId: { in: contactIds } },
+              select: { leadId: true },
+            })
+            .catch(() => []),
+          db.callLog
+            .findMany({
+              where: { leadId: { in: contactIds } },
+              select: { leadId: true },
+            })
+            .catch(() => []),
         ]);
 
         // Count manually - filter out null leadIds
@@ -161,14 +191,20 @@ export async function GET(request: NextRequest) {
         const callLogsMap = new Map<string, number>();
 
         dealsData
-          .filter(d => d.leadId !== null)
-          .forEach(d => dealsMap.set(d.leadId!, (dealsMap.get(d.leadId!) || 0) + 1));
+          .filter((d) => d.leadId !== null)
+          .forEach((d) =>
+            dealsMap.set(d.leadId!, (dealsMap.get(d.leadId!) || 0) + 1),
+          );
         messagesData
-          .filter(m => m.leadId !== null)
-          .forEach(m => messagesMap.set(m.leadId!, (messagesMap.get(m.leadId!) || 0) + 1));
+          .filter((m) => m.leadId !== null)
+          .forEach((m) =>
+            messagesMap.set(m.leadId!, (messagesMap.get(m.leadId!) || 0) + 1),
+          );
         callLogsData
-          .filter(c => c.leadId !== null)
-          .forEach(c => callLogsMap.set(c.leadId!, (callLogsMap.get(c.leadId!) || 0) + 1));
+          .filter((c) => c.leadId !== null)
+          .forEach((c) =>
+            callLogsMap.set(c.leadId!, (callLogsMap.get(c.leadId!) || 0) + 1),
+          );
 
         // Add counts to contacts
         contacts = contacts.map((contact: any) => ({
@@ -191,15 +227,14 @@ export async function GET(request: NextRequest) {
         }));
       }
     } catch (dbError: any) {
-      console.error('Database query error:', dbError?.code);
+      console.error("Database query error:", dbError?.code);
       contacts = [];
     }
-
 
     // Filter by tags if provided
     let filteredContacts = contacts;
     if (tags) {
-      const tagArray = tags.split(',').map((t) => t.trim());
+      const tagArray = tags.split(",").map((t) => t.trim());
       filteredContacts = contacts.filter((contact: any) => {
         const contactTags = Array.isArray(contact.tags) ? contact.tags : [];
         return tagArray.some((tag) => contactTags.includes(tag));
@@ -212,27 +247,33 @@ export async function GET(request: NextRequest) {
       tags: Array.isArray(contact.tags) ? contact.tags : [],
     }));
 
-
-
     const total = await leadService.count(ctx, where);
 
-    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    const isOrthoDemo =
+      String(session.user.email || "")
+        .toLowerCase()
+        .trim() === "orthodontist@nexrel.com";
     // Preserve demo behavior only for orthodontist demo account
     if (isOrthoDemo && parsedContacts.length === 0 && total === 0) {
-      const { MOCK_CONTACTS } = await import('@/lib/mock-data');
+      const { MOCK_CONTACTS } = await import("@/lib/mock-data");
       const mockContacts = MOCK_CONTACTS.map((c) => ({
         ...c,
         tags: Array.isArray(c.tags) ? c.tags : [],
       }));
-      return paginatedResponse(mockContacts, mockContacts.length, pagination, 'contacts');
+      return paginatedResponse(
+        mockContacts,
+        mockContacts.length,
+        pagination,
+        "contacts",
+      );
     }
 
-    return paginatedResponse(parsedContacts, total, pagination, 'contacts');
+    return paginatedResponse(parsedContacts, total, pagination, "contacts");
   } catch (error: any) {
-    console.error('Error fetching contacts:', error?.message);
+    console.error("Error fetching contacts:", error?.message);
     return NextResponse.json(
-      { error: 'Failed to fetch contacts' },
-      { status: 500 }
+      { error: "Failed to fetch contacts" },
+      { status: 500 },
     );
   }
 }
