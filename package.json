@@ -69,8 +69,8 @@
     "@types/google.maps": "^3.58.1",
     "@types/mapbox-gl": "^1.13.10",
     "@types/node": "20.6.2",
-    "@types/react": "18.2.22",
-    "@types/react-dom": "18.2.7",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "@types/validator": "^13",
     "@typescript-eslint/eslint-plugin": "8.0.0",
     "@typescript-eslint/parser": "8.0.0",
@@ -221,10 +221,6 @@
     "last 2 versions",
     "not dead"
   ],
-  "overrides": {
-    "@types/react": "18.2.22",
-    "@types/react-dom": "18.2.7"
-  },
   "resolutions": {
     "@smithy/middleware-endpoint": "4.4.19",
     "@smithy/config-resolver": "4.4.8",
