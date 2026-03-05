@@ -221,6 +221,10 @@
     "last 2 versions",
     "not dead"
   ],
+  "overrides": {
+    "@types/react": "18.2.22",
+    "@types/react-dom": "18.2.7"
+  },
   "resolutions": {
     "@smithy/middleware-endpoint": "4.4.19",
     "@smithy/config-resolver": "4.4.8",
