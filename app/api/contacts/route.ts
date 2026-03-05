@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       state: state || null,
       zipCode: zipCode || null,
       country: country || null,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth as string) : null,
       contactType: contactType || 'CUSTOMER',
       status: status || 'ACTIVE',
       source: 'Manual Entry',
