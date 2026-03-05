@@ -12,18 +12,11 @@ import {
 import { workflowEngine } from "@/lib/workflow-engine";
 import { processWebsiteTriggers } from "@/lib/website-triggers";
 import { apiErrors } from "@/lib/api-error";
+import { authorizeWebsiteSecret } from "@/lib/website-secret-auth";
 
 export async function POST(request: NextRequest) {
   try {
     const secret = request.headers.get("x-website-secret");
-    const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
-    if (!expectedSecret) {
-      if (process.env.NODE_ENV === "production") {
-        return apiErrors.internal("WEBSITE_VOICE_CONFIG_SECRET not configured");
-      }
-    } else if (secret !== expectedSecret) {
-      return apiErrors.unauthorized();
-    }
 
     const body = await request.json();
     const {
@@ -34,6 +27,15 @@ export async function POST(request: NextRequest) {
 
     if (!websiteId || !eventType) {
       return apiErrors.badRequest("Website ID and event type are required");
+    }
+
+    const auth = await authorizeWebsiteSecret(websiteId, secret);
+    if (!auth.ok) {
+      return auth.status === 404
+        ? apiErrors.notFound(auth.reason)
+        : auth.status === 500
+          ? apiErrors.internal(auth.reason)
+          : apiErrors.unauthorized(auth.reason);
     }
 
     // Get website to find user (no session - fetch first to get userId)

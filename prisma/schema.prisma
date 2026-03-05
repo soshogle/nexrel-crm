@@ -10106,7 +10106,7 @@ model Website {
   ecommerceContent Json?
 
   // Per-website secret for CRM → owner site API calls (products, etc.). When provisioning, we generate and store.
-  websiteSecret String?
+  websiteSecret String? @unique
 
   // Approval Queue
   pendingChanges Json? // Changes awaiting approval
@@ -10129,6 +10129,7 @@ model Website {
   secretReports       REWebsiteReport[]
 
   @@index([userId])
+  @@unique([userId, name])
   @@index([status])
   @@index([type])
 }
