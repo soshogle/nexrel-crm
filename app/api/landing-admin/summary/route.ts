@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCrmDb } from "@/lib/dal/db";
 import { resolveDalContext } from "@/lib/context/industry-context";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   try {
+    const expectedUser = process.env.LANDING_ADMIN_USERNAME;
     const secret = process.env.LANDING_ADMIN_SECRET;
     const authHeader = request.headers.get("authorization");
-    if (!secret || !authHeader?.startsWith("Bearer ")) {
+    if (!expectedUser || !secret || !authHeader?.startsWith("Bearer ")) {
       return apiErrors.unauthorized();
     }
 
@@ -29,9 +30,21 @@ export async function GET(request: Request) {
     }
 
     const [username, expiresAtRaw, signature] = parts;
+    if (username !== expectedUser) {
+      return apiErrors.unauthorized();
+    }
+
     const payload = `${username}.${expiresAtRaw}`;
-    const expectedSig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-    if (expectedSig !== signature) {
+    const expectedSig = crypto
+      .createHmac("sha256", secret)
+      .update(payload)
+      .digest("hex");
+    const expectedBuf = Buffer.from(expectedSig);
+    const signatureBuf = Buffer.from(signature);
+    if (
+      expectedBuf.length !== signatureBuf.length ||
+      !crypto.timingSafeEqual(expectedBuf, signatureBuf)
+    ) {
       return apiErrors.unauthorized();
     }
 

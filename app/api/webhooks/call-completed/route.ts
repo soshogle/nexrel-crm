@@ -1,28 +1,55 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCrmDb, leadService } from '@/lib/dal';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb, leadService } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import {
+  analyzeConversation,
+  calculateLeadScoreAdjustment,
+  determineNextLeadStatus,
+} from "@/lib/conversation-intelligence";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * POST /api/webhooks/call-completed
  * Webhook to automatically analyze calls when they complete
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+function isAuthorizedInternalWebhook(request: NextRequest): boolean {
+  const expectedSecret =
+    process.env.INTERNAL_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
+  const providedHeaderSecret =
+    request.headers.get("x-internal-webhook-secret") ||
+    request.headers.get("x-webhook-secret");
+  const authHeader = request.headers.get("authorization");
+  const providedBearer = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+  const providedSecret = providedHeaderSecret || providedBearer;
+
+  if (!expectedSecret) {
+    return process.env.NODE_ENV !== "production";
+  }
+
+  return providedSecret === expectedSecret;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isAuthorizedInternalWebhook(req)) {
+      return apiErrors.unauthorized("Invalid webhook secret");
+    }
+
     const { callLogId } = await req.json();
 
     if (!callLogId) {
-      return apiErrors.badRequest('Call log ID is required');
+      return apiErrors.badRequest("Call log ID is required");
     }
 
     // Fetch the call log with lead data (no session - need prisma for initial lookup by id)
-    const { prisma } = await import('@/lib/db');
+    const { prisma } = await import("@/lib/db");
     const callLog = await prisma.callLog.findUnique({
       where: { id: callLogId },
       include: {
@@ -31,24 +58,25 @@ export async function POST(req: NextRequest) {
     });
 
     if (!callLog) {
-      return apiErrors.notFound('Call log not found');
+      return apiErrors.notFound("Call log not found");
     }
 
     // Skip if already analyzed
     if (callLog.conversationAnalysis) {
       return NextResponse.json({
-        message: 'Call already analyzed',
+        message: "Call already analyzed",
         analysis: callLog.conversationAnalysis,
       });
     }
 
     // Only analyze completed calls
-    if (callLog.status !== 'COMPLETED') {
-      return apiErrors.badRequest('Call is not completed yet');
+    if (callLog.status !== "COMPLETED") {
+      return apiErrors.badRequest("Call is not completed yet");
     }
 
     // Get transcript - try both field names
-    const transcript = callLog.transcript || callLog.transcription || 'No transcript available';
+    const transcript =
+      callLog.transcript || callLog.transcription || "No transcript available";
     const duration = callLog.duration || 0;
 
     const ctx = await resolveDalContext(callLog.userId);
@@ -59,22 +87,29 @@ export async function POST(req: NextRequest) {
       where: { id: callLog.userId },
       select: { language: true },
     });
-    const userLanguage = user?.language || 'en';
+    const userLanguage = user?.language || "en";
 
     // Get lead context
-    const leadContext = callLog.lead ? {
-      status: callLog.lead.status,
-      currentScore: callLog.lead.leadScore || 0,
-      previousInteractions: await crmDb.callLog.count({
-        where: {
-          leadId: callLog.leadId || undefined,
-          id: { not: callLogId },
-        },
-      }),
-    } : undefined;
+    const leadContext = callLog.lead
+      ? {
+          status: callLog.lead.status,
+          currentScore: callLog.lead.leadScore || 0,
+          previousInteractions: await crmDb.callLog.count({
+            where: {
+              leadId: callLog.leadId || undefined,
+              id: { not: callLogId },
+            },
+          }),
+        }
+      : undefined;
 
     // Analyze the conversation
-    const analysis = await analyzeConversation(transcript, duration, leadContext, userLanguage);
+    const analysis = await analyzeConversation(
+      transcript,
+      duration,
+      leadContext,
+      userLanguage,
+    );
 
     // Calculate score adjustment
     const scoreAdjustment = calculateLeadScoreAdjustment(analysis, duration);
@@ -92,8 +127,14 @@ export async function POST(req: NextRequest) {
     // Update lead if exists
     if (callLog.leadId && callLog.lead) {
       const currentLeadScore = callLog.lead.leadScore || 0;
-      const newScore = Math.max(0, Math.min(100, currentLeadScore + scoreAdjustment));
-      const newStatus = determineNextLeadStatus(callLog.lead.status, analysis.callOutcome.outcome);
+      const newScore = Math.max(
+        0,
+        Math.min(100, currentLeadScore + scoreAdjustment),
+      );
+      const newStatus = determineNextLeadStatus(
+        callLog.lead.status,
+        analysis.callOutcome.outcome,
+      );
 
       await leadService.update(ctx, callLog.leadId, {
         leadScore: newScore,
@@ -102,16 +143,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    emitCRMEvent('call_completed', callLog.userId, { entityId: callLogId, entityType: 'Call' });
+    emitCRMEvent("call_completed", callLog.userId, {
+      entityId: callLogId,
+      entityType: "Call",
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Call analyzed successfully',
+      message: "Call analyzed successfully",
       analysis,
       scoreAdjustment,
     });
   } catch (error) {
-    console.error('Error in call-completed webhook:', error);
-    return apiErrors.internal('Failed to process webhook');
+    console.error("Error in call-completed webhook:", error);
+    return apiErrors.internal("Failed to process webhook");
   }
 }

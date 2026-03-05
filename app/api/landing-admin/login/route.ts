@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,6 +14,24 @@ function signToken(payload: string, secret: string) {
 
 export async function POST(request: Request) {
   try {
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip =
+      (forwardedFor ? forwardedFor.split(",").at(-1)?.trim() : null) ??
+      request.headers.get("x-real-ip") ??
+      "127.0.0.1";
+
+    const rlKey = getRateLimitKey(ip, "/api/landing-admin/login");
+    const rlResult = await checkRateLimit(rlKey, RATE_LIMITS.auth);
+    if (!rlResult.allowed) {
+      return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(Math.ceil(rlResult.resetMs / 1000)),
+        },
+      });
+    }
+
     const { username, password } = await request.json();
     const expectedUser = process.env.LANDING_ADMIN_USERNAME;
     const expectedPass = process.env.LANDING_ADMIN_PASSWORD;

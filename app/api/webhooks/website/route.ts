@@ -3,15 +3,28 @@
  * Receives events from user websites and triggers workflows
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getCrmDb, leadService } from '@/lib/dal';
-import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
-import { workflowEngine } from '@/lib/workflow-engine';
-import { processWebsiteTriggers } from '@/lib/website-triggers';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb, leadService } from "@/lib/dal";
+import {
+  createDalContext,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
+import { workflowEngine } from "@/lib/workflow-engine";
+import { processWebsiteTriggers } from "@/lib/website-triggers";
+import { apiErrors } from "@/lib/api-error";
 
 export async function POST(request: NextRequest) {
   try {
+    const secret = request.headers.get("x-website-secret");
+    const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+    if (!expectedSecret) {
+      if (process.env.NODE_ENV === "production") {
+        return apiErrors.internal("WEBSITE_VOICE_CONFIG_SECRET not configured");
+      }
+    } else if (secret !== expectedSecret) {
+      return apiErrors.unauthorized();
+    }
+
     const body = await request.json();
     const {
       websiteId,
@@ -20,33 +33,35 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!websiteId || !eventType) {
-      return apiErrors.badRequest('Website ID and event type are required');
+      return apiErrors.badRequest("Website ID and event type are required");
     }
 
     // Get website to find user (no session - fetch first to get userId)
-    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+    const website = await getCrmDb(
+      createDalContext("bootstrap"),
+    ).website.findUnique({
       where: { id: websiteId },
     });
 
     if (!website) {
-      return apiErrors.notFound('Website not found');
+      return apiErrors.notFound("Website not found");
     }
 
     // Map event types to workflow triggers
     const triggerMap: Record<string, string> = {
-      visitor: 'WEBSITE_VISITOR',
-      form_submitted: 'WEBSITE_FORM_SUBMITTED',
-      payment_received: 'WEBSITE_PAYMENT_RECEIVED',
-      booking_created: 'WEBSITE_BOOKING_CREATED',
-      cta_clicked: 'WEBSITE_CTA_CLICKED',
-      page_viewed: 'WEBSITE_PAGE_VIEWED',
+      visitor: "WEBSITE_VISITOR",
+      form_submitted: "WEBSITE_FORM_SUBMITTED",
+      payment_received: "WEBSITE_PAYMENT_RECEIVED",
+      booking_created: "WEBSITE_BOOKING_CREATED",
+      cta_clicked: "WEBSITE_CTA_CLICKED",
+      page_viewed: "WEBSITE_PAGE_VIEWED",
     };
 
     const triggerType = triggerMap[eventType];
     if (!triggerType) {
       return NextResponse.json(
         { error: `Unknown event type: ${eventType}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,7 +69,7 @@ export async function POST(request: NextRequest) {
     const db = getCrmDb(ctx);
 
     // Store visitor data if it's a visitor event
-    if (eventType === 'visitor') {
+    if (eventType === "visitor") {
       await db.websiteVisitor.create({
         data: {
           websiteId,
@@ -69,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store form submission if it's a form event
-    if (eventType === 'form_submitted' && data.formData) {
+    if (eventType === "form_submitted" && data.formData) {
       await db.websiteVisitor.create({
         data: {
           websiteId,
@@ -85,23 +100,31 @@ export async function POST(request: NextRequest) {
       const integration = await db.websiteIntegration.findFirst({
         where: {
           websiteId,
-          type: 'FORM',
-          status: 'ACTIVE',
+          type: "FORM",
+          status: "ACTIVE",
         },
       });
 
       if (integration && (integration.config as any).createLead) {
         const lead = await leadService.create(ctx, {
-          businessName: data.formData.name || data.formData.businessName || 'Website Visitor',
+          businessName:
+            data.formData.name ||
+            data.formData.businessName ||
+            "Website Visitor",
           contactPerson: data.formData.name,
           email: data.formData.email,
           phone: data.formData.phone || null,
-          source: 'Website Form',
-          status: 'NEW',
-          contactType: 'CUSTOMER',
+          source: "Website Form",
+          status: "NEW",
+          contactType: "CUSTOMER",
         } as any);
         // Auto-enroll in drip workflows with WEBSITE_FORM_SUBMITTED trigger
-        await processWebsiteTriggers(website.userId, lead.id, 'WEBSITE_FORM_SUBMITTED', { websiteId });
+        await processWebsiteTriggers(
+          website.userId,
+          lead.id,
+          "WEBSITE_FORM_SUBMITTED",
+          { websiteId },
+        );
       }
     }
 
@@ -119,12 +142,12 @@ export async function POST(request: NextRequest) {
       {
         websiteId,
         ...data,
-      }
+      },
     );
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Website webhook error:', error);
-    return apiErrors.internal(error.message || 'Webhook processing failed');
+    console.error("Website webhook error:", error);
+    return apiErrors.internal(error.message || "Webhook processing failed");
   }
 }

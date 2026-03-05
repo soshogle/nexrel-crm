@@ -1,66 +1,79 @@
-
 /**
  * Facebook Messenger Webhook Handler
  * Receives incoming messages from Facebook Messenger
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { FacebookService } from '@/lib/messaging-sync/facebook-service';
-import { prisma } from '@/lib/db';
-import crypto from 'crypto';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { FacebookService } from "@/lib/messaging-sync/facebook-service";
+import { prisma } from "@/lib/db";
+import crypto from "crypto";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-function verifyFacebookSignature(rawBody: string, signature: string | null): boolean {
+function verifyFacebookSignature(
+  rawBody: string,
+  signature: string | null,
+): boolean {
   const appSecret = process.env.FACEBOOK_APP_SECRET;
   if (!appSecret) {
     // In production, reject if secret is not configured
-    if (process.env.NODE_ENV === 'production') {
-      console.error('FACEBOOK_APP_SECRET not configured — rejecting webhook in production');
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "FACEBOOK_APP_SECRET not configured — rejecting webhook in production",
+      );
       return false;
     }
-    console.warn('FACEBOOK_APP_SECRET not configured — skipping verification (dev only)');
+    console.warn(
+      "FACEBOOK_APP_SECRET not configured — skipping verification (dev only)",
+    );
     return true;
   }
   if (!signature) return false;
 
-  const expectedSig = 'sha256=' + crypto
-    .createHmac('sha256', appSecret)
-    .update(rawBody)
-    .digest('hex');
+  const expectedSig =
+    "sha256=" +
+    crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSig)
+  const expectedBuf = Buffer.from(expectedSig);
+  const signatureBuf = Buffer.from(signature);
+  return (
+    expectedBuf.length === signatureBuf.length &&
+    crypto.timingSafeEqual(signatureBuf, expectedBuf)
   );
 }
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const mode = searchParams.get('hub.mode');
-  const token = searchParams.get('hub.verify_token');
-  const challenge = searchParams.get('hub.challenge');
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
+  const challenge = searchParams.get("hub.challenge");
 
-  const verifyToken = process.env.FACEBOOK_VERIFY_TOKEN || 'soshogle_verify_token';
+  const verifyToken = process.env.FACEBOOK_VERIFY_TOKEN;
 
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Facebook webhook verified');
+  if (!verifyToken) {
+    return process.env.NODE_ENV === "production"
+      ? apiErrors.internal("FACEBOOK_VERIFY_TOKEN not configured")
+      : apiErrors.forbidden("Verification token not configured");
+  }
+
+  if (mode === "subscribe" && token === verifyToken) {
+    console.log("Facebook webhook verified");
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return apiErrors.forbidden('Invalid verification token');
+  return apiErrors.forbidden("Invalid verification token");
 }
 
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    const signature = req.headers.get('x-hub-signature-256');
+    const signature = req.headers.get("x-hub-signature-256");
 
     if (!verifyFacebookSignature(rawBody, signature)) {
-      console.error('Facebook webhook signature verification failed');
-      return apiErrors.forbidden('Invalid signature');
+      console.error("Facebook webhook signature verification failed");
+      return apiErrors.forbidden("Invalid signature");
     }
 
     const webhookData = JSON.parse(rawBody);
@@ -73,14 +86,14 @@ export async function POST(req: NextRequest) {
       // Find channel connection for this page
       const channelConnection = await prisma.channelConnection.findFirst({
         where: {
-          channelType: 'FACEBOOK_MESSENGER',
+          channelType: "FACEBOOK_MESSENGER",
           providerAccountId: pageId,
-          status: 'CONNECTED',
+          status: "CONNECTED",
         },
       });
 
       if (!channelConnection) {
-        console.log('No channel connection found for Facebook page:', pageId);
+        console.log("No channel connection found for Facebook page:", pageId);
         continue;
       }
 
@@ -88,7 +101,7 @@ export async function POST(req: NextRequest) {
       if (entry.messaging) {
         const facebookService = new FacebookService(
           channelConnection.accessToken!,
-          pageId
+          pageId,
         );
 
         for (const messaging of entry.messaging) {
@@ -97,16 +110,16 @@ export async function POST(req: NextRequest) {
             await facebookService.processIncomingMessage(
               { entry: [{ messaging: [messaging] }] },
               channelConnection.id,
-              channelConnection.userId
+              channelConnection.userId,
             );
           }
         }
       }
     }
 
-    return NextResponse.json({ status: 'ok' });
+    return NextResponse.json({ status: "ok" });
   } catch (error: any) {
-    console.error('Error processing Facebook webhook:', error);
-    return apiErrors.internal('Internal server error', error.message);
+    console.error("Error processing Facebook webhook:", error);
+    return apiErrors.internal("Internal server error", error.message);
   }
 }

@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getCrmDb } from '@/lib/dal';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { aiResponseService } from '@/lib/ai-response-service';
-import { workflowEngine } from '@/lib/workflow-engine';
-import { apiErrors } from '@/lib/api-error';
-import { validateBody } from '@/lib/validate';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { aiResponseService } from "@/lib/ai-response-service";
+import { workflowEngine } from "@/lib/workflow-engine";
+import { apiErrors } from "@/lib/api-error";
+import { validateBody } from "@/lib/validate";
 
 const incomingMessageSchema = z.object({
-  userId: z.string().min(1, 'userId is required'),
-  channelType: z.string().min(1, 'channelType is required'),
-  messageContent: z.string().min(1, 'messageContent is required').max(50_000),
+  userId: z.string().min(1, "userId is required"),
+  channelType: z.string().min(1, "channelType is required"),
+  messageContent: z.string().min(1, "messageContent is required").max(50_000),
   conversationId: z.string().optional(),
   channelConnectionId: z.string().optional(),
   contactName: z.string().max(255).optional(),
@@ -22,11 +22,34 @@ const incomingMessageSchema = z.object({
  * This receives messages from Twilio, Facebook, Instagram, Email, etc.
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+function isAuthorizedInternalWebhook(request: NextRequest): boolean {
+  const expectedSecret =
+    process.env.INTERNAL_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
+  const providedHeaderSecret =
+    request.headers.get("x-internal-webhook-secret") ||
+    request.headers.get("x-webhook-secret");
+  const authHeader = request.headers.get("authorization");
+  const providedBearer = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+  const providedSecret = providedHeaderSecret || providedBearer;
+
+  if (!expectedSecret) {
+    return process.env.NODE_ENV !== "production";
+  }
+
+  return providedSecret === expectedSecret;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAuthorizedInternalWebhook(request)) {
+      return apiErrors.unauthorized("Invalid webhook secret");
+    }
+
     const validation = await validateBody(request, incomingMessageSchema);
     if (!validation.ok) return validation.error;
     const {
@@ -45,14 +68,14 @@ export async function POST(request: NextRequest) {
     // Get or create conversation
     let conversation = conversationId
       ? await db.conversation.findUnique({
-        where: { id: conversationId },
-        include: {
-          messages: {
-            orderBy: { sentAt: 'desc' },
-            take: 10,
+          where: { id: conversationId },
+          include: {
+            messages: {
+              orderBy: { sentAt: "desc" },
+              take: 10,
+            },
           },
-        },
-      })
+        })
       : null;
 
     if (!conversation && channelConnectionId && contactIdentifier) {
@@ -63,7 +86,7 @@ export async function POST(request: NextRequest) {
           channelConnectionId,
           contactName: contactName || contactIdentifier,
           contactIdentifier,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           unreadCount: 1,
           lastMessageAt: new Date(),
           lastMessagePreview: messageContent.substring(0, 100),
@@ -75,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!conversation) {
-      return apiErrors.badRequest('Could not find or create conversation');
+      return apiErrors.badRequest("Could not find or create conversation");
     }
 
     // Store incoming message
@@ -83,8 +106,8 @@ export async function POST(request: NextRequest) {
       data: {
         conversationId: conversation.id,
         userId,
-        direction: 'INBOUND',
-        status: 'DELIVERED',
+        direction: "INBOUND",
+        status: "DELIVERED",
         content: messageContent,
         sentAt: new Date(),
         deliveredAt: new Date(),
@@ -98,39 +121,51 @@ export async function POST(request: NextRequest) {
         lastMessageAt: new Date(),
         lastMessagePreview: messageContent.substring(0, 100),
         unreadCount: { increment: 1 },
-        status: 'UNREAD',
+        status: "UNREAD",
       },
     });
 
     // Trigger workflows for MESSAGE_RECEIVED
-    workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {
-      userId,
-      conversationId: conversation.id,
-      messageId: incomingMessage.id,
-      leadId: conversation.leadId || undefined,
-      variables: {
-        contactName: conversation.contactName,
-        messageContent,
-        channelType,
-      },
-    }, {
-      messageContent,
-    }).catch(err => console.error('Workflow trigger failed:', err));
+    workflowEngine
+      .triggerWorkflow(
+        "MESSAGE_RECEIVED",
+        {
+          userId,
+          conversationId: conversation.id,
+          messageId: incomingMessage.id,
+          leadId: conversation.leadId || undefined,
+          variables: {
+            contactName: conversation.contactName,
+            messageContent,
+            channelType,
+          },
+        },
+        {
+          messageContent,
+        },
+      )
+      .catch((err) => console.error("Workflow trigger failed:", err));
 
     // Trigger workflows for MESSAGE_WITH_KEYWORDS
-    workflowEngine.triggerWorkflow('MESSAGE_WITH_KEYWORDS', {
-      userId,
-      conversationId: conversation.id,
-      messageId: incomingMessage.id,
-      leadId: conversation.leadId || undefined,
-      variables: {
-        contactName: conversation.contactName,
-        messageContent,
-        channelType,
-      },
-    }, {
-      messageContent,
-    }).catch(err => console.error('Keyword workflow trigger failed:', err));
+    workflowEngine
+      .triggerWorkflow(
+        "MESSAGE_WITH_KEYWORDS",
+        {
+          userId,
+          conversationId: conversation.id,
+          messageId: incomingMessage.id,
+          leadId: conversation.leadId || undefined,
+          variables: {
+            contactName: conversation.contactName,
+            messageContent,
+            channelType,
+          },
+        },
+        {
+          messageContent,
+        },
+      )
+      .catch((err) => console.error("Keyword workflow trigger failed:", err));
 
     // Check if auto-reply is enabled
     const autoReplySettings = await db.autoReplySettings.findUnique({
@@ -153,14 +188,17 @@ export async function POST(request: NextRequest) {
         success: true,
         messageId: incomingMessage.id,
         autoReplyEnabled: false,
-        reason: 'Channel auto-reply disabled',
+        reason: "Channel auto-reply disabled",
       });
     }
 
     // Generate AI response
     try {
       const conversationHistory = conversation.messages?.map((msg: any) => ({
-        role: msg.direction === 'INBOUND' ? ('user' as const) : ('assistant' as const),
+        role:
+          msg.direction === "INBOUND"
+            ? ("user" as const)
+            : ("assistant" as const),
         content: msg.content,
         timestamp: msg.sentAt,
       }));
@@ -179,8 +217,8 @@ export async function POST(request: NextRequest) {
         data: {
           conversationId: conversation.id,
           userId,
-          direction: 'OUTBOUND',
-          status: 'SENT',
+          direction: "OUTBOUND",
+          status: "SENT",
           content: aiResponse.response,
           sentAt: new Date(),
           deliveredAt: new Date(),
@@ -210,7 +248,7 @@ export async function POST(request: NextRequest) {
         await db.conversation.update({
           where: { id: conversation.id },
           data: {
-            status: 'UNREAD',
+            status: "UNREAD",
             metadata: {
               needsHumanReview: true,
               escalationReason: aiResponse.escalationReason,
@@ -219,8 +257,11 @@ export async function POST(request: NextRequest) {
         });
 
         // Send notification if enabled
-        if (autoReplySettings.notifyOnEscalation && autoReplySettings.notificationEmail) {
-          const { emailService } = await import('@/lib/email-service');
+        if (
+          autoReplySettings.notifyOnEscalation &&
+          autoReplySettings.notificationEmail
+        ) {
+          const { emailService } = await import("@/lib/email-service");
           await emailService.sendEmail({
             to: autoReplySettings.notificationEmail,
             subject: `⚠️ Message Escalation — needs human review`,
@@ -231,8 +272,8 @@ export async function POST(request: NextRequest) {
                 </div>
                 <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
                   <p>A conversation needs your attention. The AI auto-reply flagged this for human review.</p>
-                  ${aiResponse.escalationReason ? `<p><strong>Reason:</strong> ${aiResponse.escalationReason}</p>` : ''}
-                  <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard/messages" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">View Conversation</a></p>
+                  ${aiResponse.escalationReason ? `<p><strong>Reason:</strong> ${aiResponse.escalationReason}</p>` : ""}
+                  <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ""}/dashboard/messages" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">View Conversation</a></p>
                 </div>
               </div>
             `,
@@ -256,16 +297,16 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (aiError) {
-      console.error('AI response generation failed:', aiError);
+      console.error("AI response generation failed:", aiError);
 
       // Mark conversation as needing human review
       await db.conversation.update({
         where: { id: conversation.id },
         data: {
-          status: 'UNREAD',
+          status: "UNREAD",
           metadata: {
             needsHumanReview: true,
-            escalationReason: 'AI generation failed',
+            escalationReason: "AI generation failed",
           },
         },
       });
@@ -275,19 +316,20 @@ export async function POST(request: NextRequest) {
         messageId: incomingMessage.id,
         autoReplyEnabled: true,
         autoReplyFailed: true,
-        error: 'AI response generation failed, conversation flagged for human review',
+        error:
+          "AI response generation failed, conversation flagged for human review",
       });
     }
   } catch (error) {
-    console.error('Webhook processing failed:', error);
-    return apiErrors.internal('Failed to process incoming message');
+    console.error("Webhook processing failed:", error);
+    return apiErrors.internal("Failed to process incoming message");
   }
 }
 
 // GET endpoint for testing
 export async function GET(request: NextRequest) {
   return NextResponse.json({
-    message: 'Incoming message webhook endpoint',
-    status: 'active',
+    message: "Incoming message webhook endpoint",
+    status: "active",
   });
 }

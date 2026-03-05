@@ -3,67 +3,89 @@
  * Receives leads from owner website Voice AI (ElevenLabs) conversations.
  * Creates lead in CRM, adds transcript as note, triggers workflows.
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getCrmDb, leadService, noteService } from '@/lib/dal';
-import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
-import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
-import { processWebsiteTriggers } from '@/lib/website-triggers';
-import { processCampaignTriggers } from '@/lib/campaign-triggers';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb, leadService, noteService } from "@/lib/dal";
+import {
+  createDalContext,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
+import { detectLeadWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
+import { processWebsiteTriggers } from "@/lib/website-triggers";
+import { processCampaignTriggers } from "@/lib/campaign-triggers";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get('x-website-voice-secret');
+    const secret = request.headers.get("x-website-voice-secret");
     const expectedSecret = process.env.WEBSITE_VOICE_LEAD_SECRET;
 
-    if (expectedSecret && secret !== expectedSecret) {
+    if (!expectedSecret) {
+      if (process.env.NODE_ENV === "production") {
+        return apiErrors.internal("WEBSITE_VOICE_LEAD_SECRET not configured");
+      }
+    } else if (secret !== expectedSecret) {
       return apiErrors.unauthorized();
     }
 
     const body = await request.json();
-    const { websiteId, name, email, phone, transcript, notes, appointmentRequest, source } = body;
+    const {
+      websiteId,
+      name,
+      email,
+      phone,
+      transcript,
+      notes,
+      appointmentRequest,
+      source,
+    } = body;
 
     if (!websiteId) {
-      return apiErrors.badRequest('websiteId required');
+      return apiErrors.badRequest("websiteId required");
     }
 
     if (!name && !email && !phone) {
-      return apiErrors.badRequest('At least name, email, or phone required');
+      return apiErrors.badRequest("At least name, email, or phone required");
     }
 
-    const website = await getCrmDb(createDalContext('')).website.findUnique({
+    const website = await getCrmDb(createDalContext("")).website.findUnique({
       where: { id: websiteId },
       select: { userId: true },
     });
 
     if (!website) {
-      return apiErrors.notFound('Website not found');
+      return apiErrors.notFound("Website not found");
     }
 
     const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
     const leadOwnerId = website.userId;
 
-    const leadSource = source || 'Website Voice AI';
+    const leadSource = source || "Website Voice AI";
     const lead = await leadService.create(ctx, {
-      businessName: name || (leadSource.includes('Report') ? 'Secret Properties Visitor' : 'Voice AI Visitor'),
+      businessName:
+        name ||
+        (leadSource.includes("Report")
+          ? "Secret Properties Visitor"
+          : "Voice AI Visitor"),
       contactPerson: name || null,
       email: email || null,
       phone: phone || null,
       source: leadSource,
-      status: 'NEW',
+      status: "NEW",
       enrichedData: {
-        source: leadSource.includes('Report') ? 'website_secret_report' : 'website_voice_ai',
+        source: leadSource.includes("Report")
+          ? "website_secret_report"
+          : "website_voice_ai",
         websiteId,
         receivedAt: new Date().toISOString(),
         appointmentRequest: appointmentRequest || null,
         notes: notes || null,
       },
-      contactType: 'CUSTOMER',
+      contactType: "CUSTOMER",
     } as any);
 
     // Add transcript as note
@@ -75,11 +97,16 @@ export async function POST(request: NextRequest) {
       noteParts.push(`\n[Additional Notes]\n${notes}`);
     }
     if (appointmentRequest) {
-      noteParts.push(`\n[Appointment Request]\n${JSON.stringify(appointmentRequest)}`);
+      noteParts.push(
+        `\n[Appointment Request]\n${JSON.stringify(appointmentRequest)}`,
+      );
     }
 
     if (noteParts.length > 0) {
-      await noteService.create(ctx, { leadId: lead.id, content: noteParts.join('\n') });
+      await noteService.create(ctx, {
+        leadId: lead.id,
+        content: noteParts.join("\n"),
+      });
     }
 
     // Create booking appointment if requested
@@ -89,22 +116,31 @@ export async function POST(request: NextRequest) {
           data: {
             userId: leadOwnerId,
             leadId: lead.id,
-            appointmentDate: new Date(`${appointmentRequest.date}T${appointmentRequest.time}`),
-            status: 'SCHEDULED',
-            notes: appointmentRequest.notes || 'Booked via Voice AI',
+            appointmentDate: new Date(
+              `${appointmentRequest.date}T${appointmentRequest.time}`,
+            ),
+            status: "SCHEDULED",
+            notes: appointmentRequest.notes || "Booked via Voice AI",
           },
         });
       } catch (bookingErr) {
-        console.warn('[website-voice-lead] Booking creation failed:', bookingErr);
+        console.warn(
+          "[website-voice-lead] Booking creation failed:",
+          bookingErr,
+        );
       }
     }
 
-    const triggerType = leadSource.includes('Report') ? 'WEBSITE_SECRET_REPORT_LEAD' : 'WEBSITE_VOICE_AI_LEAD';
+    const triggerType = leadSource.includes("Report")
+      ? "WEBSITE_SECRET_REPORT_LEAD"
+      : "WEBSITE_VOICE_AI_LEAD";
     // Trigger workflows: drip campaigns
     try {
-      await processWebsiteTriggers(leadOwnerId, lead.id, triggerType, { websiteId });
+      await processWebsiteTriggers(leadOwnerId, lead.id, triggerType, {
+        websiteId,
+      });
     } catch (wfErr) {
-      console.warn('[website-voice-lead] processWebsiteTriggers error:', wfErr);
+      console.warn("[website-voice-lead] processWebsiteTriggers error:", wfErr);
     }
 
     // Trigger email/SMS drip campaigns
@@ -116,7 +152,10 @@ export async function POST(request: NextRequest) {
         metadata: { websiteId },
       });
     } catch (campErr) {
-      console.warn('[website-voice-lead] processCampaignTriggers error:', campErr);
+      console.warn(
+        "[website-voice-lead] processCampaignTriggers error:",
+        campErr,
+      );
     }
 
     // Trigger workflows on lead creation (RE and industry auto-run)
@@ -125,27 +164,40 @@ export async function POST(request: NextRequest) {
         where: { id: leadOwnerId },
         select: { industry: true },
       });
-      if (user?.industry === 'REAL_ESTATE') {
+      if (user?.industry === "REAL_ESTATE") {
         detectLeadWorkflowTriggers(leadOwnerId, lead.id).catch((err) => {
-          console.error('[website-voice-lead] Workflow trigger failed:', err);
+          console.error("[website-voice-lead] Workflow trigger failed:", err);
         });
       } else if (user?.industry) {
-        const { detectIndustryLeadWorkflowTriggers } = await import('@/lib/industry-workflows/lead-triggers');
-        detectIndustryLeadWorkflowTriggers(leadOwnerId, lead.id, user.industry).catch((err) => {
-          console.error('[website-voice-lead] Industry workflow trigger failed:', err);
+        const { detectIndustryLeadWorkflowTriggers } = await import(
+          "@/lib/industry-workflows/lead-triggers"
+        );
+        detectIndustryLeadWorkflowTriggers(
+          leadOwnerId,
+          lead.id,
+          user.industry,
+        ).catch((err) => {
+          console.error(
+            "[website-voice-lead] Industry workflow trigger failed:",
+            err,
+          );
         });
       }
     } catch (wfErr) {
-      console.warn('[website-voice-lead] Workflow trigger error:', wfErr);
+      console.warn("[website-voice-lead] Workflow trigger error:", wfErr);
     }
 
-    emitCRMEvent('website_lead_captured', leadOwnerId, { entityType: 'WebsiteLead' });
+    emitCRMEvent("website_lead_captured", leadOwnerId, {
+      entityType: "WebsiteLead",
+    });
 
-    console.log(`[website-voice-lead] Lead created: ${lead.id} (${name || '—'} ${email || '—'})`);
+    console.log(
+      `[website-voice-lead] Lead created: ${lead.id} (${name || "—"} ${email || "—"})`,
+    );
 
     return NextResponse.json({ success: true, leadId: lead.id });
   } catch (error: any) {
-    console.error('[website-voice-lead] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to create lead');
+    console.error("[website-voice-lead] Error:", error);
+    return apiErrors.internal(error.message || "Failed to create lead");
   }
 }

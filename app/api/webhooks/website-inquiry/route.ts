@@ -4,54 +4,72 @@
  * Creates a Lead in the CRM with source tracking, adds the message as a Note,
  * sends an email notification to the broker, and triggers workflows.
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getCrmDb, leadService, noteService } from '@/lib/dal';
-import { createDalContext, resolveDalContext } from '@/lib/context/industry-context';
-import { emailService } from '@/lib/email-service';
-import { processWebsiteTriggers } from '@/lib/website-triggers';
-import { processCampaignTriggers } from '@/lib/campaign-triggers';
-import { apiErrors } from '@/lib/api-error';
-import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb, leadService, noteService } from "@/lib/dal";
+import {
+  createDalContext,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
+import { emailService } from "@/lib/email-service";
+import { processWebsiteTriggers } from "@/lib/website-triggers";
+import { processCampaignTriggers } from "@/lib/campaign-triggers";
+import { apiErrors } from "@/lib/api-error";
+import { syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get('x-website-secret');
+    const secret = request.headers.get("x-website-secret");
+    const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+    if (!expectedSecret) {
+      if (process.env.NODE_ENV === "production") {
+        return apiErrors.internal("WEBSITE_VOICE_CONFIG_SECRET not configured");
+      }
+    } else if (secret !== expectedSecret) {
+      return apiErrors.unauthorized();
+    }
+
     const body = await request.json();
-    const { websiteId, name, email, phone, message, propertyId, propertyAddress, language } = body;
+    const {
+      websiteId,
+      name,
+      email,
+      phone,
+      message,
+      propertyId,
+      propertyAddress,
+      language,
+    } = body;
 
     if (!websiteId) {
-      return apiErrors.badRequest('websiteId required');
+      return apiErrors.badRequest("websiteId required");
     }
     if (!name || !email || !message) {
-      return apiErrors.badRequest('name, email, and message are required');
+      return apiErrors.badRequest("name, email, and message are required");
     }
 
-    const website = await getCrmDb(createDalContext('')).website.findUnique({
+    const website = await getCrmDb(createDalContext("")).website.findUnique({
       where: { id: websiteId },
       select: { userId: true, name: true },
     });
 
     if (!website) {
-      return apiErrors.notFound('Website not found');
+      return apiErrors.notFound("Website not found");
     }
 
     const ctx = await resolveDalContext(website.userId);
     const db = getCrmDb(ctx);
 
-    const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
-    if (expectedSecret && secret !== expectedSecret) {
-      return apiErrors.unauthorized();
-    }
-
     const leadOwnerId = website.userId;
 
-    const existingLead = await leadService.findMany(ctx, {
-      where: { email },
-      take: 1,
-    }).then((r) => r[0]);
+    const existingLead = await leadService
+      .findMany(ctx, {
+        where: { email },
+        take: 1,
+      })
+      .then((r) => r[0]);
 
     let lead;
     if (existingLead) {
@@ -62,28 +80,28 @@ export async function POST(request: NextRequest) {
         contactPerson: name,
         email,
         phone: phone || null,
-        source: 'Website Contact Form',
-        status: 'NEW',
+        source: "Website Contact Form",
+        status: "NEW",
         enrichedData: {
-          source: 'website_contact_form',
+          source: "website_contact_form",
           websiteId,
           websiteName: website.name,
           propertyId: propertyId || null,
           propertyAddress: propertyAddress || null,
           receivedAt: new Date().toISOString(),
-          preferredLanguage: language || 'en',
+          preferredLanguage: language || "en",
         },
-        contactType: 'CUSTOMER',
+        contactType: "CUSTOMER",
       } as any);
     }
 
     const noteContent = [
-      `[Website Inquiry${propertyAddress ? ` — ${propertyAddress}` : ''}]`,
-      '',
-      `From: ${name} (${email}${phone ? `, ${phone}` : ''})`,
-      '',
+      `[Website Inquiry${propertyAddress ? ` — ${propertyAddress}` : ""}]`,
+      "",
+      `From: ${name} (${email}${phone ? `, ${phone}` : ""})`,
+      "",
       message,
-    ].join('\n');
+    ].join("\n");
 
     await noteService.create(ctx, { leadId: lead.id, content: noteContent });
 
@@ -100,19 +118,19 @@ export async function POST(request: NextRequest) {
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:24px 30px;border-radius:8px 8px 0 0;">
-              <h2 style="margin:0;">New Inquiry from ${website.name || 'Your Website'}</h2>
+              <h2 style="margin:0;">New Inquiry from ${website.name || "Your Website"}</h2>
             </div>
             <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
               <table style="width:100%;border-collapse:collapse;">
                 <tr><td style="padding:8px 0;font-weight:600;color:#555;width:120px;">Name</td><td style="padding:8px 0;">${name}</td></tr>
                 <tr><td style="padding:8px 0;font-weight:600;color:#555;">Email</td><td style="padding:8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
-                ${phone ? `<tr><td style="padding:8px 0;font-weight:600;color:#555;">Phone</td><td style="padding:8px 0;"><a href="tel:${phone}">${phone}</a></td></tr>` : ''}
-                ${propertyAddress ? `<tr><td style="padding:8px 0;font-weight:600;color:#555;">Property</td><td style="padding:8px 0;">${propertyAddress}</td></tr>` : ''}
+                ${phone ? `<tr><td style="padding:8px 0;font-weight:600;color:#555;">Phone</td><td style="padding:8px 0;"><a href="tel:${phone}">${phone}</a></td></tr>` : ""}
+                ${propertyAddress ? `<tr><td style="padding:8px 0;font-weight:600;color:#555;">Property</td><td style="padding:8px 0;">${propertyAddress}</td></tr>` : ""}
               </table>
               <div style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:6px;">
                 <p style="margin:0;white-space:pre-wrap;">${message}</p>
               </div>
-              <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard/leads/${lead.id}" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">View Lead in CRM</a></p>
+              <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ""}/dashboard/leads/${lead.id}" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">View Lead in CRM</a></p>
             </div>
           </div>
         `,
@@ -122,33 +140,43 @@ export async function POST(request: NextRequest) {
 
     // Trigger workflows
     try {
-      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_CONTACT_FORM_LEAD', { websiteId });
+      await processWebsiteTriggers(
+        leadOwnerId,
+        lead.id,
+        "WEBSITE_CONTACT_FORM_LEAD",
+        { websiteId },
+      );
     } catch (wfErr) {
-      console.warn('[website-inquiry] processWebsiteTriggers error:', wfErr);
+      console.warn("[website-inquiry] processWebsiteTriggers error:", wfErr);
     }
 
     try {
       await processCampaignTriggers({
         leadId: lead.id,
         userId: leadOwnerId,
-        triggerType: 'WEBSITE_CONTACT_FORM_LEAD',
+        triggerType: "WEBSITE_CONTACT_FORM_LEAD",
         metadata: { websiteId } as any,
       });
     } catch (campErr) {
-      console.warn('[website-inquiry] processCampaignTriggers error:', campErr);
+      console.warn("[website-inquiry] processCampaignTriggers error:", campErr);
     }
 
     if (!existingLead) {
-      syncLeadCreatedToPipeline(leadOwnerId, lead).catch(err => {
-        console.error('[LeadPipelineSync] Failed on website inquiry lead:', err);
+      syncLeadCreatedToPipeline(leadOwnerId, lead).catch((err) => {
+        console.error(
+          "[LeadPipelineSync] Failed on website inquiry lead:",
+          err,
+        );
       });
     }
 
-    console.log(`[website-inquiry] Lead ${existingLead ? 'updated' : 'created'}: ${lead.id} (${name} ${email})`);
+    console.log(
+      `[website-inquiry] Lead ${existingLead ? "updated" : "created"}: ${lead.id} (${name} ${email})`,
+    );
 
     return NextResponse.json({ success: true, leadId: lead.id });
   } catch (error: any) {
-    console.error('[website-inquiry] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to process inquiry');
+    console.error("[website-inquiry] Error:", error);
+    return apiErrors.internal(error.message || "Failed to process inquiry");
   }
 }
