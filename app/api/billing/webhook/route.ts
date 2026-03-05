@@ -1,44 +1,56 @@
-
 /**
  * Stripe Webhook Handler
  * Processes Stripe webhook events for subscription management
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { stripeSubscriptionService } from '@/lib/payments/stripe-subscription-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { stripeSubscriptionService } from "@/lib/payments/stripe-subscription-service";
+import { apiErrors } from "@/lib/api-error";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
+const stripeKey =
+  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder_for_build";
 const stripe = new Stripe(stripeKey, {
-  apiVersion: '2025-10-29.clover',
+  apiVersion: "2025-10-29.clover",
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder_for_build';
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return apiErrors.internal("STRIPE_SECRET_KEY not configured");
+      }
+      if (!webhookSecret) {
+        return apiErrors.internal("STRIPE_WEBHOOK_SECRET not configured");
+      }
+    }
+
     const body = await req.text();
-    const signature = req.headers.get('stripe-signature');
+    const signature = req.headers.get("stripe-signature");
 
     if (!signature) {
-      console.error('❌ Missing Stripe signature');
-      return apiErrors.badRequest('Missing signature');
+      console.error("❌ Missing Stripe signature");
+      return apiErrors.badRequest("Missing signature");
     }
 
     // Verify webhook signature
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret || "whsec_placeholder_for_build",
+      );
     } catch (err: any) {
-      console.error('❌ Webhook signature verification failed:', err.message);
+      console.error("❌ Webhook signature verification failed:", err.message);
       return NextResponse.json(
         { error: `Webhook Error: ${err.message}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('❌ Webhook handler error:', error);
-    return apiErrors.internal(error.message || 'Webhook processing failed');
+    console.error("❌ Webhook handler error:", error);
+    return apiErrors.internal(error.message || "Webhook processing failed");
   }
 }

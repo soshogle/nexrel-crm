@@ -1,57 +1,95 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { conversationService } from '@/lib/dal/conversation-service';
-import { getCrmDb } from '@/lib/dal/db';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { conversationService } from "@/lib/dal/conversation-service";
+import { getCrmDb } from "@/lib/dal/db";
+import twilio from "twilio";
+import { decrypt } from "@/lib/encryption";
 
 /**
  * Twilio SMS Webhook Handler
  * Receives incoming SMS messages from Twilio
- * 
+ *
  * UPDATED: Uses PurchasedPhoneNumber table for reliable user lookup
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
+    const webhookData: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      webhookData[key] = String(value);
+    });
 
-    const from = formData.get('From') as string;
-    const to = formData.get('To') as string;
-    const body = formData.get('Body') as string;
-    const messageSid = formData.get('MessageSid') as string;
-
-
+    const from = formData.get("From") as string;
+    const to = formData.get("To") as string;
+    const body = formData.get("Body") as string;
+    const messageSid = formData.get("MessageSid") as string;
 
     // Find user by phone number in PurchasedPhoneNumber table
     // This is the reliable, multi-tenant safe way to look up the owner
-    const purchasedNumber = await (prisma as any).purchasedPhoneNumber.findFirst({
+    const purchasedNumber = await (
+      prisma as any
+    ).purchasedPhoneNumber.findFirst({
       where: {
         phoneNumber: to,
-        status: 'active'
+        status: "active",
       },
       include: {
-        user: true
-      }
+        user: true,
+      },
     });
 
     if (!purchasedNumber) {
-      console.error('❌ No active phone number record found for:', to);
-      return new NextResponse('', { status: 200 });
+      console.error("❌ No active phone number record found for:", to);
+      return new NextResponse("", { status: 200 });
     }
 
     const user = purchasedNumber.user;
 
+    const providerData = (purchasedNumber as any).providerData || {};
+    const rawAuthToken =
+      providerData?.authToken || process.env.TWILIO_AUTH_TOKEN;
+    let authToken: string | null = null;
+    if (typeof rawAuthToken === "string" && rawAuthToken) {
+      try {
+        authToken = decrypt(rawAuthToken);
+      } catch {
+        authToken = rawAuthToken;
+      }
+    }
+
+    if (!authToken && process.env.NODE_ENV === "production") {
+      console.error(
+        "[twilio/sms-webhook] Missing Twilio auth token for signature verification",
+      );
+      return new NextResponse("", { status: 401 });
+    }
+
+    if (authToken) {
+      const signature = req.headers.get("x-twilio-signature") || "";
+      const valid = twilio.validateRequest(
+        authToken,
+        signature,
+        req.url,
+        webhookData,
+      );
+      if (!valid && process.env.NODE_ENV === "production") {
+        console.error("[twilio/sms-webhook] Invalid Twilio signature");
+        return new NextResponse("", { status: 401 });
+      }
+    }
 
     // Find or create channel connection for SMS
     let channelConnection = await (prisma as any).channelConnection.findFirst({
       where: {
         userId: user.id,
-        channelType: 'SMS',
-        channelIdentifier: to
-      }
+        channelType: "SMS",
+        channelIdentifier: to,
+      },
     });
 
     if (!channelConnection) {
@@ -59,19 +97,18 @@ export async function POST(req: NextRequest) {
       channelConnection = await (prisma as any).channelConnection.create({
         data: {
           userId: user.id,
-          channelType: 'SMS',
+          channelType: "SMS",
           channelIdentifier: to,
           displayName: `Twilio SMS (${to})`,
-          status: 'CONNECTED'
-        }
+          status: "CONNECTED",
+        },
       });
-
     }
 
     const ctx = await resolveDalContext(user.id);
     let conversation: any = await conversationService.findFirst(ctx, {
       contactIdentifier: from,
-      channelConnectionId: channelConnection.id
+      channelConnectionId: channelConnection.id,
     });
 
     if (!conversation) {
@@ -80,9 +117,8 @@ export async function POST(req: NextRequest) {
         contactIdentifier: from,
         contactName: from,
         lastMessageAt: new Date(),
-        status: 'ACTIVE'
+        status: "ACTIVE",
       } as any);
-
     }
 
     const db = getCrmDb(ctx);
@@ -91,38 +127,37 @@ export async function POST(req: NextRequest) {
         conversationId: conversation.id,
         userId: user.id,
         content: body,
-        direction: 'INBOUND',
+        direction: "INBOUND",
         externalMessageId: messageSid,
-        status: 'DELIVERED'
-      }
+        status: "DELIVERED",
+      },
     });
 
-    await conversationService.update(ctx, conversation.id, { lastMessageAt: new Date() });
-
-
+    await conversationService.update(ctx, conversation.id, {
+      lastMessageAt: new Date(),
+    });
 
     // Respond with empty TwiML (no auto-reply for now)
     return new NextResponse(
       '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
       {
         status: 200,
-        headers: { 'Content-Type': 'text/xml' }
-      }
+        headers: { "Content-Type": "text/xml" },
+      },
     );
-
   } catch (error) {
-    console.error('Error processing SMS webhook:', error);
+    console.error("Error processing SMS webhook:", error);
     return new NextResponse(
       '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
       {
         status: 200,
-        headers: { 'Content-Type': 'text/xml' }
-      }
+        headers: { "Content-Type": "text/xml" },
+      },
     );
   }
 }
 
 // Handle GET requests (Twilio validation)
 export async function GET(req: NextRequest) {
-  return new NextResponse('SMS webhook endpoint is active', { status: 200 });
+  return new NextResponse("SMS webhook endpoint is active", { status: 200 });
 }

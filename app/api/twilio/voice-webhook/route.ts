@@ -1,27 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { resolveVoiceAgentByPhone, resolveCallLogBySid } from '@/lib/dal';
-import { voiceConversationEngine } from '@/lib/voice-conversation';
+import { NextRequest, NextResponse } from "next/server";
+import { resolveVoiceAgentByPhone, resolveCallLogBySid } from "@/lib/dal";
+import { voiceConversationEngine } from "@/lib/voice-conversation";
+import twilio from "twilio";
+import { decrypt } from "@/lib/encryption";
 
 /**
  * Twilio Voice Webhook Handler
  * This endpoint receives calls from Twilio and handles the conversation flow
  */
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
+    const webhookData: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      webhookData[key] = String(value);
+    });
 
-    const callSid = formData.get('CallSid') as string;
-    const from = formData.get('From') as string;
-    const to = formData.get('To') as string;
-    const callStatus = formData.get('CallStatus') as string;
-    const speechResult = formData.get('SpeechResult') as string;
-
-
+    const callSid = formData.get("CallSid") as string;
+    const from = formData.get("From") as string;
+    const to = formData.get("To") as string;
+    const callStatus = formData.get("CallStatus") as string;
+    const speechResult = formData.get("SpeechResult") as string;
 
     // Find the voice agent (searches default + industry DBs)
     const voiceResolved = await resolveVoiceAgentByPhone(to);
@@ -34,20 +37,64 @@ export async function POST(request: NextRequest) {
   <Hangup/>
 </Response>`,
         {
-          headers: { 'Content-Type': 'text/xml' },
-        }
+          headers: { "Content-Type": "text/xml" },
+        },
       );
     }
 
     const { voiceAgent, db } = voiceResolved;
-    if (voiceAgent.status !== 'ACTIVE') {
+
+    const candidateToken =
+      (voiceAgent as any)?.twilioAuthToken ||
+      (voiceAgent as any)?.user?.twilioAuthToken ||
+      process.env.TWILIO_AUTH_TOKEN;
+
+    let authToken: string | null = null;
+    if (typeof candidateToken === "string" && candidateToken) {
+      try {
+        authToken = decrypt(candidateToken);
+      } catch {
+        authToken = candidateToken;
+      }
+    }
+
+    if (!authToken && process.env.NODE_ENV === "production") {
+      return new NextResponse(
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>',
+        {
+          status: 401,
+          headers: { "Content-Type": "text/xml" },
+        },
+      );
+    }
+
+    if (authToken) {
+      const signature = request.headers.get("x-twilio-signature") || "";
+      const valid = twilio.validateRequest(
+        authToken,
+        signature,
+        request.url,
+        webhookData,
+      );
+      if (!valid && process.env.NODE_ENV === "production") {
+        return new NextResponse(
+          '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>',
+          {
+            status: 401,
+            headers: { "Content-Type": "text/xml" },
+          },
+        );
+      }
+    }
+
+    if (voiceAgent.status !== "ACTIVE") {
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>We're sorry, this service is currently unavailable. Please try again later.</Say>
   <Hangup/>
 </Response>`,
-        { headers: { 'Content-Type': 'text/xml' } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -61,8 +108,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId: voiceAgent.userId,
           voiceAgentId: voiceAgent.id,
-          direction: 'INBOUND',
-          status: 'IN_PROGRESS',
+          direction: "INBOUND",
+          status: "IN_PROGRESS",
           fromNumber: from,
           toNumber: to,
           twilioCallSid: callSid,
@@ -79,7 +126,7 @@ export async function POST(request: NextRequest) {
       // Build TwiML with optional recording
       const recordingAttrs = voiceAgent.enableCallRecording
         ? ` record="record-from-answer" recordingStatusCallback="/api/twilio/recording-status" recordingStatusCallbackMethod="POST"`
-        : '';
+        : "";
 
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
@@ -88,17 +135,19 @@ export async function POST(request: NextRequest) {
     <Say>${greeting}</Say>
   </Gather>
   <Say>I didn't catch that. Let me connect you to someone who can help.</Say>
-  <Dial>${voiceAgent.transferPhone || ''}</Dial>
+  <Dial>${voiceAgent.transferPhone || ""}</Dial>
 </Response>`,
         {
-          headers: { 'Content-Type': 'text/xml' },
-        }
+          headers: { "Content-Type": "text/xml" },
+        },
       );
     }
 
     // Handle ongoing conversation
     if (speechResult) {
-      const conversationData = JSON.parse((callLog.conversationData as string) || '{}');
+      const conversationData = JSON.parse(
+        (callLog.conversationData as string) || "{}",
+      );
 
       const context = {
         voiceAgent,
@@ -109,7 +158,7 @@ export async function POST(request: NextRequest) {
       // Process user input
       const result = await voiceConversationEngine.processUserInput(
         speechResult,
-        context
+        context,
       );
 
       // Update call log with conversation
@@ -122,7 +171,7 @@ export async function POST(request: NextRequest) {
           }),
           transcription: result.updatedContext.conversationHistory
             .map((msg) => `${msg.role}: ${msg.content}`)
-            .join('\n'),
+            .join("\n"),
         },
       });
 
@@ -138,13 +187,13 @@ export async function POST(request: NextRequest) {
             data: {
               userId: voiceAgent.userId,
               callLogId: callLog.id,
-              customerName: data.name || 'Unknown',
-              customerEmail: data.email || 'noemail@voice-booking.com',
+              customerName: data.name || "Unknown",
+              customerEmail: data.email || "noemail@voice-booking.com",
               customerPhone: data.phone || from,
               appointmentDate,
               duration: (voiceAgent.appointmentDuration as number) || 30,
-              status: 'SCHEDULED',
-              notes: `Booked via voice AI. Purpose: ${data.purpose || 'Not specified'}`,
+              status: "SCHEDULED",
+              notes: `Booked via voice AI. Purpose: ${data.purpose || "Not specified"}`,
             },
           });
 
@@ -152,8 +201,8 @@ export async function POST(request: NextRequest) {
           await db.callLog.update({
             where: { id: callLog.id },
             data: {
-              outcome: 'APPOINTMENT_BOOKED',
-              status: 'COMPLETED',
+              outcome: "APPOINTMENT_BOOKED",
+              status: "COMPLETED",
             },
           });
 
@@ -168,11 +217,11 @@ export async function POST(request: NextRequest) {
   <Hangup/>
 </Response>`,
             {
-              headers: { 'Content-Type': 'text/xml' },
-            }
+              headers: { "Content-Type": "text/xml" },
+            },
           );
         } catch (error) {
-          console.error('Appointment booking error:', error);
+          console.error("Appointment booking error:", error);
         }
       }
 
@@ -181,8 +230,8 @@ export async function POST(request: NextRequest) {
         await db.callLog.update({
           where: { id: callLog.id },
           data: {
-            outcome: 'TRANSFERRED_TO_HUMAN',
-            status: 'COMPLETED',
+            outcome: "TRANSFERRED_TO_HUMAN",
+            status: "COMPLETED",
           },
         });
 
@@ -193,8 +242,8 @@ export async function POST(request: NextRequest) {
   <Dial>${voiceAgent.transferPhone}</Dial>
 </Response>`,
           {
-            headers: { 'Content-Type': 'text/xml' },
-          }
+            headers: { "Content-Type": "text/xml" },
+          },
         );
       }
 
@@ -203,8 +252,8 @@ export async function POST(request: NextRequest) {
         await db.callLog.update({
           where: { id: callLog.id },
           data: {
-            outcome: 'INFORMATION_PROVIDED',
-            status: 'COMPLETED',
+            outcome: "INFORMATION_PROVIDED",
+            status: "COMPLETED",
           },
         });
 
@@ -216,8 +265,8 @@ export async function POST(request: NextRequest) {
   <Hangup/>
 </Response>`,
           {
-            headers: { 'Content-Type': 'text/xml' },
-          }
+            headers: { "Content-Type": "text/xml" },
+          },
         );
       }
 
@@ -236,8 +285,8 @@ export async function POST(request: NextRequest) {
   <Hangup/>
 </Response>`,
         {
-          headers: { 'Content-Type': 'text/xml' },
-        }
+          headers: { "Content-Type": "text/xml" },
+        },
       );
     }
 
@@ -246,14 +295,14 @@ export async function POST(request: NextRequest) {
       `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Thank you for calling. Please hold while we connect you.</Say>
-  <Dial>${voiceAgent.transferPhone || ''}</Dial>
+  <Dial>${voiceAgent.transferPhone || ""}</Dial>
 </Response>`,
       {
-        headers: { 'Content-Type': 'text/xml' },
-      }
+        headers: { "Content-Type": "text/xml" },
+      },
     );
   } catch (error: any) {
-    console.error('Twilio webhook error:', error);
+    console.error("Twilio webhook error:", error);
 
     return new NextResponse(
       `<?xml version="1.0" encoding="UTF-8"?>
@@ -262,8 +311,8 @@ export async function POST(request: NextRequest) {
   <Hangup/>
 </Response>`,
       {
-        headers: { 'Content-Type': 'text/xml' },
-      }
+        headers: { "Content-Type": "text/xml" },
+      },
     );
   }
 }
@@ -271,9 +320,9 @@ export async function POST(request: NextRequest) {
 // Handle call status updates
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const callSid = searchParams.get('CallSid');
-  const callStatus = searchParams.get('CallStatus');
-  const callDuration = searchParams.get('CallDuration');
+  const callSid = searchParams.get("CallSid");
+  const callStatus = searchParams.get("CallStatus");
+  const callDuration = searchParams.get("CallDuration");
 
   if (callSid && callStatus) {
     try {
@@ -281,11 +330,15 @@ export async function GET(request: NextRequest) {
       if (logResolved) {
         const { callLog, db } = logResolved;
         const updateData: Record<string, unknown> = {};
-        if (callStatus === 'completed') {
-          updateData.status = 'COMPLETED';
+        if (callStatus === "completed") {
+          updateData.status = "COMPLETED";
           if (callDuration) updateData.duration = parseInt(callDuration);
-        } else if (callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer') {
-          updateData.status = callStatus.toUpperCase().replace('-', '_');
+        } else if (
+          callStatus === "failed" ||
+          callStatus === "busy" ||
+          callStatus === "no-answer"
+        ) {
+          updateData.status = callStatus.toUpperCase().replace("-", "_");
         }
         await db.callLog.update({
           where: { id: callLog.id },
@@ -293,9 +346,9 @@ export async function GET(request: NextRequest) {
         });
       }
     } catch (error) {
-      console.error('Error updating call status:', error);
+      console.error("Error updating call status:", error);
     }
   }
 
-  return new NextResponse('OK');
+  return new NextResponse("OK");
 }

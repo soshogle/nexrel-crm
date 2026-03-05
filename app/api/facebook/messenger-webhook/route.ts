@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { workflowEngine } from '@/lib/workflow-engine';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { conversationService } from '@/lib/dal/conversation-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { workflowEngine } from "@/lib/workflow-engine";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { conversationService } from "@/lib/dal/conversation-service";
+import crypto from "crypto";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Facebook Messenger Webhook Endpoint
@@ -16,30 +17,60 @@ export const runtime = 'nodejs';
 // GET - Webhook verification (Facebook requires this)
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  
-  const mode = searchParams.get('hub.mode');
-  const token = searchParams.get('hub.verify_token');
-  const challenge = searchParams.get('hub.challenge');
 
-  const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || 'soshogle_messenger_verify_token';
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
+  const challenge = searchParams.get("hub.challenge");
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('✅ Facebook webhook verified');
+  const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN;
+
+  if (!VERIFY_TOKEN) {
+    return process.env.NODE_ENV === "production"
+      ? apiErrors.internal("FACEBOOK_VERIFY_TOKEN not configured")
+      : apiErrors.forbidden("Verification token not configured");
+  }
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("✅ Facebook webhook verified");
     return new NextResponse(challenge, { status: 200 });
   } else {
-    console.error('❌ Facebook webhook verification failed');
-    return apiErrors.forbidden('Verification failed');
+    console.error("❌ Facebook webhook verification failed");
+    return apiErrors.forbidden("Verification failed");
   }
+}
+
+function verifyFacebookSignature(
+  rawBody: string,
+  signature: string | null,
+): boolean {
+  const appSecret = process.env.FACEBOOK_APP_SECRET;
+  if (!appSecret) {
+    return process.env.NODE_ENV !== "production";
+  }
+  if (!signature) return false;
+
+  const expected = `sha256=${crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex")}`;
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  return (
+    expectedBuf.length === signatureBuf.length &&
+    crypto.timingSafeEqual(expectedBuf, signatureBuf)
+  );
 }
 
 // POST - Receive incoming messages
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    console.log('📨 Incoming Messenger webhook:', JSON.stringify(body, null, 2));
+    const rawBody = await request.text();
+    const signature = request.headers.get("x-hub-signature-256");
+    if (!verifyFacebookSignature(rawBody, signature)) {
+      return apiErrors.forbidden("Invalid signature");
+    }
+
+    const body = JSON.parse(rawBody);
 
     // Facebook sends test events - ignore them
-    if (body.object !== 'page') {
+    if (body.object !== "page") {
       return NextResponse.json({ received: true });
     }
 
@@ -52,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('❌ Error processing Messenger webhook:', error);
+    console.error("❌ Error processing Messenger webhook:", error);
     return apiErrors.internal(error.message);
   }
 }
@@ -66,7 +97,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const timestamp = event.timestamp;
 
     if (!senderId || !messageData) {
-      console.log('⚠️ Skipping event without sender or message');
+      console.log("⚠️ Skipping event without sender or message");
       return;
     }
 
@@ -75,22 +106,29 @@ async function processMessagingEvent(event: any, pageId: string) {
     // Find the channel connection for this page
     const channelConnection: any = await prisma.channelConnection.findFirst({
       where: {
-        providerType: 'FACEBOOK',
-        channelType: 'FACEBOOK_MESSENGER',
+        providerType: "FACEBOOK",
+        channelType: "FACEBOOK_MESSENGER",
         channelIdentifier: pageId,
-        status: 'CONNECTED',
+        status: "CONNECTED",
       },
     } as any);
 
     if (!channelConnection) {
-      console.error(`❌ No active Messenger connection found for page ${pageId}`);
+      console.error(
+        `❌ No active Messenger connection found for page ${pageId}`,
+      );
       return;
     }
 
-    console.log(`✅ Found channel connection for user: ${channelConnection.userId}`);
+    console.log(
+      `✅ Found channel connection for user: ${channelConnection.userId}`,
+    );
 
     // Get or create sender profile
-    const senderProfile = await getSenderProfile(senderId, channelConnection.accessToken!);
+    const senderProfile = await getSenderProfile(
+      senderId,
+      channelConnection.accessToken!,
+    );
     const senderName = senderProfile?.name || `Messenger User ${senderId}`;
 
     const ctx = await resolveDalContext(channelConnection.userId);
@@ -106,12 +144,12 @@ async function processMessagingEvent(event: any, pageId: string) {
         contactName: senderName,
         contactIdentifier: senderId,
         externalConversationId: senderId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       } as any);
     }
 
     // Save the message
-    const messageText = messageData.text || '[Attachment]';
+    const messageText = messageData.text || "[Attachment]";
     const messageId = messageData.mid;
 
     const incomingMessage = await prisma.conversationMessage.create({
@@ -120,8 +158,8 @@ async function processMessagingEvent(event: any, pageId: string) {
         userId: channelConnection.userId,
         externalMessageId: messageId,
         content: messageText,
-        direction: 'INBOUND',
-        status: 'DELIVERED',
+        direction: "INBOUND",
+        status: "DELIVERED",
         providerData: {
           attachments: messageData.attachments || [],
           timestamp,
@@ -133,59 +171,76 @@ async function processMessagingEvent(event: any, pageId: string) {
       lastMessageAt: new Date(),
       lastMessagePreview: messageText.substring(0, 100),
       unreadCount: { increment: 1 },
-      status: 'UNREAD',
+      status: "UNREAD",
     } as any);
 
     // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
-    workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {
-      userId: channelConnection.userId,
-      conversationId: conversation.id,
-      messageId: incomingMessage.id,
-      leadId: conversation.leadId || undefined,
-      variables: {
-        contactName: senderName,
-        messageContent: messageText,
-        channelType: 'FACEBOOK_MESSENGER', // Explicitly set channel type for filtering
-      },
-    }, {
-      messageContent: messageText,
-    }).catch(err => console.error('Messenger workflow trigger failed:', err));
+    workflowEngine
+      .triggerWorkflow(
+        "MESSAGE_RECEIVED",
+        {
+          userId: channelConnection.userId,
+          conversationId: conversation.id,
+          messageId: incomingMessage.id,
+          leadId: conversation.leadId || undefined,
+          variables: {
+            contactName: senderName,
+            messageContent: messageText,
+            channelType: "FACEBOOK_MESSENGER", // Explicitly set channel type for filtering
+          },
+        },
+        {
+          messageContent: messageText,
+        },
+      )
+      .catch((err) => console.error("Messenger workflow trigger failed:", err));
 
     // Trigger workflows for MESSAGE_WITH_KEYWORDS
-    workflowEngine.triggerWorkflow('MESSAGE_WITH_KEYWORDS', {
-      userId: channelConnection.userId,
-      conversationId: conversation.id,
-      messageId: incomingMessage.id,
-      leadId: conversation.leadId || undefined,
-      variables: {
-        contactName: senderName,
-        messageContent: messageText,
-        channelType: 'FACEBOOK_MESSENGER', // Explicitly set channel type for filtering
-      },
-    }, {
-      messageContent: messageText,
-    }).catch(err => console.error('Messenger keyword workflow trigger failed:', err));
+    workflowEngine
+      .triggerWorkflow(
+        "MESSAGE_WITH_KEYWORDS",
+        {
+          userId: channelConnection.userId,
+          conversationId: conversation.id,
+          messageId: incomingMessage.id,
+          leadId: conversation.leadId || undefined,
+          variables: {
+            contactName: senderName,
+            messageContent: messageText,
+            channelType: "FACEBOOK_MESSENGER", // Explicitly set channel type for filtering
+          },
+        },
+        {
+          messageContent: messageText,
+        },
+      )
+      .catch((err) =>
+        console.error("Messenger keyword workflow trigger failed:", err),
+      );
 
     console.log(`✅ Saved Messenger message from ${senderName}`);
   } catch (error: any) {
-    console.error('❌ Error processing messaging event:', error);
+    console.error("❌ Error processing messaging event:", error);
   }
 }
 
-async function getSenderProfile(senderId: string, accessToken: string): Promise<{ name: string } | null> {
+async function getSenderProfile(
+  senderId: string,
+  accessToken: string,
+): Promise<{ name: string } | null> {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${senderId}?fields=name&access_token=${accessToken}`
+      `https://graph.facebook.com/v18.0/${senderId}?fields=name&access_token=${accessToken}`,
     );
-    
+
     if (!response.ok) {
-      console.error('Failed to fetch sender profile:', response.statusText);
+      console.error("Failed to fetch sender profile:", response.statusText);
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching sender profile:', error);
+    console.error("Error fetching sender profile:", error);
     return null;
   }
 }

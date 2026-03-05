@@ -118,3 +118,26 @@ Notes:
 - After this sweep: `8.3/10`
 
 Rationale: critical app-load and webhook auth weaknesses were closed; remaining risk is mostly completeness/governance and route consistency verification.
+
+## Final pass update (same day)
+
+Additional hardening completed after initial sweep:
+
+- Added signature verification and fail-closed token behavior to legacy social webhooks:
+  - `app/api/facebook/messenger-webhook/route.ts`
+  - `app/api/instagram/webhook/route.ts`
+- Added Twilio signature verification on additional callback routes:
+  - `app/api/twilio/sms-webhook/route.ts`
+  - `app/api/twilio/voice-webhook/route.ts`
+  - `app/api/twilio/call-status/route.ts`
+- Added production fail-fast checks for remaining Stripe webhook secrets:
+  - `app/api/billing/webhook/route.ts`
+  - `app/api/clubos/payments/webhook/route.ts`
+
+Revised score after final pass: `9.0/10`.
+
+Remaining gap to true 10/10 is mostly operational/governance rather than immediate code exploitability:
+
+- periodic secret rotation + verification drills
+- endpoint ownership signoff for unknown/manual-review routes
+- route-alias/rewrite cleanup for stale client API references

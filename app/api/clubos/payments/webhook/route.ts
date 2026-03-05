@@ -1,27 +1,37 @@
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { clubOSPaymentService } from "@/lib/clubos-payment-service";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { clubOSPaymentService } from '@/lib/clubos-payment-service';
-import { apiErrors } from '@/lib/api-error';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
+const stripeKey =
+  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder_for_build";
 const stripe = new Stripe(stripeKey, {
-  apiVersion: '2025-10-29.clover',
+  apiVersion: "2025-10-29.clover",
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_CLUBOS || '';
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_CLUBOS || "";
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return apiErrors.internal("STRIPE_SECRET_KEY not configured");
+      }
+      if (!webhookSecret) {
+        return apiErrors.internal(
+          "STRIPE_WEBHOOK_SECRET_CLUBOS not configured",
+        );
+      }
+    }
+
     const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
+    const signature = request.headers.get("stripe-signature");
 
     if (!signature) {
-      return apiErrors.badRequest('No signature');
+      return apiErrors.badRequest("No signature");
     }
 
     // Verify webhook signature
@@ -29,30 +39,30 @@ export async function POST(request: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
-      return apiErrors.badRequest('Invalid signature');
+      console.error("Webhook signature verification failed:", err.message);
+      return apiErrors.badRequest("Invalid signature");
     }
 
     // Handle different event types
     switch (event.type) {
-      case 'payment_intent.succeeded': {
+      case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await clubOSPaymentService.handlePaymentSuccess(paymentIntent.id);
         console.log(`✅ Payment succeeded: ${paymentIntent.id}`);
         break;
       }
 
-      case 'payment_intent.payment_failed': {
+      case "payment_intent.payment_failed": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await clubOSPaymentService.handlePaymentFailure(
           paymentIntent.id,
-          paymentIntent.last_payment_error?.message
+          paymentIntent.last_payment_error?.message,
         );
         console.log(`❌ Payment failed: ${paymentIntent.id}`);
         break;
       }
 
-      case 'charge.refunded': {
+      case "charge.refunded": {
         const charge = event.data.object as Stripe.Charge;
         console.log(`💸 Refund processed for charge: ${charge.id}`);
         // Payment service already handles refunds, this is for logging
@@ -65,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('Webhook error:', error);
-    return apiErrors.internal(error.message || 'Webhook processing failed');
+    console.error("Webhook error:", error);
+    return apiErrors.internal(error.message || "Webhook processing failed");
   }
 }

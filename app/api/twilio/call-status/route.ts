@@ -1,22 +1,24 @@
-import type { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { emailService } from '@/lib/email-service';
-import { createDalContext } from '@/lib/context/industry-context';
+import type { PrismaClient } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { emailService } from "@/lib/email-service";
+import { createDalContext } from "@/lib/context/industry-context";
+import twilio from "twilio";
+import { decrypt } from "@/lib/encryption";
 import {
   resolveVoiceAgentByPhone,
   resolveCallLogBySid,
   leadService,
   noteService,
-} from '@/lib/dal';
+} from "@/lib/dal";
 import {
   triggerCallCompletedWorkflow,
   triggerMissedCallWorkflow,
-} from '@/lib/dental/workflow-triggers';
-import { apiErrors } from '@/lib/api-error';
+} from "@/lib/dental/workflow-triggers";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Twilio Call Status Callback
@@ -25,16 +27,51 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
+    const webhookData: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      webhookData[key] = String(value);
+    });
 
-    const callSid = formData.get('CallSid') as string;
-    const callStatus = formData.get('CallStatus') as string;
-    const callDuration = formData.get('CallDuration') as string;
-    const from = formData.get('From') as string;
-    const to = formData.get('To') as string;
-
+    const callSid = formData.get("CallSid") as string;
+    const callStatus = formData.get("CallStatus") as string;
+    const callDuration = formData.get("CallDuration") as string;
+    const from = formData.get("From") as string;
+    const to = formData.get("To") as string;
 
     if (!callSid) {
-      return apiErrors.badRequest('Missing CallSid');
+      return apiErrors.badRequest("Missing CallSid");
+    }
+
+    const voiceResolvedForAuth = to ? await resolveVoiceAgentByPhone(to) : null;
+    const candidateToken =
+      (voiceResolvedForAuth?.voiceAgent as any)?.twilioAuthToken ||
+      (voiceResolvedForAuth?.voiceAgent as any)?.user?.twilioAuthToken ||
+      process.env.TWILIO_AUTH_TOKEN;
+
+    let authToken: string | null = null;
+    if (typeof candidateToken === "string" && candidateToken) {
+      try {
+        authToken = decrypt(candidateToken);
+      } catch {
+        authToken = candidateToken;
+      }
+    }
+
+    if (!authToken && process.env.NODE_ENV === "production") {
+      return apiErrors.unauthorized("Twilio auth token not configured");
+    }
+
+    if (authToken) {
+      const signature = request.headers.get("x-twilio-signature") || "";
+      const valid = twilio.validateRequest(
+        authToken,
+        signature,
+        request.url,
+        webhookData,
+      );
+      if (!valid && process.env.NODE_ENV === "production") {
+        return apiErrors.unauthorized("Invalid signature");
+      }
     }
 
     // Find the call log by Twilio SID (searches default + industry DBs)
@@ -44,7 +81,6 @@ export async function POST(request: NextRequest) {
 
     // If no call log exists, create it (for Native ElevenLabs Integration)
     if (!callLog) {
-
       const voiceResolved = await resolveVoiceAgentByPhone(to);
       if (voiceResolved) {
         const { voiceAgent, db: voiceDb } = voiceResolved;
@@ -53,49 +89,71 @@ export async function POST(request: NextRequest) {
             voiceAgentId: voiceAgent.id,
             userId: voiceAgent.userId,
             twilioCallSid: callSid,
-            direction: 'INBOUND',
-            fromNumber: from || '',
-            toNumber: to || '',
-            status: 'INITIATED',
+            direction: "INBOUND",
+            fromNumber: from || "",
+            toNumber: to || "",
+            status: "INITIATED",
           },
         });
         db = voiceDb;
       } else {
-        console.warn('⚠️  [Twilio Call Status] No voice agent found for number:', to);
-        return NextResponse.json({ message: 'Voice agent not found' }, { status: 404 });
+        console.warn(
+          "⚠️  [Twilio Call Status] No voice agent found for number:",
+          to,
+        );
+        return NextResponse.json(
+          { message: "Voice agent not found" },
+          { status: 404 },
+        );
       }
     }
 
     if (!callLog || !db) {
-      console.warn('⚠️  [Twilio Call Status] Call log not found for SID:', callSid);
-      return NextResponse.json({ message: 'Call log not found' }, { status: 404 });
+      console.warn(
+        "⚠️  [Twilio Call Status] Call log not found for SID:",
+        callSid,
+      );
+      return NextResponse.json(
+        { message: "Call log not found" },
+        { status: 404 },
+      );
     }
 
     // Map Twilio status to our status
-    let status: 'INITIATED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' = 'INITIATED';
-    let outboundStatus: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' = 'IN_PROGRESS';
+    let status:
+      | "INITIATED"
+      | "IN_PROGRESS"
+      | "COMPLETED"
+      | "FAILED"
+      | "CANCELLED" = "INITIATED";
+    let outboundStatus:
+      | "SCHEDULED"
+      | "IN_PROGRESS"
+      | "COMPLETED"
+      | "FAILED"
+      | "CANCELLED" = "IN_PROGRESS";
 
     switch (callStatus) {
-      case 'initiated':
-      case 'ringing':
-        status = 'INITIATED';
-        outboundStatus = 'IN_PROGRESS';
+      case "initiated":
+      case "ringing":
+        status = "INITIATED";
+        outboundStatus = "IN_PROGRESS";
         break;
-      case 'in-progress':
-      case 'answered':
-        status = 'IN_PROGRESS';
-        outboundStatus = 'IN_PROGRESS';
+      case "in-progress":
+      case "answered":
+        status = "IN_PROGRESS";
+        outboundStatus = "IN_PROGRESS";
         break;
-      case 'completed':
-        status = 'COMPLETED';
-        outboundStatus = 'COMPLETED';
+      case "completed":
+        status = "COMPLETED";
+        outboundStatus = "COMPLETED";
         break;
-      case 'busy':
-      case 'no-answer':
-      case 'canceled':
-      case 'failed':
-        status = 'FAILED';
-        outboundStatus = 'FAILED';
+      case "busy":
+      case "no-answer":
+      case "canceled":
+      case "failed":
+        status = "FAILED";
+        outboundStatus = "FAILED";
         break;
     }
 
@@ -105,32 +163,36 @@ export async function POST(request: NextRequest) {
       data: {
         status,
         ...(callDuration && { duration: parseInt(callDuration, 10) }),
-        ...(callStatus === 'completed' && { endedAt: new Date() }),
+        ...(callStatus === "completed" && { endedAt: new Date() }),
       },
     });
 
     // Trigger workflows based on call status
     try {
-      if (callStatus === 'completed' && callDuration) {
+      if (callStatus === "completed" && callDuration) {
         // Trigger call completed workflow
         await triggerCallCompletedWorkflow(
           callLog.id,
-          callLog.leadId as string || null,
+          (callLog.leadId as string) || null,
           callLog.userId,
           parseInt(callDuration, 10),
-          'completed'
+          "completed",
         );
-      } else if (callStatus === 'no-answer' || callStatus === 'busy' || callStatus === 'failed') {
+      } else if (
+        callStatus === "no-answer" ||
+        callStatus === "busy" ||
+        callStatus === "failed"
+      ) {
         // Trigger missed call workflow
         await triggerMissedCallWorkflow(
           callLog.id,
-          callLog.leadId as string || null,
+          (callLog.leadId as string) || null,
           callLog.userId,
-          from || ''
+          from || "",
         );
       }
     } catch (error) {
-      console.error('Error triggering call workflows:', error);
+      console.error("Error triggering call workflows:", error);
       // Don't fail the webhook if workflow trigger fails
     }
 
@@ -147,17 +209,25 @@ export async function POST(request: NextRequest) {
     // If call is completed OR has duration > 0, schedule ElevenLabs data fetch with delay
     // IMPORTANT: ElevenLabs needs time to process the call and mark it as "done"
     // Twilio webhook fires immediately, but ElevenLabs may take 5-15 seconds
-    const shouldFetchRecording = callStatus === 'completed' || (callDuration && parseInt(callDuration, 10) > 0);
+    const shouldFetchRecording =
+      callStatus === "completed" ||
+      (callDuration && parseInt(callDuration, 10) > 0);
 
     if (shouldFetchRecording) {
       // Fire-and-forget: schedule the ElevenLabs fetch as a background task
       // Don't await this - respond to Twilio immediately to avoid timeout
-      scheduleElevenLabsFetch(db, callLog.id, callDuration || '0', from || '', to || '');
+      scheduleElevenLabsFetch(
+        db,
+        callLog.id,
+        callDuration || "0",
+        from || "",
+        to || "",
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('❌ [Twilio Call Status] Error:', error);
+    console.error("❌ [Twilio Call Status] Error:", error);
     return apiErrors.internal();
   }
 }
@@ -171,7 +241,7 @@ async function scheduleElevenLabsFetch(
   callLogId: string,
   callDuration: string,
   from: string,
-  to: string
+  to: string,
 ) {
   // Initial delay to allow ElevenLabs to process the call
   const INITIAL_DELAY_MS = 10000; // 10 seconds
@@ -182,29 +252,41 @@ async function scheduleElevenLabsFetch(
   let success = false;
 
   // Initial delay
-  await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY_MS));
+  await new Promise((resolve) => setTimeout(resolve, INITIAL_DELAY_MS));
 
   while (attempt < MAX_ATTEMPTS && !success) {
     attempt++;
 
     try {
-      success = await fetchAndProcessElevenLabsData(db, callLogId, callDuration, from, to);
+      success = await fetchAndProcessElevenLabsData(
+        db,
+        callLogId,
+        callDuration,
+        from,
+        to,
+      );
 
       if (!success && attempt < MAX_ATTEMPTS) {
         const delay = RETRY_DELAYS_MS[attempt - 1];
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     } catch (error: any) {
-      console.error(`❌ [ElevenLabs Fetch] Attempt ${attempt} failed:`, error.message);
+      console.error(
+        `❌ [ElevenLabs Fetch] Attempt ${attempt} failed:`,
+        error.message,
+      );
       if (attempt < MAX_ATTEMPTS) {
-        const delay = RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)];
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const delay =
+          RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)];
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
 
   if (!success) {
-    console.warn(`⚠️ [ElevenLabs Fetch] Failed to find matching conversation after ${MAX_ATTEMPTS} attempts for call ${callLogId}`);
+    console.warn(
+      `⚠️ [ElevenLabs Fetch] Failed to find matching conversation after ${MAX_ATTEMPTS} attempts for call ${callLogId}`,
+    );
   }
 }
 
@@ -217,7 +299,7 @@ async function fetchAndProcessElevenLabsData(
   callLogId: string,
   callDuration: string,
   from: string,
-  to: string
+  to: string,
 ): Promise<boolean> {
   try {
     // Get the call log to verify it hasn't been processed yet
@@ -229,8 +311,8 @@ async function fetchAndProcessElevenLabsData(
         voiceAgentId: true,
         userId: true,
         elevenLabsConversationId: true,
-        conversationData: true
-      }
+        conversationData: true,
+      },
     });
 
     if (!callLog) {
@@ -244,11 +326,14 @@ async function fetchAndProcessElevenLabsData(
     }
 
     // List recent conversations from ElevenLabs
-    const listResponse = await fetch('https://api.elevenlabs.io/v1/convai/conversations', {
-      headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+    const listResponse = await fetch(
+      "https://api.elevenlabs.io/v1/convai/conversations",
+      {
+        headers: {
+          "xi-api-key": process.env.ELEVENLABS_API_KEY || "",
+        },
       },
-    });
+    );
 
     if (!listResponse.ok) {
       throw new Error(`ElevenLabs API error: ${listResponse.status}`);
@@ -259,11 +344,10 @@ async function fetchAndProcessElevenLabsData(
 
     // Find conversation that matches our call
     const callTime = callLog.createdAt || new Date();
-    const callDurationNum = parseInt(callDuration || '0', 10);
+    const callDurationNum = parseInt(callDuration || "0", 10);
     let matchedConversation = null;
     let bestMatch = null;
     let bestScore = Infinity;
-
 
     for (const conv of conversations) {
       // Check if timestamps are close (within 5 minutes to account for delays)
@@ -280,11 +364,15 @@ async function fetchAndProcessElevenLabsData(
       const isTimeVeryClose = timeDiff < 120; // 2 minutes
       const isTimeClose = timeDiff < 300; // 5 minutes
       const isDurationSimilar = durationDiff <= 15;
-      const isStatusDone = conv.status === 'done' || conv.status === 'completed';
+      const isStatusDone =
+        conv.status === "done" || conv.status === "completed";
 
-      if ((isTimeClose && isDurationSimilar && isStatusDone) || (isTimeVeryClose && isStatusDone)) {
+      if (
+        (isTimeClose && isDurationSimilar && isStatusDone) ||
+        (isTimeVeryClose && isStatusDone)
+      ) {
         // Calculate match score (lower is better)
-        const score = timeDiff + (durationDiff * 2);
+        const score = timeDiff + durationDiff * 2;
 
         if (score < bestScore) {
           bestMatch = conv;
@@ -306,29 +394,34 @@ async function fetchAndProcessElevenLabsData(
       `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
       {
         headers: {
-          'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+          "xi-api-key": process.env.ELEVENLABS_API_KEY || "",
         },
-      }
+      },
     );
 
     if (!detailsResponse.ok) {
-      throw new Error(`Failed to fetch conversation details: ${detailsResponse.status}`);
+      throw new Error(
+        `Failed to fetch conversation details: ${detailsResponse.status}`,
+      );
     }
 
     const conversationDetails = await detailsResponse.json();
 
     // Extract transcript
-    let transcriptText = '';
-    if (conversationDetails.transcript && Array.isArray(conversationDetails.transcript)) {
+    let transcriptText = "";
+    if (
+      conversationDetails.transcript &&
+      Array.isArray(conversationDetails.transcript)
+    ) {
       transcriptText = conversationDetails.transcript
         .map((turn: any) => {
-          const role = turn.role === 'agent' ? 'Agent' : 'User';
+          const role = turn.role === "agent" ? "Agent" : "User";
           const timestamp = turn.time_in_call_secs
-            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]`
-            : '';
+            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, "0")}]`
+            : "";
           return `${timestamp} ${role}: ${turn.message}`;
         })
-        .join('\n');
+        .join("\n");
     }
 
     // Get recording URL (use proxy)
@@ -348,27 +441,29 @@ async function fetchAndProcessElevenLabsData(
       },
     });
 
-
     // Send email notification to business owner
     try {
       await sendEmailNotification(
         db,
         callLog.id,
-        callLog.voiceAgentId || '',
+        callLog.voiceAgentId || "",
         from,
         callDuration,
         transcriptText,
         recordingUrl,
-        conversationDetails
+        conversationDetails,
       );
     } catch (emailError: any) {
-      console.error('❌ [ElevenLabs Fetch] Failed to send email notification:', emailError.message);
+      console.error(
+        "❌ [ElevenLabs Fetch] Failed to send email notification:",
+        emailError.message,
+      );
       // Don't fail the overall process if email sending fails
     }
 
     return true;
   } catch (error: any) {
-    console.error('❌ [ElevenLabs Fetch] Error:', error.message);
+    console.error("❌ [ElevenLabs Fetch] Error:", error.message);
     throw error;
   }
 }
@@ -384,23 +479,22 @@ async function sendEmailNotification(
   callDuration: string,
   transcriptText: string,
   recordingUrl: string | null,
-  conversationDetails: any
+  conversationDetails: any,
 ) {
-
   // Get voice agent and user details (same db as CallLog)
   const voiceAgent = await db.voiceAgent.findUnique({
     where: { id: voiceAgentId },
-    include: { user: { select: { email: true, name: true, industry: true } } }
+    include: { user: { select: { email: true, name: true, industry: true } } },
   });
 
   if (!voiceAgent) {
-    console.error('❌ [Email Notification] Voice agent not found');
+    console.error("❌ [Email Notification] Voice agent not found");
     return;
   }
 
-
   // Check if we should send email notification
-  const shouldSendEmail = voiceAgent.sendRecordingEmail === true && voiceAgent.recordingEmailAddress;
+  const shouldSendEmail =
+    voiceAgent.sendRecordingEmail === true && voiceAgent.recordingEmailAddress;
 
   if (!shouldSendEmail) {
     return;
@@ -409,14 +503,17 @@ async function sendEmailNotification(
   // Get call log for createdAt
   const callLog = await db.callLog.findUnique({
     where: { id: callLogId },
-    select: { createdAt: true }
+    select: { createdAt: true },
   });
 
   // Extract AI summary and conversation data
-  let aiSummary = '';
-  let callReason = '';
+  let aiSummary = "";
+  let callReason = "";
   try {
-    aiSummary = conversationDetails.analysis?.summary || conversationDetails.summary || '';
+    aiSummary =
+      conversationDetails.analysis?.summary ||
+      conversationDetails.summary ||
+      "";
 
     // Try to extract call reason/purpose from conversation data
     if (conversationDetails.analysis?.call_purpose) {
@@ -425,52 +522,57 @@ async function sendEmailNotification(
       callReason = conversationDetails.metadata.purpose;
     } else if (aiSummary) {
       // Extract first sentence of summary as reason
-      const firstSentence = aiSummary.split('.')[0];
+      const firstSentence = aiSummary.split(".")[0];
       if (firstSentence.length > 0 && firstSentence.length < 150) {
-        callReason = firstSentence + '.';
+        callReason = firstSentence + ".";
       }
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 
   // Try to find caller in Leads database by phone number
-  let callerName = from || 'Unknown';
+  let callerName = from || "Unknown";
   let callerEmail: string | undefined;
-  const ctx = createDalContext(voiceAgent.userId, voiceAgent.user?.industry ?? undefined);
+  const ctx = createDalContext(
+    voiceAgent.userId,
+    voiceAgent.user?.industry ?? undefined,
+  );
 
   try {
     // Clean phone number for matching (remove +, spaces, dashes)
-    const cleanPhone = (from || '').replace(/[\s\-\+\(\)]/g, '');
+    const cleanPhone = (from || "").replace(/[\s\-\+\(\)]/g, "");
 
     // Check Leads
     const leads = await leadService.findMany(ctx, {
       where: {
-        phone: { contains: cleanPhone.slice(-10) }
+        phone: { contains: cleanPhone.slice(-10) },
       },
-      take: 1
+      take: 1,
     });
     let lead = leads[0];
 
     if (lead) {
       // Lead exists - update with call summary
-      callerName = lead.contactPerson || lead.businessName || from || 'Unknown';
+      callerName = lead.contactPerson || lead.businessName || from || "Unknown";
       callerEmail = lead.email || undefined;
 
       // Create a new note with call summary
-      const callSummaryNote = `📞 Voice AI Call - ${new Date().toLocaleString()}\n\n` +
-        `Call Duration: ${callDuration || '0'}s\n` +
-        `Call Purpose: ${callReason || 'Not specified'}\n\n` +
-        `Summary: ${aiSummary || 'No summary available'}\n\n` +
-        `---\n${transcriptText || 'No transcript available'}`;
+      const callSummaryNote =
+        `📞 Voice AI Call - ${new Date().toLocaleString()}\n\n` +
+        `Call Duration: ${callDuration || "0"}s\n` +
+        `Call Purpose: ${callReason || "Not specified"}\n\n` +
+        `Summary: ${aiSummary || "No summary available"}\n\n` +
+        `---\n${transcriptText || "No transcript available"}`;
 
-      await noteService.create(ctx, { leadId: lead.id, content: callSummaryNote });
+      await noteService.create(ctx, {
+        leadId: lead.id,
+        content: callSummaryNote,
+      });
       await leadService.update(ctx, lead.id, { lastContactedAt: new Date() });
-
     } else {
       // No lead found - create new lead automatically
 
       // Try to extract caller name from conversation data if available
-      let extractedName = 'Unknown Caller';
+      let extractedName = "Unknown Caller";
       if (conversationDetails?.metadata?.customer_name) {
         extractedName = conversationDetails.metadata.customer_name;
       } else if (conversationDetails?.analysis?.caller_name) {
@@ -478,31 +580,38 @@ async function sendEmailNotification(
       }
 
       // Create initial note content
-      const initialNote = `📞 Initial Voice AI Call - ${new Date().toLocaleString()}\n\n` +
-        `Call Duration: ${callDuration || '0'}s\n` +
-        `Call Purpose: ${callReason || 'Not specified'}\n\n` +
-        `Summary: ${aiSummary || 'Caller contacted via Voice AI. Follow up needed.'}\n\n` +
-        `---\n${transcriptText || 'No transcript available'}`;
+      const initialNote =
+        `📞 Initial Voice AI Call - ${new Date().toLocaleString()}\n\n` +
+        `Call Duration: ${callDuration || "0"}s\n` +
+        `Call Purpose: ${callReason || "Not specified"}\n\n` +
+        `Summary: ${aiSummary || "Caller contacted via Voice AI. Follow up needed."}\n\n` +
+        `---\n${transcriptText || "No transcript available"}`;
 
       const newLead = await leadService.create(ctx, {
         businessName: extractedName,
         contactPerson: extractedName,
-        phone: from || '',
-        source: 'Voice AI Call',
-        status: 'NEW',
+        phone: from || "",
+        source: "Voice AI Call",
+        status: "NEW",
         lastContactedAt: new Date(),
       });
-      await noteService.create(ctx, { leadId: newLead.id, content: initialNote });
+      await noteService.create(ctx, {
+        leadId: newLead.id,
+        content: initialNote,
+      });
 
       callerName = extractedName;
     }
   } catch (lookupError: any) {
-    console.error('[Email Notification] Failed to lookup/create caller:', lookupError.message);
+    console.error(
+      "[Email Notification] Failed to lookup/create caller:",
+      lookupError.message,
+    );
     // Continue with phone number as name
   }
 
   // Format call duration
-  const durationSecs = parseInt(callDuration || '0', 10);
+  const durationSecs = parseInt(callDuration || "0", 10);
   const minutes = Math.floor(durationSecs / 60);
   const seconds = durationSecs % 60;
   const formattedDuration = `${minutes}m ${seconds}s`;
@@ -512,28 +621,33 @@ async function sendEmailNotification(
   const emailSent = await emailService.sendCallSummaryEmail({
     recipientEmail: voiceAgent.recordingEmailAddress!,
     callerName: callerName,
-    callerPhone: from || 'Unknown',
+    callerPhone: from || "Unknown",
     callerEmail: callerEmail,
     callReason: callReason || undefined,
-    agentName: voiceAgent.name || 'AI Agent',
+    agentName: voiceAgent.name || "AI Agent",
     callDuration: formattedDuration,
     callDate: callLog?.createdAt || new Date(),
     transcript: transcriptText || undefined,
     summary: aiSummary || undefined,
-    recordingUrl: recordingUrl ? `${process.env.NEXTAUTH_URL}${recordingUrl}` : undefined,
+    recordingUrl: recordingUrl
+      ? `${process.env.NEXTAUTH_URL}${recordingUrl}`
+      : undefined,
     userId: voiceAgent.userId,
-    conversationData: conversationDetails
+    conversationData: conversationDetails,
   });
 
   if (emailSent) {
     // Mark email as sent in the database
     await db.callLog.update({
       where: { id: callLogId },
-      data: { emailSent: true, emailSentAt: new Date() }
+      data: { emailSent: true, emailSentAt: new Date() },
     });
-
   } else {
-    console.error('❌ [Email Notification] Email service returned false - email was not sent');
-    console.error('   This usually means all email providers (Gmail OAuth, SendGrid) failed');
+    console.error(
+      "❌ [Email Notification] Email service returned false - email was not sent",
+    );
+    console.error(
+      "   This usually means all email providers (Gmail OAuth, SendGrid) failed",
+    );
   }
 }
