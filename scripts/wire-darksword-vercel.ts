@@ -2,17 +2,18 @@
  * Wire the "darksword" website to its Vercel project so auto-deploy works.
  * Run: npx tsx scripts/wire-darksword-vercel.ts
  */
-import { prisma } from '../lib/db';
+import { prisma } from "../lib/db";
+import { getWebsiteForOwnerOrThrow } from "./utils/website-owner-guard";
 
-const VERCEL_API = 'https://api.vercel.com/v9';
-const TEAM_ID = process.env.VERCEL_TEAM_ID || 'team_vJ3wdbf3QXa3R4KzaZjDEkLP';
+const VERCEL_API = "https://api.vercel.com/v9";
+const TEAM_ID = process.env.VERCEL_TEAM_ID || "team_vJ3wdbf3QXa3R4KzaZjDEkLP";
 
 async function findVercelProject(name: string): Promise<string | null> {
   const token = process.env.VERCEL_TOKEN;
   if (!token) return null;
   const res = await fetch(
     `${VERCEL_API}/projects/${encodeURIComponent(name)}?teamId=${TEAM_ID}`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!res.ok) return null;
   const data = await res.json();
@@ -22,24 +23,27 @@ async function findVercelProject(name: string): Promise<string | null> {
 async function main() {
   const token = process.env.VERCEL_TOKEN;
   if (!token) {
-    console.error('❌ VERCEL_TOKEN required');
+    console.error("❌ VERCEL_TOKEN required");
     process.exit(1);
   }
 
-  const website = await prisma.website.findUnique({
-    where: { id: 'cmlkjpjlq0001jr043j95fl94' },
+  const website = await getWebsiteForOwnerOrThrow({
+    ownerEmail: "eyal@darksword-armory.com",
+    nameContains: "darksword",
   });
 
-  if (!website) {
-    console.error('❌ darksword website not found');
-    process.exit(1);
-  }
+  console.log("Website:", website.name, `(${website.id})`);
+  console.log(
+    "Current vercelProjectId:",
+    website.vercelProjectId || "(not set)",
+  );
+  console.log("");
 
-  console.log('Website:', website.name, `(${website.id})`);
-  console.log('Current vercelProjectId:', website.vercelProjectId || '(not set)');
-  console.log('');
-
-  const namesToTry = ['darksword-armory', 'darksword-armory-website', 'darksword'];
+  const namesToTry = [
+    "darksword-armory",
+    "darksword-armory-website",
+    "darksword",
+  ];
   let projectId: string | null = null;
 
   for (const name of namesToTry) {
@@ -51,7 +55,10 @@ async function main() {
   }
 
   if (!projectId) {
-    console.error('❌ Could not find Vercel project. Tried:', namesToTry.join(', '));
+    console.error(
+      "❌ Could not find Vercel project. Tried:",
+      namesToTry.join(", "),
+    );
     process.exit(1);
   }
 
@@ -60,7 +67,7 @@ async function main() {
     data: { vercelProjectId: projectId },
   });
 
-  console.log('\n✅ Updated. Auto-deploy should now work on save.');
+  console.log("\n✅ Updated. Auto-deploy should now work on save.");
 }
 
 main().catch((e) => {

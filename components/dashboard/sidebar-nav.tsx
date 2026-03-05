@@ -470,6 +470,17 @@ interface SidebarNavProps {
   isExpanded: boolean;
 }
 
+type SidebarUserSnapshot = {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  industry?: Industry | null;
+  onboardingCompleted?: boolean;
+  isImpersonating?: boolean;
+  superAdminId?: string | null;
+};
+
 export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -482,6 +493,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [isParent, setIsParent] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(true);
+  const [cachedSidebarUser, setCachedSidebarUser] =
+    useState<SidebarUserSnapshot | null>(null);
   const [resolvedIndustry, setResolvedIndustry] = useState<Industry | null>(
     (displaySession?.user?.industry as Industry) ||
       (session?.user?.industry as Industry) ||
@@ -632,6 +645,46 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     }
   }, [status, displaySession?.user?.id, userIndustry, update]);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sidebarUserSnapshot");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SidebarUserSnapshot;
+      if (parsed && typeof parsed === "object") {
+        setCachedSidebarUser(parsed);
+      }
+    } catch {
+      // ignore parse/storage issues
+    }
+  }, []);
+
+  useEffect(() => {
+    const user = displaySession?.user;
+    if (!user) return;
+
+    const snapshot: SidebarUserSnapshot = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      industry: (user.industry as Industry | null) || null,
+      onboardingCompleted: user.onboardingCompleted,
+      isImpersonating: user.isImpersonating,
+      superAdminId: user.superAdminId,
+    };
+
+    setCachedSidebarUser(snapshot);
+    try {
+      localStorage.setItem("sidebarUserSnapshot", JSON.stringify(snapshot));
+    } catch {
+      // ignore storage failures
+    }
+  }, [displaySession?.user]);
+
+  const displayUser =
+    (displaySession?.user as SidebarUserSnapshot | undefined) ||
+    cachedSidebarUser;
+
   // Check admin session validity on mount
   useEffect(() => {
     const checkAdminSession = () => {
@@ -711,6 +764,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       localStorage.removeItem("impersonationToken");
       localStorage.removeItem("impersonatedUserId");
       localStorage.removeItem("impersonatedUserName");
+      localStorage.removeItem("sidebarUserSnapshot");
       // Full page reload so JWT callback runs with fresh DB state and restores super admin session
       window.location.href = "/platform-admin";
       return;
@@ -736,6 +790,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     localStorage.removeItem("impersonationToken");
     localStorage.removeItem("impersonatedUserId");
     localStorage.removeItem("impersonatedUserName");
+    localStorage.removeItem("sidebarUserSnapshot");
+    setCachedSidebarUser(null);
 
     await signOut({ callbackUrl: "/auth/signin", redirect: true });
   };
@@ -767,8 +823,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   };
 
   // Determine which menu items to show based on role
-  const onboardingCompleted =
-    displaySession?.user?.onboardingCompleted === true;
+  const onboardingCompleted = displayUser?.onboardingCompleted === true;
   const visibleMainItems = isParent
     ? parentItems // Show parent items if user has a household
     : merchantItems
@@ -780,13 +835,12 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
         });
 
   const isSuperAdmin =
-    displaySession?.user?.role === "SUPER_ADMIN" ||
-    (displaySession?.user?.isImpersonating &&
-      displaySession?.user?.superAdminId);
+    displayUser?.role === "SUPER_ADMIN" ||
+    (displayUser?.isImpersonating && displayUser?.superAdminId);
   const hasAdminAccess =
     isSuperAdmin ||
-    displaySession?.user?.role === "BUSINESS_OWNER" ||
-    displaySession?.user?.role === "ADMIN";
+    displayUser?.role === "BUSINESS_OWNER" ||
+    displayUser?.role === "ADMIN";
   const visibleAdminItems = isParent
     ? [] // Parents don't see admin section
     : [
@@ -926,9 +980,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                     requiresAdminAuth && !requiresSuperAdmin;
                   // Check if user is SUPER_ADMIN either directly or via impersonation
                   const isSuperAdmin =
-                    displaySession?.user?.role === "SUPER_ADMIN" ||
-                    (displaySession?.user?.isImpersonating &&
-                      displaySession?.user?.superAdminId);
+                    displayUser?.role === "SUPER_ADMIN" ||
+                    (displayUser?.isImpersonating && displayUser?.superAdminId);
 
                   return (
                     <button
@@ -974,7 +1027,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
 
       {/* User Profile / Logout Section - Fixed at bottom, always visible when authenticated */}
       <div className="border-t border-gray-800 py-2 flex-shrink-0 bg-gray-900 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-        {displaySession?.user && (
+        {(displayUser || status !== "unauthenticated") && (
           <div className="space-y-1">
             {/* User Profile */}
             <div
@@ -984,9 +1037,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               )}
               title={
                 !isExpanded
-                  ? displaySession?.user?.name ||
-                    displaySession?.user?.email ||
-                    "User"
+                  ? displayUser?.name || displayUser?.email || "User"
                   : undefined
               }
             >
@@ -996,10 +1047,10 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               {isExpanded && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">
-                    {displaySession?.user?.name || "User"}
+                    {displayUser?.name || "User"}
                   </p>
                   <p className="text-xs text-gray-400 truncate">
-                    {displaySession?.user?.email || ""}
+                    {displayUser?.email || ""}
                   </p>
                 </div>
               )}
