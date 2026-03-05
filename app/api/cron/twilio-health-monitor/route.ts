@@ -94,7 +94,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Also allow GET for manual testing
-export async function GET(request: NextRequest) {
-  return POST(request);
-}
+// GET removed for security - cron jobs should only accept POST with CRON_SECRET

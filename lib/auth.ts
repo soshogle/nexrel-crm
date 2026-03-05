@@ -13,11 +13,14 @@ const authDb = getMetaDb()
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(authDb),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'placeholder',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'placeholder',
-      allowDangerousEmailAccountLinking: true,
-    }),
+    // Only register Google provider when real credentials are configured
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'placeholder'
+      && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_SECRET !== 'placeholder'
+      ? [GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      })]
+      : []),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -26,7 +29,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         const normalizedEmail = credentials?.email?.trim().toLowerCase()
-        
+
         if (!normalizedEmail || !credentials?.password) {
           return null
         }
@@ -111,12 +114,12 @@ export const authOptions: NextAuthOptions = {
           if (existingUser?.deletedAt) {
             return false
           }
-          
+
           // If user was just created (within last 5 seconds) and has default ACTIVE status, update to PENDING_APPROVAL
           if (existingUser) {
             const isNewUser = (Date.now() - existingUser.createdAt.getTime()) < 5000; // Created within last 5 seconds
             const hasDefaultStatus = existingUser.accountStatus === 'ACTIVE';
-            
+
             if (isNewUser && hasDefaultStatus) {
               await authDb.user.update({
                 where: { id: existingUser.id },
@@ -128,7 +131,7 @@ export const authOptions: NextAuthOptions = {
           console.error('[AUTH] Error setting PENDING_APPROVAL for OAuth user:', error);
         }
       }
-      
+
       // Allow sign-in to continue (user will be redirected based on their status)
       return true;
     },
@@ -251,7 +254,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         // For OAuth providers, the user.id might be in token.sub
         const userId = user.id || token.sub
-        
+
         if (userId) {
           try {
             // Fetch full user data to get role, parentRole, industry, and onboardingCompleted

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const internalSecret = request.headers.get('x-internal-secret');
     const internalUserId = body._internalUserId;
-    const isInternalCall = internalSecret === process.env.NEXTAUTH_SECRET && internalUserId;
+    const isInternalCall = internalSecret === (process.env.INTERNAL_API_SECRET || process.env.NEXTAUTH_SECRET) && internalUserId;
 
     let userId: string;
     if (isInternalCall) {
@@ -116,26 +116,26 @@ export async function POST(request: NextRequest) {
     // Create website record
     const website: any = await websiteService.create(ctx, {
       name,
-        type: type as any,
-        sourceUrl: type === 'REBUILT' ? sourceUrl : null,
-        templateType: templateType as any,
-        status: 'BUILDING',
-        buildProgress: 0,
-        structure: {},
-        seoData: {},
-        questionnaireAnswers: questionnaireAnswers || null,
-        voiceAIEnabled: enableVoiceAI,
-        enableTavusAvatar: enableTavusAvatar ?? true,
-        ...(googleSearchConsoleAccessToken && {
-          googleSearchConsoleAccessToken,
-          googleSearchConsoleRefreshToken: googleSearchConsoleRefreshToken || null,
-          googleSearchConsoleTokenExpiry: googleSearchConsoleTokenExpiry
-            ? new Date(googleSearchConsoleTokenExpiry)
-            : null,
-          googleSearchConsoleSiteUrl: googleSearchConsoleSiteUrl || null,
-          googleSearchConsoleVerified: false,
-        }),
-      } as any);
+      type: type as any,
+      sourceUrl: type === 'REBUILT' ? sourceUrl : null,
+      templateType: templateType as any,
+      status: 'BUILDING',
+      buildProgress: 0,
+      structure: {},
+      seoData: {},
+      questionnaireAnswers: questionnaireAnswers || null,
+      voiceAIEnabled: enableVoiceAI,
+      enableTavusAvatar: enableTavusAvatar ?? true,
+      ...(googleSearchConsoleAccessToken && {
+        googleSearchConsoleAccessToken,
+        googleSearchConsoleRefreshToken: googleSearchConsoleRefreshToken || null,
+        googleSearchConsoleTokenExpiry: googleSearchConsoleTokenExpiry
+          ? new Date(googleSearchConsoleTokenExpiry)
+          : null,
+        googleSearchConsoleSiteUrl: googleSearchConsoleSiteUrl || null,
+        googleSearchConsoleVerified: false,
+      }),
+    } as any);
 
     // Create build record
     const build = await (db as any).websiteBuild.create({
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       const errCtx = await resolveDalContext(userId);
       const errDb = getCrmDb(errCtx);
       await Promise.all([
-(errDb as any).websiteBuild.update({
+        (errDb as any).websiteBuild.update({
           where: { id: build.id },
           data: { status: 'FAILED', error: error?.message || String(error) },
         }),
@@ -212,10 +212,10 @@ async function processWebsiteBuild(
 
     if (config.type === 'REBUILT') {
       // Scrape existing website
-    await (db as any).websiteBuild.update({
-      where: { id: buildId },
-      data: { progress: 20 },
-    });
+      await (db as any).websiteBuild.update({
+        where: { id: buildId },
+        data: { progress: 20 },
+      });
       await websiteService.update(ctx, websiteId, { buildProgress: 20 });
 
       // Get user ID for image storage
@@ -365,7 +365,7 @@ async function processWebsiteBuild(
     try {
       const questionnaireAnswers = config.questionnaireAnswers || {};
       const deploymentUrl = provisioningResult.vercelDeploymentUrl || `https://${website.name.toLowerCase().replace(/\s+/g, '-')}.com`;
-      
+
       const seoConfig = {
         websiteUrl: deploymentUrl,
         businessName: questionnaireAnswers.businessName || website.name,
@@ -408,7 +408,7 @@ async function processWebsiteBuild(
             // Refresh token if needed
             let accessToken = website.googleSearchConsoleAccessToken;
             let refreshToken = website.googleSearchConsoleRefreshToken;
-            
+
             if (website.googleSearchConsoleTokenExpiry && new Date(website.googleSearchConsoleTokenExpiry) < new Date()) {
               const refreshed = await googleSearchConsole.refreshAccessToken({
                 accessToken,

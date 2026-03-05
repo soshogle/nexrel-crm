@@ -9,10 +9,13 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
+    // Security: Always require either valid CRON_SECRET or authenticated session
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    const hasCronAuth = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+    if (!hasCronAuth) {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return apiErrors.unauthorized();

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const internalSecret = request.headers.get('x-internal-secret');
     const internalUserId = body._internalUserId;
-    const isInternalCall = internalSecret === process.env.NEXTAUTH_SECRET && internalUserId;
+    const isInternalCall = internalSecret === (process.env.INTERNAL_API_SECRET || process.env.NEXTAUTH_SECRET) && internalUserId;
 
     let userId: string;
     const session = await getServerSession(authOptions);
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Handle image upload if provided (for image swapping)
     let imagePathToReplace: string | null = null;
     let newImageUrl: string | null = null;
-    
+
     if (imageUpload) {
       // First, get the image path from the message context
       // We'll need to call AI to identify which image to replace
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
       if (tempResult.requiresImageUpload) {
         imagePathToReplace = tempResult.requiresImageUpload.currentImagePath;
-        
+
         // Upload the new image
         const imageBuffer = Buffer.from(imageUpload.data, 'base64');
         const swappedImage = await aiModificationService.swapImage(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           userId,
           websiteId
         );
-        
+
         newImageUrl = swappedImage.url;
       }
     }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       const existingChange = changes.find(
         (ch: any) => ch.path === imagePathToReplace && ch.type === 'update'
       );
-      
+
       if (!existingChange) {
         changes.push({
           type: 'update',

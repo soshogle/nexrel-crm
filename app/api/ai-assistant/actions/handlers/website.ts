@@ -24,7 +24,7 @@ export async function cloneWebsite(userId: string, params: any) {
   const websiteName = name || url.replace(/^https?:\/\//, "").replace(/\/$/, "").split("/")[0] || "Cloned Website";
 
   const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  const internalSecret = process.env.NEXTAUTH_SECRET;
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.NEXTAUTH_SECRET;
 
   const response = await fetch(`${baseUrl}/api/website-builder/create`, {
     method: "POST",
@@ -62,7 +62,7 @@ export async function createWebsite(userId: string, params: any) {
   const websiteName = name || "New Website";
 
   const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  const internalSecret = process.env.NEXTAUTH_SECRET;
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.NEXTAUTH_SECRET;
 
   const questionnaireAnswers = {
     businessName: websiteName,
@@ -147,7 +147,7 @@ export async function modifyWebsite(userId: string, params: any) {
   }
 
   const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  const internalSecret = process.env.NEXTAUTH_SECRET;
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.NEXTAUTH_SECRET;
 
   const response = await fetch(`${baseUrl}/api/website-builder/modify`, {
     method: "POST",

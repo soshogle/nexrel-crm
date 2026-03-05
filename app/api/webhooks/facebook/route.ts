@@ -15,7 +15,15 @@ export const runtime = 'nodejs';
 
 function verifyFacebookSignature(rawBody: string, signature: string | null): boolean {
   const appSecret = process.env.FACEBOOK_APP_SECRET;
-  if (!appSecret) return true; // Skip if secret not configured (dev mode)
+  if (!appSecret) {
+    // In production, reject if secret is not configured
+    if (process.env.NODE_ENV === 'production') {
+      console.error('FACEBOOK_APP_SECRET not configured — rejecting webhook in production');
+      return false;
+    }
+    console.warn('FACEBOOK_APP_SECRET not configured — skipping verification (dev only)');
+    return true;
+  }
   if (!signature) return false;
 
   const expectedSig = 'sha256=' + crypto

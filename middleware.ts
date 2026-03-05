@@ -12,22 +12,22 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
 // Extract subdomain from hostname
 function getSubdomain(hostname: string): string | null {
   const parts = hostname.split('.');
-  
+
   // For localhost or single-part domains, no subdomain
   if (parts.length <= 2 || hostname.includes('localhost')) {
     return null;
   }
-  
+
   // For domains like spikes.soshogle.com
   // parts = ['spikes', 'soshogle', 'com']
   const subdomain = parts[0];
-  
+
   // Ignore reserved subdomains
   const reserved = ['www', 'app', 'api', 'admin', 'cdn', 'static'];
   if (reserved.includes(subdomain.toLowerCase())) {
     return null;
   }
-  
+
   return subdomain;
 }
 
@@ -39,7 +39,7 @@ function applyHeaders(request: NextRequest, response: NextResponse): NextRespons
   const securityHeaders: Record<string, string> = {
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com",
+      "script-src 'self' 'unsafe-inline' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https: http: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
@@ -84,7 +84,7 @@ function applyHeaders(request: NextRequest, response: NextResponse): NextRespons
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const subdomain = getSubdomain(hostname);
-  
+
   // Rate limiting for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -101,9 +101,9 @@ export async function middleware(request: NextRequest) {
 
     const config = isAuthPath ? RATE_LIMITS.auth
       : isWebhookPath ? RATE_LIMITS.webhook
-      : isPublicPath ? RATE_LIMITS.public
-      : isDentalPath ? RATE_LIMITS.apiHeavy
-      : RATE_LIMITS.api
+        : isPublicPath ? RATE_LIMITS.public
+          : isDentalPath ? RATE_LIMITS.apiHeavy
+            : RATE_LIMITS.api
 
     const rlKey = getRateLimitKey(ip, isAuthPath ? '/api/auth' : request.nextUrl.pathname)
     const { allowed, remaining, resetMs } = await checkRateLimit(rlKey, config)
@@ -138,7 +138,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  
+
   // Add subdomain to request headers if present
   if (subdomain) {
     response.headers.set('x-tenant-subdomain', subdomain);
