@@ -482,6 +482,11 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [isParent, setIsParent] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(true);
+  const [resolvedIndustry, setResolvedIndustry] = useState<Industry | null>(
+    (displaySession?.user?.industry as Industry) ||
+      (session?.user?.industry as Industry) ||
+      null,
+  );
 
   // Helper function to translate menu item titles
   const translateMenuItem = (itemId: string, fallbackTitle: string): string => {
@@ -569,15 +574,63 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     null,
   );
 
-  // Get user industry directly from session (already populated in auth.ts)
-  const userIndustry = (session?.user?.industry as Industry) || null;
+  const userIndustry =
+    resolvedIndustry ||
+    (displaySession?.user?.industry as Industry) ||
+    (session?.user?.industry as Industry) ||
+    null;
+
+  useEffect(() => {
+    const fromSession =
+      (displaySession?.user?.industry as Industry) ||
+      (session?.user?.industry as Industry) ||
+      null;
+
+    if (fromSession) {
+      setResolvedIndustry(fromSession);
+      localStorage.setItem("resolvedIndustry", fromSession);
+      return;
+    }
+
+    const cached = localStorage.getItem("resolvedIndustry") as Industry | null;
+    if (cached && !resolvedIndustry) {
+      setResolvedIndustry(cached);
+    }
+
+    if (
+      status === "authenticated" &&
+      displaySession?.user?.id &&
+      !fromSession
+    ) {
+      fetch("/api/session/context")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as Industry | null) || null;
+          if (resolved) {
+            setResolvedIndustry(resolved);
+            localStorage.setItem("resolvedIndustry", resolved);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [
+    status,
+    displaySession?.user?.id,
+    displaySession?.user?.industry,
+    session?.user?.industry,
+    resolvedIndustry,
+  ]);
 
   // Refresh session if industry is missing but user is authenticated
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.id && !userIndustry) {
+    if (
+      status === "authenticated" &&
+      displaySession?.user?.id &&
+      !userIndustry
+    ) {
       update().catch(() => {});
     }
-  }, [status, session, userIndustry, update]);
+  }, [status, displaySession?.user?.id, userIndustry, update]);
 
   // Check admin session validity on mount
   useEffect(() => {
@@ -629,12 +682,12 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     };
 
     // Only fetch if we have a session and haven't loaded yet
-    if (session?.user && isLoadingRole) {
+    if (displaySession?.user && isLoadingRole) {
       fetchParentRole();
-    } else if (!session?.user) {
+    } else if (!displaySession?.user) {
       setIsLoadingRole(false);
     }
-  }, [session?.user?.id, isLoadingRole, userIndustry]);
+  }, [displaySession?.user?.id, isLoadingRole, userIndustry]);
 
   const handleLogout = async () => {
     // When impersonating, end impersonation and return to platform-admin (don't full sign out)
@@ -714,7 +767,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   };
 
   // Determine which menu items to show based on role
-  const onboardingCompleted = session?.user?.onboardingCompleted === true;
+  const onboardingCompleted =
+    displaySession?.user?.onboardingCompleted === true;
   const visibleMainItems = isParent
     ? parentItems // Show parent items if user has a household
     : merchantItems
@@ -726,12 +780,13 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
         });
 
   const isSuperAdmin =
-    session?.user?.role === "SUPER_ADMIN" ||
-    (session?.user?.isImpersonating && session?.user?.superAdminId);
+    displaySession?.user?.role === "SUPER_ADMIN" ||
+    (displaySession?.user?.isImpersonating &&
+      displaySession?.user?.superAdminId);
   const hasAdminAccess =
     isSuperAdmin ||
-    session?.user?.role === "BUSINESS_OWNER" ||
-    session?.user?.role === "ADMIN";
+    displaySession?.user?.role === "BUSINESS_OWNER" ||
+    displaySession?.user?.role === "ADMIN";
   const visibleAdminItems = isParent
     ? [] // Parents don't see admin section
     : [
@@ -871,9 +926,9 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                     requiresAdminAuth && !requiresSuperAdmin;
                   // Check if user is SUPER_ADMIN either directly or via impersonation
                   const isSuperAdmin =
-                    session?.user?.role === "SUPER_ADMIN" ||
-                    (session?.user?.isImpersonating &&
-                      session?.user?.superAdminId);
+                    displaySession?.user?.role === "SUPER_ADMIN" ||
+                    (displaySession?.user?.isImpersonating &&
+                      displaySession?.user?.superAdminId);
 
                   return (
                     <button
