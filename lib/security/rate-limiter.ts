@@ -74,18 +74,23 @@ export function createRateLimiter(config: RateLimitConfig) {
  * Get client identifier from request (IP address)
  */
 export function getClientIdentifier(request: Request): string {
-  // Try to get IP from various headers
-  const forwardedFor = request.headers.get('x-forwarded-for');
+  // Prefer x-real-ip (set by Vercel's edge, not spoofable) over x-forwarded-for.
+  // When using x-forwarded-for, take the LAST IP in the chain — the one appended
+  // by the most recent trusted proxy — NOT the first which can be client-spoofed.
   const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) return cfConnectingIp.trim();
 
-  const ip =
-    forwardedFor?.split(',')[0] ||
-    realIp ||
-    cfConnectingIp ||
-    'unknown';
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const ips = forwardedFor.split(',').map((s) => s.trim()).filter(Boolean);
+    // Use the last IP (appended by Vercel/proxies we trust) to defeat spoofing.
+    return ips[ips.length - 1] ?? 'unknown';
+  }
 
-  return ip;
+  return 'unknown';
 }
 
 /**

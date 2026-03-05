@@ -8,26 +8,22 @@ export const runtime = 'nodejs';
 
 /**
  * Twilio Voice Callback Endpoint
- * 
+ *
  * Connects incoming Twilio calls to ElevenLabs AI agents via WebSocket streaming.
  * This endpoint is called by Twilio when a call comes in to a configured phone number.
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('📞 [Twilio Voice Callback] Received webhook');
-
     const formData = await request.formData();
     const callSid = formData.get('CallSid') as string;
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
     const callStatus = formData.get('CallStatus') as string;
 
-    console.log('  📋 Call Details:', { callSid, from, to, callStatus });
-
     // Find the voice agent (searches default + industry DBs)
     const resolved = await resolveVoiceAgentByPhone(to);
     if (!resolved) {
-      console.error('❌ No voice agent found for number:', to);
+      console.error('[voice-callback] No voice agent found for number:', to);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Sorry, no agent is configured for this number.</Say>
@@ -38,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const { voiceAgent, db } = resolved;
     if (!voiceAgent.elevenLabsAgentId) {
-      console.error('❌ No ElevenLabs agent ID configured for voice agent:', voiceAgent.name);
+      console.error('[voice-callback] No ElevenLabs agent ID configured for:', voiceAgent.name);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">This agent is not properly configured. Please contact support.</Say>
@@ -50,7 +46,6 @@ export async function POST(request: NextRequest) {
     // Enhanced call handling with screen pop
     let callLog;
     if (voiceAgent.type === 'INBOUND') {
-      // Match patient and create enhanced call log (db = same DB as VoiceAgent)
       const result = await enhancedCallHandler.handleIncomingCall(
         {
           callSid,
@@ -62,28 +57,18 @@ export async function POST(request: NextRequest) {
         },
         voiceAgent.userId,
         db,
-        undefined // clinicId would come from voiceAgent if available
+        undefined
       );
       callLog = result.callLog;
 
-      // Send screen pop notification if patient matched
       if (result.patientMatch) {
         await enhancedCallHandler.sendScreenPopNotification(
           voiceAgent.userId,
           result.patientMatch,
-          {
-            callSid,
-            fromNumber: from,
-            toNumber: to,
-            direction: 'inbound',
-            status: 'ringing',
-            timestamp: new Date(),
-          }
+          { callSid, fromNumber: from, toNumber: to, direction: 'inbound', status: 'ringing', timestamp: new Date() }
         );
-        console.log('✅ Screen pop sent for patient:', result.patientMatch.patientName);
       }
     } else {
-      // Outbound call - simpler logging (db = same DB as VoiceAgent)
       callLog = await db.callLog.create({
         data: {
           voiceAgentId: voiceAgent.id,
@@ -97,8 +82,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('✅ Call logged for agent:', voiceAgent.name);
-
     // Prepare current datetime context for the agent
     const now = new Date();
     const torontoTime = new Intl.DateTimeFormat('en-US', {
@@ -110,32 +93,24 @@ export async function POST(request: NextRequest) {
       minute: '2-digit',
       second: '2-digit',
       weekday: 'long',
-      hour12: false
+      hour12: false,
     });
 
     const parts = torontoTime.formatToParts(now);
     const partsObj = Object.fromEntries(parts.map(p => [p.type, p.value]));
 
-    const currentDate = `${partsObj.year}-${partsObj.month}-${partsObj.day}`;
-    const currentTime = `${partsObj.hour}:${partsObj.minute}`;
-    const dayOfWeek = partsObj.weekday;
-
     const dynamicVariables = {
-      current_datetime: `${currentDate} ${currentTime}`,
-      current_day: dayOfWeek,
-      timezone: 'America/Toronto (EST/EDT)'
+      current_datetime: `${partsObj.year}-${partsObj.month}-${partsObj.day} ${partsObj.hour}:${partsObj.minute}`,
+      current_day: partsObj.weekday,
+      timezone: 'America/Toronto (EST/EDT)',
     };
 
-    console.log('📅 Injecting datetime context:', dynamicVariables);
-
     // Get signed WebSocket URL from ElevenLabs with dynamic variables
-    console.log('🔗 Fetching signed WebSocket URL from ElevenLabs...');
     let signedUrl: string;
     try {
       signedUrl = await elevenLabsService.getSignedWebSocketUrl(voiceAgent.elevenLabsAgentId as string, dynamicVariables);
-      console.log('✅ Got signed WebSocket URL:', signedUrl.substring(0, 50) + '...');
     } catch (wsError: any) {
-      console.error('❌ Failed to get WebSocket URL:', wsError.message);
+      console.error('[voice-callback] Failed to get WebSocket URL:', wsError.message);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Unable to connect to the voice agent. Please try again later.</Say>
@@ -145,11 +120,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the agent has a phone number assigned in ElevenLabs
-    console.log('🔍 Verifying agent configuration...');
     try {
       const agentDetails = await elevenLabsService.getAgent(voiceAgent.elevenLabsAgentId as string);
       if (!agentDetails.phone_number_id) {
-        console.error('❌ Agent has no phone number assigned in ElevenLabs');
+        console.error('[voice-callback] Agent has no phone number assigned in ElevenLabs');
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">This voice agent is not fully configured. Please contact support.</Say>
@@ -157,13 +131,11 @@ export async function POST(request: NextRequest) {
 </Response>`;
         return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } });
       }
-      console.log('✅ Agent is properly configured with phone number ID:', agentDetails.phone_number_id);
     } catch (checkError: any) {
-      console.error('⚠️ Could not verify agent configuration:', checkError.message);
-      // Continue anyway, as this is just a verification step
+      console.error('[voice-callback] Could not verify agent configuration:', checkError.message);
+      // Non-fatal — continue
     }
 
-    // Return TwiML that connects to ElevenLabs via WebSocket
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
@@ -171,11 +143,9 @@ export async function POST(request: NextRequest) {
   </Connect>
 </Response>`;
 
-    console.log('📤 Returning TwiML with WebSocket connection');
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } });
-
   } catch (error: any) {
-    console.error('❌ [Twilio Voice Callback] Error:', error.message);
+    console.error('[voice-callback] Unhandled error:', error.message);
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">We're sorry, but an error occurred. Please try again later.</Say>
@@ -189,6 +159,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    message: 'Soshogle Call voice callback endpoint is running with Soshogle Voice AI WebSocket integration'
+    message: 'Soshogle Call voice callback endpoint is running',
   });
 }

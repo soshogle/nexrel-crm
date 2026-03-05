@@ -20,14 +20,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const includePlatformPool = searchParams.get('platformPool') === 'true';
 
-    console.log('📞 Fetching phone numbers for user:', session.user.id);
-    
+
     const result = await getOwnedPhoneNumbers(session.user.id, { includePlatformPool });
 
     if (!result.success) {
       console.error('❌ Failed to get phone numbers:', result.error);
       return NextResponse.json(
-        { 
+        {
           error: result.error,
           success: false,
           numbers: []
@@ -35,8 +34,6 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log(`✅ Found ${result.numbers?.length || 0} phone numbers`);
 
     return NextResponse.json({
       success: true,
@@ -46,7 +43,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error('❌ Error in get owned phone numbers API:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch phone numbers',
         details: error.message,
         success: false,

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const callStatus = formData.get('CallStatus') as string;
     const speechResult = formData.get('SpeechResult') as string;
 
-    console.log('Twilio webhook called:', { callSid, from, to, callStatus, speechResult });
+
 
     // Find the voice agent (searches default + industry DBs)
     const voiceResolved = await resolveVoiceAgentByPhone(to);

@@ -7,6 +7,52 @@ import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper'
 import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
 import { apiErrors } from '@/lib/api-error';
 import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { z } from 'zod';
+
+const VoiceAgentCreateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  businessName: z.string().min(1, 'Business name is required').max(255),
+  description: z.string().max(2000).optional(),
+  type: z.enum(['INBOUND', 'OUTBOUND']).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'TESTING', 'PENDING']).optional(),
+  businessIndustry: z.string().max(100).optional(),
+  knowledgeBase: z.string().max(100_000).optional(),
+  greetingMessage: z.string().max(1000).optional(),
+  inboundGreeting: z.string().max(1000).optional(),
+  outboundGreeting: z.string().max(1000).optional(),
+  firstMessage: z.string().max(1000).optional(),
+  systemPrompt: z.string().max(50_000).optional(),
+  voiceId: z.string().max(100).optional(),
+  language: z.string().max(10).optional(),
+  stability: z.number().min(0).max(1).optional(),
+  similarityBoost: z.number().min(0).max(1).optional(),
+  style: z.number().min(0).max(1).optional(),
+  useSpeakerBoost: z.boolean().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(4096).optional(),
+  maxCallDuration: z.number().int().min(30).max(7200).optional(),
+  enableInterruptions: z.boolean().optional(),
+  responseDelay: z.number().int().min(0).max(5000).optional(),
+  transferPhone: z.string().max(50).optional(),
+  twilioPhoneNumber: z.string().max(50).optional(),
+  enableVoicemail: z.boolean().optional(),
+  voicemailMessage: z.string().max(1000).optional(),
+  enableCallRecording: z.boolean().optional(),
+  enableTranscription: z.boolean().optional(),
+  sendRecordingEmail: z.boolean().optional(),
+  recordingEmailAddress: z.string().email().optional().nullable(),
+  enableReservations: z.boolean().optional(),
+  googleCalendarId: z.string().max(255).optional(),
+  appointmentDuration: z.number().int().min(5).max(480).optional(),
+  aiPrompt: z.string().max(10_000).optional(),
+  webhookUrl: z.string().url().max(500).optional().or(z.literal('')),
+  knowledgeBaseTexts: z.array(z.string().max(50_000)).optional(),
+  knowledgeBaseUrls: z.array(z.string().url().max(500)).optional(),
+  knowledgeBaseFileIds: z.array(z.string()).optional(),
+  llmModel: z.string().max(100).optional(),
+  ttsModel: z.string().max(100).optional(),
+  outputFormat: z.string().max(50).optional(),
+}).passthrough(); // allow extra fields for forward-compat
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -117,11 +163,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch call counts from ElevenLabs for each agent
     const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
-    
+
     const enrichedAgents = await Promise.all(
       agents.map(async (agent: any) => {
         let elevenLabsCallCount = 0;
-        
+
         // Only fetch if agent has ElevenLabs agent ID and API key is configured
         if (agent.elevenLabsAgentId && elevenLabsApiKey) {
           try {
@@ -146,7 +192,7 @@ export async function GET(request: NextRequest) {
                   },
                 }
               );
-              
+
               if (fullResponse.ok) {
                 const fullData = await fullResponse.json();
                 elevenLabsCallCount = fullData.conversations?.length || 0;
@@ -200,7 +246,7 @@ export async function GET(request: NextRequest) {
 
     const total = allAgents.length;
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[voice-agents] Returning ${total} agents for user ${userId}`);
+      console.error(`[voice-agents] Returning ${total} agents for user ${userId}`);
     }
     return paginatedResponse(allAgents, total, pagination, 'voiceAgents');
   } catch (error: any) {
@@ -218,30 +264,14 @@ export async function GET(request: NextRequest) {
 // POST /api/voice-agents - Create new voice agent
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 Starting voice agent creation...');
     const session = await getServerSession(authOptions);
+    if (!session?.user?.email) return apiErrors.unauthorized();
 
-    if (!session?.user?.email) {
-      console.log('❌ Unauthorized - no session');
-      return apiErrors.unauthorized();
-    }
-
-    console.log('✅ Session found:', session.user.email);
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      console.log('❌ User not found:', session.user.email);
-      return apiErrors.notFound('User not found');
-    }
-
-    console.log('✅ User found:', user.id);
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) return apiErrors.notFound('User not found');
 
     // Enforce 12-agent limit (super admins bypass)
-    const isSuperAdmin = user.role === 'SUPER_ADMIN';
-    if (!isSuperAdmin) {
+    if (user.role !== 'SUPER_ADMIN') {
       const existingCount = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
       if (existingCount >= VOICE_AGENT_LIMIT) {
         return NextResponse.json(
@@ -251,17 +281,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const body = await request.json();
-    console.log('📦 Request body:', JSON.stringify(body, null, 2));
+    const rawBody = await request.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
+      return apiErrors.badRequest('Request body must be valid JSON');
+    }
+
+    const parseResult = VoiceAgentCreateSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return apiErrors.validationError('Invalid voice agent data', parseResult.error.flatten());
+    }
+    const body = parseResult.data;
 
     // Fetch user's language preference
     const userLanguage = user.language || body.language || 'en';
     const { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } = await import('@/lib/voice-languages');
 
-    // Build system prompt from knowledge base and business info
+    // Build system prompt
     let systemPrompt = body.systemPrompt;
-    
-    // If enableReservations is true, use the reservation-aware prompt
     if (body.enableReservations && !systemPrompt) {
       systemPrompt = generateReservationSystemPrompt({
         businessName: body.businessName,
@@ -269,7 +305,6 @@ export async function POST(request: NextRequest) {
         knowledgeBase: body.knowledgeBase,
       });
     } else if (!systemPrompt) {
-      // Default prompt if no custom prompt provided - multilingual like landing page
       systemPrompt = `${LANGUAGE_PROMPT_SECTION}
 
 You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
@@ -278,11 +313,9 @@ ${body.knowledgeBase || 'Answer customer questions professionally and helpfully.
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
     } else {
-      // Add multilingual language instruction to custom prompt if provided
       systemPrompt = ensureMultilingualPrompt(systemPrompt);
     }
 
-    console.log('💾 Creating agent in database...');
     // Create agent in database
     const agentType = body.type || 'INBOUND';
     const agent = await (prisma as any).voiceAgent.create({
@@ -294,176 +327,459 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         status: body.status || 'TESTING',
         businessName: body.businessName,
         businessIndustry: body.businessIndustry,
-        
-        // Knowledge & Prompts
         knowledgeBase: body.knowledgeBase,
         knowledgeBaseSources: (body.knowledgeBaseTexts?.length || body.knowledgeBaseUrls?.length || body.knowledgeBaseFiles?.length)
           ? {
-              texts: (body.knowledgeBaseTexts || []).filter((t: string) => t.trim()),
-              urls: (body.knowledgeBaseUrls || []).filter((u: string) => u.trim()),
-              files: body.knowledgeBaseFiles || []
-            }
+            texts: (body.knowledgeBaseTexts || []).filter((t: string) => t.trim()),
+            urls: (body.knowledgeBaseUrls || []).filter((u: string) => u.trim()),
+            files: body.knowledgeBaseFiles || [],
+          }
           : undefined,
-        // Support both old (greetingMessage) and new (inbound/outbound) fields
-        greetingMessage: body.greetingMessage, // Legacy field
+        greetingMessage: body.greetingMessage,
         inboundGreeting: body.inboundGreeting || (agentType === 'INBOUND' ? body.greetingMessage : null),
         outboundGreeting: body.outboundGreeting || (agentType === 'OUTBOUND' ? body.greetingMessage : null),
         systemPrompt,
         firstMessage: body.firstMessage || body.inboundGreeting || body.outboundGreeting || body.greetingMessage,
         enableReservations: body.enableReservations || false,
-        
-        // ElevenLabs Configuration
         voiceId: body.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-        elevenLabsAgentId: null, // Will be auto-provisioned below
-        
-        // Voice Settings
+        elevenLabsAgentId: null,
         stability: body.stability ?? 0.5,
         similarityBoost: body.similarityBoost ?? 0.75,
         style: body.style ?? 0.0,
         useSpeakerBoost: body.useSpeakerBoost ?? true,
-        
-        // TTS Configuration
         ttsModel: body.ttsModel || 'eleven_multilingual_v2',
         outputFormat: body.outputFormat || 'pcm_16000',
-        
-        // LLM Configuration
         llmModel: body.llmModel || 'gpt-4',
         temperature: body.temperature ?? 0.7,
         maxTokens: body.maxTokens || 500,
-        
-        // Conversation Settings
         maxCallDuration: body.maxCallDuration || 600,
         enableInterruptions: body.enableInterruptions ?? true,
         responseDelay: body.responseDelay || 100,
-        
-        // Language - use user's preference if not explicitly provided
         language: body.language || userLanguage,
-        
-        // Calendar & Scheduling
         googleCalendarId: body.googleCalendarId,
         availableHours: body.availableHours,
         appointmentDuration: body.appointmentDuration || 30,
-        
-        // Call Handling
         transferPhone: body.transferPhone,
         twilioPhoneNumber: body.twilioPhoneNumber,
         enableVoicemail: body.enableVoicemail || false,
         voicemailMessage: body.voicemailMessage,
-        
-        // Recording & Transcription Settings
         enableCallRecording: body.enableCallRecording !== undefined ? body.enableCallRecording : true,
         enableTranscription: body.enableTranscription !== undefined ? body.enableTranscription : true,
         sendRecordingEmail: body.sendRecordingEmail !== undefined ? body.sendRecordingEmail : false,
         recordingEmailAddress: body.recordingEmailAddress || null,
-        
-        // Advanced Settings
         pronunciationDict: body.pronunciationDict,
         webhookUrl: body.webhookUrl,
         customData: body.customData,
       },
     });
 
-    console.log('✅ Agent created in database:', agent.id);
-
-    // 📌 ASSOCIATE KNOWLEDGE BASE FILES WITH THE NEWLY CREATED AGENT
-    if (body.knowledgeBaseFileIds && Array.isArray(body.knowledgeBaseFileIds) && body.knowledgeBaseFileIds.length > 0) {
+    // Associate knowledge base files with the agent
+    if (body.knowledgeBaseFileIds?.length > 0) {
       try {
-        console.log(`🔗 Associating ${body.knowledgeBaseFileIds.length} file(s) with agent ${agent.id}...`);
-        console.log('File IDs to associate:', body.knowledgeBaseFileIds);
-        
-        // Verify user owns these files
         const ownedFiles = await (prisma as any).knowledgeBaseFile.findMany({
-          where: {
-            id: { in: body.knowledgeBaseFileIds },
-            userId: user.id,
-          },
+          where: { id: { in: body.knowledgeBaseFileIds }, userId: user.id },
           select: { id: true },
         });
-
-        console.log(`Found ${ownedFiles.length} owned files out of ${body.knowledgeBaseFileIds.length} requested`);
-
         if (ownedFiles.length > 0) {
-          // Create junction table entries for file associations
-          const associationData = ownedFiles.map((file: any) => ({
-            voiceAgentId: agent.id,
-            knowledgeBaseFileId: file.id,
-          }));
-          
-          console.log('Creating associations:', associationData);
-          
           await (prisma as any).voiceAgentKnowledgeBaseFile.createMany({
-            data: associationData,
-            skipDuplicates: true, // Skip if association already exists
+            data: ownedFiles.map((f: any) => ({ voiceAgentId: agent.id, knowledgeBaseFileId: f.id })),
+            skipDuplicates: true,
           });
-          
-          console.log('✅ Knowledge base files associated with agent');
-        } else {
-          console.warn('⚠️ No owned files found to associate');
         }
       } catch (updateError: any) {
-        console.error('⚠️ Error associating files with agent:', updateError);
-        console.error('Error details:', {
-          message: updateError.message,
-          code: updateError.code,
-          meta: updateError.meta
-        });
-        // Don't fail the entire agent creation if file association fails
+        console.error('[voice-agents] Error associating files with agent:', updateError.message);
+        // Non-fatal
       }
     }
 
-    // 📚 AUTO-IMPORT KNOWLEDGE BASE FILES AND ONBOARDING DOCUMENTS
-    // Fetch any uploaded documents from knowledge base and onboarding and add them to the agent's knowledge base
+    // Auto-import knowledge base files and onboarding documents
     let enhancedKnowledgeBase = body.knowledgeBase || '';
     let knowledgeBaseFiles = body.knowledgeBaseFiles || [];
-    
+
     try {
-      // 1️⃣ FETCH KNOWLEDGE BASE FILES FROM DATABASE
-      console.log('📚 Fetching knowledge base files from database...');
-      
-      // Check if specific file IDs were provided (for agent-specific files)
-      const knowledgeBaseFileIds = body.knowledgeBaseFileIds;
       const whereClause: any = { userId: user.id };
-      
-      // If specific file IDs are provided, only fetch those files
-      if (knowledgeBaseFileIds && Array.isArray(knowledgeBaseFileIds) && knowledgeBaseFileIds.length > 0) {
-        whereClause.id = { in: knowledgeBaseFileIds };
-        console.log(`📋 Filtering to ${knowledgeBaseFileIds.length} specific file(s)`);
+      if (body.knowledgeBaseFileIds?.length > 0) {
+        whereClause.id = { in: body.knowledgeBaseFileIds };
       }
-      
+
       const userKnowledgeBaseFiles = await (prisma as any).knowledgeBaseFile.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
       });
 
       if (userKnowledgeBaseFiles.length > 0) {
-        console.log(`📄 Found ${userKnowledgeBaseFiles.length} knowledge base file(s) to import`);
-        
-        // Add each file's extracted text to the knowledge base
         const kbFileTexts = userKnowledgeBaseFiles
-          .filter((file: any) => file.extractedText && file.extractedText.trim())
-          .map((file: any, idx: any) => {
-            knowledgeBaseFiles.push({
-              name: file.fileName,
-              type: file.fileType,
-              uploadedAt: file.createdAt.toISOString()
-            });
+          .filter((file: any) => file.extractedText?.trim())
+          .map((file: any) => {
+            knowledgeBaseFiles.push({ name: file.fileName, type: file.fileType, uploadedAt: file.createdAt.toISOString() });
             return `\n\n--- ${file.fileName} ---\n${file.extractedText}`;
           })
           .join('\n');
 
         if (kbFileTexts) {
-          enhancedKnowledgeBase = enhancedKnowledgeBase 
+          enhancedKnowledgeBase = enhancedKnowledgeBase
             ? `${enhancedKnowledgeBase}\n\n=== KNOWLEDGE BASE DOCUMENTS ===${kbFileTexts}`
             : `=== KNOWLEDGE BASE DOCUMENTS ===${kbFileTexts}`;
-          
-          console.log(`✅ Imported ${userKnowledgeBaseFiles.length} knowledge base file(s) (${kbFileTexts.length} characters)`);
         }
-      } else {
-        console.log('ℹ️  No knowledge base files found');
       }
 
-      // 2️⃣ CHECK FOR ONBOARDING DOCUMENTS
-      console.log('📚 Checking for onboarding documents to import...');
+      // Import onboarding documents
+      const userWithProgress: any = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { onboardingProgress: true },
+      } as any);
+
+      if (userWithProgress?.onboardingProgress) {
+        let progress: any = {};
+        try { progress = JSON.parse(userWithProgress.onboardingProgress as string); } catch { /* ignore */ }
+
+        if (progress.uploadedDocuments?.length > 0) {
+          const documentTexts = progress.uploadedDocuments
+            .filter((doc: any) => doc.extractedText)
+            .map((doc: any) => {
+              knowledgeBaseFiles.push({ name: doc.fileName, type: doc.fileType, uploadedAt: doc.uploadedAt });
+              return `\n\n--- ${doc.fileName} ---\n${doc.extractedText}`;
+            })
+            .join('\n');
+
+          if (documentTexts) {
+            enhancedKnowledgeBase = enhancedKnowledgeBase
+              ? `${enhancedKnowledgeBase}\n\n=== ONBOARDING DOCUMENTS ===${documentTexts}`
+              : `=== ONBOARDING DOCUMENTS ===${documentTexts}`;
+          }
+        }
+      }
+
+      if (enhancedKnowledgeBase) {
+        await (prisma as any).voiceAgent.update({
+          where: { id: agent.id },
+          data: {
+            knowledgeBase: enhancedKnowledgeBase,
+            knowledgeBaseSources: {
+              texts: body.knowledgeBaseTexts || [],
+              urls: body.knowledgeBaseUrls || [],
+              files: knowledgeBaseFiles,
+            },
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('[voice-agents] Error importing knowledge base documents:', error.message);
+      // Non-fatal — continue
+    }
+
+    // Rebuild system prompt with enhanced knowledge base
+    let finalSystemPrompt = systemPrompt;
+    if (enhancedKnowledgeBase && enhancedKnowledgeBase !== body.knowledgeBase) {
+      if (body.enableReservations) {
+        finalSystemPrompt = generateReservationSystemPrompt({
+          businessName: body.businessName,
+          businessIndustry: body.businessIndustry,
+          knowledgeBase: enhancedKnowledgeBase,
+        });
+      } else if (!body.systemPrompt) {
+        finalSystemPrompt = `You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
+
+${enhancedKnowledgeBase || 'Answer customer questions professionally and helpfully.'}
+
+${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
+      }
+      await (prisma as any).voiceAgent.update({
+        where: { id: agent.id },
+        data: { systemPrompt: finalSystemPrompt },
+      });
+    }
+
+    // Check ElevenLabs subscription before phone number provisioning
+    if (body.twilioPhoneNumber) {
+      try {
+        const subscriptionCheck = await elevenLabsProvisioning.checkSubscription(user.id);
+        if (subscriptionCheck.success && !subscriptionCheck.canUsePhoneNumbers) {
+          await (prisma as any).voiceAgent.delete({ where: { id: agent.id } });
+          return NextResponse.json(
+            {
+              error: 'Soshogle AI plan upgrade required',
+              details: subscriptionCheck.error || 'Your plan does not support phone number imports.',
+              tier: subscriptionCheck.tier,
+              upgradeRequired: true,
+              recommendation: 'Please upgrade your Soshogle AI plan to use phone numbers with voice agents.',
+            },
+            { status: 402 }
+          );
+        }
+      } catch (subscriptionError: any) {
+        console.error('[voice-agents] Error checking ElevenLabs subscription:', subscriptionError.message);
+        // Non-fatal — continue
+      }
+    }
+
+    // Auto-provision ElevenLabs agent
+    try {
+      const greetingForElevenLabs = agentType === 'OUTBOUND'
+        ? (body.outboundGreeting || body.greetingMessage)
+        : (body.inboundGreeting || body.greetingMessage);
+
+      const provisionResult = await elevenLabsProvisioning.createAgent({
+        name: body.name,
+        businessName: body.businessName,
+        businessIndustry: body.businessIndustry,
+        greetingMessage: greetingForElevenLabs || body.firstMessage,
+        systemPrompt: finalSystemPrompt,
+        knowledgeBase: enhancedKnowledgeBase,
+        voiceId: body.voiceId,
+        language: 'en',
+        maxCallDuration: body.maxCallDuration,
+        twilioPhoneNumber: body.twilioPhoneNumber,
+        userId: user.id,
+        voiceAgentId: agent.id,
+      });
+
+      if (!provisionResult.success) {
+        console.error('[voice-agents] ElevenLabs provisioning failed:', provisionResult.error);
+        try { await (prisma as any).voiceAgent.delete({ where: { id: agent.id } }); } catch (e: any) {
+          console.error('[voice-agents] Rollback failed:', e.message);
+        }
+        return NextResponse.json(
+          {
+            error: 'Failed to create voice agent',
+            details: provisionResult.error,
+            suggestion: 'Please check: 1) Soshogle AI voice is configured, 2) You have an active plan, 3) Phone credentials are configured correctly',
+          },
+          { status: 500 }
+        );
+      }
+    } catch (provisionError: any) {
+      console.error('[voice-agents] Exception during ElevenLabs provisioning:', provisionError.message);
+      try { await (prisma as any).voiceAgent.delete({ where: { id: agent.id } }); } catch (e: any) {
+        console.error('[voice-agents] Rollback failed:', e.message);
+      }
+      return NextResponse.json(
+        { error: 'Failed to provision voice agent', details: provisionError.message },
+        { status: 500 }
+      );
+    }
+
+    const updatedAgent = await (prisma as any).voiceAgent.findUnique({ where: { id: agent.id } });
+    return NextResponse.json(updatedAgent || agent, { status: 201 });
+  } catch (error: any) {
+    console.error('[voice-agents] Error creating voice agent:', error.message);
+    return NextResponse.json(
+      { error: 'Failed to create voice agent', details: error.message, code: error.code },
+      { status: 500 }
+    );
+  }
+}
+
+
+
+}
+
+const user = await prisma.user.findUnique({
+  where: { email: session.user.email },
+});
+
+if (!user) {
+  return apiErrors.notFound('User not found');
+}
+
+// Enforce 12-agent limit (super admins bypass)
+const isSuperAdmin = user.role === 'SUPER_ADMIN';
+if (!isSuperAdmin) {
+  const existingCount = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
+  if (existingCount >= VOICE_AGENT_LIMIT) {
+    return NextResponse.json(
+      { error: `Voice agent limit reached. Maximum ${VOICE_AGENT_LIMIT} agents per account.` },
+      { status: 403 }
+    );
+  }
+}
+
+const body = await request.json();
+
+// Fetch user's language preference
+const userLanguage = user.language || body.language || 'en';
+const { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } = await import('@/lib/voice-languages');
+
+// Build system prompt from knowledge base and business info
+let systemPrompt = body.systemPrompt;
+
+// If enableReservations is true, use the reservation-aware prompt
+if (body.enableReservations && !systemPrompt) {
+  systemPrompt = generateReservationSystemPrompt({
+    businessName: body.businessName,
+    businessIndustry: body.businessIndustry,
+    knowledgeBase: body.knowledgeBase,
+  });
+} else if (!systemPrompt) {
+  // Default prompt if no custom prompt provided - multilingual like landing page
+  systemPrompt = `${LANGUAGE_PROMPT_SECTION}
+
+You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
+
+${body.knowledgeBase || 'Answer customer questions professionally and helpfully.'}
+
+${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
+} else {
+  // Add multilingual language instruction to custom prompt if provided
+  systemPrompt = ensureMultilingualPrompt(systemPrompt);
+}
+
+// Create agent in database
+const agentType = body.type || 'INBOUND';
+const agent = await (prisma as any).voiceAgent.create({
+  data: {
+    userId: user.id,
+    name: body.name,
+    description: body.description,
+    type: agentType,
+    status: body.status || 'TESTING',
+    businessName: body.businessName,
+    businessIndustry: body.businessIndustry,
+
+    // Knowledge & Prompts
+    knowledgeBase: body.knowledgeBase,
+    knowledgeBaseSources: (body.knowledgeBaseTexts?.length || body.knowledgeBaseUrls?.length || body.knowledgeBaseFiles?.length)
+      ? {
+        texts: (body.knowledgeBaseTexts || []).filter((t: string) => t.trim()),
+        urls: (body.knowledgeBaseUrls || []).filter((u: string) => u.trim()),
+        files: body.knowledgeBaseFiles || []
+      }
+      : undefined,
+    // Support both old (greetingMessage) and new (inbound/outbound) fields
+    greetingMessage: body.greetingMessage, // Legacy field
+    inboundGreeting: body.inboundGreeting || (agentType === 'INBOUND' ? body.greetingMessage : null),
+    outboundGreeting: body.outboundGreeting || (agentType === 'OUTBOUND' ? body.greetingMessage : null),
+    systemPrompt,
+    firstMessage: body.firstMessage || body.inboundGreeting || body.outboundGreeting || body.greetingMessage,
+    enableReservations: body.enableReservations || false,
+
+    // ElevenLabs Configuration
+    voiceId: body.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+    elevenLabsAgentId: null, // Will be auto-provisioned below
+
+    // Voice Settings
+    stability: body.stability ?? 0.5,
+    similarityBoost: body.similarityBoost ?? 0.75,
+    style: body.style ?? 0.0,
+    useSpeakerBoost: body.useSpeakerBoost ?? true,
+
+    // TTS Configuration
+    ttsModel: body.ttsModel || 'eleven_multilingual_v2',
+    outputFormat: body.outputFormat || 'pcm_16000',
+
+    // LLM Configuration
+    llmModel: body.llmModel || 'gpt-4',
+    temperature: body.temperature ?? 0.7,
+    maxTokens: body.maxTokens || 500,
+
+    // Conversation Settings
+    maxCallDuration: body.maxCallDuration || 600,
+    enableInterruptions: body.enableInterruptions ?? true,
+    responseDelay: body.responseDelay || 100,
+
+    // Language - use user's preference if not explicitly provided
+    language: body.language || userLanguage,
+
+    // Calendar & Scheduling
+    googleCalendarId: body.googleCalendarId,
+    availableHours: body.availableHours,
+    appointmentDuration: body.appointmentDuration || 30,
+
+    // Call Handling
+    transferPhone: body.transferPhone,
+    twilioPhoneNumber: body.twilioPhoneNumber,
+    enableVoicemail: body.enableVoicemail || false,
+    voicemailMessage: body.voicemailMessage,
+
+    // Recording & Transcription Settings
+    enableCallRecording: body.enableCallRecording !== undefined ? body.enableCallRecording : true,
+    enableTranscription: body.enableTranscription !== undefined ? body.enableTranscription : true,
+    sendRecordingEmail: body.sendRecordingEmail !== undefined ? body.sendRecordingEmail : false,
+    recordingEmailAddress: body.recordingEmailAddress || null,
+
+    // Advanced Settings
+    pronunciationDict: body.pronunciationDict,
+    webhookUrl: body.webhookUrl,
+    customData: body.customData,
+  },
+});
+
+// ASSOCIATE KNOWLEDGE BASE FILES WITH THE NEWLY CREATED AGENT
+if (body.knowledgeBaseFileIds && Array.isArray(body.knowledgeBaseFileIds) && body.knowledgeBaseFileIds.length > 0) {
+  try {
+    // Verify user owns these files
+    const ownedFiles = await (prisma as any).knowledgeBaseFile.findMany({
+      where: {
+        id: { in: body.knowledgeBaseFileIds },
+        userId: user.id,
+      },
+      select: { id: true },
+    });
+
+    console.log(`Found ${ownedFiles.length} owned files out of ${body.knowledgeBaseFileIds.length} requested`);
+
+    if (ownedFiles.length > 0) {
+      // Create junction table entries for file associations
+      const associationData = ownedFiles.map((file: any) => ({
+        voiceAgentId: agent.id,
+        knowledgeBaseFileId: file.id,
+      }));
+
+      await (prisma as any).voiceAgentKnowledgeBaseFile.createMany({
+        data: associationData,
+        skipDuplicates: true, // Skip if association already exists
+      });
+    }
+  } else {
+    // No owned files
+  }
+} catch (updateError: any) {
+  console.error('[voice-agents] Error associating files with agent:', updateError.message);
+  // Don't fail the entire agent creation if file association fails
+}
+    }
+
+// 📚 AUTO-IMPORT KNOWLEDGE BASE FILES AND ONBOARDING DOCUMENTS
+// Fetch any uploaded documents from knowledge base and onboarding and add them to the agent's knowledge base
+let enhancedKnowledgeBase = body.knowledgeBase || '';
+let knowledgeBaseFiles = body.knowledgeBaseFiles || [];
+
+try {
+  // Check if specific file IDs were provided (for agent-specific files)
+  const knowledgeBaseFileIds = body.knowledgeBaseFileIds;
+  const whereClause: any = { userId: user.id };
+
+  // If specific file IDs are provided, only fetch those files
+  if (knowledgeBaseFileIds && Array.isArray(knowledgeBaseFileIds) && knowledgeBaseFileIds.length > 0) {
+    whereClause.id = { in: knowledgeBaseFileIds };
+  }
+
+  const userKnowledgeBaseFiles = await (prisma as any).knowledgeBaseFile.findMany({
+    where: whereClause,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (userKnowledgeBaseFiles.length > 0) {
+
+    // Add each file's extracted text to the knowledge base
+    const kbFileTexts = userKnowledgeBaseFiles
+      .filter((file: any) => file.extractedText && file.extractedText.trim())
+      .map((file: any, idx: any) => {
+        knowledgeBaseFiles.push({
+          name: file.fileName,
+          type: file.fileType,
+          uploadedAt: file.createdAt.toISOString()
+        });
+        return `\n\n--- ${file.fileName} ---\n${file.extractedText}`;
+      })
+      .join('\n');
+
+    if (kbFileTexts) {
+      enhancedKnowledgeBase = enhancedKnowledgeBase
+        ? `${enhancedKnowledgeBase}\n\n=== KNOWLEDGE BASE DOCUMENTS ===${kbFileTexts}`
+        : `=== KNOWLEDGE BASE DOCUMENTS ===${kbFileTexts}`;
+
+      console.error('[voice-agents] Error importing KB docs:', error);
       const userWithProgress: any = await prisma.user.findUnique({
         where: { id: user.id },
         select: { onboardingProgress: true },
@@ -474,12 +790,12 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         try {
           progress = JSON.parse(userWithProgress.onboardingProgress as string);
         } catch (e) {
-          console.log('⚠️  Could not parse onboarding progress');
+          // ignore parse error
         }
 
         if (progress.uploadedDocuments && Array.isArray(progress.uploadedDocuments) && progress.uploadedDocuments.length > 0) {
           console.log(`📄 Found ${progress.uploadedDocuments.length} onboarding document(s) to import`);
-          
+
           // Add each document's extracted text to the knowledge base
           const documentTexts = progress.uploadedDocuments
             .filter((doc: any) => doc.extractedText)
@@ -494,14 +810,12 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
             .join('\n');
 
           if (documentTexts) {
-            enhancedKnowledgeBase = enhancedKnowledgeBase 
+            enhancedKnowledgeBase = enhancedKnowledgeBase
               ? `${enhancedKnowledgeBase}\n\n=== ONBOARDING DOCUMENTS ===${documentTexts}`
               : `=== ONBOARDING DOCUMENTS ===${documentTexts}`;
-            
-            console.log(`✅ Imported ${progress.uploadedDocuments.length} onboarding document(s) (${documentTexts.length} characters)`);
           }
         } else {
-          console.log('ℹ️  No onboarding documents found to import');
+          // No onboarding docs
         }
       }
 
@@ -518,10 +832,9 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
             }
           },
         });
-        console.log(`✅ Updated agent with complete knowledge base (${enhancedKnowledgeBase.length} characters total)`);
       }
     } catch (error: any) {
-      console.error('⚠️  Error importing knowledge base documents (continuing anyway):', error.message);
+      console.error('[voice-agents] Error importing knowledge base documents:', error.message);
       // Continue with agent creation even if document import fails
     }
 
@@ -531,7 +844,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
     if (enhancedKnowledgeBase && enhancedKnowledgeBase !== body.knowledgeBase) {
       // Knowledge base was enhanced with onboarding docs - rebuild the prompt
       console.log('🔄 Rebuilding system prompt with enhanced knowledge base...');
-      
+
       if (body.enableReservations) {
         finalSystemPrompt = generateReservationSystemPrompt({
           businessName: body.businessName,
@@ -546,37 +859,27 @@ ${enhancedKnowledgeBase || 'Answer customer questions professionally and helpful
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
       }
-      
-      // Update the agent with the final system prompt
+
       await (prisma as any).voiceAgent.update({
         where: { id: agent.id },
         data: { systemPrompt: finalSystemPrompt },
       });
-      
-      console.log('✅ System prompt rebuilt with enhanced knowledge base');
     }
 
-    // 📊 CHECK ELEVENLABS SUBSCRIPTION FIRST
-    // This prevents creating agents on free plans that can't use phone numbers
-    console.log('📊 Checking ElevenLabs subscription plan...');
-    
     if (body.twilioPhoneNumber) {
       try {
         const subscriptionCheck = await elevenLabsProvisioning.checkSubscription(user.id);
-        
         if (!subscriptionCheck.success) {
-          console.warn('⚠️ Could not verify ElevenLabs subscription:', subscriptionCheck.error);
-          console.warn('   Continuing anyway - agent will be created without phone number provisioning');
+          // Could not verify — continue
         } else if (!subscriptionCheck.canUsePhoneNumbers) {
-          console.error('❌ ElevenLabs plan does not support phone numbers');
-          
+
           // Delete the agent from database since we can't provision it
           await (prisma as any).voiceAgent.delete({
             where: { id: agent.id },
           });
-          
+
           return NextResponse.json(
-            { 
+            {
               error: 'Soshogle AI plan upgrade required',
               details: subscriptionCheck.error || 'Your Soshogle AI plan does not support phone number imports.',
               tier: subscriptionCheck.tier,
@@ -587,122 +890,41 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
             { status: 402 } // 402 Payment Required
           );
         } else {
-          console.log(`✅ ElevenLabs plan "${subscriptionCheck.tier}" supports phone numbers`);
+          // Subscription confirmed
         }
       } catch (subscriptionError: any) {
-        console.error('⚠️ Error checking subscription:', subscriptionError);
-        console.warn('   Continuing anyway - agent will be created without phone number provisioning');
-      }
-    } else {
-      console.log('ℹ️  No phone number provided - skipping subscription check');
-    }
-
-    // 🚀 AUTO-PROVISION ELEVENLABS AGENT
-    // This happens in the background - user doesn't need to do anything!
-    console.log('🤖 Auto-provisioning ElevenLabs agent for:', body.name);
-    
-    try {
-      // Determine which greeting to use based on agent type
-      const greetingForElevenLabs = agentType === 'OUTBOUND' 
-        ? (body.outboundGreeting || body.greetingMessage)
-        : (body.inboundGreeting || body.greetingMessage);
-      
-      console.log('Provisioning with data:', {
-        name: body.name,
-        businessName: body.businessName,
-        hasSystemPrompt: !!finalSystemPrompt,
-        hasKnowledgeBase: !!enhancedKnowledgeBase,
-        hasPhoneNumber: !!body.twilioPhoneNumber,
-      });
-      
-      const provisionResult = await elevenLabsProvisioning.createAgent({
-        name: body.name,
-        businessName: body.businessName,
-        businessIndustry: body.businessIndustry,
-        greetingMessage: greetingForElevenLabs || body.firstMessage,
-        systemPrompt: finalSystemPrompt, // Use the rebuilt prompt with onboarding docs
-        knowledgeBase: enhancedKnowledgeBase, // Use enhanced knowledge base with onboarding docs
-        voiceId: body.voiceId,
-        language: 'en', // API only accepts single codes. Multilingual via prompt.
-        maxCallDuration: body.maxCallDuration,
-        twilioPhoneNumber: body.twilioPhoneNumber, // Pass phone number for import/assignment
-        userId: user.id,
-        voiceAgentId: agent.id,
-      });
-
-      if (!provisionResult.success) {
-        console.error('❌ ElevenLabs auto-provisioning failed:', provisionResult.error);
-        // CRITICAL: Delete the agent from database if ElevenLabs provisioning failed
-        // Otherwise we'll have a zombie agent that can't make calls
-        console.error('🗑️  Rolling back database agent due to provisioning failure');
-        
-        try {
-          await (prisma as any).voiceAgent.delete({
-            where: { id: agent.id },
-          });
-        } catch (deleteError: any) {
-          console.error('⚠️ Failed to delete agent during rollback:', deleteError);
-        }
-        
-        return NextResponse.json(
-          { 
-            error: 'Failed to create voice agent',
-            details: provisionResult.error,
-            suggestion: 'Please check: 1) Soshogle AI voice is configured, 2) You have an active plan, 3) Phone credentials are configured correctly'
-          },
-          { status: 500 }
-        );
+        console.error('[voice-agents] Error checking subscription:', subscriptionError.message);
       }
 
-      console.log('✅ ElevenLabs agent auto-provisioned:', provisionResult.agentId);
-      if (provisionResult.phoneNumberId) {
-        console.log('✅ Phone number registered:', provisionResult.phoneNumberId);
-      }
-    } catch (provisionError: any) {
-      console.error('❌ Exception during ElevenLabs provisioning:', provisionError);
-      console.error('Error stack:', provisionError.stack);
-      
-      // Rollback the database agent
+      // AUTO-PROVISION ELEVENLABS AGENT
       try {
-        await (prisma as any).voiceAgent.delete({
-          where: { id: agent.id },
+        // Determine which greeting to use based on agent type
+        const greetingForElevenLabs = agentType === 'OUTBOUND'
+          ? (body.outboundGreeting || body.greetingMessage)
+          : (body.inboundGreeting || body.greetingMessage);
+
+        const provisionResult = await elevenLabsProvisioning.createAgent({
+          name: body.name,
+          businessName: body.businessName,
+          businessIndustry: body.businessIndustry,
+          greetingMessage: greetingForElevenLabs || body.firstMessage,
+          systemPrompt: finalSystemPrompt, // Use the rebuilt prompt with onboarding docs
+          knowledgeBase: enhancedKnowledgeBase, // Use enhanced knowledge base with onboarding docs
+          voiceId: body.voiceId,
+          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          maxCallDuration: body.maxCallDuration,
+          twilioPhoneNumber: body.twilioPhoneNumber, // Pass phone number for import/assignment
+          userId: user.id,
+          voiceAgentId: agent.id,
         });
-        console.log('🗑️  Rolled back database agent');
-      } catch (deleteError: any) {
-        console.error('⚠️ Failed to delete agent during rollback:', deleteError);
-      }
-      
-      return NextResponse.json(
-        { 
-          error: 'Failed to provision voice agent',
-          details: provisionError.message,
-          stack: provisionError.stack,
-        },
-        { status: 500 }
-      );
-    }
 
-    // Fetch the updated agent with the ElevenLabs ID
-    const updatedAgent = await (prisma as any).voiceAgent.findUnique({
-      where: { id: agent.id },
-    });
+        if (!provisionResult.success) {
+          console.error('[voice-agents] ElevenLabs provisioning failed:', provisionResult.error);
+          // Rollback database agent
+          try {
+            await (prisma as any).voiceAgent.delete({ where: { id: agent.id } });
+          } catch (deleteError: any) {
+            console.error('[voice-agents] Failed to delete agent during rollback:', deleteError.message);
+          }
 
-    return NextResponse.json(updatedAgent || agent, { status: 201 });
-  } catch (error: any) {
-    console.error('❌ Error creating voice agent:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      meta: error.meta
-    });
-    return NextResponse.json(
-      { 
-        error: 'Failed to create voice agent',
-        details: error.message,
-        code: error.code
-      },
-      { status: 500 }
-    );
-  }
-}
+          return NextResponse.json(

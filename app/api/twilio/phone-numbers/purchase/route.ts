@@ -28,10 +28,7 @@ export async function POST(req: NextRequest) {
 
     // Get base URL for webhooks - CRITICAL for SMS to work!
     const baseUrl = process.env.NEXTAUTH_URL || 'https://soshogleagents.com';
-    
-    console.log('🔧 Configuring webhooks for:', phoneNumber);
-    console.log('   Voice URL:', `${baseUrl}/api/twilio/voice-callback`);
-    console.log('   SMS URL:', `${baseUrl}/api/twilio/sms-webhook`);
+
 
     const result = await purchasePhoneNumber(session.user.id, phoneNumber, {
       friendlyName: friendlyName || 'Soshogle CRM Number',
@@ -98,7 +95,6 @@ export async function POST(req: NextRequest) {
 
               if (createResult.success) {
                 voiceAgentId = voiceAgent.id;
-                console.log('✅ Auto-created voice agent:', voiceAgent.id, 'with ElevenLabs agent:', createResult.agentId);
               } else {
                 console.warn('⚠️  ElevenLabs agent creation failed:', createResult.error);
               }

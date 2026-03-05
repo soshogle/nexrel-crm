@@ -17,13 +17,13 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    
+
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
     const body = formData.get('Body') as string;
     const messageSid = formData.get('MessageSid') as string;
 
-    console.log('📨 Incoming SMS:', { from, to, body, messageSid });
+
 
     // Find user by phone number in PurchasedPhoneNumber table
     // This is the reliable, multi-tenant safe way to look up the owner
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     const user = purchasedNumber.user;
-    console.log('✅ SMS received for user:', user.id, user.email, 'from:', from);
-    
+
+
     // Find or create channel connection for SMS
     let channelConnection = await (prisma as any).channelConnection.findFirst({
       where: {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
           status: 'CONNECTED'
         }
       });
-      console.log('Created new channel connection:', channelConnection.id);
+
     }
 
     const ctx = await resolveDalContext(user.id);
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         lastMessageAt: new Date(),
         status: 'ACTIVE'
       } as any);
-      console.log('Created new conversation:', conversation.id);
+
     }
 
     const db = getCrmDb(ctx);
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     await conversationService.update(ctx, conversation.id, { lastMessageAt: new Date() });
 
-    console.log('Saved incoming SMS to conversation:', conversation.id);
+
 
     // Respond with empty TwiML (no auto-reply for now)
     return new NextResponse(

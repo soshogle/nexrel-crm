@@ -32,13 +32,6 @@ export async function POST(request: NextRequest) {
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
 
-    console.log('📊 [Twilio Call Status]', {
-      callSid,
-      callStatus,
-      callDuration,
-      from,
-      to,
-    });
 
     if (!callSid) {
       return apiErrors.badRequest('Missing CallSid');
@@ -51,8 +44,6 @@ export async function POST(request: NextRequest) {
 
     // If no call log exists, create it (for Native ElevenLabs Integration)
     if (!callLog) {
-      console.log('🆕 [Twilio Call Status] Creating new call log for Native Integration');
-      console.log('   Status:', callStatus);
 
       const voiceResolved = await resolveVoiceAgentByPhone(to);
       if (voiceResolved) {
@@ -69,7 +60,6 @@ export async function POST(request: NextRequest) {
           },
         });
         db = voiceDb;
-        console.log('✅ [Twilio Call Status] Call log created:', callLog.id);
       } else {
         console.warn('⚠️  [Twilio Call Status] No voice agent found for number:', to);
         return NextResponse.json({ message: 'Voice agent not found' }, { status: 404 });
@@ -160,18 +150,10 @@ export async function POST(request: NextRequest) {
     const shouldFetchRecording = callStatus === 'completed' || (callDuration && parseInt(callDuration, 10) > 0);
 
     if (shouldFetchRecording) {
-      console.log('🎙️ [Twilio Call Status] Call ended, scheduling background ElevenLabs fetch...');
-      console.log('   Status:', callStatus);
-      console.log('   From:', from);
-      console.log('   To:', to);
-      console.log('   Duration:', callDuration);
-
       // Fire-and-forget: schedule the ElevenLabs fetch as a background task
       // Don't await this - respond to Twilio immediately to avoid timeout
       scheduleElevenLabsFetch(db, callLog.id, callDuration || '0', from || '', to || '');
     }
-
-    console.log('✅ [Twilio Call Status] Webhook processed:', callLog.id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -200,19 +182,16 @@ async function scheduleElevenLabsFetch(
   let success = false;
 
   // Initial delay
-  console.log(`⏳ [ElevenLabs Fetch] Waiting ${INITIAL_DELAY_MS / 1000}s before first attempt...`);
   await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY_MS));
 
   while (attempt < MAX_ATTEMPTS && !success) {
     attempt++;
-    console.log(`🔄 [ElevenLabs Fetch] Attempt ${attempt}/${MAX_ATTEMPTS} for call ${callLogId}`);
 
     try {
       success = await fetchAndProcessElevenLabsData(db, callLogId, callDuration, from, to);
 
       if (!success && attempt < MAX_ATTEMPTS) {
         const delay = RETRY_DELAYS_MS[attempt - 1];
-        console.log(`⏳ [ElevenLabs Fetch] No match found, retrying in ${delay / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     } catch (error: any) {
@@ -261,7 +240,6 @@ async function fetchAndProcessElevenLabsData(
 
     // Skip if already processed
     if (callLog.elevenLabsConversationId && callLog.conversationData) {
-      console.log(`ℹ️ [ElevenLabs Fetch] Call ${callLogId} already has ElevenLabs data, skipping`);
       return true;
     }
 
@@ -278,7 +256,6 @@ async function fetchAndProcessElevenLabsData(
 
     const listData = await listResponse.json();
     const conversations = listData.conversations || [];
-    console.log('📋 [ElevenLabs Fetch] Found', conversations.length, 'recent conversations');
 
     // Find conversation that matches our call
     const callTime = callLog.createdAt || new Date();
@@ -287,11 +264,6 @@ async function fetchAndProcessElevenLabsData(
     let bestMatch = null;
     let bestScore = Infinity;
 
-    console.log('🔍 [ElevenLabs Fetch] Matching parameters:', {
-      callLogId,
-      callTime: callTime.toISOString(),
-      callDuration: callDurationNum,
-    });
 
     for (const conv of conversations) {
       // Check if timestamps are close (within 5 minutes to account for delays)
@@ -317,22 +289,18 @@ async function fetchAndProcessElevenLabsData(
         if (score < bestScore) {
           bestMatch = conv;
           bestScore = score;
-          console.log(`   ✓ Potential match: ${conv.conversation_id.substring(0, 20)}... (score: ${Math.round(score)})`);
         }
       }
     }
 
     if (bestMatch) {
       matchedConversation = bestMatch;
-      console.log('✅ [ElevenLabs Fetch] MATCHED:', matchedConversation.conversation_id);
     } else {
-      console.log('❌ [ElevenLabs Fetch] No matching conversation found');
       return false;
     }
 
     // Fetch full conversation details
     const conversationId = matchedConversation.conversation_id;
-    console.log('🔍 [ElevenLabs Fetch] Fetching full conversation details for:', conversationId);
 
     const detailsResponse = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
@@ -348,10 +316,6 @@ async function fetchAndProcessElevenLabsData(
     }
 
     const conversationDetails = await detailsResponse.json();
-    console.log('✅ [ElevenLabs Fetch] Conversation details fetched');
-    console.log('   Status:', conversationDetails.status);
-    console.log('   Has audio:', conversationDetails.has_audio);
-    console.log('   Transcript turns:', conversationDetails.transcript?.length || 0);
 
     // Extract transcript
     let transcriptText = '';
@@ -384,12 +348,6 @@ async function fetchAndProcessElevenLabsData(
       },
     });
 
-    console.log('✅ [ElevenLabs Fetch] Updated call log with ElevenLabs data:', {
-      callLogId: callLog.id,
-      conversationId,
-      hasRecording: !!recordingUrl,
-      transcriptLength: transcriptText?.length || 0,
-    });
 
     // Send email notification to business owner
     try {
@@ -428,7 +386,6 @@ async function sendEmailNotification(
   recordingUrl: string | null,
   conversationDetails: any
 ) {
-  console.log('📧 [Email Notification] Preparing email notification...');
 
   // Get voice agent and user details (same db as CallLog)
   const voiceAgent = await db.voiceAgent.findUnique({
@@ -441,21 +398,11 @@ async function sendEmailNotification(
     return;
   }
 
-  console.log('📧 [Email Notification] Voice Agent Config:', {
-    id: voiceAgent.id,
-    name: voiceAgent.name,
-    sendRecordingEmail: voiceAgent.sendRecordingEmail,
-    recordingEmailAddress: voiceAgent.recordingEmailAddress,
-    userId: voiceAgent.userId
-  });
 
   // Check if we should send email notification
   const shouldSendEmail = voiceAgent.sendRecordingEmail === true && voiceAgent.recordingEmailAddress;
 
   if (!shouldSendEmail) {
-    console.log('ℹ️  [Email Notification] Email notification skipped:');
-    console.log('   sendRecordingEmail:', voiceAgent.sendRecordingEmail);
-    console.log('   recordingEmailAddress:', voiceAgent.recordingEmailAddress || 'not configured');
     return;
   }
 
@@ -484,7 +431,6 @@ async function sendEmailNotification(
       }
     }
   } catch (e) {
-    console.log('⚠️  Could not parse conversation data for AI summary');
   }
 
   // Try to find caller in Leads database by phone number
@@ -509,7 +455,6 @@ async function sendEmailNotification(
       // Lead exists - update with call summary
       callerName = lead.contactPerson || lead.businessName || from || 'Unknown';
       callerEmail = lead.email || undefined;
-      console.log('✅ Matched caller to existing Lead:', callerName);
 
       // Create a new note with call summary
       const callSummaryNote = `📞 Voice AI Call - ${new Date().toLocaleString()}\n\n` +
@@ -521,10 +466,8 @@ async function sendEmailNotification(
       await noteService.create(ctx, { leadId: lead.id, content: callSummaryNote });
       await leadService.update(ctx, lead.id, { lastContactedAt: new Date() });
 
-      console.log('✅ Updated Lead with call summary note');
     } else {
       // No lead found - create new lead automatically
-      console.log('🆕 Creating new Lead for unknown caller:', from);
 
       // Try to extract caller name from conversation data if available
       let extractedName = 'Unknown Caller';
@@ -552,10 +495,9 @@ async function sendEmailNotification(
       await noteService.create(ctx, { leadId: newLead.id, content: initialNote });
 
       callerName = extractedName;
-      console.log('✅ Created new Lead:', { id: newLead.id, name: extractedName, phone: from });
     }
   } catch (lookupError: any) {
-    console.log('⚠️  Could not lookup/create caller in database:', lookupError.message);
+    console.error('[Email Notification] Failed to lookup/create caller:', lookupError.message);
     // Continue with phone number as name
   }
 
@@ -566,16 +508,6 @@ async function sendEmailNotification(
   const formattedDuration = `${minutes}m ${seconds}s`;
 
   // Send the email
-  console.log('📧 [Email Notification] Sending email with params:', {
-    recipientEmail: voiceAgent.recordingEmailAddress,
-    callerName: callerName,
-    callerPhone: from,
-    agentName: voiceAgent.name,
-    hasTranscript: !!transcriptText,
-    hasSummary: !!aiSummary,
-    hasRecording: !!recordingUrl,
-    userId: voiceAgent.userId
-  });
 
   const emailSent = await emailService.sendCallSummaryEmail({
     recipientEmail: voiceAgent.recordingEmailAddress!,
@@ -600,10 +532,6 @@ async function sendEmailNotification(
       data: { emailSent: true, emailSentAt: new Date() }
     });
 
-    console.log('✅ [Email Notification] Email sent successfully to:', voiceAgent.recordingEmailAddress);
-    console.log('   Caller:', callerName, '|', from);
-    if (callerEmail) console.log('   Email:', callerEmail);
-    if (callReason) console.log('   Reason:', callReason);
   } else {
     console.error('❌ [Email Notification] Email service returned false - email was not sent');
     console.error('   This usually means all email providers (Gmail OAuth, SendGrid) failed');

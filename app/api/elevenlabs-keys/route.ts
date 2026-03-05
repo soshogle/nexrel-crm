@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { apiErrors } from '@/lib/api-error';
+import { encryptField } from '@/lib/crypto-fields';
 
 // GET /api/elevenlabs-keys - Get all API keys with status
 
@@ -39,19 +40,31 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const body = await request.json();
-    const { apiKey, label, priority } = body;
+    const rawBody = await request.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
+      return apiErrors.badRequest('Request body must be valid JSON');
+    }
+    const body = rawBody as Record<string, unknown>;
 
-    if (!apiKey || !label) {
-      return apiErrors.badRequest('Missing required fields: apiKey, label');
+    const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
+    const label = typeof body.label === 'string' ? body.label.trim() : '';
+    const priority = typeof body.priority === 'number' ? body.priority : 999;
+
+    if (!apiKey || apiKey.length < 10) {
+      return apiErrors.badRequest('apiKey must be a valid ElevenLabs API key');
+    }
+    if (!label || label.length > 100) {
+      return apiErrors.badRequest('label is required (max 100 characters)');
     }
 
-    // Add the API key (will verify it works)
+    // Encrypt the API key before storing in DB
+    const encryptedKey = encryptField(apiKey) as string;
+
     await elevenLabsKeyManager.addApiKey({
       userId: session.user.id,
-      apiKey,
+      apiKey: encryptedKey,
       label,
-      priority: priority || 999, // Default to low priority if not specified
+      priority,
     });
 
     return NextResponse.json({
@@ -59,7 +72,7 @@ export async function POST(request: NextRequest) {
       message: 'API key added successfully',
     });
   } catch (error: any) {
-    console.error('Error adding API key:', error);
-    return apiErrors.internal(error.message || 'Failed to add API key');
+    console.error('Error adding API key:', error.message);
+    return apiErrors.internal('Failed to add API key');
   }
 }

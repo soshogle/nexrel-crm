@@ -291,7 +291,7 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
     ((avgRating / 5) * 0.5 +
       (responseRate / 100) * 0.2 +
       (trendDirection === 'IMPROVING' ? 0.3 : trendDirection === 'STABLE' ? 0.2 : 0.1)) *
-      100
+    100
   );
 
   // ─── Web mentions from brand scans ─────────────────────────────────
@@ -419,7 +419,7 @@ export async function sendReviewRequest(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-internal-secret': process.env.NEXTAUTH_SECRET || '',
+            'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
           },
           body: JSON.stringify({
             to: lead.phone,
@@ -439,7 +439,7 @@ export async function sendReviewRequest(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-internal-secret': process.env.NEXTAUTH_SECRET || '',
+            'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
           },
           body: JSON.stringify({
             to: lead.email,
@@ -476,11 +476,11 @@ export async function processIncomingReview(
   const analysis = reviewData.reviewText
     ? await analyzeReviewSentiment(reviewData.reviewText, reviewData.rating)
     : {
-        sentiment: reviewData.rating >= 4 ? 'POSITIVE' : reviewData.rating <= 2 ? 'NEGATIVE' : 'NEUTRAL' as const,
-        sentimentScore: (reviewData.rating - 3) / 2,
-        themes: [] as string[],
-        summary: '',
-      };
+      sentiment: reviewData.rating >= 4 ? 'POSITIVE' : reviewData.rating <= 2 ? 'NEGATIVE' : 'NEUTRAL' as const,
+      sentimentScore: (reviewData.rating - 3) / 2,
+      themes: [] as string[],
+      summary: '',
+    };
 
   const db = getCrmDb(await resolveDalContext(userId));
   // Create the review record

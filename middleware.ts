@@ -93,9 +93,12 @@ export async function middleware(request: NextRequest) {
 
   // Rate limiting for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || request.headers.get('x-real-ip')
-      || '127.0.0.1'
+    // Use the rightmost IP in x-forwarded-for (set by the last trusted proxy — Vercel's edge).
+    // The leftmost IP is client-supplied and can be spoofed; we fall back to x-real-ip then loopback.
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ip = (forwardedFor ? forwardedFor.split(',').at(-1)?.trim() : null)
+      ?? request.headers.get('x-real-ip')
+      ?? '127.0.0.1'
 
     const isAuthPath = request.nextUrl.pathname.startsWith('/api/auth')
     const isWebhookPath = request.nextUrl.pathname.startsWith('/api/webhooks')

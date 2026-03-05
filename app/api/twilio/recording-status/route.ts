@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const callSid = formData.get('CallSid') as string;
     const recordingSid = formData.get('RecordingSid') as string;
     const recordingUrl = formData.get('RecordingUrl') as string;
@@ -22,16 +22,7 @@ export async function POST(request: NextRequest) {
     const recordingDuration = formData.get('RecordingDuration') as string;
     const recordingChannels = formData.get('RecordingChannels') as string;
 
-    console.log('📞 Recording status callback:', {
-      callSid,
-      recordingSid,
-      recordingStatus,
-      recordingDuration,
-      recordingUrl,
-    });
-
     if (recordingStatus !== 'completed') {
-      console.log(`⏳ Recording not yet completed: ${recordingStatus}`);
       return NextResponse.json({ success: true, message: 'Recording not completed yet' });
     }
 
@@ -46,63 +37,44 @@ export async function POST(request: NextRequest) {
     });
 
     if (!callLog) {
-      console.error('❌ Call log not found for CallSid:', callSid);
+      console.error('[recording-status] Call log not found for CallSid:', callSid);
       return apiErrors.notFound('Call log not found');
     }
 
     // Construct the full recording URL (Twilio provides relative URL)
-    const fullRecordingUrl = recordingUrl.startsWith('http') 
-      ? recordingUrl 
+    const fullRecordingUrl = recordingUrl.startsWith('http')
+      ? recordingUrl
       : `https://api.twilio.com${recordingUrl}`;
-
-    console.log('✅ Full recording URL:', fullRecordingUrl);
 
     // Check if voice agent has recording/transcription enabled
     const voiceAgent = callLog.voiceAgent;
     if (!voiceAgent) {
-      console.warn('⚠️ No voice agent associated with this call');
       return NextResponse.json({ success: true, message: 'No voice agent found' });
     }
 
     // Update call log with recording URL
     await prisma.callLog.update({
       where: { id: callLog.id },
-      data: {
-        recordingUrl: fullRecordingUrl,
-      },
+      data: { recordingUrl: fullRecordingUrl },
     });
-
-    console.log(`✅ Updated call log ${callLog.id} with recording URL`);
 
     // Fetch transcription if enabled
     let transcript = callLog.transcription || '';
-    
+
     if (voiceAgent.enableTranscription && recordingSid) {
       try {
-        console.log('📝 Fetching transcription for recording:', recordingSid);
         transcript = await fetchTwilioTranscription(recordingSid);
-        
+
         if (transcript) {
-          // Update call log with transcript
           await prisma.callLog.update({
             where: { id: callLog.id },
-            data: {
-              transcription: transcript,
-            },
+            data: { transcription: transcript },
           });
-          
-          console.log('✅ Transcription updated successfully');
         }
       } catch (transcriptionError) {
-        console.error('❌ Error fetching transcription:', transcriptionError);
+        console.error('[recording-status] Error fetching transcription:', transcriptionError);
         // Continue execution even if transcription fails
       }
-    }
-
-    // Note: Call transcripts are already stored in the CallLog model
-    // and can be viewed in the call history section
-    if (transcript && callLog.lead) {
-      console.log(`✅ Transcript stored in call log and linked to lead ${callLog.lead.id}`);
     }
 
     if (voiceAgent.sendRecordingEmail && voiceAgent.recordingEmailAddress) {
@@ -124,13 +96,12 @@ export async function POST(request: NextRequest) {
           recordingUrl: fullRecordingUrl,
           userId: callLog.userId,
         });
-        console.log('✅ Recording email sent successfully');
       } catch (emailError) {
-        console.error('❌ Error sending recording email:', emailError);
+        console.error('[recording-status] Error sending recording email:', emailError);
       }
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Recording processed successfully',
       recordingUrl: fullRecordingUrl,
@@ -138,7 +109,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Recording status webhook error:', error);
+    console.error('[recording-status] Webhook error:', error);
     return apiErrors.internal('Internal server error', error.message);
   }
 }
@@ -155,12 +126,9 @@ async function fetchTwilioTranscription(recordingSid: string): Promise<string> {
       throw new Error('Twilio credentials not configured');
     }
 
-    // Request transcription from Twilio
     const transcriptionUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}/Transcriptions.json`;
-    
     const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-    
-    // First, create transcription request
+
     const createResponse = await fetch(transcriptionUrl, {
       method: 'POST',
       headers: {
@@ -170,39 +138,33 @@ async function fetchTwilioTranscription(recordingSid: string): Promise<string> {
     });
 
     if (!createResponse.ok) {
-      console.warn('⚠️ Failed to create transcription request:', createResponse.statusText);
       return '';
     }
 
     const transcriptionData = await createResponse.json();
-    console.log('📝 Transcription created:', transcriptionData);
 
-    // If transcription is completed immediately, return it
     if (transcriptionData.transcription_text) {
       return transcriptionData.transcription_text;
     }
 
-    // Otherwise, poll for transcription (in production, use webhook)
-    // For now, wait a few seconds and check
+    // Poll once after a short wait (production should use Twilio transcription webhook instead)
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     const getResponse = await fetch(transcriptionUrl, {
       method: 'GET',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-      },
+      headers: { 'Authorization': `Basic ${auth}` },
     });
 
     if (getResponse.ok) {
       const transcriptions = await getResponse.json();
-      if (transcriptions.transcriptions && transcriptions.transcriptions.length > 0) {
+      if (transcriptions.transcriptions?.length > 0) {
         return transcriptions.transcriptions[0].transcription_text || '';
       }
     }
 
     return '';
   } catch (error) {
-    console.error('❌ Error fetching Twilio transcription:', error);
+    console.error('[recording-status] Error fetching Twilio transcription:', error);
     return '';
   }
 }

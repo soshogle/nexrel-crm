@@ -8,6 +8,7 @@ import { SessionProvider } from '@/components/providers/session-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrapper'
 import { RootErrorBoundary } from '@/components/root-error-boundary'
+import { headers } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -45,30 +46,38 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Read the per-request nonce injected by middleware for CSP script-src enforcement.
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? '';
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Expose nonce to Next.js so Script components and inline scripts are CSP-allowed */}
+        {nonce && <meta property="csp-nonce" content={nonce} />}
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <SessionProvider>
           <QueryProvider>
-          <IntlProviderWrapper>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <RootErrorBoundary>
-                {children}
-                <Toaster />
-                <SonnerToaster />
-              </RootErrorBoundary>
-            </ThemeProvider>
-          </IntlProviderWrapper>
+            <IntlProviderWrapper>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <RootErrorBoundary>
+                  {children}
+                  <Toaster />
+                  <SonnerToaster />
+                </RootErrorBoundary>
+              </ThemeProvider>
+            </IntlProviderWrapper>
           </QueryProvider>
         </SessionProvider>
       </body>

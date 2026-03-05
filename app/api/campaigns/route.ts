@@ -74,44 +74,40 @@ export async function POST(request: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
+    const rawBody = await request.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
       return apiErrors.badRequest('Request body must be valid JSON');
     }
-    const {
-      name,
-      description,
-      type,
-      emailSubject,
-      emailBody,
-      emailHtml,
-      smsTemplate,
-      voiceAgentId,
-      callScript,
-      targetAudience,
-      scheduledFor,
-      frequency,
-      recurringDays,
-      aiGenerated,
-      aiPrompt,
-      minLeadScore,
-      maxCallsPerDay,
-      callWindowStart,
-      callWindowEnd,
-      retryFailedCalls,
-      maxRetries,
-    } = body as Record<string, unknown>;
+    const body = rawBody as Record<string, unknown>;
 
-    // Type-level sanitisation
-    if (name && typeof name !== 'string') return apiErrors.badRequest('name must be a string');
-    if (name && (name as string).length > 255) return apiErrors.badRequest('name cannot exceed 255 characters');
+    const name = typeof body.name === 'string' ? body.name : undefined;
+    const description = typeof body.description === 'string' ? body.description : undefined;
+    const type = typeof body.type === 'string' ? body.type : undefined;
+    const emailSubject = typeof body.emailSubject === 'string' ? body.emailSubject : undefined;
+    const emailBody = typeof body.emailBody === 'string' ? body.emailBody : undefined;
+    const emailHtml = typeof body.emailHtml === 'string' ? body.emailHtml : undefined;
+    const smsTemplate = typeof body.smsTemplate === 'string' ? body.smsTemplate : undefined;
+    const voiceAgentId = typeof body.voiceAgentId === 'string' ? body.voiceAgentId : undefined;
+    const callScript = typeof body.callScript === 'string' ? body.callScript : undefined;
+    const targetAudience = (body.targetAudience && typeof body.targetAudience === 'object' ? body.targetAudience : {}) as Record<string, unknown>;
+    const scheduledFor = typeof body.scheduledFor === 'string' ? body.scheduledFor : undefined;
+    const frequency = typeof body.frequency === 'string' ? body.frequency : 'ONE_TIME';
+    const recurringDays = Array.isArray(body.recurringDays) ? body.recurringDays : [];
+    const aiGenerated = typeof body.aiGenerated === 'boolean' ? body.aiGenerated : false;
+    const aiPrompt = typeof body.aiPrompt === 'string' ? body.aiPrompt : undefined;
+    const minLeadScore = typeof body.minLeadScore === 'number' ? body.minLeadScore : 75;
+    const maxCallsPerDay = typeof body.maxCallsPerDay === 'number' ? body.maxCallsPerDay : 50;
+    const callWindowStart = typeof body.callWindowStart === 'string' ? body.callWindowStart : '09:00';
+    const callWindowEnd = typeof body.callWindowEnd === 'string' ? body.callWindowEnd : '17:00';
+    const retryFailedCalls = typeof body.retryFailedCalls === 'boolean' ? body.retryFailedCalls : true;
+    const maxRetries = typeof body.maxRetries === 'number' ? body.maxRetries : 2;
 
     // Validation
-    if (!name) {
-      return apiErrors.badRequest('Campaign name is required');
+    if (!name || name.length > 255) {
+      return apiErrors.badRequest('Campaign name is required (max 255 characters)');
     }
 
-    if (!type || !['EMAIL', 'SMS', 'VOICE_CALL', 'MULTI_CHANNEL', 'CUSTOM'].includes(type)) {
+    if (!type || !(['EMAIL', 'SMS', 'VOICE_CALL', 'MULTI_CHANNEL', 'CUSTOM'] as string[]).includes(type)) {
       return apiErrors.badRequest('Valid campaign type is required');
     }
 
@@ -145,19 +141,19 @@ export async function POST(request: NextRequest) {
       smsTemplate,
       voiceAgentId,
       callScript,
-      targetAudience: targetAudience || {},
+      targetAudience,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-      frequency: frequency || 'ONE_TIME',
-      recurringDays: recurringDays || [],
-      aiGenerated: aiGenerated || false,
+      frequency,
+      recurringDays,
+      aiGenerated,
       aiPrompt,
       ...(type === 'VOICE_CALL' && {
-        minLeadScore: minLeadScore ?? 75,
-        maxCallsPerDay: maxCallsPerDay ?? 50,
-        callWindowStart: callWindowStart ?? '09:00',
-        callWindowEnd: callWindowEnd ?? '17:00',
-        retryFailedCalls: retryFailedCalls ?? true,
-        maxRetries: maxRetries ?? 2,
+        minLeadScore,
+        maxCallsPerDay,
+        callWindowStart,
+        callWindowEnd,
+        retryFailedCalls,
+        maxRetries,
       }),
     } as any, {
       _count: {
