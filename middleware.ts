@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { randomUUID } from 'crypto';
 
 // Extract subdomain from hostname
 function getSubdomain(hostname: string): string | null {
@@ -31,18 +32,16 @@ function getSubdomain(hostname: string): string | null {
   return subdomain;
 }
 
-function applyHeaders(request: NextRequest, response: NextResponse): NextResponse {
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/api/auth')
-    || request.nextUrl.pathname.includes('oauth')
-    || request.nextUrl.pathname.includes('callback')
-
+function applyHeaders(request: NextRequest, response: NextResponse, nonce: string): NextResponse {
   const securityHeaders: Record<string, string> = {
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com",
+      // nonce replaces 'unsafe-inline' — inline scripts must carry this nonce attribute
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https: http: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
+      // removed http: from img-src (audit finding)
+      "img-src 'self' data: blob: https: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
       "worker-src 'self' blob:",
       "connect-src 'self' https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://*.googleapis.com https://api.elevenlabs.io wss://api.elevenlabs.io https://livekit.rtc.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://api.twilio.com https://api.stripe.com https://api.square.com https://api.paypal.com https://*.abacusai.app wss://*.abacusai.app https://cloudflareinsights.com https://*.cloudflareinsights.com",
       "frame-src 'self' blob: https: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com https://calendly.com https://*.calendly.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://*.vimeo.com https://*.elevenlabs.io https://elevenlabs.io https://*.vapi.ai https://vapi.ai https://search.google.com https://www.zebracat.ai https://www.clay.com https://www.starcloud.com https://www.neoculturalcouture.com https://www.little-lagniappe.com",
@@ -66,11 +65,16 @@ function applyHeaders(request: NextRequest, response: NextResponse): NextRespons
     response.headers.set(key, value)
   }
 
+  // Expose nonce to layout.tsx via response header
+  response.headers.set('x-nonce', nonce);
+
   if (request.nextUrl.pathname.startsWith('/api/')) {
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     if (request.nextUrl.pathname === '/api/elevenlabs/signed-url') {
-      response.headers.set('Access-Control-Allow-Origin', '*')
+      // Lock to known origin instead of wildcard
+      const origin = process.env.NEXTAUTH_URL || 'https://app.soshogle.com';
+      response.headers.set('Access-Control-Allow-Origin', origin)
     }
   }
 
@@ -82,6 +86,8 @@ function applyHeaders(request: NextRequest, response: NextResponse): NextRespons
 }
 
 export async function middleware(request: NextRequest) {
+  // Generate a unique per-request nonce for CSP
+  const nonce = Buffer.from(randomUUID()).toString('base64');
   const hostname = request.headers.get('host') || '';
   const subdomain = getSubdomain(hostname);
 
@@ -141,7 +147,7 @@ export async function middleware(request: NextRequest) {
       })
     }
 
-    return applyHeaders(request, response)
+    return applyHeaders(request, response, nonce)
   }
 
   const response = NextResponse.next();
@@ -156,7 +162,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  return applyHeaders(request, response);
+  return applyHeaders(request, response, nonce);
 }
 
 // Configure which routes to run middleware on

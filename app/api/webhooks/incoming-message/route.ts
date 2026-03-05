@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getCrmDb } from '@/lib/dal';
 import { resolveDalContext } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { apiErrors } from '@/lib/api-error';
+import { validateBody } from '@/lib/validate';
+
+const incomingMessageSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  channelType: z.string().min(1, 'channelType is required'),
+  messageContent: z.string().min(1, 'messageContent is required').max(50_000),
+  conversationId: z.string().optional(),
+  channelConnectionId: z.string().optional(),
+  contactName: z.string().max(255).optional(),
+  contactIdentifier: z.string().max(255).optional(),
+});
 
 /**
  * Webhook endpoint for incoming messages from all channels
@@ -15,7 +27,8 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const validation = await validateBody(request, incomingMessageSchema);
+    if (!validation.ok) return validation.error;
     const {
       userId,
       conversationId,
@@ -24,12 +37,7 @@ export async function POST(request: NextRequest) {
       contactIdentifier,
       messageContent,
       channelConnectionId,
-    } = body;
-
-    // Validate required fields
-    if (!userId || !messageContent || !channelType) {
-      return apiErrors.badRequest('Missing required fields');
-    }
+    } = validation.data;
 
     const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
@@ -37,14 +45,14 @@ export async function POST(request: NextRequest) {
     // Get or create conversation
     let conversation = conversationId
       ? await db.conversation.findUnique({
-          where: { id: conversationId },
-          include: {
-            messages: {
-              orderBy: { sentAt: 'desc' },
-              take: 10,
-            },
+        where: { id: conversationId },
+        include: {
+          messages: {
+            orderBy: { sentAt: 'desc' },
+            take: 10,
           },
-        })
+        },
+      })
       : null;
 
     if (!conversation && channelConnectionId && contactIdentifier) {
@@ -249,7 +257,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (aiError) {
       console.error('AI response generation failed:', aiError);
-      
+
       // Mark conversation as needing human review
       await db.conversation.update({
         where: { id: conversation.id },

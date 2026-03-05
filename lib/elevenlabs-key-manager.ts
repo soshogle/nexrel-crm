@@ -9,6 +9,7 @@
  */
 
 import { prisma } from './db';
+import { decryptField } from './crypto-fields';
 
 const USAGE_THRESHOLD = 0.95; // Switch to backup at 95% usage
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
@@ -60,15 +61,16 @@ class ElevenLabsKeyManager {
 
     // Try each key in priority order until we find one with available capacity
     for (const keyRecord of apiKeys) {
-      const subscription = await this.checkSubscription(keyRecord.apiKey);
-      
+      const plainApiKey = decryptField(keyRecord.apiKey) ?? '';
+      const subscription = await this.checkSubscription(plainApiKey);
+
       if (!subscription) {
         console.warn(`⚠️  [ElevenLabs] Failed to check subscription for ${keyRecord.label}`);
         continue;
       }
 
-      const usagePercent = subscription.character_limit > 0 
-        ? subscription.character_count / subscription.character_limit 
+      const usagePercent = subscription.character_limit > 0
+        ? subscription.character_count / subscription.character_limit
         : 0;
 
       console.log(`📊 [ElevenLabs] ${keyRecord.label}: ${(usagePercent * 100).toFixed(1)}% used`);
@@ -86,9 +88,9 @@ class ElevenLabsKeyManager {
       // If this key has available capacity, use it
       if (usagePercent < USAGE_THRESHOLD) {
         console.log(`✅ [ElevenLabs] Using ${keyRecord.label} (${(usagePercent * 100).toFixed(1)}% used)`);
-        this.cachedKey = keyRecord.apiKey;
+        this.cachedKey = plainApiKey;
         this.lastCheckTime = Date.now();
-        return keyRecord.apiKey;
+        return plainApiKey;
       }
 
       console.log(`⚠️  [ElevenLabs] ${keyRecord.label} is at capacity (${(usagePercent * 100).toFixed(1)}% used)`);
@@ -96,7 +98,7 @@ class ElevenLabsKeyManager {
 
     // All keys are at capacity - use primary anyway and log warning
     console.error('❌ [ElevenLabs] All API keys are at or near capacity!');
-    const primaryKey = apiKeys[0]?.apiKey || process.env.ELEVENLABS_API_KEY || '';
+    const primaryKey = decryptField(apiKeys[0]?.apiKey) ?? process.env.ELEVENLABS_API_KEY ?? '';
     this.cachedKey = primaryKey;
     this.lastCheckTime = Date.now();
     return primaryKey;
@@ -139,8 +141,8 @@ class ElevenLabsKeyManager {
       priority: key.priority,
       characterLimit: key.characterLimit,
       characterUsed: key.characterUsed,
-      usagePercent: key.characterLimit > 0 
-        ? key.characterUsed / key.characterLimit 
+      usagePercent: key.characterLimit > 0
+        ? key.characterUsed / key.characterLimit
         : 0,
     }));
   }
@@ -157,7 +159,9 @@ class ElevenLabsKeyManager {
     const { userId, apiKey, label, priority } = params;
 
     // Verify the API key works by checking subscription
-    const subscription = await this.checkSubscription(apiKey);
+    // apiKey here may already be encrypted (passed from the route); decrypt first for the API call
+    const plainApiKeyForVerify = decryptField(apiKey) ?? apiKey;
+    const subscription = await this.checkSubscription(plainApiKeyForVerify);
     if (!subscription) {
       throw new Error('Invalid ElevenLabs API key or unable to verify subscription');
     }
@@ -237,8 +241,9 @@ class ElevenLabsKeyManager {
     });
 
     for (const keyRecord of apiKeys) {
-      const subscription = await this.checkSubscription(keyRecord.apiKey);
-      
+      const plainApiKey = decryptField(keyRecord.apiKey) ?? '';
+      const subscription = await this.checkSubscription(plainApiKey);
+
       if (subscription) {
         await prisma.elevenLabsApiKey.update({
           where: { id: keyRecord.id },
