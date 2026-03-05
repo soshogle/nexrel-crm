@@ -66,6 +66,49 @@ interface ContactsListProps {
   onRefresh: () => void;
 }
 
+const normalizeContact = (raw: any): Contact | null => {
+  if (!raw || typeof raw !== "object") return null;
+  if (!raw.id) return null;
+
+  const asString = (value: unknown, fallback = ""): string =>
+    typeof value === "string" ? value : fallback;
+
+  const asNullableString = (value: unknown): string | null =>
+    typeof value === "string" ? value : null;
+
+  const safeTags = Array.isArray(raw.tags)
+    ? raw.tags.filter((tag: unknown): tag is string => typeof tag === "string")
+    : [];
+
+  return {
+    id: String(raw.id),
+    businessName: asString(raw.businessName, "Unnamed Contact"),
+    contactPerson: asNullableString(raw.contactPerson),
+    email: asNullableString(raw.email),
+    phone: asNullableString(raw.phone),
+    status: asString(raw.status, "NEW"),
+    contactType: asNullableString(raw.contactType),
+    tags: safeTags,
+    lastContactedAt: asNullableString(raw.lastContactedAt),
+    dateOfBirth: asNullableString(raw.dateOfBirth),
+    createdAt: asString(raw.createdAt),
+    _count:
+      raw._count && typeof raw._count === "object"
+        ? {
+            deals: typeof raw._count.deals === "number" ? raw._count.deals : 0,
+            messages:
+              typeof raw._count.messages === "number" ? raw._count.messages : 0,
+            calls:
+              typeof raw._count.calls === "number"
+                ? raw._count.calls
+                : typeof raw._count.callLogs === "number"
+                  ? raw._count.callLogs
+                  : 0,
+          }
+        : undefined,
+  };
+};
+
 export default function ContactsList({
   searchQuery,
   selectedType,
@@ -113,14 +156,16 @@ export default function ContactsList({
       const response = await fetch(`/api/contacts?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
+        const rawContacts = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.contacts)
+            ? data.contacts
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+
         setContacts(
-          Array.isArray(data)
-            ? data
-            : Array.isArray(data?.contacts)
-              ? data.contacts
-              : Array.isArray(data?.data)
-                ? data.data
-                : [],
+          rawContacts.map(normalizeContact).filter(Boolean) as Contact[],
         );
       } else {
         toast.error("Failed to fetch contacts");
@@ -425,7 +470,13 @@ export default function ContactsList({
                   <TableCell>
                     {contact.lastContactedAt ? (
                       <span className="text-sm text-muted-foreground">
-                        {new Date(contact.lastContactedAt).toLocaleDateString()}
+                        {Number.isNaN(
+                          new Date(contact.lastContactedAt).getTime(),
+                        )
+                          ? "Never"
+                          : new Date(
+                              contact.lastContactedAt,
+                            ).toLocaleDateString()}
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground">

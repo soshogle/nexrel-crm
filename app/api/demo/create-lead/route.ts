@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { leadService } from "@/lib/dal";
 import { resolveDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
+import { normalizeContactType } from "@/lib/contact-input";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,7 +12,15 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   try {
-    const { fullName, email, phone, companyName, position, industry, websiteUrl } = await request.json();
+    const {
+      fullName,
+      email,
+      phone,
+      companyName,
+      position,
+      industry,
+      websiteUrl,
+    } = await request.json();
 
     if (!fullName || !email) {
       return apiErrors.badRequest("Missing required fields");
@@ -36,7 +45,7 @@ export async function POST(request: Request) {
           businessCategory: industry || undefined,
           source: "soshogle_demo",
           tags: ["demo", "landing-page"],
-          contactType: position || "CUSTOMER",
+          contactType: normalizeContactType("CUSTOMER"),
         } as any);
         leadId = lead.id;
       } catch (dbError) {
@@ -44,7 +53,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const notifyEmail = process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
+    const notifyEmail =
+      process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
     await emailService.sendEmail({
       to: notifyEmail,
       subject: "New Demo Lead",

@@ -303,6 +303,7 @@ export default function ContactsPage() {
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="NEW">New</SelectItem>
                 <SelectItem value="CONTACTED">Contacted</SelectItem>
+                <SelectItem value="RESPONDED">Responded</SelectItem>
                 <SelectItem value="QUALIFIED">Qualified</SelectItem>
                 <SelectItem value="CONVERTED">Converted</SelectItem>
                 <SelectItem value="LOST">Lost</SelectItem>

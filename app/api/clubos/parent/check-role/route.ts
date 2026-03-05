@@ -1,17 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * Check if the current user is a parent (has a ClubOS household)
  * GET /api/clubos/parent/check-role
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,8 +25,12 @@ export async function GET(request: NextRequest) {
       select: { role: true, parentRole: true },
     });
 
-    // BUSINESS_OWNERS and ADMINS are never treated as parents, even if they have a test household
-    if (user?.role === 'BUSINESS_OWNER' || user?.role === 'SUPER_ADMIN' || user?.role === 'AGENCY_ADMIN') {
+    // Business/admin roles are never treated as parents, even if they have a test household
+    if (
+      user?.role === "BUSINESS_OWNER" ||
+      user?.role === "SUPER_ADMIN" ||
+      user?.role === "AGENCY_ADMIN"
+    ) {
       return NextResponse.json({
         isParent: false,
         hasHousehold: false,
@@ -44,7 +47,8 @@ export async function GET(request: NextRequest) {
     // User is a parent if:
     // 1. They have a household AND
     // 2. They have parentRole flag OR role is PARENT
-    const isParent = !!household && (user?.parentRole || user?.role === 'PARENT');
+    const isParent =
+      !!household && (user?.parentRole || user?.role === "PARENT");
 
     return NextResponse.json({
       isParent,
@@ -53,7 +57,7 @@ export async function GET(request: NextRequest) {
       parentRole: user?.parentRole,
     });
   } catch (error: any) {
-    console.error('Error checking parent role:', error);
-    return apiErrors.internal(error.message || 'Failed to check role');
+    console.error("Error checking parent role:", error);
+    return apiErrors.internal(error.message || "Failed to check role");
   }
 }

@@ -5,7 +5,11 @@ import { leadService, getCrmDb } from "@/lib/dal";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { apiErrors } from "@/lib/api-error";
 import { parsePagination, paginatedResponse } from "@/lib/api-utils";
-import { validateBody, contactSchema } from "@/lib/validate";
+import {
+  contactCreateSchema,
+  LEAD_STATUSES,
+  sanitizeTags,
+} from "@/lib/contact-input";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,10 +25,13 @@ export async function POST(request: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    // Validate and parse request body
     const body = await request.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return apiErrors.badRequest("Request body must be valid JSON");
+    const parseResult = contactCreateSchema.safeParse(body);
+    if (!parseResult.success) {
+      return apiErrors.validationError(
+        "Invalid contact payload",
+        parseResult.error.flatten(),
+      );
     }
 
     const {
@@ -32,7 +39,6 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       company,
-      position,
       address,
       city,
       state,
@@ -42,30 +48,8 @@ export async function POST(request: NextRequest) {
       notes,
       contactType,
       status,
-    } = body as Record<string, unknown>;
-
-    if (!name || (!email && !phone)) {
-      return apiErrors.badRequest(
-        "Name and at least one of email or phone are required",
-      );
-    }
-
-    if (typeof name !== "string" || name.length > 255) {
-      return apiErrors.badRequest(
-        "Name must be a string of up to 255 characters",
-      );
-    }
-    if (
-      email &&
-      (typeof email !== "string" || !/^[^@]+@[^@]+\.[^@]+$/.test(email))
-    ) {
-      return apiErrors.badRequest("Invalid email address");
-    }
-    if (notes && typeof notes === "string" && notes.length > 10_000) {
-      return apiErrors.badRequest("Notes cannot exceed 10,000 characters");
-    }
-
-    const notesText = typeof notes === "string" ? notes.trim() : "";
+    } = parseResult.data;
+    const notesText = notes || "";
 
     const contact = await leadService.create(ctx, {
       businessName: company || name,
@@ -78,9 +62,9 @@ export async function POST(request: NextRequest) {
       state: state || null,
       zipCode: zipCode || null,
       country: country || null,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth as string) : null,
+      dateOfBirth,
       contactType: contactType || "CUSTOMER",
-      status: status || "ACTIVE",
+      status: status || "NEW",
       source: "Manual Entry",
       tags: [],
       ...(notesText
@@ -141,7 +125,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (status && status !== "all") {
-      where.status = status;
+      const normalizedStatus = status.toUpperCase();
+      if ((LEAD_STATUSES as readonly string[]).includes(normalizedStatus)) {
+        where.status = normalizedStatus;
+      }
     }
 
     let contacts;
@@ -248,7 +235,7 @@ export async function GET(request: NextRequest) {
     // Parse tags from JSON
     const parsedContacts = filteredContacts.map((contact: any) => ({
       ...contact,
-      tags: Array.isArray(contact.tags) ? contact.tags : [],
+      tags: sanitizeTags(contact.tags),
     }));
 
     const total = await leadService.count(ctx, where);

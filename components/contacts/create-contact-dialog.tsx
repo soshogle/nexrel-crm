@@ -1,29 +1,38 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useLocaleLabels } from '@/hooks/use-locale-labels';
+import { useState } from "react";
+import { useLocaleLabels } from "@/hooks/use-locale-labels";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, MapPin, Briefcase, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Loader2,
+  AlertCircle,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface CreateContactDialogProps {
   open: boolean;
@@ -43,25 +52,25 @@ export default function CreateContactDialog({
   initialData,
 }: CreateContactDialogProps) {
   const locale = useLocaleLabels();
-  const tToasts = useTranslations('toasts.general');
+  const tToasts = useTranslations("toasts.general");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    company: '',
-    position: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-    dateOfBirth: '',
-    notes: '',
-    contactType: 'CUSTOMER',
-    status: 'ACTIVE',
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    company: "",
+    position: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    dateOfBirth: "",
+    notes: "",
+    contactType: "CUSTOMER",
+    status: "NEW",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -74,58 +83,58 @@ export default function CreateContactDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     if (!formData.name.trim()) {
-      setError('Name is required');
+      setError("Name is required");
       setIsLoading(false);
       return;
     }
 
     if (!formData.phone.trim() && !formData.email.trim()) {
-      setError('Please provide either a phone number or email address');
+      setError("Please provide either a phone number or email address");
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch('/api/contacts', {
-        method: 'POST',
+      const response = await fetch("/api/contacts", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         const contact = await response.json();
-        toast.success(tToasts('contactCreated'));
+        toast.success(tToasts("contactCreated"));
         onContactCreated?.(contact);
         onOpenChange(false);
         // Reset form
         setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          company: '',
-          position: '',
-          address: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: '',
-          dateOfBirth: '',
-          notes: '',
-          contactType: 'CUSTOMER',
-          status: 'ACTIVE',
+          name: "",
+          email: "",
+          phone: "",
+          company: "",
+          position: "",
+          address: "",
+          city: "",
+          state: "",
+          zipCode: "",
+          country: "",
+          dateOfBirth: "",
+          notes: "",
+          contactType: "CUSTOMER",
+          status: "NEW",
         });
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to create contact');
+        setError(data.error || "Failed to create contact");
       }
     } catch (error) {
-      console.error('Create contact error:', error);
-      setError('An error occurred while creating the contact');
+      console.error("Create contact error:", error);
+      setError("An error occurred while creating the contact");
     } finally {
       setIsLoading(false);
     }
@@ -137,8 +146,8 @@ export default function CreateContactDialog({
         <DialogHeader>
           <DialogTitle>Create New Contact</DialogTitle>
           <DialogDescription>
-            Add a new contact to your CRM. Provide at least a name and either a phone number or
-            email.
+            Add a new contact to your CRM. Provide at least a name and either a
+            phone number or email.
           </DialogDescription>
         </DialogHeader>
 
@@ -163,7 +172,7 @@ export default function CreateContactDialog({
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Enter full name"
                   required
                 />
@@ -177,7 +186,7 @@ export default function CreateContactDialog({
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
                     placeholder="Enter email address"
                     className="pl-10"
                   />
@@ -192,7 +201,7 @@ export default function CreateContactDialog({
                     id="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
                     placeholder="Enter phone number"
                     className="pl-10"
                     autoComplete="off"
@@ -208,7 +217,9 @@ export default function CreateContactDialog({
                     id="dateOfBirth"
                     type="date"
                     value={formData.dateOfBirth}
-                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("dateOfBirth", e.target.value)
+                    }
                     placeholder="Select birthday"
                     className="pl-10"
                   />
@@ -230,7 +241,7 @@ export default function CreateContactDialog({
                 <Input
                   id="company"
                   value={formData.company}
-                  onChange={(e) => handleInputChange('company', e.target.value)}
+                  onChange={(e) => handleInputChange("company", e.target.value)}
                   placeholder="Enter company name"
                 />
               </div>
@@ -240,7 +251,9 @@ export default function CreateContactDialog({
                 <Input
                   id="position"
                   value={formData.position}
-                  onChange={(e) => handleInputChange('position', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("position", e.target.value)
+                  }
                   placeholder="Enter position/title"
                 />
               </div>
@@ -260,7 +273,7 @@ export default function CreateContactDialog({
                 <Input
                   id="address"
                   value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
                   placeholder="Enter street address"
                   autoComplete="off"
                 />
@@ -272,7 +285,7 @@ export default function CreateContactDialog({
                   <Input
                     id="city"
                     value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    onChange={(e) => handleInputChange("city", e.target.value)}
                     placeholder="Enter city"
                   />
                 </div>
@@ -282,7 +295,7 @@ export default function CreateContactDialog({
                   <Input
                     id="state"
                     value={formData.state}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
                     placeholder={locale.statePlaceholder}
                   />
                 </div>
@@ -292,7 +305,9 @@ export default function CreateContactDialog({
                   <Input
                     id="zipCode"
                     value={formData.zipCode}
-                    onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("zipCode", e.target.value)
+                    }
                     placeholder="Enter ZIP code"
                   />
                 </div>
@@ -302,7 +317,9 @@ export default function CreateContactDialog({
                   <Input
                     id="country"
                     value={formData.country}
-                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("country", e.target.value)
+                    }
                     placeholder="Enter country"
                   />
                 </div>
@@ -316,7 +333,9 @@ export default function CreateContactDialog({
               <Label htmlFor="contactType">Contact Type</Label>
               <Select
                 value={formData.contactType}
-                onValueChange={(value) => handleInputChange('contactType', value)}
+                onValueChange={(value) =>
+                  handleInputChange("contactType", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -335,14 +354,18 @@ export default function CreateContactDialog({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value)}
+                onValueChange={(value) => handleInputChange("status", value)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="NEW">New</SelectItem>
+                  <SelectItem value="CONTACTED">Contacted</SelectItem>
+                  <SelectItem value="RESPONDED">Responded</SelectItem>
+                  <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                  <SelectItem value="CONVERTED">Converted</SelectItem>
+                  <SelectItem value="LOST">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -354,17 +377,25 @@ export default function CreateContactDialog({
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
               placeholder="Enter any additional notes about this contact"
               rows={3}
             />
           </div>
 
           <div className="flex justify-end space-x-4 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading} className="gradient-primary text-white">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="gradient-primary text-white"
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

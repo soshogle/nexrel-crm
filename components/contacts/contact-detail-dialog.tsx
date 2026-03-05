@@ -1,18 +1,17 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Mail,
   Phone,
@@ -24,9 +23,9 @@ import {
   TrendingUp,
   DollarSign,
   PhoneCall,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog';
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MakeCallDialog } from "@/components/voice-agents/make-call-dialog";
 
 interface ContactDetailDialogProps {
   contact: any;
@@ -64,15 +63,31 @@ export default function ContactDetailDialog({
 
       if (activitiesRes.ok) {
         const activitiesData = await activitiesRes.json();
-        setActivities(Array.isArray(activitiesData) ? activitiesData : Array.isArray(activitiesData?.activities) ? activitiesData.activities : Array.isArray(activitiesData?.data) ? activitiesData.data : []);
+        setActivities(
+          Array.isArray(activitiesData)
+            ? activitiesData
+            : Array.isArray(activitiesData?.activities)
+              ? activitiesData.activities
+              : Array.isArray(activitiesData?.data)
+                ? activitiesData.data
+                : [],
+        );
       }
 
       if (dealsRes.ok) {
         const dealsData = await dealsRes.json();
-        setDeals(Array.isArray(dealsData) ? dealsData : Array.isArray(dealsData?.deals) ? dealsData.deals : Array.isArray(dealsData?.data) ? dealsData.data : []);
+        setDeals(
+          Array.isArray(dealsData)
+            ? dealsData
+            : Array.isArray(dealsData?.deals)
+              ? dealsData.deals
+              : Array.isArray(dealsData?.data)
+                ? dealsData.data
+                : [],
+        );
       }
     } catch (error) {
-      console.error('Error fetching contact details:', error);
+      console.error("Error fetching contact details:", error);
     } finally {
       setLoading(false);
     }
@@ -80,22 +95,24 @@ export default function ContactDetailDialog({
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      NEW: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      CONTACTED: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-      QUALIFIED: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-      CONVERTED: 'bg-green-500/10 text-green-500 border-green-500/20',
-      LOST: 'bg-red-500/10 text-red-500 border-red-500/20',
+      NEW: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      CONTACTED: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      QUALIFIED: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      CONVERTED: "bg-green-500/10 text-green-500 border-green-500/20",
+      LOST: "bg-red-500/10 text-red-500 border-red-500/20",
     };
-    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+    return colors[status] || "bg-gray-500/10 text-gray-500 border-gray-500/20";
   };
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      customer: 'bg-green-500/10 text-green-500',
-      prospect: 'bg-blue-500/10 text-blue-500',
-      partner: 'bg-purple-500/10 text-purple-500',
+      CUSTOMER: "bg-green-500/10 text-green-500",
+      PROSPECT: "bg-blue-500/10 text-blue-500",
+      PARTNER: "bg-purple-500/10 text-purple-500",
     };
-    return colors[type] || 'bg-gray-500/10 text-gray-500';
+    return (
+      colors[String(type || "").toUpperCase()] || "bg-gray-500/10 text-gray-500"
+    );
   };
 
   if (!contact) return null;
@@ -106,7 +123,9 @@ export default function ContactDetailDialog({
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <DialogTitle className="text-2xl">{contact.businessName}</DialogTitle>
+              <DialogTitle className="text-2xl">
+                {contact.businessName}
+              </DialogTitle>
               {contact.contactPerson && (
                 <DialogDescription className="text-base">
                   {contact.contactPerson}
@@ -114,11 +133,17 @@ export default function ContactDetailDialog({
               )}
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className={getStatusColor(contact.status)}>
+              <Badge
+                variant="outline"
+                className={getStatusColor(contact.status)}
+              >
                 {contact.status}
               </Badge>
               {contact.contactType && (
-                <Badge variant="outline" className={getTypeColor(contact.contactType)}>
+                <Badge
+                  variant="outline"
+                  className={getTypeColor(contact.contactType)}
+                >
                   {contact.contactType}
                 </Badge>
               )}
@@ -193,11 +218,15 @@ export default function ContactDetailDialog({
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      Birthday: {new Date(contact.dateOfBirth).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+                      Birthday:{" "}
+                      {new Date(contact.dateOfBirth).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        },
+                      )}
                     </span>
                   </div>
                 )}
@@ -266,13 +295,13 @@ export default function ContactDetailDialog({
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-3">
                         <div className="rounded-full bg-muted p-2">
-                          {activity.type === 'call' && (
+                          {activity.type === "call" && (
                             <PhoneCall className="h-4 w-4" />
                           )}
-                          {activity.type === 'message' && (
+                          {activity.type === "message" && (
                             <MessageSquare className="h-4 w-4" />
                           )}
-                          {activity.type === 'deal' && (
+                          {activity.type === "deal" && (
                             <DollarSign className="h-4 w-4" />
                           )}
                         </div>
@@ -318,7 +347,7 @@ export default function ContactDetailDialog({
                         </div>
                         <div className="text-right">
                           <div className="font-bold text-lg">
-                            ${deal.value?.toLocaleString() || '0'}
+                            ${deal.value?.toLocaleString() || "0"}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {new Date(deal.createdAt).toLocaleDateString()}
