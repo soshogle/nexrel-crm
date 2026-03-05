@@ -522,23 +522,23 @@ export async function syncStatusToWebsite(
     if (mlsNumber) {
       result = hidePrice
         ? await pool.query(
-            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
-            [dbStatus, mlsNumber]
-          )
+          `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
+          [dbStatus, mlsNumber]
+        )
         : await pool.query(
-            `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
-            [dbStatus, mlsNumber]
-          );
+          `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
+          [dbStatus, mlsNumber]
+        );
     } else if (address) {
       result = hidePrice
         ? await pool.query(
-            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
-            [dbStatus, `%${address}%`]
-          )
+          `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+          [dbStatus, `%${address}%`]
+        )
         : await pool.query(
-            `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
-            [dbStatus, `%${address}%`]
-          );
+          `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+          [dbStatus, `%${address}%`]
+        );
     } else {
       return { success: false, updated: 0, error: 'No MLS number or address to match' };
     }
@@ -622,8 +622,10 @@ export async function getPropertyForEdit(websiteId: string, propertyId: number):
     title: row.title,
     slug: row.slug,
     address: row.address,
+    price: null,
     mainImageUrl: row.main_image_url,
     galleryImages: row.gallery_images as GalleryItem[] | null,
+    isSecret: false,
   };
 }
 

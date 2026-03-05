@@ -90,7 +90,7 @@ export async function upsertOdontogram(params: {
   });
 
   const baseData = {
-    toothData,
+    toothData: toothData as any,
     notes: notes || null,
     chartedBy: chartedBy || userId,
     updatedAt: new Date(),
@@ -131,7 +131,7 @@ export async function upsertOdontogram(params: {
     data: {
       leadId,
       userId,
-      toothData,
+      toothData: toothData as any,
       notes: notes || null,
       chartedBy: chartedBy || userId,
       clinicId: resolvedClinicId,

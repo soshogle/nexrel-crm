@@ -53,9 +53,9 @@ const DEMO_MEASUREMENTS: Record<string, ToothMeasurements> = (() => {
     const pd = (t % 4 === 0) ? 3 : 2;
     const bops = bopSites[t] || [];
     m[String(t)] = {
-      mesial:  { pd, bop: bops.includes('mesial'), recession: 0 },
-      buccal:  { pd, bop: bops.includes('buccal'), recession: 0 },
-      distal:  { pd: pd === 3 ? 3 : 2, bop: false, recession: 0 },
+      mesial: { pd, bop: bops.includes('mesial'), recession: 0 },
+      buccal: { pd, bop: bops.includes('buccal'), recession: 0 },
+      distal: { pd: pd === 3 ? 3 : 2, bop: false, recession: 0 },
       lingual: { pd: 2, bop: false, recession: 0 },
     };
   }
@@ -126,8 +126,8 @@ export function EnhancedPeriodontalChart({ measurements, patient: _patient }: En
         >
           <defs>
             <linearGradient id={`pg-${toothNum}`} x1="15%" y1="0%" x2="85%" y2="100%">
-              <stop offset="0%"   stopColor="#ffffff" />
-              <stop offset="60%"  stopColor="#f0f0f8" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="60%" stopColor="#f0f0f8" />
               <stop offset="100%" stopColor="#d8d8e8" />
             </linearGradient>
           </defs>
@@ -179,7 +179,7 @@ export function EnhancedPeriodontalChart({ measurements, patient: _patient }: En
             <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
           </div>
         }>
-          <Perio3D measurements={data} />
+          <Perio3D measurements={data as any} />
         </Suspense>
       ) : (
         <div className="relative bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 rounded-lg p-2">

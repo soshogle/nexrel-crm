@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
     const priceMonitorResults: Array<{ userId: string; result: PriceMonitorResult }> = [];
     try {
       const brokerUsers: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
     const enrichmentResults: Array<{ userId: string; enriched: number; failed: number }> = [];
     try {
       const reUsers: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
     const resyncResults: Array<{ userId: string; synced: number; failed: number }> = [];
     try {
       const reUsersResync: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });
@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
     const coordBackfillResults: Array<{ userId: string; updated: number }> = [];
     try {
       const reUsers2: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });
@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
     const brokerFlagResults: Array<{ userId: string; flagged: number }> = [];
     try {
       const reUsersFlag: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });
@@ -264,7 +264,7 @@ export async function GET(req: NextRequest) {
     const statusSyncResults: Array<{ userId: string; sold: number; rented: number }> = [];
     try {
       const reUsersSync: any[] = await db.user.findMany({
-        where: { industry: 'real_estate' },
+        where: { industry: 'REAL_ESTATE' },
         select: { id: true },
         take: 10,
       });

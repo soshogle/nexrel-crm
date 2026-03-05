@@ -32,6 +32,7 @@ export async function POST(
     }
 
     const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
 
     const website = await db.website.findFirst({

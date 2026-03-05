@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: [] });
     }
 
-    const industryConfig = getIndustryConfig(user.industry);
+    const industryConfig = getIndustryConfig(user.industry as any);
     if (!industryConfig) {
       return NextResponse.json({ success: true, workflows: [], defaultTemplatesAvailable: [] });
     }
@@ -174,8 +174,8 @@ export async function POST(request: NextRequest) {
       // Create workflow from template
       const workflow = await getCrmDb(ctx).workflowTemplate.create({
         data: {
-        user: { connect: { id: ctx.userId } },
-        industry: user.industry as any,
+          user: { connect: { id: ctx.userId } },
+          industry: user.industry as any,
           name: name || template.name,
           type: type || 'TEMPLATE',
           description: description || template.description,

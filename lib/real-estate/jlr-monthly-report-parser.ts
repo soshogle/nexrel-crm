@@ -45,7 +45,7 @@ async function extractText(filePath: string): Promise<string[]> {
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
     const content = await page.getTextContent();
-    const text = content.items.map((i: { str?: string }) => i.str || '').join(' ');
+    const text = (content.items as any[]).map((i: { str?: string }) => i.str || '').join(' ');
     pages.push(text);
   }
   return pages;

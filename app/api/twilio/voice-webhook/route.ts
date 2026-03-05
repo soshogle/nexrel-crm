@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const callSid = formData.get('CallSid') as string;
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
@@ -75,12 +75,12 @@ export async function POST(request: NextRequest) {
 
       // First call - send greeting
       const greeting = voiceConversationEngine.generateGreeting(voiceAgent);
-      
+
       // Build TwiML with optional recording
-      const recordingAttrs = voiceAgent.enableCallRecording 
+      const recordingAttrs = voiceAgent.enableCallRecording
         ? ` record="record-from-answer" recordingStatusCallback="/api/twilio/recording-status" recordingStatusCallbackMethod="POST"`
         : '';
-      
+
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
 <Response${recordingAttrs}>
@@ -98,8 +98,8 @@ export async function POST(request: NextRequest) {
 
     // Handle ongoing conversation
     if (speechResult) {
-      const conversationData = JSON.parse(callLog.conversationData || '{}');
-      
+      const conversationData = JSON.parse((callLog.conversationData as string) || '{}');
+
       const context = {
         voiceAgent,
         conversationHistory: conversationData.conversationHistory || [],
@@ -129,11 +129,11 @@ export async function POST(request: NextRequest) {
       // Handle appointment booking
       if (result.shouldBookAppointment) {
         const data = result.updatedContext.collectedData;
-        
+
         try {
           // Create appointment in database
           const appointmentDate = new Date(data.appointmentDate || Date.now());
-          
+
           await db.bookingAppointment.create({
             data: {
               userId: voiceAgent.userId,
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
               customerEmail: data.email || 'noemail@voice-booking.com',
               customerPhone: data.phone || from,
               appointmentDate,
-              duration: voiceAgent.appointmentDuration || 30,
+              duration: (voiceAgent.appointmentDuration as number) || 30,
               status: 'SCHEDULED',
               notes: `Booked via voice AI. Purpose: ${data.purpose || 'Not specified'}`,
             },
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Twilio webhook error:', error);
-    
+
     return new NextResponse(
       `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

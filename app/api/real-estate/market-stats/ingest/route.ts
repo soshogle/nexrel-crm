@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const BATCH_SIZE = 500;
     for (let i = 0; i < batchData.length; i += BATCH_SIZE) {
       const batch = batchData.slice(i, i + BATCH_SIZE);
-      const result = await prisma.rEMarketStats.createMany({ data: batch });
+      const result = await prisma.rEMarketStats.createMany({ data: batch as any });
       created += result.count;
     }
 

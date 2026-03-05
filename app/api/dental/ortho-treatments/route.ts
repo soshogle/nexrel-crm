@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       treatment = await db.orthoTreatment.create({
-        data,
+        data: data as any,
       });
     }
 

@@ -34,10 +34,13 @@ interface MarketMetric {
 
 interface LiveStats {
   medianSalePrice: number;
+  medianSoldPrice?: number;
   avgSalePrice: number;
   activeListings: number;
+  activeCount?: number;
   totalActiveListings?: number;
   closedSales: number;
+  soldCount?: number;
   domMedian: number;
   domAvg: number;
   pricePerSqft: number;

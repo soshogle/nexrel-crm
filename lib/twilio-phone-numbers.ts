@@ -263,7 +263,7 @@ export async function purchasePhoneNumber(
       try {
         const config = JSON.parse(user.smsProviderConfig);
         config.phoneNumber = phoneNumber;
-        
+
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -376,7 +376,7 @@ export async function getOwnedPhoneNumbers(
 ): Promise<{ success: boolean; numbers?: any[]; error?: string }> {
   try {
     console.log('📞 Getting owned phone numbers for user:', userId);
-    
+
     // Fetch numbers from PurchasedPhoneNumber table for THIS USER ONLY
     const purchasedNumbers = await prisma.purchasedPhoneNumber.findMany({
       where: {
@@ -412,11 +412,11 @@ export async function getOwnedPhoneNumbers(
             formattedNumbers.push({
               phoneNumber: p.phoneNumber,
               friendlyName: p.friendlyName || p.phoneNumber,
-              sid: null,
-              twilioAccountId: p.twilioAccountId,
+              sid: null as unknown as string,
+              twilioAccountId: p.twilioAccountId ?? null,
               capabilities: null,
               country: 'US',
-              dateCreated: null
+              dateCreated: null as unknown as Date,
             });
           }
         }

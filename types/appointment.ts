@@ -7,6 +7,7 @@ export interface Appointment {
   location: string | null;
   meetingType: string;
   status: string;
+  source?: string;
   requiresPayment: boolean;
   paymentAmount: number | null;
   lead?: {

@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     console.log('📞 [Twilio Voice Callback] Received webhook');
-    
+
     const formData = await request.formData();
     const callSid = formData.get('CallSid') as string;
     const from = formData.get('From') as string;
@@ -112,27 +112,27 @@ export async function POST(request: NextRequest) {
       weekday: 'long',
       hour12: false
     });
-    
+
     const parts = torontoTime.formatToParts(now);
     const partsObj = Object.fromEntries(parts.map(p => [p.type, p.value]));
-    
+
     const currentDate = `${partsObj.year}-${partsObj.month}-${partsObj.day}`;
     const currentTime = `${partsObj.hour}:${partsObj.minute}`;
     const dayOfWeek = partsObj.weekday;
-    
+
     const dynamicVariables = {
       current_datetime: `${currentDate} ${currentTime}`,
       current_day: dayOfWeek,
       timezone: 'America/Toronto (EST/EDT)'
     };
-    
+
     console.log('📅 Injecting datetime context:', dynamicVariables);
 
     // Get signed WebSocket URL from ElevenLabs with dynamic variables
     console.log('🔗 Fetching signed WebSocket URL from ElevenLabs...');
     let signedUrl: string;
     try {
-      signedUrl = await elevenLabsService.getSignedWebSocketUrl(voiceAgent.elevenLabsAgentId, dynamicVariables);
+      signedUrl = await elevenLabsService.getSignedWebSocketUrl(voiceAgent.elevenLabsAgentId as string, dynamicVariables);
       console.log('✅ Got signed WebSocket URL:', signedUrl.substring(0, 50) + '...');
     } catch (wsError: any) {
       console.error('❌ Failed to get WebSocket URL:', wsError.message);
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     // Verify the agent has a phone number assigned in ElevenLabs
     console.log('🔍 Verifying agent configuration...');
     try {
-      const agentDetails = await elevenLabsService.getAgent(voiceAgent.elevenLabsAgentId);
+      const agentDetails = await elevenLabsService.getAgent(voiceAgent.elevenLabsAgentId as string);
       if (!agentDetails.phone_number_id) {
         console.error('❌ Agent has no phone number assigned in ElevenLabs');
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     <Stream url="${signedUrl}" />
   </Connect>
 </Response>`;
-    
+
     console.log('📤 Returning TwiML with WebSocket connection');
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } });
 
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
 // Health check endpoint
 export async function GET() {
-  return NextResponse.json({ 
+  return NextResponse.json({
     status: 'ok',
     message: 'Soshogle Call voice callback endpoint is running with Soshogle Voice AI WebSocket integration'
   });

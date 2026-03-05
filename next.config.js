@@ -6,12 +6,10 @@ const nextConfig = {
   output: process.env.NEXT_OUTPUT_MODE,
   // Removed outputFileTracingRoot - causes path0/path0 error on Vercel
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // Temporarily skip type checking during build to speed up deployment
-    // Type errors will still be caught in development and CI
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
   // Reduce browser caching for app routes so deployments take effect immediately
@@ -45,7 +43,7 @@ const nextConfig = {
       ...config.resolve.fallback,
       '@azure/storage-blob': false,
     };
-    
+
     return config;
   },
 };

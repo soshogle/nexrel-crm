@@ -97,7 +97,7 @@ export class DicomParser {
       const bitsAllocated = dataset['00280100']?.Value?.[0] || 16;
       const samplesPerPixel = dataset['00280002']?.Value?.[0] || 1;
       const photometricInterpretation = dataset['00280004']?.Value?.[0] || 'MONOCHROME2';
-      
+
       // Get window/level values
       const windowCenter = Array.isArray(dataset['00281050']?.Value)
         ? dataset['00281050'].Value[0]
@@ -105,7 +105,7 @@ export class DicomParser {
       const windowWidth = Array.isArray(dataset['00281051']?.Value)
         ? dataset['00281051'].Value[0]
         : dataset['00281051']?.Value?.[0] || 0;
-      
+
       const rescaleSlope = dataset['00281053']?.Value?.[0] || 1;
       const rescaleIntercept = dataset['00281052']?.Value?.[0] || 0;
 
@@ -123,8 +123,8 @@ export class DicomParser {
       let pixelData: Uint16Array | Uint8Array;
       const expectedPixels = rows * columns * samplesPerPixel;
 
-      const rawValue = pixelDataElement.Value
-        ?? pixelDataElement.InlineBinary
+      const rawValue = (pixelDataElement as any).Value
+        ?? (pixelDataElement as any).InlineBinary
         ?? null;
 
       if (!rawValue) {
@@ -177,7 +177,7 @@ export class DicomParser {
   static parseDicom(buffer: Buffer): { metadata: DicomMetadata; pixelData: DicomPixelData } {
     const metadata = this.parseMetadata(buffer);
     const pixelData = this.extractPixelData(buffer);
-    
+
     return { metadata, pixelData };
   }
 }

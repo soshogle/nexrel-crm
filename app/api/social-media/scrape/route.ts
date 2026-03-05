@@ -117,14 +117,14 @@ export async function POST(request: NextRequest) {
 
     while (runStatus === 'RUNNING' && attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      
+
       const statusResponse = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apifyToken}`
       );
       const statusData = await statusResponse.json();
       runStatus = statusData.data.status;
       attempts++;
-      
+
       console.log(`⏳ Run status: ${runStatus} (attempt ${attempts}/${maxAttempts})`);
     }
 
@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
         }
 
         const ctx = getDalContextFromSession(session);
+        if (!ctx) continue;
         // Check for duplicates (by contact person name)
         const existing = await leadService.findMany(ctx, {
           where: { contactPerson: leadData.contactPerson },

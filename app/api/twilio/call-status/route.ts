@@ -25,13 +25,13 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const callSid = formData.get('CallSid') as string;
     const callStatus = formData.get('CallStatus') as string;
     const callDuration = formData.get('CallDuration') as string;
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
-    
+
     console.log('📊 [Twilio Call Status]', {
       callSid,
       callStatus,
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Map Twilio status to our status
     let status: 'INITIATED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' = 'INITIATED';
     let outboundStatus: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' = 'IN_PROGRESS';
-    
+
     switch (callStatus) {
       case 'initiated':
       case 'ringing':
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         // Trigger call completed workflow
         await triggerCallCompletedWorkflow(
           callLog.id,
-          callLog.leadId || null,
+          callLog.leadId as string || null,
           callLog.userId,
           parseInt(callDuration, 10),
           'completed'
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         // Trigger missed call workflow
         await triggerMissedCallWorkflow(
           callLog.id,
-          callLog.leadId || null,
+          callLog.leadId as string || null,
           callLog.userId,
           from || ''
         );
@@ -158,14 +158,14 @@ export async function POST(request: NextRequest) {
     // IMPORTANT: ElevenLabs needs time to process the call and mark it as "done"
     // Twilio webhook fires immediately, but ElevenLabs may take 5-15 seconds
     const shouldFetchRecording = callStatus === 'completed' || (callDuration && parseInt(callDuration, 10) > 0);
-    
+
     if (shouldFetchRecording) {
       console.log('🎙️ [Twilio Call Status] Call ended, scheduling background ElevenLabs fetch...');
       console.log('   Status:', callStatus);
       console.log('   From:', from);
       console.log('   To:', to);
       console.log('   Duration:', callDuration);
-      
+
       // Fire-and-forget: schedule the ElevenLabs fetch as a background task
       // Don't await this - respond to Twilio immediately to avoid timeout
       scheduleElevenLabsFetch(db, callLog.id, callDuration || '0', from || '', to || '');
@@ -195,24 +195,24 @@ async function scheduleElevenLabsFetch(
   const INITIAL_DELAY_MS = 10000; // 10 seconds
   const RETRY_DELAYS_MS = [15000, 30000, 60000]; // Retry after 15s, 30s, 60s
   const MAX_ATTEMPTS = 4; // Initial + 3 retries
-  
+
   let attempt = 0;
   let success = false;
-  
+
   // Initial delay
-  console.log(`⏳ [ElevenLabs Fetch] Waiting ${INITIAL_DELAY_MS/1000}s before first attempt...`);
+  console.log(`⏳ [ElevenLabs Fetch] Waiting ${INITIAL_DELAY_MS / 1000}s before first attempt...`);
   await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY_MS));
-  
+
   while (attempt < MAX_ATTEMPTS && !success) {
     attempt++;
     console.log(`🔄 [ElevenLabs Fetch] Attempt ${attempt}/${MAX_ATTEMPTS} for call ${callLogId}`);
-    
+
     try {
       success = await fetchAndProcessElevenLabsData(db, callLogId, callDuration, from, to);
-      
+
       if (!success && attempt < MAX_ATTEMPTS) {
         const delay = RETRY_DELAYS_MS[attempt - 1];
-        console.log(`⏳ [ElevenLabs Fetch] No match found, retrying in ${delay/1000}s...`);
+        console.log(`⏳ [ElevenLabs Fetch] No match found, retrying in ${delay / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     } catch (error: any) {
@@ -223,7 +223,7 @@ async function scheduleElevenLabsFetch(
       }
     }
   }
-  
+
   if (!success) {
     console.warn(`⚠️ [ElevenLabs Fetch] Failed to find matching conversation after ${MAX_ATTEMPTS} attempts for call ${callLogId}`);
   }
@@ -244,27 +244,27 @@ async function fetchAndProcessElevenLabsData(
     // Get the call log to verify it hasn't been processed yet
     const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
-      select: { 
-        id: true, 
-        createdAt: true, 
-        voiceAgentId: true, 
+      select: {
+        id: true,
+        createdAt: true,
+        voiceAgentId: true,
         userId: true,
         elevenLabsConversationId: true,
         conversationData: true
       }
     });
-    
+
     if (!callLog) {
       console.error(`❌ [ElevenLabs Fetch] Call log not found: ${callLogId}`);
       return false;
     }
-    
+
     // Skip if already processed
     if (callLog.elevenLabsConversationId && callLog.conversationData) {
       console.log(`ℹ️ [ElevenLabs Fetch] Call ${callLogId} already has ElevenLabs data, skipping`);
       return true;
     }
-    
+
     // List recent conversations from ElevenLabs
     const listResponse = await fetch('https://api.elevenlabs.io/v1/convai/conversations', {
       headers: {
@@ -286,22 +286,22 @@ async function fetchAndProcessElevenLabsData(
     let matchedConversation = null;
     let bestMatch = null;
     let bestScore = Infinity;
-    
+
     console.log('🔍 [ElevenLabs Fetch] Matching parameters:', {
       callLogId,
       callTime: callTime.toISOString(),
       callDuration: callDurationNum,
     });
-    
+
     for (const conv of conversations) {
       // Check if timestamps are close (within 5 minutes to account for delays)
       const convTime = new Date(conv.start_time_unix_secs * 1000);
       const timeDiff = Math.abs(callTime.getTime() - convTime.getTime()) / 1000; // seconds
-      
+
       // Check duration similarity (within 15 seconds tolerance)
       const convDuration = conv.call_duration_secs || 0;
       const durationDiff = Math.abs(callDurationNum - convDuration);
-      
+
       // Match conditions:
       // - Time within 5 minutes AND duration similar AND status done
       // - OR time within 2 minutes AND status done (for edge cases with duration mismatch)
@@ -309,11 +309,11 @@ async function fetchAndProcessElevenLabsData(
       const isTimeClose = timeDiff < 300; // 5 minutes
       const isDurationSimilar = durationDiff <= 15;
       const isStatusDone = conv.status === 'done' || conv.status === 'completed';
-      
+
       if ((isTimeClose && isDurationSimilar && isStatusDone) || (isTimeVeryClose && isStatusDone)) {
         // Calculate match score (lower is better)
         const score = timeDiff + (durationDiff * 2);
-        
+
         if (score < bestScore) {
           bestMatch = conv;
           bestScore = score;
@@ -321,7 +321,7 @@ async function fetchAndProcessElevenLabsData(
         }
       }
     }
-    
+
     if (bestMatch) {
       matchedConversation = bestMatch;
       console.log('✅ [ElevenLabs Fetch] MATCHED:', matchedConversation.conversation_id);
@@ -333,7 +333,7 @@ async function fetchAndProcessElevenLabsData(
     // Fetch full conversation details
     const conversationId = matchedConversation.conversation_id;
     console.log('🔍 [ElevenLabs Fetch] Fetching full conversation details for:', conversationId);
-    
+
     const detailsResponse = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
       {
@@ -352,15 +352,15 @@ async function fetchAndProcessElevenLabsData(
     console.log('   Status:', conversationDetails.status);
     console.log('   Has audio:', conversationDetails.has_audio);
     console.log('   Transcript turns:', conversationDetails.transcript?.length || 0);
-    
+
     // Extract transcript
     let transcriptText = '';
     if (conversationDetails.transcript && Array.isArray(conversationDetails.transcript)) {
       transcriptText = conversationDetails.transcript
         .map((turn: any) => {
           const role = turn.role === 'agent' ? 'Agent' : 'User';
-          const timestamp = turn.time_in_call_secs 
-            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]` 
+          const timestamp = turn.time_in_call_secs
+            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]`
             : '';
           return `${timestamp} ${role}: ${turn.message}`;
         })
@@ -470,7 +470,7 @@ async function sendEmailNotification(
   let callReason = '';
   try {
     aiSummary = conversationDetails.analysis?.summary || conversationDetails.summary || '';
-    
+
     // Try to extract call reason/purpose from conversation data
     if (conversationDetails.analysis?.call_purpose) {
       callReason = conversationDetails.analysis.call_purpose;
@@ -495,7 +495,7 @@ async function sendEmailNotification(
   try {
     // Clean phone number for matching (remove +, spaces, dashes)
     const cleanPhone = (from || '').replace(/[\s\-\+\(\)]/g, '');
-    
+
     // Check Leads
     const leads = await leadService.findMany(ctx, {
       where: {

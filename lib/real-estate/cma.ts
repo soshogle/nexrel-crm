@@ -200,11 +200,11 @@ async function fetchRealComparables(subject: SubjectProperty, userId: string, li
     .slice(0, limit);
 
   return ranked.map(({ row }) => {
-    const status = row.listingStatus === 'SOLD'
+    const status = (row.listingStatus === 'SOLD'
       ? 'sold'
       : row.listingStatus === 'PENDING'
         ? 'pending'
-        : 'active';
+        : 'active') as 'active' | 'pending' | 'sold';
     const price = Number((status === 'sold' ? row.soldPrice : row.listPrice) || row.listPrice || row.soldPrice || 0);
     const sqft = Number(row.sqft || subject.sqft || 1);
     return {

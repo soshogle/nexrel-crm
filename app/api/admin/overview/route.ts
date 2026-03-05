@@ -81,6 +81,7 @@ export async function GET(req: NextRequest) {
     });
 
     const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
 
     // Get total revenue across all sub-accounts (deals with actualCloseDate are considered won)

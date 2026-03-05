@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      instances: instances.map(i => ({
+      instances: instances.map((i: any) => ({
         id: i.id,
         templateId: i.templateId,
         workflowName: i.template.name,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         lead: i.lead,
         deal: i.deal,
         totalTasks: i.template.tasks.length,
-        executions: i.executions.map(e => ({
+        executions: i.executions.map((e: any) => ({
           id: e.id,
           taskId: e.taskId,
           taskName: e.task.name,

@@ -1,7 +1,7 @@
 import { resolveDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { sendDripEmail } from '@/lib/email-sender';
-const db = getCrmDb({ userId: '', industry: null })
+const db = getCrmDb({ userId: 'bootstrap', industry: null });
 
 /**
  * Process scheduled drip emails
@@ -11,7 +11,7 @@ export async function processDripEmails() {
   try {
     console.log('[Drip Processor] Starting email processing...');
 
-    const db = getCrmDb(createDalContext('bootstrap'));
+    const db = getCrmDb({ userId: 'bootstrap', industry: null });
     // Find active campaigns
     const activeCampaigns = await db.emailDripCampaign.findMany({
       where: {
@@ -153,7 +153,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
     if (nextSequence.sendTime) {
       const [hours, minutes] = nextSequence.sendTime.split(':');
       scheduledFor.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      
+
       // If time has passed today, schedule for tomorrow
       if (scheduledFor < new Date()) {
         scheduledFor.setDate(scheduledFor.getDate() + 1);
@@ -333,12 +333,12 @@ function personalizeContent(content: string, lead: any, campaign: any): string {
  */
 function injectTrackingPixel(html: string, trackingId: string): string {
   const trackingPixel = `<img src="${process.env.NEXTAUTH_URL}/api/campaigns/drip/track/${trackingId}/open" width="1" height="1" alt="" />`;
-  
+
   // Try to inject before closing body tag
   if (html.includes('</body>')) {
     return html.replace('</body>', `${trackingPixel}</body>`);
   }
-  
+
   // Otherwise append to end
   return html + trackingPixel;
 }
@@ -349,7 +349,7 @@ function injectTrackingPixel(html: string, trackingId: string): string {
 function replaceLinksWithTracking(html: string, trackingId: string): string {
   const baseUrl = process.env.NEXTAUTH_URL;
   const regex = /<a([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
-  
+
   return html.replace(regex, (match, before, url, after) => {
     const trackingUrl = `${baseUrl}/api/campaigns/drip/track/${trackingId}/click?url=${encodeURIComponent(url)}`;
     return `<a${before}href="${trackingUrl}"${after}>`;

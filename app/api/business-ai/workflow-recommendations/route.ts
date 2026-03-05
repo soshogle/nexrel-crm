@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
     const [leadCount, dealCount] = await Promise.all([
       leadService.count(ctx),

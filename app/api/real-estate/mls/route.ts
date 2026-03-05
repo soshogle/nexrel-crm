@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
         ...(status ? { listingStatus: status } : {}),
-      },
+      } as any,
       select: {
         id: true,
         mlsNumber: true,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         listPrice: true,
         listedAt: true,
         updatedAt: true,
-      },
+      } as any,
       orderBy: { updatedAt: 'desc' },
       take,
     });

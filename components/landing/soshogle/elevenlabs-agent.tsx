@@ -37,8 +37,6 @@ interface ElevenLabsAgentProps {
   variant?: 'default' | 'frameless';
   /** When true, suppress console.log for user-initiated disconnects (site agents, website preview). Landing + CRM assistant keep full logging. */
   suppressUserDisconnectLog?: boolean;
-  /** When true, auto-start conversation on mount (requires agentId or signedUrl). Used for voice preview page. */
-  autoStart?: boolean;
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";

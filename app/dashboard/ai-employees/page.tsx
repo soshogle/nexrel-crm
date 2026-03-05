@@ -17,11 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Bot, 
-  Search, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Bot,
+  Search,
+  CheckCircle2,
+  Clock,
   AlertCircle,
   Loader2,
   Calendar,
@@ -101,14 +101,14 @@ import MondayBoard from '@/components/tasks/monday-board';
 
 function TasksEmbed() {
   const { data: session } = useSession() || {};
-  const isAdmin = canProvisionAgents(session);
+  const isAdmin = canProvisionAgents(session as any);
   const [tasks, setTasks] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [view, setView] = useState<'monday' | 'list' | 'board' | 'kanban' | 'calendar' | 'analytics'>('monday');
-  
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -127,7 +127,7 @@ function TasksEmbed() {
       if (priorityFilter !== 'all') params.append('priority', priorityFilter);
       if (assigneeFilter !== 'all') params.append('assignedToId', assigneeFilter);
       if (searchQuery) params.append('search', searchQuery);
-      
+
       params.append('parentTaskId', 'null'); // Only top-level tasks
 
       const response = await fetch(`/api/tasks?${params.toString()}`);
@@ -491,18 +491,18 @@ export default function AIEmployeesPage() {
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [workflowLoading, setWorkflowLoading] = useState(false);
-  
+
   // Workflow progress tracking
   const [workflowProgress, setWorkflowProgress] = useState<{
     active: boolean;
     currentAgent: string;
     steps: { agent: string; status: 'pending' | 'running' | 'completed' | 'failed'; message: string }[];
   }>({ active: false, currentAgent: '', steps: [] });
-  
+
   // Workflow results
   const [workflowResults, setWorkflowResults] = useState<any>(null);
   const [showWorkflowResults, setShowWorkflowResults] = useState(false);
-  
+
   // Saved workflow history (persists across dialog closes)
   const [workflowHistory, setWorkflowHistory] = useState<Array<{
     id: string;
@@ -511,14 +511,14 @@ export default function AIEmployeesPage() {
     completedAt: string;
     results: any;
   }>>([]);
-  
+
   // Workflow purpose and goal
   const [workflowPurpose, setWorkflowPurpose] = useState<string>('customer_onboarding');
   const [workflowGoal, setWorkflowGoal] = useState<string>('');
-  
+
   // Team members for assignment
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
-  
+
   // Configurable workflow steps with full flexibility
   const [workflowSteps, setWorkflowSteps] = useState<Array<{
     id: string;
@@ -537,16 +537,16 @@ export default function AIEmployeesPage() {
     { id: 'step_2', name: 'Follow-up SMS', type: 'sms', enabled: true, assignedTo: '', delay: 30, delayUnit: 'minutes', order: 1 },
     { id: 'step_3', name: 'Welcome Email', type: 'email', enabled: true, assignedTo: '', delay: 1, delayUnit: 'hours', order: 2 },
   ]);
-  
+
   // Drag state for reordering
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
-  
+
   // Voice agents and appointments for selection
   const [voiceAgents, setVoiceAgents] = useState<Array<{ id: string; name: string }>>([]);
   const [appointments, setAppointments] = useState<Array<{ id: string; title: string; startTime: string }>>([]);
   const [selectedVoiceAgentId, setSelectedVoiceAgentId] = useState<string>('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>('');
-  
+
   // AI Employee Professions - virtual team members powered by AI
   const AI_PROFESSIONS = [
     { id: 'accountant', name: 'AI Accountant', icon: '💰', description: 'Handles invoicing, expense tracking, financial reports' },
@@ -565,7 +565,7 @@ export default function AIEmployeesPage() {
     { id: 'designer', name: 'AI Designer', icon: '🎨', description: 'Graphics, presentations, visual content' },
     { id: 'virtual_receptionist', name: 'AI Virtual Receptionist', icon: '📞', description: 'Call handling, appointment booking, visitor management' },
   ];
-  
+
   // AI Team - configured AI employees with voice agents
   const [aiTeam, setAiTeam] = useState<Array<{
     id: string;
@@ -576,14 +576,14 @@ export default function AIEmployeesPage() {
     isActive: boolean;
     createdAt: string;
   }>>([]);
-  
+
   // Setup dialog
   const [showSetupDialog, setShowSetupDialog] = useState(false);
-  
+
   // ElevenLabs voices for voice customization
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ voice_id: string; name: string; category?: string }>>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
-  
+
   // New AI employee form state
   const [newAiEmployee, setNewAiEmployee] = useState<{ profession: string; customName: string; voiceAgentId: string; voiceConfig: any }>({ profession: '', customName: '', voiceAgentId: '', voiceConfig: null });
   const [showCreateAiEmployee, setShowCreateAiEmployee] = useState(false);
@@ -771,12 +771,12 @@ export default function AIEmployeesPage() {
       toast.error('Failed to update voice settings');
     }
   };
-  
+
   // Get profession info
   const getProfessionInfo = (professionId: string) => {
     return AI_PROFESSIONS.find(p => p.id === professionId);
   };
-  
+
   const fetchTeamMembers = async () => {
     try {
       const res = await fetch('/api/team');
@@ -786,7 +786,7 @@ export default function AIEmployeesPage() {
       }
     } catch (e) { console.error('Failed to fetch team', e); }
   };
-  
+
   // Workflow step management functions
   const addWorkflowStep = () => {
     const newStep = {
@@ -801,38 +801,38 @@ export default function AIEmployeesPage() {
     };
     setWorkflowSteps([...workflowSteps, newStep]);
   };
-  
+
   const removeWorkflowStep = (stepId: string) => {
     setWorkflowSteps(workflowSteps.filter(s => s.id !== stepId).map((s, i) => ({ ...s, order: i })));
   };
-  
+
   const updateWorkflowStep = (stepId: string, updates: Partial<typeof workflowSteps[0]>) => {
     setWorkflowSteps(workflowSteps.map(s => s.id === stepId ? { ...s, ...updates } : s));
   };
-  
+
   // Drag and drop handlers
   const handleDragStart = (stepId: string) => {
     setDraggedStep(stepId);
   };
-  
+
   const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     if (!draggedStep || draggedStep === targetId) return;
-    
+
     const draggedIndex = workflowSteps.findIndex(s => s.id === draggedStep);
     const targetIndex = workflowSteps.findIndex(s => s.id === targetId);
-    
+
     const newSteps = [...workflowSteps];
     const [removed] = newSteps.splice(draggedIndex, 1);
     newSteps.splice(targetIndex, 0, removed);
-    
+
     setWorkflowSteps(newSteps.map((s, i) => ({ ...s, order: i })));
   };
-  
+
   const handleDragEnd = () => {
     setDraggedStep(null);
   };
-  
+
   // Workflow templates
   const workflowTemplates: Record<string, typeof workflowSteps> = {
     customer_onboarding: [
@@ -859,7 +859,7 @@ export default function AIEmployeesPage() {
     ],
     from_scratch: [],
   };
-  
+
   const loadWorkflowTemplate = (templateKey: string) => {
     const template = workflowTemplates[templateKey];
     if (template) {
@@ -894,11 +894,11 @@ export default function AIEmployeesPage() {
       if (!silent) setRefreshing(true);
       setFetchError(null);
       const response = await fetch('/api/ai-employees/jobs?limit=20');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       if (data.success) {
         setJobs(Array.isArray(data?.data) ? data.data : []);
@@ -926,7 +926,7 @@ export default function AIEmployeesPage() {
       // Fetch full job details
       const response = await fetch(`/api/ai-employees/jobs/${job.id}`);
       const data = await response.json();
-      
+
       if (data.success && data.data) {
         setSelectedJob(data.data);
         setShowResultsDialog(true);
@@ -958,14 +958,14 @@ export default function AIEmployeesPage() {
     }
 
     setWorkflowLoading(true);
-    
+
     // Initialize progress tracking based on enabled steps
     const progressSteps: { agent: string; status: 'pending' | 'running' | 'completed' | 'failed'; message: string }[] = enabledSteps.map((step, idx) => ({
       agent: `Step ${idx + 1}: ${step.name}`,
       status: idx === 0 ? 'running' : 'pending',
       message: idx === 0 ? 'Starting...' : step.delay > 0 ? `Wait ${step.delay} ${step.delayUnit}` : 'Waiting...'
     }));
-    
+
     setWorkflowProgress({
       active: true,
       currentAgent: enabledSteps[0].name,
@@ -1027,10 +1027,10 @@ export default function AIEmployeesPage() {
       // Progress animation for enabled steps
       let animDelay = 1500;
       enabledSteps.forEach((step, idx) => {
-        const stepTypeLabel = step.type === 'call' ? 'Calling' : step.type === 'sms' ? 'Sending SMS' : 
-          step.type === 'email' ? 'Sending Email' : step.type === 'task' ? 'Creating Task' : 
-          step.type === 'appointment' ? 'Scheduling' : step.type === 'project' ? 'Creating Project' : 'Processing';
-        
+        const stepTypeLabel = step.type === 'call' ? 'Calling' : step.type === 'sms' ? 'Sending SMS' :
+          step.type === 'email' ? 'Sending Email' : step.type === 'task' ? 'Creating Task' :
+            step.type === 'appointment' ? 'Scheduling' : step.type === 'project' ? 'Creating Project' : 'Processing';
+
         if (idx === 0) {
           setTimeout(() => updateProgress(idx, 'completed', 'Done ✓'), animDelay);
           animDelay += 1500;
@@ -1043,7 +1043,7 @@ export default function AIEmployeesPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Mark all complete
         setTimeout(() => {
@@ -1053,11 +1053,11 @@ export default function AIEmployeesPage() {
             steps: prev.steps.map(s => ({ ...s, status: 'completed' as const, message: 'Done ✓' }))
           }));
         }, 8000);
-        
+
         setTimeout(() => {
           toast.success(`Workflow completed! ${enabledSteps.length} steps executed successfully.`);
           setWorkflowProgress({ active: false, currentAgent: '', steps: [] });
-          
+
           // Create workflow result entry
           const workflowEntry = {
             id: data.data?.workflowId || `workflow_${Date.now()}`,
@@ -1066,17 +1066,17 @@ export default function AIEmployeesPage() {
             completedAt: new Date().toISOString(),
             results: data.data
           };
-          
+
           // Store results and add to history
           setWorkflowResults({
             ...data.data,
             customerName,
             customerEmail
           });
-          
+
           // Add to history (keep last 10)
           setWorkflowHistory(prev => [workflowEntry, ...prev].slice(0, 10));
-          
+
           setShowWorkflowResults(true);
           setCustomerName('');
           setCustomerEmail('');
@@ -1088,7 +1088,7 @@ export default function AIEmployeesPage() {
       } else {
         setWorkflowProgress(prev => ({
           ...prev,
-          steps: prev.steps.map((s, i) => 
+          steps: prev.steps.map((s, i) =>
             s.status === 'running' ? { ...s, status: 'failed' as const, message: 'Failed' } : s
           )
         }));
@@ -1132,212 +1132,211 @@ export default function AIEmployeesPage() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
       <div className="relative z-10 container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
-              <Bot className="h-8 w-8 text-purple-600" />
-              AI Employees
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Automated assistants working 24/7 for your business
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+                <Bot className="h-8 w-8 text-purple-600" />
+                AI Employees
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Automated assistants working 24/7 for your business
+              </p>
+            </div>
           </div>
+          <Button onClick={() => fetchJobs()} disabled={refreshing}>
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
+            Refresh
+          </Button>
         </div>
-        <Button onClick={() => fetchJobs()} disabled={refreshing}>
-          {refreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : null}
-          Refresh
-        </Button>
-      </div>
 
-      {canProvisionAgents(session) && (
-        <AdminStatsCard />
-      )}
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className={`grid w-full bg-white/80 border border-purple-200 backdrop-blur-sm ${
-          isRealEstateUser && hasIndustryTeam ? 'grid-cols-8' :
-          isRealEstateUser ? 'grid-cols-7' : 
-          hasIndustryTeam ? 'grid-cols-7' :
-          hasWorkflowSystem ? 'grid-cols-6' : 
-          'grid-cols-5'
-        }`}>
-          <TabsTrigger
-            value="ai-team"
-            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            AI Team
-          </TabsTrigger>
-          {isRealEstateUser && (
-            <TabsTrigger
-              value="re-team"
-              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              RE Team
-            </TabsTrigger>
-          )}
-          {hasIndustryTeam && (
-            <TabsTrigger
-              value="industry-team"
-              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
-            </TabsTrigger>
-          )}
-          {(isRealEstateUser || hasWorkflowSystem) && (
-            <TabsTrigger
-              value="workflows"
-              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              Workflows
-            </TabsTrigger>
-          )}
-          <TabsTrigger
-            value="monitor"
-            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            Monitor Jobs
-          </TabsTrigger>
-          <TabsTrigger
-            value="tasks"
-            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            Manage Tasks
-          </TabsTrigger>
-          <TabsTrigger
-            value="activity"
-            className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-          >
-            Activity
-          </TabsTrigger>
-        </TabsList>
-
-        {/* AI Team Tab */}
-        <TabsContent value="ai-team" className="space-y-4">
-          {/* Setup CTA - replaces Hire AI Employee */}
-          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-primary" />
-                    Professional AI Setup
-                  </CardTitle>
-                  <CardDescription>
-                    Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call. Test voice agents in the browser.
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" asChild>
-                    <Link href="/dashboard/voice-agents">My Voice Agents</Link>
-                  </Button>
-                  <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
-                    <Settings className="h-4 w-4" />
-                    Setup
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Professional AI Experts - 12 roles, RE-style cards */}
-          <ProfessionalAIEmployees />
-        </TabsContent>
-
-        <SetupDialog
-          open={showSetupDialog}
-          onOpenChange={setShowSetupDialog}
-          onProvisionRefresh={() => {}}
-          onSwitchToWorkflows={(professionalType) => {
-            setSelectedProfessionalForWorkflow(professionalType);
-            setActiveTab('workflows');
-          }}
-        />
-
-        <TabsContent value="monitor" className="space-y-4">
-          {/* Unified Monitoring View - Shows all automation activity */}
-          {session?.user?.id && (
-            <UnifiedMonitor userId={session.user.id} industry={userIndustry} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="tasks" className="space-y-4">
-          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
-            <CardContent className="pt-6">
-              <TasksEmbed />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="activity" className="space-y-4">
-          <UnifiedActivityFeed />
-        </TabsContent>
-
-        {/* RE Team Tab - Only for Real Estate users */}
-        {isRealEstateUser && (
-          <TabsContent value="re-team" className="space-y-4">
-            <RealEstateAIEmployees isAdmin={canManageAIEmployeeTasks(session)} />
-          </TabsContent>
+        {canProvisionAgents(session as any) && (
+          <AdminStatsCard />
         )}
 
-        {/* Industry Team Tab - Dental, Medical, etc. */}
-        {hasIndustryTeam && userIndustry && (
-          <TabsContent value="industry-team" className="space-y-4">
-            <IndustryAIEmployees industry={userIndustry} isAdmin={canManageAIEmployeeTasks(session)} />
-          </TabsContent>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full bg-white/80 border border-purple-200 backdrop-blur-sm ${isRealEstateUser && hasIndustryTeam ? 'grid-cols-8' :
+            isRealEstateUser ? 'grid-cols-7' :
+              hasIndustryTeam ? 'grid-cols-7' :
+                hasWorkflowSystem ? 'grid-cols-6' :
+                  'grid-cols-5'
+            }`}>
+            <TabsTrigger
+              value="ai-team"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              AI Team
+            </TabsTrigger>
+            {isRealEstateUser && (
+              <TabsTrigger
+                value="re-team"
+                className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                RE Team
+              </TabsTrigger>
+            )}
+            {hasIndustryTeam && (
+              <TabsTrigger
+                value="industry-team"
+                className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
+              </TabsTrigger>
+            )}
+            {(isRealEstateUser || hasWorkflowSystem) && (
+              <TabsTrigger
+                value="workflows"
+                className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                Workflows
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="monitor"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              Monitor Jobs
+            </TabsTrigger>
+            <TabsTrigger
+              value="tasks"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              Manage Tasks
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              Activity
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Workflows Tab - For Real Estate and other industries */}
-        {(isRealEstateUser || hasWorkflowSystem) && (
-          <TabsContent value="workflows" className="space-y-4">
-            {isRealEstateUser ? (
-              <REWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'MEDICAL' ? (
-              <MedicalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'RESTAURANT' ? (
-              <RestaurantWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'CONSTRUCTION' ? (
-              <ConstructionWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'DENTIST' ? (
-              <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'MEDICAL_SPA' ? (
-              <MedicalSpaWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'OPTOMETRIST' ? (
-              <OptometristWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'HEALTH_CLINIC' ? (
-              <HealthClinicWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'HOSPITAL' ? (
-              <HospitalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'TECHNOLOGY' ? (
-              <TechnologyWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'SPORTS_CLUB' ? (
-              <SportsClubWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : userIndustry === 'ORTHODONTIST' ? (
-              <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-            ) : (
-              <IndustryWorkflowsTab industry={userIndustry} preSelectedAgent={selectedProfessionalForWorkflow} />
+          {/* AI Team Tab */}
+          <TabsContent value="ai-team" className="space-y-4">
+            {/* Setup CTA - replaces Hire AI Employee */}
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-primary" />
+                      Professional AI Setup
+                    </CardTitle>
+                    <CardDescription>
+                      Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call. Test voice agents in the browser.
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" asChild>
+                      <Link href="/dashboard/voice-agents">My Voice Agents</Link>
+                    </Button>
+                    <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      Setup
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Professional AI Experts - 12 roles, RE-style cards */}
+            <ProfessionalAIEmployees />
+          </TabsContent>
+
+          <SetupDialog
+            open={showSetupDialog}
+            onOpenChange={setShowSetupDialog}
+            onProvisionRefresh={() => { }}
+            onSwitchToWorkflows={(professionalType) => {
+              setSelectedProfessionalForWorkflow(professionalType);
+              setActiveTab('workflows');
+            }}
+          />
+
+          <TabsContent value="monitor" className="space-y-4">
+            {/* Unified Monitoring View - Shows all automation activity */}
+            {session?.user?.id && (
+              <UnifiedMonitor userId={session.user.id} industry={userIndustry} />
             )}
           </TabsContent>
-        )}
-      </Tabs>
 
-      <JobResultsDialog
-        open={showResultsDialog}
-        onOpenChange={setShowResultsDialog}
-        selectedJob={selectedJob}
-        loading={loadingJobDetails}
-      />
+          <TabsContent value="tasks" className="space-y-4">
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
+              <CardContent className="pt-6">
+                <TasksEmbed />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-      <WorkflowResultsDialog
-        open={showWorkflowResults}
-        onOpenChange={setShowWorkflowResults}
-        workflowResults={workflowResults}
-      />
+          <TabsContent value="activity" className="space-y-4">
+            <UnifiedActivityFeed />
+          </TabsContent>
+
+          {/* RE Team Tab - Only for Real Estate users */}
+          {isRealEstateUser && (
+            <TabsContent value="re-team" className="space-y-4">
+              <RealEstateAIEmployees isAdmin={canManageAIEmployeeTasks(session as any)} />
+            </TabsContent>
+          )}
+
+          {/* Industry Team Tab - Dental, Medical, etc. */}
+          {hasIndustryTeam && userIndustry && (
+            <TabsContent value="industry-team" className="space-y-4">
+              <IndustryAIEmployees industry={userIndustry} isAdmin={canManageAIEmployeeTasks(session as any)} />
+            </TabsContent>
+          )}
+
+          {/* Workflows Tab - For Real Estate and other industries */}
+          {(isRealEstateUser || hasWorkflowSystem) && (
+            <TabsContent value="workflows" className="space-y-4">
+              {isRealEstateUser ? (
+                <REWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'MEDICAL' ? (
+                <MedicalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'RESTAURANT' ? (
+                <RestaurantWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'CONSTRUCTION' ? (
+                <ConstructionWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'DENTIST' ? (
+                <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'MEDICAL_SPA' ? (
+                <MedicalSpaWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'OPTOMETRIST' ? (
+                <OptometristWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'HEALTH_CLINIC' ? (
+                <HealthClinicWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'HOSPITAL' ? (
+                <HospitalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'TECHNOLOGY' ? (
+                <TechnologyWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'SPORTS_CLUB' ? (
+                <SportsClubWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : userIndustry === 'ORTHODONTIST' ? (
+                <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+              ) : (
+                <IndustryWorkflowsTab industry={userIndustry} preSelectedAgent={selectedProfessionalForWorkflow} />
+              )}
+            </TabsContent>
+          )}
+        </Tabs>
+
+        <JobResultsDialog
+          open={showResultsDialog}
+          onOpenChange={setShowResultsDialog}
+          selectedJob={selectedJob}
+          loading={loadingJobDetails}
+        />
+
+        <WorkflowResultsDialog
+          open={showWorkflowResults}
+          onOpenChange={setShowWorkflowResults}
+          workflowResults={workflowResults}
+        />
       </div>
     </div>
   );

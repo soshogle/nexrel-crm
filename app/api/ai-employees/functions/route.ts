@@ -287,16 +287,16 @@ async function getTaskConfig(ctx: AgentContext): Promise<{
 
   const tasks = configs.length > 0
     ? configs.map((c: any) => ({
-        taskKey: c.taskKey,
-        enabled: c.enabled,
-        description: getTaskDescription(ctx, c.taskKey),
-      }))
+      taskKey: c.taskKey,
+      enabled: c.enabled,
+      description: getTaskDescription(ctx, c.taskKey),
+    }))
     : [{ taskKey: 'run', enabled: true, description: getTaskDescription(ctx, 'run') }];
 
   return {
     success: true,
     tasks,
-    message: `My tasks: ${tasks.map((t) => `${t.taskKey} (${t.enabled ? 'on' : 'off'})`).join(', ')}`,
+    message: `My tasks: ${tasks.map((t: any) => `${t.taskKey} (${t.enabled ? 'on' : 'off'})`).join(', ')}`,
   };
 }
 

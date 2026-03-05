@@ -270,14 +270,8 @@ export async function executeREEmployee(
     case 'RE_STALE_DIAGNOSTIC':
       result = await executeStaleDiagnostic(userId);
       break;
-    case 'RE_WEEKLY_SNAPSHOT':
+    case 'RE_MARKET_UPDATE':
       result = await executeMarketReport(userId, 'WEEKLY_MARKET_UPDATE');
-      break;
-    case 'RE_MONTHLY_REPORT':
-      result = await executeMarketReport(userId, 'MONTHLY_MARKET_REPORT');
-      break;
-    case 'RE_ANNUAL_REVIEW':
-      result = await executeMarketReport(userId, 'QUARTERLY_ANALYSIS');
       break;
     case 'RE_COLD_REACTIVATION':
       result = await executeColdReactivation(userId);
@@ -288,7 +282,9 @@ export async function executeREEmployee(
     case 'RE_EXPIRED_OUTREACH':
     case 'RE_DOCUMENT_CHASER':
     case 'RE_SHOWING_CONFIRM':
-    case 'RE_LISTING_PRESENTATION':
+    case 'RE_LISTING_BOOST':
+    case 'RE_CMA_GENERATOR':
+    case 'RE_BUYER_FOLLOWUP':
       result = {
         success: true,
         employeeType,

@@ -33,8 +33,8 @@ function mergeEnriched(a: EnrichedData, b: EnrichedData): EnrichedData {
     if (value == null) continue;
     const existing = (merged as any)[key];
     if (existing == null ||
-        (typeof existing === 'string' && existing.length < 10) ||
-        (Array.isArray(existing) && existing.length === 0)) {
+      (typeof existing === 'string' && existing.length < 10) ||
+      (Array.isArray(existing) && existing.length === 0)) {
       (merged as any)[key] = value;
     }
   }
@@ -70,7 +70,7 @@ export async function enrichCrmListings(
         { description: '' },
         { yearBuilt: null },
         { sqft: null },
-        { photos: { equals: null } },
+        { photos: { equals: null as any } },
         { photos: { equals: [] } },
         { listPrice: null },
         { listPrice: 0 },
@@ -192,7 +192,7 @@ export async function enrichCrmListings(
       fieldsUpdated.push('listPrice');
     }
     if (data.galleryImages?.length &&
-        (!Array.isArray(prop.photos) || prop.photos.length === 0)) {
+      (!Array.isArray(prop.photos) || prop.photos.length === 0)) {
       updateData.photos = data.galleryImages;
       fieldsUpdated.push('photos');
     }
@@ -253,7 +253,7 @@ export async function enrichCrmListings(
     try {
       const photos = Array.isArray(updateData.photos) ? updateData.photos as string[]
         : Array.isArray(prop.photos) ? prop.photos as string[]
-        : data.galleryImages || [];
+          : data.galleryImages || [];
 
       const syncResult = await syncListingToWebsite(userId, {
         address: prop.address,
@@ -369,7 +369,7 @@ export async function resyncEnrichedToWebsite(
         mlsNumber: prop.mlsNumber,
         photos,
         description: prop.description,
-        features: prop.features as string[] | null,
+        features: prop.features as string[] | null ?? undefined,
         lat: prop.latitude,
         lng: prop.longitude,
         virtualTourUrl: prop.virtualTourUrl,

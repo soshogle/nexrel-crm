@@ -108,10 +108,10 @@ export async function POST(request: NextRequest) {
     try {
       const lead = await db.lead.findUnique({
         where: { id: leadId },
-        select: { name: true },
+        select: { contactPerson: true },
       });
-      if (lead?.name) patientName = lead.name;
-    } catch {}
+      if (lead?.contactPerson) patientName = lead.contactPerson;
+    } catch { }
 
     // Build the LLM prompt
     const problemTeethSummary = metrics.problemTeeth.slice(0, 10).map(pt =>

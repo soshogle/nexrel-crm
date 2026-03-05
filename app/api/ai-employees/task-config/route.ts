@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
       });
       customTasks = custom.map((c: any) => ({
         taskKey: c.taskKey,
-        enabled: configMap.get(c.taskKey)?.enabled ?? true,
+        enabled: (configMap.get(c.taskKey) as any)?.enabled ?? true,
         description: c.description,
         isCustom: true as const,
       }));
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
     const tasks = [
       ...defaultTasks.map((dt) => ({
         taskKey: dt.taskKey,
-        enabled: configMap.get(dt.taskKey)?.enabled ?? dt.enabled,
+        enabled: (configMap.get(dt.taskKey) as any)?.enabled ?? dt.enabled,
         description: dt.description,
         isCustom: false as const,
       })),

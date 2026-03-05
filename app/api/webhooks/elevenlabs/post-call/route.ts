@@ -26,7 +26,7 @@ function verifyWebhookSignature(
   try {
     // ElevenLabs signature format: "timestamp.hash"
     const [timestamp, hash] = signature.split('.');
-    
+
     if (!timestamp || !hash) {
       console.error('❌ [Webhook Security] Invalid signature format');
       return false;
@@ -34,7 +34,7 @@ function verifyWebhookSignature(
 
     // Create signed payload: "timestamp.payload"
     const signedPayload = `${timestamp}.${payload}`;
-    
+
     // Compute HMAC SHA256 hash
     const expectedHash = crypto
       .createHmac('sha256', secret)
@@ -64,31 +64,31 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔔 [ElevenLabs Webhook] ============ INCOMING WEBHOOK ============');
     console.log('🔔 [ElevenLabs Webhook] Timestamp:', new Date().toISOString());
-    
+
     // Log ALL headers
     const allHeaders: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       allHeaders[key] = value;
     });
     console.log('🔔 [ElevenLabs Webhook] ALL Headers:', JSON.stringify(allHeaders, null, 2));
-    
+
     // Get raw body for signature verification
     let rawBody = '';
     let body: any = {};
-    
+
     try {
       rawBody = await request.text();
       console.log('🔔 [ElevenLabs Webhook] Raw body length:', rawBody.length);
       console.log('🔔 [ElevenLabs Webhook] Raw body type:', typeof rawBody);
       console.log('🔔 [ElevenLabs Webhook] Raw body (first 500 chars):', rawBody.substring(0, 500));
       console.log('🔔 [ElevenLabs Webhook] Raw body (full):', rawBody);
-      
+
       // Check if body is empty
       if (!rawBody || rawBody.trim().length === 0) {
         console.error('❌ [ElevenLabs Webhook] Body is empty!');
         return apiErrors.badRequest('Empty request body');
       }
-      
+
       body = JSON.parse(rawBody);
       console.log('🔔 [ElevenLabs Webhook] ✅ Body parsed successfully');
       console.log('🔔 [ElevenLabs Webhook] Webhook type:', body.type);
@@ -98,36 +98,36 @@ export async function POST(request: NextRequest) {
       console.error('❌ [ElevenLabs Webhook] Failed to parse body:', parseError.message);
       console.error('❌ [ElevenLabs Webhook] Parse error stack:', parseError.stack);
       console.error('❌ [ElevenLabs Webhook] Raw body was:', rawBody);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Invalid JSON body',
         details: parseError.message,
         rawBodyPreview: rawBody.substring(0, 200)
       }, { status: 400 });
     }
-    
+
     // Log all headers for debugging
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
     console.log('🔔 [ElevenLabs Webhook] Headers:', JSON.stringify(headers, null, 2));
-    
+
     // Verify webhook signature if secret is configured
     const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
     console.log('🔔 [ElevenLabs Webhook] Webhook secret configured:', !!webhookSecret);
-    
+
     if (webhookSecret && webhookSecret !== 'PASTE_YOUR_SECRET_KEY_HERE') {
       try {
         const signature = request.headers.get('elevenlabs-signature');
         console.log('🔔 [ElevenLabs Webhook] Signature header present:', !!signature);
         console.log('🔔 [ElevenLabs Webhook] Signature value:', signature);
-        
+
         if (!verifyWebhookSignature(rawBody, signature, webhookSecret)) {
           console.error('❌ [Webhook Security] Invalid signature - WEBHOOK REJECTED');
           console.error('❌ [Webhook Security] Expected secret starts with:', webhookSecret.substring(0, 10));
           return apiErrors.unauthorized('Invalid signature');
         }
-        
+
         console.log('✅ [Webhook Security] Signature verified successfully');
       } catch (signatureError: any) {
         console.error('❌ [Webhook Security] Signature verification failed with error:', signatureError.message);
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     } else {
       console.warn('⚠️  [Webhook Security] No webhook secret configured - signature verification skipped');
     }
-    
+
     console.log('📞 [ElevenLabs Webhook] Received post-call webhook:', {
       type: body.type,
       conversationId: body.data?.conversation_id,
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     // Find the call log by ElevenLabs conversation ID or Twilio metadata (searches all DBs)
     let logResolved = await resolveCallLogByConversationId(conversationId);
     let callLog = logResolved?.callLog ?? null;
-    let db: PrismaClient = logResolved?.db ?? null;
+    let db: PrismaClient | null = logResolved?.db ?? null;
 
     // If not found, try to find by Twilio Call SID from metadata
     if (!callLog && data.metadata?.type === 'twilio') {
@@ -229,8 +229,8 @@ export async function POST(request: NextRequest) {
           transcriptText = data.transcript
             .map((turn: any) => {
               const role = turn.role === 'agent' ? 'Agent' : 'User';
-              const timestamp = turn.time_in_call_secs 
-                ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]` 
+              const timestamp = turn.time_in_call_secs
+                ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]`
                 : '';
               return `${timestamp} ${role}: ${turn.message}`;
             })
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
       const updatedCallLog = await db.callLog.update({
         where: { id: callLog.id },
         data: {
-          status: data.status === 'done' ? 'COMPLETED' : callLog.status,
+          status: (data.status === 'done' ? 'COMPLETED' : (callLog.status as string)) as any,
           transcription: transcriptText || null,
           transcript: transcriptText || null, // Also populate the transcript field
           recordingUrl: recordingUrl || null,
@@ -291,13 +291,13 @@ export async function POST(request: NextRequest) {
 
       // Create conversation in messaging system
       await createConversationFromCall(db, callLog.id, {
-        fromNumber: callLog.fromNumber,
-        toNumber: callLog.toNumber,
+        fromNumber: callLog.fromNumber as string,
+        toNumber: callLog.toNumber as string,
         userId: callLog.userId,
-        duration: callLog.duration,
+        duration: callLog.duration as number | null,
         transcript: transcriptText,
         recordingUrl: recordingUrl,
-        voiceAgentName: callLog.voiceAgent?.name,
+        voiceAgentName: (callLog as any).voiceAgent?.name,
       });
     }
 
@@ -429,7 +429,7 @@ async function createConversationFromCall(
     }
 
     // Format call summary message
-    const durationText = duration 
+    const durationText = duration
       ? `${Math.floor(duration / 60)}m ${duration % 60}s`
       : 'Unknown duration';
 

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         where: {
           leadId,
           ...(clinicId ? { clinicId } : {}),
-          aiAnalysis: { not: null },
+          aiAnalysis: { not: { equals: undefined } },
         },
         orderBy: { dateTaken: 'asc' },
       }),

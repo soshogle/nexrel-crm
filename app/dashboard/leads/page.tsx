@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 export default async function LeadsPage() {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       redirect('/login')
     }
@@ -84,7 +84,7 @@ export default async function LeadsPage() {
         ...l,
         notes: [],
         messages: [],
-      })) as typeof leadsData;
+      })) as unknown as typeof leadsData;
     }
 
     let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
@@ -153,12 +153,12 @@ export default async function LeadsPage() {
             </div>
           </div>
           <div className="p-6 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
-          <p className="text-red-600 dark:text-red-400">
-            Unable to load leads. Please try refreshing the page.
-          </p>
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-sm text-red-500 mt-2">{error?.message}</p>
-          )}
+            <p className="text-red-600 dark:text-red-400">
+              Unable to load leads. Please try refreshing the page.
+            </p>
+            {process.env.NODE_ENV === 'development' && (
+              <p className="text-sm text-red-500 mt-2">{error?.message}</p>
+            )}
           </div>
         </div>
       </div>

@@ -80,7 +80,7 @@ export async function POST(
     // For now, use the stored imageUrl or generate download URL
     let imageUrl: string | null = null;
     let isBase64 = false;
-    
+
     if (xray.imageUrl) {
       imageUrl = xray.imageUrl;
     } else if (xray.imageFile) {
@@ -94,19 +94,19 @@ export async function POST(
         // can be added later via a KeyManagement table). The storage service
         // encrypted the file with this same key at upload time.
         const encryptionKey = process.env.DENTAL_STORAGE_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || '';
-        
+
         // Download DICOM file from storage
         const dicomBuffer = await storageService.downloadDocument(
           xray.dicomFile,
           encryptionKey
         );
-        
+
         // Parse DICOM and extract pixel data
         const { pixelData } = DicomParser.parseDicom(dicomBuffer);
-        
+
         // Get optimal window/level for this X-ray type
         const optimalWindow = DicomToImageConverter.getOptimalWindowLevel(xray.xrayType);
-        
+
         // Convert to image
         const imageBuffer = await DicomToImageConverter.convertToImage(pixelData, {
           windowCenter: optimalWindow.windowCenter,
@@ -114,11 +114,11 @@ export async function POST(
           outputFormat: 'png',
           maxDimension: 2048,
         });
-        
+
         // Convert to base64 for GPT-4 Vision
         const base64Image = imageBuffer.toString('base64');
         const mimeType = 'image/png';
-        
+
         // Use base64 image directly
         imageUrl = `data:${mimeType};base64,${base64Image}`;
         isBase64 = true;
@@ -135,7 +135,7 @@ export async function POST(
     // Fetch image for GPT-4 Vision (if not already base64)
     let base64Image: string;
     let mimeType: string;
-    
+
     if (isBase64 || imageUrl.startsWith('data:')) {
       // Already base64 (from DICOM conversion)
       const parts = imageUrl.split(',');
@@ -224,7 +224,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
         where: { leadId: xray.leadId, userId: session.user.id },
         orderBy: { chartDate: 'desc' },
       });
-      const existingToothData = (existingOdontogram?.toothData as Record<string, unknown>) || null;
+      const existingToothData = (existingOdontogram?.toothData as any) || null;
       const parsedToothData = parseXrayFindingsToToothData(analysisText, existingToothData);
 
       if (Object.keys(parsedToothData).length > 0) {

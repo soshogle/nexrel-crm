@@ -46,6 +46,7 @@ const INDUSTRY_PROMPTS: Record<Industry, string> = {
   ACCOUNTING: 'You represent an accounting firm. Help with tax questions, bookkeeping inquiries, and appointment scheduling.',
   LAW: 'You represent a law firm. Help with legal consultation scheduling, case inquiries, and general information.',
   ORTHODONTIST: 'You represent an orthodontic practice. Help with braces consultations, appointment scheduling, and treatment inquiries.',
+  RETAIL: 'You represent a retail store. Help with product availability, store hours, orders, returns, and general customer inquiries.',
 };
 
 export function getVoiceAgentTemplates(industry: Industry | null): VoiceAgentTemplate[] {
