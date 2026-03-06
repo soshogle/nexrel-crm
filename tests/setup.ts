@@ -3,18 +3,20 @@
  * Configures test environment and mocks
  */
 
-import { vi } from 'vitest';
-import dotenv from 'dotenv';
+import { vi } from "vitest";
+import dotenv from "dotenv";
 
 // Set DATABASE_URL for tests (required by Prisma)
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test?schema=public';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL ||
+  "postgresql://test:test@localhost:5432/test?schema=public";
 // NODE_ENV is set by test runner, don't override it
 
 // Load environment variables
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Mock @prisma/client before any imports to prevent initialization
-vi.mock('@prisma/client', () => {
+vi.mock("@prisma/client", () => {
   const mockPrismaClient = vi.fn().mockImplementation(() => ({
     $connect: vi.fn(),
     $disconnect: vi.fn(),
@@ -36,7 +38,7 @@ vi.mock('@prisma/client', () => {
 });
 
 // Mock Prisma Client
-vi.mock('@/lib/db', () => {
+vi.mock("@/lib/db", () => {
   const mockPrisma = {
     workflowTemplate: {
       findUnique: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock('@/lib/db', () => {
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
+      count: vi.fn(),
     },
     taskExecution: {
       findUnique: vi.fn(),
@@ -111,6 +114,7 @@ vi.mock('@/lib/db', () => {
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     deal: {
       findUnique: vi.fn(),
@@ -131,6 +135,11 @@ vi.mock('@/lib/db', () => {
       create: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
+    },
+    taskActivity: {
+      create: vi.fn(),
     },
     hITLNotification: {
       create: vi.fn(),
@@ -140,6 +149,9 @@ vi.mock('@/lib/db', () => {
     user: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+    },
+    website: {
+      findUnique: vi.fn(),
     },
     callLog: {
       create: vi.fn(),
@@ -167,69 +179,69 @@ vi.mock('@/lib/db', () => {
       create: vi.fn(),
     },
   };
-  
+
   return {
     prisma: mockPrisma,
   };
 });
 
 // Mock external services
-vi.mock('@/lib/twilio', () => ({
-  sendSMS: vi.fn().mockResolvedValue({ sid: 'test-sid', status: 'sent' }),
+vi.mock("@/lib/twilio", () => ({
+  sendSMS: vi.fn().mockResolvedValue({ sid: "test-sid", status: "sent" }),
 }));
 
-vi.mock('@/lib/email-service', () => ({
+vi.mock("@/lib/email-service", () => ({
   EmailService: vi.fn().mockImplementation(() => ({
     sendEmail: vi.fn().mockResolvedValue(true),
   })),
 }));
 
-vi.mock('@/lib/calendar/calendar-service', () => ({
+vi.mock("@/lib/calendar/calendar-service", () => ({
   CalendarService: vi.fn().mockImplementation(() => ({
-    createEvent: vi.fn().mockResolvedValue({ id: 'test-event-id' }),
+    createEvent: vi.fn().mockResolvedValue({ id: "test-event-id" }),
   })),
 }));
 
-vi.mock('@/lib/elevenlabs', () => ({
+vi.mock("@/lib/elevenlabs", () => ({
   elevenLabsService: {
     initiatePhoneCall: vi.fn().mockResolvedValue({
-      conversation_id: 'test-conv-id',
-      call_id: 'test-call-id',
+      conversation_id: "test-conv-id",
+      call_id: "test-call-id",
     }),
   },
 }));
 
-vi.mock('@/lib/data-enrichment-service', () => ({
+vi.mock("@/lib/data-enrichment-service", () => ({
   DataEnrichmentService: vi.fn().mockImplementation(() => ({
     enrichLead: vi.fn().mockResolvedValue({
       success: true,
-      data: { email: 'test@example.com' },
-      source: 'api',
+      data: { email: "test@example.com" },
+      source: "api",
       cached: false,
     }),
   })),
 }));
 
 // Mock Real Estate specific modules
-vi.mock('@/lib/real-estate/cma', () => ({
+vi.mock("@/lib/real-estate/cma", () => ({
   generateCMA: vi.fn().mockResolvedValue({
-    id: 'cma-1',
+    id: "cma-1",
     suggestedPrice: 500000,
     priceRange: { min: 450000, max: 550000 },
     comparables: [],
   }),
 }));
 
-vi.mock('@/lib/real-estate/presentation', () => ({
+vi.mock("@/lib/real-estate/presentation", () => ({
   generatePresentation: vi.fn().mockResolvedValue({
-    id: 'presentation-1',
+    id: "presentation-1",
     slides: [],
   }),
 }));
 
-vi.mock('@/lib/real-estate/market-research', () => ({
+vi.mock("@/lib/real-estate/market-research", () => ({
   generateMarketResearch: vi.fn().mockResolvedValue({
-    id: 'research-1',
+    id: "research-1",
     report: {},
   }),
 }));
@@ -238,32 +250,59 @@ vi.mock('@/lib/real-estate/market-research', () => ({
 global.fetch = vi.fn().mockResolvedValue({
   ok: true,
   json: vi.fn().mockResolvedValue({
-    id: 'test-id',
-    report: { id: 'report-1', title: 'Test Report', opportunities: [] },
+    id: "test-id",
+    report: { id: "report-1", title: "Test Report", opportunities: [] },
   }),
 });
 
 // Mock Next.js modules
-vi.mock('next-auth', () => ({
+vi.mock("next-auth", () => ({
   getServerSession: vi.fn((options) => {
     // Return a promise that resolves to a session
     return Promise.resolve({
-      user: { id: 'user-1' },
+      user: { id: "user-1" },
     });
   }),
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock("next-auth/next", () => ({
+  getServerSession: vi.fn(() =>
+    Promise.resolve({
+      user: { id: "user-1" },
+    }),
+  ),
+}));
+
+vi.mock("@/lib/auth", () => ({
   authOptions: {},
 }));
 
-vi.mock('@/lib/workflows/industry-configs', () => ({
+vi.mock("@/lib/workflows/industry-configs", () => ({
   getIndustryConfig: vi.fn((industry) => {
-    if (industry === 'MEDICAL') {
+    if (industry === "MEDICAL") {
       return {
         taskTypes: [],
         aiAgents: [],
-        templates: [],
+        templates: [
+          {
+            id: "patient-onboarding",
+            name: "Patient Onboarding",
+            description: "Default onboarding workflow",
+            workflowType: "PATIENT_ONBOARDING",
+            tasks: [
+              {
+                name: "Welcome message",
+                description: "Send welcome message",
+                taskType: "SEND_MESSAGE",
+                delayValue: 0,
+                delayUnit: "MINUTES",
+                isHITL: false,
+                displayOrder: 1,
+                agentName: null,
+              },
+            ],
+          },
+        ],
         fieldLabels: {},
         integrations: {},
       };
@@ -272,9 +311,9 @@ vi.mock('@/lib/workflows/industry-configs', () => ({
   }),
 }));
 
-vi.mock('next/server', () => ({
+vi.mock("next/server", () => ({
   NextRequest: class MockRequest {
-    url = 'http://localhost:3000';
+    url = "http://localhost:3000";
     json = vi.fn();
   },
   NextResponse: {
@@ -283,7 +322,7 @@ vi.mock('next/server', () => ({
       // Return a Response-like object that has a .json() method
       return {
         status,
-        statusText: status === 200 ? 'OK' : 'Error',
+        statusText: status === 200 ? "OK" : "Error",
         ok: status >= 200 && status < 300,
         json: vi.fn().mockResolvedValue(data),
         text: vi.fn().mockResolvedValue(JSON.stringify(data)),
