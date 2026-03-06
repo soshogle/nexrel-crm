@@ -3,26 +3,32 @@
  * Patient-focused clinical tools for dentists/orthodontists during patient care
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
-import { useClinic, ClinicProvider } from '@/lib/dental/clinic-context';
-import { SharedDashboardLayout } from '@/components/dental/shared-dashboard-layout';
-import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
-import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
-import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
-import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
-import { EnhancedPeriodontalChart } from '@/components/dental/enhanced-periodontal-chart';
-import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
-import { DentalWorkflowTemplatesBrowser } from '@/components/dental/workflow-templates-browser';
-import { ClinicalModals } from '@/components/dental/clinical-modals';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useClinic, ClinicProvider } from "@/lib/dental/clinic-context";
+import { SharedDashboardLayout } from "@/components/dental/shared-dashboard-layout";
+import { CustomXRayAnalysis } from "@/components/dental/custom-xray-analysis";
+import { ExactArchOdontogram } from "@/components/dental/exact-arch-odontogram";
+import { RedesignedProceduresLog } from "@/components/dental/redesigned-procedures-log";
+import { RedesignedTreatmentPlan } from "@/components/dental/redesigned-treatment-plan";
+import { EnhancedPeriodontalChart } from "@/components/dental/enhanced-periodontal-chart";
+import { CustomDocumentUpload } from "@/components/dental/custom-document-upload";
+import { DentalWorkflowTemplatesBrowser } from "@/components/dental/workflow-templates-browser";
+import { ClinicalModals } from "@/components/dental/clinical-modals";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Activity,
   ClipboardList,
@@ -32,17 +38,17 @@ import {
   PenTool,
   TrendingUp,
   Grid3x3,
-} from 'lucide-react';
-import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
-import { PatientPhotoGallery } from '@/components/dental/patient-photo-gallery';
-import { StlScanViewer } from '@/components/dental/stl-scan-viewer';
-import { OrthoTreatmentTracker } from '@/components/dental/ortho-treatment-tracker';
-import { PaymentPlanManager } from '@/components/dental/payment-plan-manager';
-import { RecallManager } from '@/components/dental/recall-manager';
+} from "lucide-react";
+import { AIVisitNotesCard } from "@/components/dental/ai-visit-notes-card";
+import { PatientPhotoGallery } from "@/components/dental/patient-photo-gallery";
+import { StlScanViewer } from "@/components/dental/stl-scan-viewer";
+import { OrthoTreatmentTracker } from "@/components/dental/ortho-treatment-tracker";
+import { PaymentPlanManager } from "@/components/dental/payment-plan-manager";
+import { RecallManager } from "@/components/dental/recall-manager";
 
 // Clinical Notes Editor Component
 function ClinicalNotesEditor({ leadId }: { leadId: string }) {
-  const [noteContent, setNoteContent] = useState('');
+  const [noteContent, setNoteContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -58,34 +64,34 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
         setNotes(Array.isArray(data) ? data : []);
       }
     } catch (error) {
-      console.error('Error fetching notes:', error);
+      console.error("Error fetching notes:", error);
     }
   };
 
   const handleSaveNote = async () => {
     if (!noteContent.trim()) {
-      toast.error('Please enter a note');
+      toast.error("Please enter a note");
       return;
     }
 
     setSaving(true);
     try {
       const response = await fetch(`/api/leads/${leadId}/notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: noteContent }),
       });
 
       if (response.ok) {
-        toast.success('Clinical note saved successfully');
-        setNoteContent('');
+        toast.success("Clinical note saved successfully");
+        setNoteContent("");
         await fetchNotes();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to save note');
+        toast.error(error.error || "Failed to save note");
       }
     } catch (error: any) {
-      toast.error('Failed to save note: ' + error.message);
+      toast.error("Failed to save note: " + error.message);
     } finally {
       setSaving(false);
     }
@@ -94,29 +100,36 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-gray-700 mb-2 block">New Clinical Note</label>
+        <label className="text-sm font-medium text-gray-700 mb-2 block">
+          New Clinical Note
+        </label>
         <textarea
           value={noteContent}
           onChange={(e) => setNoteContent(e.target.value)}
           className="w-full h-48 p-3 border border-gray-300 rounded-lg resize-none"
           placeholder="Enter clinical notes..."
         />
-        <Button 
-          onClick={handleSaveNote} 
+        <Button
+          onClick={handleSaveNote}
           disabled={saving || !noteContent.trim()}
           className="mt-2"
         >
-          {saving ? 'Saving...' : 'Save Note'}
+          {saving ? "Saving..." : "Save Note"}
         </Button>
       </div>
-      
+
       {notes.length > 0 && (
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold mb-2">Previous Notes</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {notes.map((note) => (
-              <div key={note.id} className="p-3 bg-gray-50 rounded border border-gray-200">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+              <div
+                key={note.id}
+                className="p-3 bg-gray-50 rounded border border-gray-200"
+              >
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {note.content}
+                </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(note.createdAt).toLocaleString()}
                 </p>
@@ -148,22 +161,28 @@ function ClinicalDashboardPageContent() {
     monthlyRevenue: 0,
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
-  const [procedureSearch, setProcedureSearch] = useState('');
-  const [procedureFilter, setProcedureFilter] = useState('today');
-  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('wisely');
+  const [procedureSearch, setProcedureSearch] = useState("");
+  const [procedureFilter, setProcedureFilter] = useState("today");
+  const [odontogramViewMode, setOdontogramViewMode] = useState<
+    "wisely" | "treatment" | "caries" | "completed"
+  >("wisely");
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
     try {
-      const response = await fetch('/api/leads');
+      const response = await fetch("/api/leads");
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [];
+        const leadsArray = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.leads)
+            ? data.leads
+            : [];
         setLeads(leadsArray);
       }
     } catch (error) {
-      console.error('Error fetching leads:', error);
-      toast.error('Failed to load patients');
+      console.error("Error fetching leads:", error);
+      toast.error("Failed to load patients");
     } finally {
       setLoading(false);
     }
@@ -173,14 +192,18 @@ function ClinicalDashboardPageContent() {
   const fetchOdontogram = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}${clinicIdParam}`);
+      const clinicIdParam = activeClinic?.id
+        ? `&clinicId=${activeClinic.id}`
+        : "";
+      const response = await fetch(
+        `/api/dental/odontogram?leadId=${selectedLeadId}${clinicIdParam}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setOdontogramData(data.odontogram?.toothData || null);
       }
     } catch (error) {
-      console.error('Error fetching odontogram:', error);
+      console.error("Error fetching odontogram:", error);
       setOdontogramData(null);
     }
   }, [selectedLeadId, activeClinic?.id]);
@@ -189,15 +212,19 @@ function ClinicalDashboardPageContent() {
   const fetchPeriodontalChart = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}${clinicIdParam}`);
+      const clinicIdParam = activeClinic?.id
+        ? `&clinicId=${activeClinic.id}`
+        : "";
+      const response = await fetch(
+        `/api/dental/periodontal?leadId=${selectedLeadId}${clinicIdParam}`,
+      );
       if (response.ok) {
         const data = await response.json();
         const latestChart = data.charts?.[0];
         setPeriodontalData(latestChart?.measurements || null);
       }
     } catch (error) {
-      console.error('Error fetching periodontal chart:', error);
+      console.error("Error fetching periodontal chart:", error);
       setPeriodontalData(null);
     }
   }, [selectedLeadId, activeClinic?.id]);
@@ -206,14 +233,18 @@ function ClinicalDashboardPageContent() {
   const fetchTreatmentPlans = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}${clinicIdParam}`);
+      const clinicIdParam = activeClinic?.id
+        ? `&clinicId=${activeClinic.id}`
+        : "";
+      const response = await fetch(
+        `/api/dental/treatment-plans?leadId=${selectedLeadId}${clinicIdParam}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setTreatmentPlans(Array.isArray(data?.plans) ? data.plans : []);
       }
     } catch (error) {
-      console.error('Error fetching treatment plans:', error);
+      console.error("Error fetching treatment plans:", error);
       setTreatmentPlans([]);
     }
   }, [selectedLeadId, activeClinic?.id]);
@@ -221,9 +252,11 @@ function ClinicalDashboardPageContent() {
   // Fetch procedures (all for clinic when no patient selected, or per-patient when selected)
   const fetchProcedures = useCallback(async () => {
     try {
-      const clinicIdParam = activeClinic?.id ? `clinicId=${activeClinic.id}` : '';
-      const leadIdParam = selectedLeadId ? `leadId=${selectedLeadId}` : '';
-      const params = [leadIdParam, clinicIdParam].filter(Boolean).join('&');
+      const clinicIdParam = activeClinic?.id
+        ? `clinicId=${activeClinic.id}`
+        : "";
+      const leadIdParam = selectedLeadId ? `leadId=${selectedLeadId}` : "";
+      const params = [leadIdParam, clinicIdParam].filter(Boolean).join("&");
       if (!params) return;
       const response = await fetch(`/api/dental/procedures?${params}`);
       if (response.ok) {
@@ -231,7 +264,7 @@ function ClinicalDashboardPageContent() {
         setProcedures(Array.isArray(data?.procedures) ? data.procedures : []);
       }
     } catch (error) {
-      console.error('Error fetching procedures:', error);
+      console.error("Error fetching procedures:", error);
       setProcedures([]);
     }
   }, [selectedLeadId, activeClinic?.id]);
@@ -244,20 +277,33 @@ function ClinicalDashboardPageContent() {
       return;
     }
     try {
-      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
-      const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}${clinicIdParam}`);
-      if (response.ok) {
+      const clinicIdParam = activeClinic?.id
+        ? `&clinicId=${activeClinic.id}`
+        : "";
+
+      const fetchFor = async (withClinic: boolean) => {
+        const response = await fetch(
+          `/api/dental/xrays?leadId=${selectedLeadId}${withClinic ? clinicIdParam : ""}`,
+        );
+        if (!response.ok) return [];
         const data = await response.json();
-        const xraysArray = data || [];
-        setXrays(xraysArray);
-        if (xraysArray.length > 0) {
-          setSelectedXray(xraysArray[0]);
-        } else {
-          setSelectedXray(null);
-        }
+        return Array.isArray(data) ? data : [];
+      };
+
+      let xraysArray = await fetchFor(true);
+
+      if (xraysArray.length === 0 && clinicIdParam) {
+        xraysArray = await fetchFor(false);
+      }
+
+      setXrays(xraysArray);
+      if (xraysArray.length > 0) {
+        setSelectedXray(xraysArray[0]);
+      } else {
+        setSelectedXray(null);
       }
     } catch (error) {
-      console.error('Error fetching X-rays:', error);
+      console.error("Error fetching X-rays:", error);
       setXrays([]);
       setSelectedXray(null);
     }
@@ -272,28 +318,40 @@ function ClinicalDashboardPageContent() {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const appointmentsRes = await fetch(
-        `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
+        `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`,
       );
       const [claimsRes, reportsRes] = await Promise.all([
-        fetch('/api/dental/ramq/claims'),
-        fetch('/api/dental/reports?reportType=comprehensive&dateRange=month'),
+        fetch("/api/dental/ramq/claims"),
+        fetch("/api/dental/reports?reportType=comprehensive&dateRange=month"),
       ]);
       const res = appointmentsRes.ok ? await appointmentsRes.json() : {};
       const appointments = res?.appointments ?? res?.data ?? [];
       const claims = claimsRes.ok ? await claimsRes.json() : [];
-      const report = reportsRes.ok ? await reportsRes.json() : { summary: { totalRevenue: 0 } };
+      const report = reportsRes.ok
+        ? await reportsRes.json()
+        : { summary: { totalRevenue: 0 } };
       const pendingClaims = Array.isArray(claims)
-        ? claims.filter((c: any) => ['DRAFT', 'SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'INFO_REQUESTED'].includes(String(c.status || '').toUpperCase())).length
+        ? claims.filter((c: any) =>
+            [
+              "DRAFT",
+              "SUBMITTED",
+              "PENDING",
+              "UNDER_REVIEW",
+              "INFO_REQUESTED",
+            ].includes(String(c.status || "").toUpperCase()),
+          ).length
         : 0;
 
       setStats({
         totalPatients: leads.length,
-        todayAppointments: Array.isArray(appointments) ? appointments.length : 0,
+        todayAppointments: Array.isArray(appointments)
+          ? appointments.length
+          : 0,
         pendingClaims,
         monthlyRevenue: Number(report?.summary?.totalRevenue || 0),
       });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   }, [leads]);
 
@@ -308,11 +366,17 @@ function ClinicalDashboardPageContent() {
       fetchTreatmentPlans();
       fetchXrays();
     }
-  }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchXrays]);
+  }, [
+    selectedLeadId,
+    fetchOdontogram,
+    fetchPeriodontalChart,
+    fetchTreatmentPlans,
+    fetchXrays,
+  ]);
 
   // Poll odontogram when modal open (X-ray AI or import may have updated)
   useEffect(() => {
-    if (openModal !== 'odontogram' || !selectedLeadId) return;
+    if (openModal !== "odontogram" || !selectedLeadId) return;
     const interval = setInterval(fetchOdontogram, 5000);
     return () => clearInterval(interval);
   }, [openModal, selectedLeadId, fetchOdontogram]);
@@ -328,21 +392,27 @@ function ClinicalDashboardPageContent() {
   // Display procedures with search and filter (use performedDate or scheduledDate from schema)
   const displayProcedures = procedures
     .filter((proc: any) => {
-      const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
+      const procDate =
+        proc.performedDate || proc.scheduledDate || proc.datePerformed;
       if (!procDate) return false;
 
-      const patientName = leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown';
-      const procedureCode = proc.procedureCode || 'Procedure';
+      const patientName =
+        leads.find((l) => l.id === proc.leadId)?.contactPerson || "Unknown";
+      const procedureCode = proc.procedureCode || "Procedure";
       const searchLower = procedureSearch.toLowerCase();
-      if (procedureSearch && !patientName.toLowerCase().includes(searchLower) && !procedureCode.toLowerCase().includes(searchLower)) {
+      if (
+        procedureSearch &&
+        !patientName.toLowerCase().includes(searchLower) &&
+        !procedureCode.toLowerCase().includes(searchLower)
+      ) {
         return false;
       }
 
-      if (procedureFilter === 'today') {
+      if (procedureFilter === "today") {
         const d = new Date(procDate);
         const today = new Date();
         return d.toDateString() === today.toDateString();
-      } else if (procedureFilter === 'week') {
+      } else if (procedureFilter === "week") {
         const d = new Date(procDate);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -352,28 +422,35 @@ function ClinicalDashboardPageContent() {
     })
     .slice(0, 5)
     .map((proc: any) => {
-      const procDate = proc.performedDate || proc.scheduledDate || proc.datePerformed;
+      const procDate =
+        proc.performedDate || proc.scheduledDate || proc.datePerformed;
       return {
-        time: procDate ? new Date(procDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
-        patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
-        procedure: proc.procedureCode || proc.procedureName || 'Procedure',
-        status: proc.status || 'Completed',
-        color: 'bg-green-100 text-green-700',
+        time: procDate
+          ? new Date(procDate).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "--",
+        patient:
+          leads.find((l) => l.id === proc.leadId)?.contactPerson || "Unknown",
+        procedure: proc.procedureCode || proc.procedureName || "Procedure",
+        status: proc.status || "Completed",
+        color: "bg-green-100 text-green-700",
       };
     });
 
   // Display treatment plans
   const displayTreatmentPlans = treatmentPlans.slice(0, 4).map((plan: any) => ({
     code: plan.id.substring(0, 8),
-    name: plan.planName || 'Treatment Plan',
+    name: plan.planName || "Treatment Plan",
     cost: plan.totalCost || 0,
-    timeline: plan.estimatedDuration || 'N/A',
-    costColor: 'bg-blue-100 text-blue-700',
+    timeline: plan.estimatedDuration || "N/A",
+    costColor: "bg-blue-100 text-blue-700",
     icon: ClipboardList,
   }));
 
   const handleSaveOdontogram = async (data: any) => {
-    toast.success('Odontogram saved successfully');
+    toast.success("Odontogram saved successfully");
     fetchOdontogram();
   };
 
@@ -397,95 +474,124 @@ function ClinicalDashboardPageContent() {
       onPatientSelect={setSelectedLeadId}
     >
       {/* CLINICAL CARDS - Patient-focused */}
-      
+
       {/* TOP ROW - 3 Equal Columns */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 1. Arch Odontogram */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('odontogram')}
+          onClick={() => setOpenModal("odontogram")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Arch Odontogram
+              </CardTitle>
               <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (selectedLeadId && leads.length > 0) {
-                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      const currentIndex = leads.findIndex(
+                        (l) => l.id === selectedLeadId,
+                      );
                       if (currentIndex > 0) {
                         const prevLead = leads[currentIndex - 1];
                         setSelectedLeadId(prevLead.id);
-                        toast.success(`Switched to ${prevLead.contactPerson || 'patient'}`);
+                        toast.success(
+                          `Switched to ${prevLead.contactPerson || "patient"}`,
+                        );
                       } else {
-                        toast.info('Already at first patient');
+                        toast.info("Already at first patient");
                       }
                     } else {
-                      toast.error('Please select a patient first');
+                      toast.error("Please select a patient first");
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) : true)}
+                  disabled={
+                    !selectedLeadId ||
+                    (selectedLeadId
+                      ? leads.length > 0 &&
+                        leads.findIndex((l) => l.id === selectedLeadId) === 0
+                      : true)
+                  }
                 >
-                  <ChevronLeft className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <ChevronLeft
+                    className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex((l) => l.id === selectedLeadId) === 0) ? "text-gray-300" : "text-gray-600"}`}
+                  />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (selectedLeadId && leads.length > 0) {
-                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      const currentIndex = leads.findIndex(
+                        (l) => l.id === selectedLeadId,
+                      );
                       if (currentIndex < leads.length - 1) {
                         const nextLead = leads[currentIndex + 1];
                         setSelectedLeadId(nextLead.id);
-                        toast.success(`Switched to ${nextLead.contactPerson || 'patient'}`);
+                        toast.success(
+                          `Switched to ${nextLead.contactPerson || "patient"}`,
+                        );
                       } else {
-                        toast.info('Already at last patient');
+                        toast.info("Already at last patient");
                       }
                     } else {
-                      toast.error('Please select a patient first');
+                      toast.error("Please select a patient first");
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) : true)}
+                  disabled={
+                    !selectedLeadId ||
+                    (selectedLeadId
+                      ? leads.length > 0 &&
+                        leads.findIndex((l) => l.id === selectedLeadId) ===
+                          leads.length - 1
+                      : true)
+                  }
                 >
-                  <ChevronRight className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <ChevronRight
+                    className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex((l) => l.id === selectedLeadId) === leads.length - 1) ? "text-gray-300" : "text-gray-600"}`}
+                  />
                 </Button>
               </div>
             </div>
             <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-              <Select 
-                value={odontogramViewMode} 
-                onValueChange={(value: 'wisely' | 'treatment' | 'caries' | 'completed') => setOdontogramViewMode(value)}
+              <Select
+                value={odontogramViewMode}
+                onValueChange={(
+                  value: "wisely" | "treatment" | "caries" | "completed",
+                ) => setOdontogramViewMode(value)}
               >
                 <SelectTrigger className="h-7 text-xs w-full border border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem 
-                    value="wisely" 
+                  <SelectItem
+                    value="wisely"
                     className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
                   >
                     Hover affected by: Wisely
                   </SelectItem>
-                  <SelectItem 
-                    value="treatment" 
+                  <SelectItem
+                    value="treatment"
                     className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
                   >
                     Hover affected by: Treatment
                   </SelectItem>
-                  <SelectItem 
-                    value="caries" 
+                  <SelectItem
+                    value="caries"
                     className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
                   >
                     Hover affected by: Caries
                   </SelectItem>
-                  <SelectItem 
-                    value="completed" 
+                  <SelectItem
+                    value="completed"
                     className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
                   >
                     Hover affected by: Completed
@@ -496,52 +602,76 @@ function ClinicalDashboardPageContent() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <ExactArchOdontogram 
+              <ExactArchOdontogram
                 toothData={odontogramData}
                 periodontalData={periodontalData}
-                initialViewMode={odontogramViewMode === 'treatment' ? 'treatments' : odontogramViewMode === 'caries' ? 'conditions' : odontogramViewMode === 'completed' ? 'completed' : 'all'}
+                initialViewMode={
+                  odontogramViewMode === "treatment"
+                    ? "treatments"
+                    : odontogramViewMode === "caries"
+                      ? "conditions"
+                      : odontogramViewMode === "completed"
+                        ? "completed"
+                        : "all"
+                }
               />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* 2. X-Ray Analysis */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('xray-analysis')}
+          onClick={() => setOpenModal("xray-analysis")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">X-Ray Analysis</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              X-Ray Analysis
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId && session?.user?.id ? (
-              <CustomXRayAnalysis xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)} toothData={odontogramData} />
+              <CustomXRayAnalysis
+                xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)}
+                toothData={odontogramData}
+              />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* 3. Treatment Plan Builder */}
-        <div 
+        <div
           className="cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={() => setOpenModal('treatment-plan')}
+          onClick={() => setOpenModal("treatment-plan")}
         >
           <RedesignedTreatmentPlan
-            treatments={displayTreatmentPlans.filter(Boolean).map((plan: any) => ({
-              code: plan?.code || '',
-              name: plan?.name || 'Treatment',
-              cost: plan?.cost || 0,
-              timeline: plan?.timeline || 'N/A',
-              costColor: plan?.costColor || 'bg-blue-100 text-blue-700',
-              icon: plan?.icon || ClipboardList,
-              progress:
-                typeof plan?.progress === 'number'
-                  ? Math.max(0, Math.min(100, plan.progress))
-                  : (String(plan?.status || '').toUpperCase() === 'COMPLETED' ? 100 : String(plan?.status || '').toUpperCase() === 'IN_PROGRESS' ? 50 : 0),
-            }))}
+            treatments={displayTreatmentPlans
+              .filter(Boolean)
+              .map((plan: any) => ({
+                code: plan?.code || "",
+                name: plan?.name || "Treatment",
+                cost: plan?.cost || 0,
+                timeline: plan?.timeline || "N/A",
+                costColor: plan?.costColor || "bg-blue-100 text-blue-700",
+                icon: plan?.icon || ClipboardList,
+                progress:
+                  typeof plan?.progress === "number"
+                    ? Math.max(0, Math.min(100, plan.progress))
+                    : String(plan?.status || "").toUpperCase() === "COMPLETED"
+                      ? 100
+                      : String(plan?.status || "").toUpperCase() ===
+                          "IN_PROGRESS"
+                        ? 50
+                        : 0,
+              }))}
           />
         </div>
       </div>
@@ -549,38 +679,50 @@ function ClinicalDashboardPageContent() {
       {/* MIDDLE ROW - 5 Equal Columns */}
       <div className="grid grid-cols-5 gap-4 mb-4">
         {/* 4. Periodontal Charting */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('periodontal')}
+          onClick={() => setOpenModal("periodontal")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Periodontal Charting</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              Periodontal Charting
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <EnhancedPeriodontalChart measurements={periodontalData} />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* 5. Procedures Activity Log */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('procedures')}
+          onClick={() => setOpenModal("procedures")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Procedures Activity Log</CardTitle>
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <Input 
-                  placeholder="Search..." 
-                  className="h-7 w-28 text-xs border border-gray-300" 
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Procedures Activity Log
+              </CardTitle>
+              <div
+                className="flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Input
+                  placeholder="Search..."
+                  className="h-7 w-28 text-xs border border-gray-300"
                   value={procedureSearch}
                   onChange={(e) => setProcedureSearch(e.target.value)}
                 />
-                <Select value={procedureFilter} onValueChange={setProcedureFilter}>
+                <Select
+                  value={procedureFilter}
+                  onValueChange={setProcedureFilter}
+                >
                   <SelectTrigger className="h-7 text-xs w-20 border border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
@@ -606,24 +748,26 @@ function ClinicalDashboardPageContent() {
         </Card>
 
         {/* 6. Clinical Notes */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('clinical-notes')}
+          onClick={() => setOpenModal("clinical-notes")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Clinical Notes</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              Clinical Notes
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <div className="space-y-2">
                 <div className="text-xs text-gray-600">Quick note entry</div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <Button
+                  size="sm"
+                  variant="outline"
                   className="w-full"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setOpenModal('clinical-notes');
+                    setOpenModal("clinical-notes");
                   }}
                 >
                   <PenTool className="w-3 h-3 mr-1" />
@@ -631,7 +775,9 @@ function ClinicalDashboardPageContent() {
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
@@ -639,14 +785,19 @@ function ClinicalDashboardPageContent() {
         {/* 7. AI Visit Notes */}
         <AIVisitNotesCard
           leadId={selectedLeadId}
-          patientName={selectedLeadId ? (leads.find((l) => l.id === selectedLeadId)?.contactPerson || undefined) : undefined}
+          patientName={
+            selectedLeadId
+              ? leads.find((l) => l.id === selectedLeadId)?.contactPerson ||
+                undefined
+              : undefined
+          }
           chiefComplaint={undefined}
         />
 
         {/* 8. Ortho Treatment Tracker */}
         <div onClick={(e) => e.stopPropagation()}>
           <OrthoTreatmentTracker
-            leadId={selectedLeadId ?? ''}
+            leadId={selectedLeadId ?? ""}
             clinicId={activeClinic?.id}
             compact
           />
@@ -678,35 +829,43 @@ function ClinicalDashboardPageContent() {
       {/* IMAGING ROW - Photos + 3D Scans */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* Patient Photo Gallery */}
-        <Card 
+        <Card
           className="col-span-2 bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('photo-gallery')}
+          onClick={() => setOpenModal("photo-gallery")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Patient Photos</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              Patient Photos
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <PatientPhotoGallery leadId={selectedLeadId} compact />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* 3D Intraoral Scans */}
-        <Card 
+        <Card
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('stl-viewer')}
+          onClick={() => setOpenModal("stl-viewer")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">3D Scans</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              3D Scans
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <StlScanViewer leadId={selectedLeadId} compact />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
@@ -716,14 +875,16 @@ function ClinicalDashboardPageContent() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         <Card
           className="col-span-2 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('predictive-outcome')}
+          onClick={() => setOpenModal("predictive-outcome")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-indigo-600" />
               Predictive Outcome Simulator
             </CardTitle>
-            <p className="text-[10px] text-gray-500">See projected tooth condition at 6 and 12 months</p>
+            <p className="text-[10px] text-gray-500">
+              See projected tooth condition at 6 and 12 months
+            </p>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
@@ -733,14 +894,20 @@ function ClinicalDashboardPageContent() {
                     <Activity className="h-5 w-5 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-700">Click to view 3D predictive analysis</p>
-                    <p className="text-[10px] text-gray-500">Timeline slider · Cost comparison · AI findings</p>
+                    <p className="text-xs font-medium text-gray-700">
+                      Click to view 3D predictive analysis
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      Timeline slider · Cost comparison · AI findings
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
             ) : (
-              <div className="text-center py-4 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-4 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
@@ -748,14 +915,16 @@ function ClinicalDashboardPageContent() {
         {/* Multi-Angle X-Ray Viewer */}
         <Card
           className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 shadow-lg cursor-pointer hover:shadow-xl transition-all"
-          onClick={() => setOpenModal('xray-multi-view')}
+          onClick={() => setOpenModal("xray-multi-view")}
         >
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <Grid3x3 className="h-4 w-4 text-blue-600" />
               Multi-Angle X-Rays
             </CardTitle>
-            <p className="text-[10px] text-gray-500">Film mount · By tooth · Timeline</p>
+            <p className="text-[10px] text-gray-500">
+              Film mount · By tooth · Timeline
+            </p>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
@@ -765,14 +934,20 @@ function ClinicalDashboardPageContent() {
                     <Grid3x3 className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-700">View all x-ray angles</p>
-                    <p className="text-[10px] text-gray-500">Cross-reference by tooth with AI analysis</p>
+                    <p className="text-xs font-medium text-gray-700">
+                      View all x-ray angles
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      Cross-reference by tooth with AI analysis
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
             ) : (
-              <div className="text-center py-4 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-4 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
@@ -782,13 +957,17 @@ function ClinicalDashboardPageContent() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              Document Upload
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
               <CustomDocumentUpload leadId={selectedLeadId} />
             ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
+              <div className="text-center py-8 text-gray-400 text-xs">
+                Select a patient
+              </div>
             )}
           </CardContent>
         </Card>
@@ -798,8 +977,12 @@ function ClinicalDashboardPageContent() {
       <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Workflow Templates</CardTitle>
-            <p className="text-sm text-gray-600">Pre-built workflows for clinical tasks</p>
+            <CardTitle className="text-lg font-semibold">
+              Workflow Templates
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Pre-built workflows for clinical tasks
+            </p>
           </CardHeader>
           <CardContent>
             <DentalWorkflowTemplatesBrowser />
@@ -821,7 +1004,11 @@ function ClinicalDashboardPageContent() {
         onSelectLead={setSelectedLeadId}
         onSelectXray={setSelectedXray}
         onXrayRefresh={fetchXrays}
-        clinicalNotesEditor={selectedLeadId ? <ClinicalNotesEditor leadId={selectedLeadId} /> : null}
+        clinicalNotesEditor={
+          selectedLeadId ? (
+            <ClinicalNotesEditor leadId={selectedLeadId} />
+          ) : null
+        }
       />
     </SharedDashboardLayout>
   );

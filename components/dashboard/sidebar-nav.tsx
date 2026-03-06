@@ -118,12 +118,6 @@ const merchantItems = [
     icon: Mic,
   },
   {
-    id: "onboarding" as MenuItemId,
-    title: "Onboarding Wizard",
-    href: "/onboarding",
-    icon: Rocket,
-  },
-  {
     id: "leads" as MenuItemId,
     title: "Leads",
     href: "/dashboard/leads",
@@ -823,41 +817,16 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   };
 
   // Determine which menu items to show based on role
-  const onboardingCompleted = displayUser?.onboardingCompleted === true;
   const visibleMainItems = isParent
     ? parentItems // Show parent items if user has a household
-    : merchantItems
-        .filter((item) => isMenuItemVisible(item.id, userIndustry))
-        .filter((item) => {
-          // Onboarding: main menu only when NOT completed (new users); when completed, moves to Admin
-          if (item.id === "onboarding" && onboardingCompleted) return false;
-          return true;
-        });
+    : merchantItems.filter((item) => isMenuItemVisible(item.id, userIndustry));
 
   const isSuperAdmin =
     displayUser?.role === "SUPER_ADMIN" ||
     (displayUser?.isImpersonating && displayUser?.superAdminId);
-  const hasAdminAccess =
-    isSuperAdmin ||
-    displayUser?.role === "BUSINESS_OWNER" ||
-    displayUser?.role === "ADMIN";
   const visibleAdminItems = isParent
     ? [] // Parents don't see admin section
-    : [
-        // Onboarding Wizard in Admin when completed (admin/super admin only)
-        ...(onboardingCompleted && hasAdminAccess
-          ? [
-              {
-                id: "onboarding" as MenuItemId,
-                title: "Onboarding Wizard",
-                href: "/onboarding",
-                icon: Rocket,
-                requiresAdmin: true,
-              },
-            ]
-          : []),
-        ...adminItems,
-      ].filter((item) => {
+    : [...adminItems].filter((item) => {
         if ((item as any).requiresSuperAdmin && !isSuperAdmin) return false;
         return isMenuItemVisible(item.id, userIndustry);
       });
@@ -871,11 +840,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     // Exact match for dashboard
     if (href === "/dashboard") {
       return pathname === "/dashboard";
-    }
-
-    // For onboarding, exact match only
-    if (href === "/onboarding") {
-      return pathname === "/onboarding";
     }
 
     // For parent routes that have child pages (like /dashboard/real-estate),

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Bot,
   MessageSquare,
@@ -10,48 +10,100 @@ import {
   ArrowLeft,
   Brain,
   Loader2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import dynamic from 'next/dynamic';
-import { isMenuItemVisible } from '@/lib/industry-menu-config';
-import type { Industry } from '@/lib/industry-menu-config';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import dynamic from "next/dynamic";
+import { isMenuItemVisible } from "@/lib/industry-menu-config";
+import type { Industry } from "@/lib/industry-menu-config";
 
 // Lazy load components to prevent them from loading until their tab is active
 // This prevents translation hook errors if IntlProvider isn't ready
-const DocpenAgentSettings = dynamic(() => import('@/components/docpen/agent-settings').then(mod => ({ default: mod.DocpenAgentSettings })), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
-});
+const DocpenAgentSettings = dynamic(
+  () =>
+    import("@/components/docpen/agent-settings").then((mod) => ({
+      default: mod.DocpenAgentSettings,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    ),
+  },
+);
 
-const CallHistoryPanel = dynamic(() => import('@/components/messaging/call-history-panel'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
-});
+const CallHistoryPanel = dynamic(
+  () => import("@/components/messaging/call-history-panel"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    ),
+  },
+);
 
-const DocpenKnowledgeBaseTraining = dynamic(() => import('@/components/docpen/knowledge-base-training').then(mod => ({ default: mod.DocpenKnowledgeBaseTraining })), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
-});
+const DocpenKnowledgeBaseTraining = dynamic(
+  () =>
+    import("@/components/docpen/knowledge-base-training").then((mod) => ({
+      default: mod.DocpenKnowledgeBaseTraining,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    ),
+  },
+);
 
 export default function DocpenSettingsPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
-  const [activeTab, setActiveTab] = useState('agents');
+  const [activeTab, setActiveTab] = useState("agents");
+  const [resolvedIndustry, setResolvedIndustry] = useState<Industry | null>(
+    (session?.user?.industry as Industry) || null,
+  );
 
   // Check if user's industry has access to Docpen
-  const userIndustry = (session?.user?.industry as Industry) || null;
-  const hasDocpenAccess = isMenuItemVisible('docpen', userIndustry);
+  const userIndustry =
+    resolvedIndustry || (session?.user?.industry as Industry) || null;
+  const hasDocpenAccess = isMenuItemVisible("docpen", userIndustry);
+
+  useEffect(() => {
+    const fromSession = (session?.user?.industry as Industry) || null;
+    if (fromSession) {
+      setResolvedIndustry(fromSession);
+      return;
+    }
+
+    if (sessionStatus === "authenticated") {
+      fetch("/api/session/context")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const industry = (data?.industry as Industry | null) || null;
+          if (industry) setResolvedIndustry(industry);
+        })
+        .catch(() => {});
+    }
+  }, [sessionStatus, session?.user?.industry]);
 
   // Redirect non-medical industries away from Docpen settings
   useEffect(() => {
-    if (sessionStatus === 'authenticated' && !hasDocpenAccess) {
-      router.push('/dashboard');
+    if (sessionStatus === "authenticated" && userIndustry && !hasDocpenAccess) {
+      router.push("/dashboard");
     }
-  }, [sessionStatus, hasDocpenAccess, router]);
+  }, [sessionStatus, hasDocpenAccess, userIndustry, router]);
 
   // Show loading while checking access
-  if (sessionStatus === 'loading' || (sessionStatus === 'authenticated' && !hasDocpenAccess)) {
+  if (
+    sessionStatus === "loading" ||
+    (sessionStatus === "authenticated" && userIndustry && !hasDocpenAccess)
+  ) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -60,11 +112,13 @@ export default function DocpenSettingsPage() {
   }
 
   // Guard against unauthenticated state
-  if (sessionStatus === 'unauthenticated' || !session) {
+  if (sessionStatus === "unauthenticated" || !session) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
-          <p className="text-muted-foreground">Please sign in to access Docpen settings</p>
+          <p className="text-muted-foreground">
+            Please sign in to access Docpen settings
+          </p>
         </div>
       </div>
     );
@@ -77,7 +131,7 @@ export default function DocpenSettingsPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push('/dashboard/docpen')}
+          onClick={() => router.push("/dashboard/docpen")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
