@@ -824,12 +824,16 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const isSuperAdmin =
     displayUser?.role === "SUPER_ADMIN" ||
     (displayUser?.isImpersonating && displayUser?.superAdminId);
+  const isAdmin = displayUser?.role === "ADMIN";
+  const hasAdminSectionAccess = isAdmin || isSuperAdmin;
   const visibleAdminItems = isParent
     ? [] // Parents don't see admin section
-    : [...adminItems].filter((item) => {
-        if ((item as any).requiresSuperAdmin && !isSuperAdmin) return false;
-        return isMenuItemVisible(item.id, userIndustry);
-      });
+    : !hasAdminSectionAccess
+      ? []
+      : [...adminItems].filter((item) => {
+          if ((item as any).requiresSuperAdmin && !isSuperAdmin) return false;
+          return isMenuItemVisible(item.id, userIndustry);
+        });
 
   const isAdminSectionActive = visibleAdminItems.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
@@ -900,92 +904,95 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
           })}
 
           {/* Admin Section */}
-          <div>
-            <button
-              onClick={() => setAdminExpanded(!adminExpanded)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full",
-                isAdminSectionActive
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-gray-300 hover:bg-gray-800 hover:text-white",
-              )}
-              title={
-                !isExpanded ? translateMenuItem("admin", "Admin") : undefined
-              }
-            >
-              <Settings className="h-[18px] w-[18px] flex-shrink-0" />
-              {isExpanded && (
-                <>
-                  <span className="flex-1 text-left whitespace-nowrap">
-                    {translateMenuItem("admin", "Admin")}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200",
-                      adminExpanded && "rotate-180",
-                    )}
-                  />
-                </>
-              )}
-            </button>
-
-            {/* Admin Dropdown Items - only show when expanded */}
-            {isExpanded && adminExpanded && (
-              <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
-                {visibleAdminItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = isLinkActive(item.href);
-                  const requiresSuperAdmin = (item as any).requiresSuperAdmin;
-                  const requiresAdminAuth = (item as any).requiresAdmin;
-
-                  // SUPER_ADMIN pages don't require admin re-authentication (role check is at page level)
-                  // Regular admin pages require admin re-authentication
-                  const needsAdminDialog =
-                    requiresAdminAuth && !requiresSuperAdmin;
-                  // Check if user is SUPER_ADMIN either directly or via impersonation
-                  const isSuperAdmin =
-                    displayUser?.role === "SUPER_ADMIN" ||
-                    (displayUser?.isImpersonating && displayUser?.superAdminId);
-
-                  return (
-                    <button
-                      key={item.href}
-                      onClick={(e) => {
-                        // Super admin pages: navigate directly (page guard handles role check)
-                        if (requiresSuperAdmin && isSuperAdmin) {
-                          e.preventDefault();
-                          router.push(item.href);
-                        }
-                        // Regular admin pages: check for admin session
-                        else if (needsAdminDialog) {
-                          handleAdminLinkClick(e, item.href);
-                        }
-                        // Non-admin pages: navigate directly
-                        else {
-                          e.preventDefault();
-                          router.push(item.href);
-                        }
-                      }}
+          {visibleAdminItems.length > 0 && (
+            <div>
+              <button
+                onClick={() => setAdminExpanded(!adminExpanded)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full",
+                  isAdminSectionActive
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white",
+                )}
+                title={
+                  !isExpanded ? translateMenuItem("admin", "Admin") : undefined
+                }
+              >
+                <Settings className="h-[18px] w-[18px] flex-shrink-0" />
+                {isExpanded && (
+                  <>
+                    <span className="flex-1 text-left whitespace-nowrap">
+                      {translateMenuItem("admin", "Admin")}
+                    </span>
+                    <ChevronDown
                       className={cn(
-                        "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded w-full text-left",
-                        isActive
-                          ? "bg-purple-600 text-white font-medium"
-                          : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                        "h-4 w-4 transition-transform duration-200",
+                        adminExpanded && "rotate-180",
                       )}
-                    >
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap text-xs flex-1">
-                        {translateMenuItem(item.id, item.title)}
-                      </span>
-                      {needsAdminDialog && !hasAdminSession && (
-                        <Lock className="h-3 w-3 text-yellow-500" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    />
+                  </>
+                )}
+              </button>
+
+              {/* Admin Dropdown Items - only show when expanded */}
+              {isExpanded && adminExpanded && (
+                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
+                  {visibleAdminItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = isLinkActive(item.href);
+                    const requiresSuperAdmin = (item as any).requiresSuperAdmin;
+                    const requiresAdminAuth = (item as any).requiresAdmin;
+
+                    // SUPER_ADMIN pages don't require admin re-authentication (role check is at page level)
+                    // Regular admin pages require admin re-authentication
+                    const needsAdminDialog =
+                      requiresAdminAuth && !requiresSuperAdmin;
+                    // Check if user is SUPER_ADMIN either directly or via impersonation
+                    const isSuperAdmin =
+                      displayUser?.role === "SUPER_ADMIN" ||
+                      (displayUser?.isImpersonating &&
+                        displayUser?.superAdminId);
+
+                    return (
+                      <button
+                        key={item.href}
+                        onClick={(e) => {
+                          // Super admin pages: navigate directly (page guard handles role check)
+                          if (requiresSuperAdmin && isSuperAdmin) {
+                            e.preventDefault();
+                            router.push(item.href);
+                          }
+                          // Regular admin pages: check for admin session
+                          else if (needsAdminDialog) {
+                            handleAdminLinkClick(e, item.href);
+                          }
+                          // Non-admin pages: navigate directly
+                          else {
+                            e.preventDefault();
+                            router.push(item.href);
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded w-full text-left",
+                          isActive
+                            ? "bg-purple-600 text-white font-medium"
+                            : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="whitespace-nowrap text-xs flex-1">
+                          {translateMenuItem(item.id, item.title)}
+                        </span>
+                        {needsAdminDialog && !hasAdminSession && (
+                          <Lock className="h-3 w-3 text-yellow-500" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </nav>
 

@@ -1,15 +1,20 @@
+"use client";
 
-'use client';
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic';
-
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, useParams } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Users,
@@ -20,8 +25,8 @@ import {
   Phone,
   TrendingUp,
   Activity,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 interface SubAccountDetails {
   subAccount: {
@@ -90,13 +95,16 @@ export default function SubAccountDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
       return;
     }
 
-    if (session?.user?.role !== 'AGENCY_ADMIN' && session?.user?.role !== 'SUPER_ADMIN') {
-      router.push('/dashboard');
+    if (
+      session?.user?.role !== "ADMIN" &&
+      session?.user?.role !== "SUPER_ADMIN"
+    ) {
+      router.push("/dashboard");
       return;
     }
 
@@ -113,7 +121,7 @@ export default function SubAccountDetailsPage() {
         setDetails(data);
       }
     } catch (error) {
-      console.error('Error fetching sub-account details:', error);
+      console.error("Error fetching sub-account details:", error);
     } finally {
       setLoading(false);
     }
@@ -164,7 +172,7 @@ export default function SubAccountDetailsPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">
-            {details.subAccount.name || 'Unnamed Account'}
+            {details.subAccount.name || "Unnamed Account"}
           </h1>
           <p className="text-muted-foreground">{details.subAccount.email}</p>
         </div>
@@ -178,9 +186,12 @@ export default function SubAccountDetailsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.leads.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.leads.total}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {details.metrics.leads.converted} converted ({details.metrics.leads.conversionRate}%)
+              {details.metrics.leads.converted} converted (
+              {details.metrics.leads.conversionRate}%)
             </p>
           </CardContent>
         </Card>
@@ -191,7 +202,9 @@ export default function SubAccountDetailsPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.deals.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.deals.total}
+            </div>
             <p className="text-xs text-muted-foreground">
               {details.metrics.deals.won} won ({details.metrics.deals.winRate}%)
             </p>
@@ -217,7 +230,9 @@ export default function SubAccountDetailsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.campaigns.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.campaigns.total}
+            </div>
             <p className="text-xs text-muted-foreground">
               {details.metrics.campaigns.active} active
             </p>
@@ -230,7 +245,9 @@ export default function SubAccountDetailsPage() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.conversations.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.conversations.total}
+            </div>
             <p className="text-xs text-muted-foreground">Total conversations</p>
           </CardContent>
         </Card>
@@ -241,7 +258,9 @@ export default function SubAccountDetailsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.appointments.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.appointments.total}
+            </div>
             <p className="text-xs text-muted-foreground">
               {details.metrics.appointments.completed} completed
             </p>
@@ -254,7 +273,9 @@ export default function SubAccountDetailsPage() {
             <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{details.metrics.voiceAgents.total}</div>
+            <div className="text-2xl font-bold">
+              {details.metrics.voiceAgents.total}
+            </div>
             <p className="text-xs text-muted-foreground">AI voice agents</p>
           </CardContent>
         </Card>
@@ -265,15 +286,21 @@ export default function SubAccountDetailsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Leads</CardTitle>
-            <CardDescription>Latest leads created by this sub-account</CardDescription>
+            <CardDescription>
+              Latest leads created by this sub-account
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {!Array.isArray(details?.recentActivity?.leads) || details.recentActivity.leads.length === 0 ? (
+            {!Array.isArray(details?.recentActivity?.leads) ||
+            details.recentActivity.leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent leads</p>
             ) : (
               <div className="space-y-3">
                 {details.recentActivity.leads.map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between">
+                  <div
+                    key={lead.id}
+                    className="flex items-center justify-between"
+                  >
                     <div>
                       <p className="font-medium">{lead.businessName}</p>
                       <p className="text-xs text-muted-foreground">
@@ -291,19 +318,25 @@ export default function SubAccountDetailsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Deals</CardTitle>
-            <CardDescription>Latest deals created by this sub-account</CardDescription>
+            <CardDescription>
+              Latest deals created by this sub-account
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {!Array.isArray(details?.recentActivity?.deals) || details.recentActivity.deals.length === 0 ? (
+            {!Array.isArray(details?.recentActivity?.deals) ||
+            details.recentActivity.deals.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent deals</p>
             ) : (
               <div className="space-y-3">
                 {details.recentActivity.deals.map((deal) => (
-                  <div key={deal.id} className="flex items-center justify-between">
+                  <div
+                    key={deal.id}
+                    className="flex items-center justify-between"
+                  >
                     <div>
                       <p className="font-medium">{deal.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        ${deal.value?.toLocaleString() || 0} •{' '}
+                        ${deal.value?.toLocaleString() || 0} •{" "}
                         {new Date(deal.createdAt).toLocaleDateString()}
                       </p>
                     </div>

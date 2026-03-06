@@ -1,15 +1,20 @@
+"use client";
 
-'use client';
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic';
-
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   TrendingUp,
@@ -19,8 +24,8 @@ import {
   Calendar,
   Activity,
   Eye,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 interface SubAccount {
   id: string;
@@ -61,13 +66,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
       return;
     }
 
-    if (session?.user?.role !== 'AGENCY_ADMIN' && session?.user?.role !== 'SUPER_ADMIN') {
-      router.push('/dashboard');
+    if (
+      session?.user?.role !== "ADMIN" &&
+      session?.user?.role !== "SUPER_ADMIN"
+    ) {
+      router.push("/dashboard");
       return;
     }
 
@@ -79,13 +87,15 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const [subAccountsRes, overviewRes] = await Promise.all([
-        fetch('/api/admin/sub-accounts'),
-        fetch('/api/admin/overview'),
+        fetch("/api/admin/sub-accounts"),
+        fetch("/api/admin/overview"),
       ]);
 
       if (subAccountsRes.ok) {
         const data = await subAccountsRes.json();
-        setSubAccounts(Array.isArray(data?.subAccounts) ? data.subAccounts : []);
+        setSubAccounts(
+          Array.isArray(data?.subAccounts) ? data.subAccounts : [],
+        );
       }
 
       if (overviewRes.ok) {
@@ -93,7 +103,7 @@ export default function AdminDashboard() {
         setOverview(data.overview);
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      console.error("Error fetching admin data:", error);
     } finally {
       setLoading(false);
     }
@@ -140,11 +150,15 @@ export default function AdminDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sub-Accounts</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Sub-Accounts
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{overview.totalSubAccounts}</div>
+              <div className="text-2xl font-bold">
+                {overview.totalSubAccounts}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {overview.activeSubAccounts} active in last 30 days
               </p>
@@ -153,7 +167,9 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Revenue
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -168,11 +184,15 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Conversion Rate
+              </CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{overview.overallConversionRate}%</div>
+              <div className="text-2xl font-bold">
+                {overview.overallConversionRate}%
+              </div>
               <p className="text-xs text-muted-foreground">
                 {overview.convertedLeads} of {overview.totalLeads} leads
               </p>
@@ -181,7 +201,9 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Activity</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Activity
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -208,7 +230,9 @@ export default function AdminDashboard() {
           {subAccounts.length === 0 ? (
             <div className="text-center py-10">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No sub-accounts yet</h3>
+              <h3 className="mt-4 text-lg font-semibold">
+                No sub-accounts yet
+              </h3>
               <p className="text-sm text-muted-foreground mt-2">
                 Sub-accounts will appear here once they are created
               </p>
@@ -223,12 +247,15 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-4 flex-1">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="text-lg font-semibold text-primary">
-                        {account.name?.charAt(0) || account.email.charAt(0).toUpperCase()}
+                        {account.name?.charAt(0) ||
+                          account.email.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">{account.name || 'Unnamed'}</h4>
+                        <h4 className="font-semibold">
+                          {account.name || "Unnamed"}
+                        </h4>
                         {account.metrics.recentActivity > 0 && (
                           <Badge variant="outline" className="text-xs">
                             <Activity className="h-3 w-3 mr-1" />
@@ -236,24 +263,32 @@ export default function AdminDashboard() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">{account.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {account.email}
+                      </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-8 mr-8">
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{account.metrics.leads}</div>
+                      <div className="text-2xl font-bold">
+                        {account.metrics.leads}
+                      </div>
                       <div className="text-xs text-muted-foreground">Leads</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{account.metrics.deals}</div>
+                      <div className="text-2xl font-bold">
+                        {account.metrics.deals}
+                      </div>
                       <div className="text-xs text-muted-foreground">Deals</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold">
                         ${account.metrics.totalRevenue.toLocaleString()}
                       </div>
-                      <div className="text-xs text-muted-foreground">Revenue</div>
+                      <div className="text-xs text-muted-foreground">
+                        Revenue
+                      </div>
                     </div>
                   </div>
 
