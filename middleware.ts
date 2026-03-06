@@ -35,17 +35,59 @@ function applyHeaders(
   response: NextResponse,
   nonce: string,
 ): NextResponse {
+  const host = request.nextUrl.hostname;
+  const isDev =
+    process.env.NODE_ENV !== "production" ||
+    host === "localhost" ||
+    host === "127.0.0.1";
+
+  const scriptSrc = [
+    "'self'",
+    `'nonce-${nonce}'`,
+    "'strict-dynamic'",
+    "blob:",
+    "https://accounts.google.com",
+    "https://apis.google.com",
+    "https://maps.googleapis.com",
+    "https://static.cloudflareinsights.com",
+  ];
+
+  const connectSrc = [
+    "'self'",
+    "https://accounts.google.com",
+    "https://apis.google.com",
+    "https://maps.googleapis.com",
+    "https://*.googleapis.com",
+    "https://api.elevenlabs.io",
+    "wss://api.elevenlabs.io",
+    "https://livekit.rtc.elevenlabs.io",
+    "wss://livekit.rtc.elevenlabs.io",
+    "https://api.twilio.com",
+    "https://api.stripe.com",
+    "https://api.square.com",
+    "https://api.paypal.com",
+    "https://*.abacusai.app",
+    "wss://*.abacusai.app",
+    "https://cloudflareinsights.com",
+    "https://*.cloudflareinsights.com",
+  ];
+
+  if (isDev) {
+    scriptSrc.push("'unsafe-eval'", "'unsafe-inline'");
+    connectSrc.push("ws:", "wss:", "http://localhost:*", "ws://localhost:*");
+  }
+
   const securityHeaders: Record<string, string> = {
     "Content-Security-Policy": [
       "default-src 'self'",
       // nonce replaces 'unsafe-inline' — inline scripts must carry this nonce attribute
-      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com`,
+      `script-src ${scriptSrc.join(" ")}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       // removed http: from img-src (audit finding)
       "img-src 'self' data: blob: https: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
       "worker-src 'self' blob:",
-      "connect-src 'self' https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://*.googleapis.com https://api.elevenlabs.io wss://api.elevenlabs.io https://livekit.rtc.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://api.twilio.com https://api.stripe.com https://api.square.com https://api.paypal.com https://*.abacusai.app wss://*.abacusai.app https://cloudflareinsights.com https://*.cloudflareinsights.com",
+      `connect-src ${connectSrc.join(" ")}`,
       "frame-src 'self' blob: https: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com https://calendly.com https://*.calendly.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://*.vimeo.com https://*.elevenlabs.io https://elevenlabs.io https://*.vapi.ai https://vapi.ai https://search.google.com https://www.zebracat.ai https://www.clay.com https://www.starcloud.com https://www.neoculturalcouture.com https://www.little-lagniappe.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -95,6 +137,20 @@ function applyHeaders(
   }
 
   return response;
+}
+
+function nextResponseWithNonce(
+  request: NextRequest,
+  nonce: string,
+): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export async function middleware(request: NextRequest) {
@@ -159,7 +215,7 @@ export async function middleware(request: NextRequest) {
       });
     }
 
-    const response = NextResponse.next();
+    const response = nextResponseWithNonce(request, nonce);
     response.headers.set("X-RateLimit-Remaining", String(remaining));
 
     if (subdomain) {
@@ -174,7 +230,7 @@ export async function middleware(request: NextRequest) {
     return applyHeaders(request, response, nonce);
   }
 
-  const response = NextResponse.next();
+  const response = nextResponseWithNonce(request, nonce);
 
   // Add subdomain to request headers if present
   if (subdomain) {
