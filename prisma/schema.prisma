@@ -246,6 +246,10 @@ model User {
   dentalLabOrders             DentalLabOrder[]
   dentalInsuranceClaims       DentalInsuranceClaim[]
   orthoTreatments             OrthoTreatment[]
+  orthoCaptureSessions        OrthoCaptureSession[]
+  orthoProgressAssessments    OrthoProgressAssessment[]
+  orthoRecommendations        OrthoRecommendation[]
+  orthoComplianceSignals      OrthoComplianceSignal[]
   dentalPaymentPlans          DentalPaymentPlan[]
   dentalRecalls               DentalRecall[]
   vnaConfigurations           VnaConfiguration[]
@@ -402,6 +406,10 @@ model Lead {
   dentalLabOrders             DentalLabOrder[]
   dentalInsuranceClaims       DentalInsuranceClaim[]
   orthoTreatments             OrthoTreatment[]
+  orthoCaptureSessions        OrthoCaptureSession[]
+  orthoProgressAssessments    OrthoProgressAssessment[]
+  orthoRecommendations        OrthoRecommendation[]
+  orthoComplianceSignals      OrthoComplianceSignal[]
   dentalPaymentPlans          DentalPaymentPlan[]
   dentalRecalls               DentalRecall[]
   patientDocuments            PatientDocument[]            @relation("PatientDocuments")
@@ -8928,6 +8936,10 @@ model Clinic {
   labOrders         DentalLabOrder[]
   insuranceClaims   DentalInsuranceClaim[]
   orthoTreatments   OrthoTreatment[]
+  orthoCaptureSessions OrthoCaptureSession[]
+  orthoProgressAssessments OrthoProgressAssessment[]
+  orthoRecommendations OrthoRecommendation[]
+  orthoComplianceSignals OrthoComplianceSignal[]
   dentalPaymentPlans DentalPaymentPlan[]
   dentalRecalls     DentalRecall[]
   vnaConfigurations VnaConfiguration[]
@@ -9607,6 +9619,9 @@ model OrthoTreatment {
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+  orthoCaptureSessions OrthoCaptureSession[]
+  orthoProgressAssessments OrthoProgressAssessment[]
+  orthoComplianceSignals OrthoComplianceSignal[]
 
   @@index([leadId])
   @@index([userId])
@@ -9634,6 +9649,204 @@ enum OrthoArch {
   UPPER
   LOWER
   BOTH
+}
+
+model OrthoCaptureSession {
+  id               String             @id @default(cuid())
+  leadId           String
+  userId           String
+  clinicId         String
+  orthoTreatmentId String?
+
+  source      OrthoCaptureSource      @default(PATIENT_APP)
+  captureType OrthoCaptureType        @default(GUIDED_PHOTO_SET)
+  status      OrthoCaptureStatus      @default(PENDING_UPLOAD)
+
+  capturedAt      DateTime            @default(now())
+  submittedAt     DateTime?
+  qualityScore    Float?
+  qualityIssues   String[]
+  processingError String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  orthoTreatment OrthoTreatment?     @relation(fields: [orthoTreatmentId], references: [id], onDelete: SetNull)
+  assets        OrthoCaptureAsset[]
+  assessments   OrthoProgressAssessment[]
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([clinicId])
+  @@index([orthoTreatmentId])
+  @@index([capturedAt])
+  @@index([status])
+}
+
+model OrthoCaptureAsset {
+  id               String               @id @default(cuid())
+  captureSessionId String
+  documentId       String
+  viewType         OrthoCaptureViewType
+  isPrimary        Boolean              @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  captureSession OrthoCaptureSession @relation(fields: [captureSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([captureSessionId, viewType])
+  @@index([captureSessionId])
+  @@index([documentId])
+}
+
+model OrthoProgressAssessment {
+  id               String    @id @default(cuid())
+  captureSessionId String
+  leadId           String
+  userId           String
+  clinicId         String
+  orthoTreatmentId String?
+
+  modelVersion      String
+  overallRiskScore  Float
+  driftScore        Float
+  complianceScore   Float
+  confidenceScore   Float
+  urgency           OrthoAssessmentUrgency @default(ROUTINE)
+  predictedDelayDays Int?
+  driverTags        String[]
+  findings          Json
+  recommendedActions Json
+
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  captureSession OrthoCaptureSession @relation(fields: [captureSessionId], references: [id], onDelete: Cascade)
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  orthoTreatment OrthoTreatment?     @relation(fields: [orthoTreatmentId], references: [id], onDelete: SetNull)
+  recommendations OrthoRecommendation[]
+
+  @@index([leadId, generatedAt])
+  @@index([userId, generatedAt])
+  @@index([urgency])
+  @@index([captureSessionId])
+}
+
+model OrthoRecommendation {
+  id           String @id @default(cuid())
+  assessmentId String
+  leadId       String
+  userId       String
+  clinicId     String
+
+  actionType      OrthoRecommendationAction
+  title           String
+  rationale       String
+  expectedImpact  String?
+  status          OrthoRecommendationStatus @default(PROPOSED)
+  clinicianNote   String?
+
+  acceptedAt DateTime?
+  dismissedAt DateTime?
+  linkedTaskId String?
+  linkedAppointmentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessment OrthoProgressAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  lead       Lead                    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic     Clinic                  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, status])
+  @@index([userId, status])
+  @@index([assessmentId])
+}
+
+model OrthoComplianceSignal {
+  id               String @id @default(cuid())
+  leadId           String
+  userId           String
+  clinicId         String
+  orthoTreatmentId String?
+
+  source            OrthoComplianceSource
+  wearHours         Float?
+  elasticsAdherence Float?
+  painScore         Int?
+  notes             String?
+  recordedAt        DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  lead          Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  orthoTreatment OrthoTreatment? @relation(fields: [orthoTreatmentId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, recordedAt])
+  @@index([userId, recordedAt])
+  @@index([clinicId, recordedAt])
+}
+
+enum OrthoCaptureSource {
+  PATIENT_APP
+  IN_CLINIC
+  MANUAL_UPLOAD
+}
+
+enum OrthoCaptureType {
+  GUIDED_PHOTO_SET
+}
+
+enum OrthoCaptureStatus {
+  PENDING_UPLOAD
+  READY_FOR_ANALYSIS
+  ANALYZED
+  FAILED
+}
+
+enum OrthoCaptureViewType {
+  FRONTAL
+  LEFT_BUCCAL
+  RIGHT_BUCCAL
+  UPPER_OCCLUSAL
+  LOWER_OCCLUSAL
+}
+
+enum OrthoAssessmentUrgency {
+  ROUTINE
+  SOON
+  URGENT
+}
+
+enum OrthoRecommendationAction {
+  REINFORCE_WEAR
+  RECAPTURE
+  EARLY_VISIT
+  ELASTIC_PROTOCOL_REVIEW
+  REFINEMENT_REVIEW
+}
+
+enum OrthoRecommendationStatus {
+  PROPOSED
+  ACCEPTED
+  DISMISSED
+  COMPLETED
+}
+
+enum OrthoComplianceSource {
+  PATIENT_SELF_REPORT
+  DEVICE_SYNC
+  STAFF_ENTRY
 }
 
 // Phase 2: Multi-VNA Support

@@ -43,6 +43,7 @@ import { AIVisitNotesCard } from "@/components/dental/ai-visit-notes-card";
 import { PatientPhotoGallery } from "@/components/dental/patient-photo-gallery";
 import { StlScanViewer } from "@/components/dental/stl-scan-viewer";
 import { OrthoTreatmentTracker } from "@/components/dental/ortho-treatment-tracker";
+import { OrthoDriftCopilot } from "@/components/dental/ortho-drift-copilot";
 import { PaymentPlanManager } from "@/components/dental/payment-plan-manager";
 import { RecallManager } from "@/components/dental/recall-manager";
 
@@ -806,6 +807,16 @@ function ClinicalDashboardPageContent() {
         {/* 9. Payment Plan */}
         {selectedLeadId && (
           <div onClick={(e) => e.stopPropagation()}>
+            <OrthoDriftCopilot
+              leadId={selectedLeadId}
+              clinicId={activeClinic?.id}
+            />
+          </div>
+        )}
+
+        {/* 10. Payment Plan */}
+        {selectedLeadId && (
+          <div onClick={(e) => e.stopPropagation()}>
             <PaymentPlanManager
               leadId={selectedLeadId}
               clinicId={activeClinic?.id}
@@ -814,7 +825,7 @@ function ClinicalDashboardPageContent() {
           </div>
         )}
 
-        {/* 10. Recall Schedule */}
+        {/* 11. Recall Schedule */}
         {selectedLeadId && (
           <div onClick={(e) => e.stopPropagation()}>
             <RecallManager
