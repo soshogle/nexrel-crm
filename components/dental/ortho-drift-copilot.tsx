@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -12,6 +13,8 @@ import {
   CheckCircle2,
   Clock3,
   RefreshCw,
+  TrendingUp,
+  WandSparkles,
 } from "lucide-react";
 
 type Props = {
@@ -31,6 +34,24 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
   const [elastics, setElastics] = useState<string>("0.9");
   const [latestAssessment, setLatestAssessment] = useState<any | null>(null);
   const [summary, setSummary] = useState<any | null>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [simulating, setSimulating] = useState(false);
+  const [simulation, setSimulation] = useState<any | null>(null);
+  const [interventions, setInterventions] = useState<string[]>([
+    "REINFORCE_WEAR",
+    "EARLY_VISIT",
+  ]);
+  const [coaching, setCoaching] = useState<any | null>(null);
+  const [coachingLoading, setCoachingLoading] = useState(false);
+  const [outcomeDelay, setOutcomeDelay] = useState<string>("");
+  const [outcomeNotes, setOutcomeNotes] = useState<string>("");
+  const [savingOutcome, setSavingOutcome] = useState(false);
+
+  const toggleIntervention = (value: string) => {
+    setInterventions((prev) =>
+      prev.includes(value) ? prev.filter((i) => i !== value) : [...prev, value],
+    );
+  };
 
   const load = useCallback(async () => {
     if (!leadId) return;
@@ -44,8 +65,17 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
         ),
       ]);
 
+      const [timelineRes, coachingRes] = await Promise.all([
+        fetch(
+          `/api/dental/ortho-copilot/timeline?leadId=${leadId}${q}&limit=8`,
+        ),
+        fetch(`/api/dental/ortho-copilot/coaching/preview?leadId=${leadId}`),
+      ]);
+
       const dashData = dashRes.ok ? await dashRes.json() : null;
       const assessData = assessRes.ok ? await assessRes.json() : null;
+      const timelineData = timelineRes.ok ? await timelineRes.json() : null;
+      const coachingData = coachingRes.ok ? await coachingRes.json() : null;
 
       setSummary(dashData?.summary || null);
       setLatestAssessment(
@@ -54,6 +84,10 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
           ? assessData.assessments[0]
           : null,
       );
+      setTimeline(
+        Array.isArray(timelineData?.timeline) ? timelineData.timeline : [],
+      );
+      setCoaching(coachingData?.preview || null);
     } catch (error) {
       console.error("Failed loading Ortho Copilot:", error);
     } finally {
@@ -166,6 +200,73 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
     }
   };
 
+  const runSimulation = async () => {
+    if (!leadId || interventions.length === 0) {
+      toast.error("Select at least one intervention");
+      return;
+    }
+
+    setSimulating(true);
+    try {
+      const res = await fetch("/api/dental/ortho-copilot/simulator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId, interventions }),
+      });
+      if (!res.ok) throw new Error("Simulation failed");
+      const data = await res.json();
+      setSimulation(data?.simulation || null);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to run simulation");
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  const refreshCoaching = async () => {
+    if (!leadId) return;
+    setCoachingLoading(true);
+    try {
+      const res = await fetch(
+        `/api/dental/ortho-copilot/coaching/preview?leadId=${leadId}`,
+      );
+      if (!res.ok) throw new Error("Failed to generate coaching draft");
+      const data = await res.json();
+      setCoaching(data?.preview || null);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to generate coaching draft");
+    } finally {
+      setCoachingLoading(false);
+    }
+  };
+
+  const logOutcome = async () => {
+    if (!latestAssessment?.id) return;
+    setSavingOutcome(true);
+    try {
+      const res = await fetch("/api/dental/ortho-copilot/outcomes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentId: latestAssessment.id,
+          actualDelayDays:
+            outcomeDelay.trim().length > 0 ? Number(outcomeDelay) : null,
+          clinicianOutcome: "REVIEWED",
+          notes: outcomeNotes || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save outcome");
+      toast.success("Outcome logged for learning loop");
+      setOutcomeDelay("");
+      setOutcomeNotes("");
+      await load();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to log outcome");
+    } finally {
+      setSavingOutcome(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-to-br from-emerald-50 via-white to-teal-50 border border-emerald-200 shadow-lg">
       <CardHeader className="pb-2 px-4 pt-3">
@@ -239,6 +340,24 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
               ) : null}
             </div>
 
+            <div className="rounded border border-emerald-100 bg-white p-2">
+              <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-900 mb-1">
+                <TrendingUp className="h-3 w-3 text-emerald-700" />
+                Longitudinal Trend
+              </div>
+              <div className="text-[11px] text-gray-600">
+                {timeline.length > 0
+                  ? `${timeline.length} checkpoints · latest trend ${timeline[timeline.length - 1]?.trend || "STABLE"}`
+                  : "No timeline checkpoints yet"}
+              </div>
+              {timeline.length > 1 ? (
+                <div className="mt-1 text-[11px] text-gray-700">
+                  Net risk delta:{" "}
+                  {pct(timeline[timeline.length - 1]?.riskDelta || 0)}
+                </div>
+              ) : null}
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <Input
                 value={wearHours}
@@ -262,6 +381,103 @@ export function OrthoDriftCopilot({ leadId, clinicId }: Props) {
             >
               Log Compliance + Recompute
             </Button>
+
+            <div className="rounded border border-emerald-100 bg-white p-2 space-y-2">
+              <div className="text-xs font-semibold text-gray-900">
+                Intervention Simulator (V2)
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  ["REINFORCE_WEAR", "Reinforce Wear"],
+                  ["EARLY_VISIT", "Early Visit"],
+                  ["ELASTIC_PROTOCOL_REVIEW", "Elastic Review"],
+                  ["RECAPTURE", "Recapture"],
+                ].map(([value, label]) => (
+                  <Button
+                    key={value}
+                    size="sm"
+                    variant={
+                      interventions.includes(value) ? "default" : "outline"
+                    }
+                    className="h-7 text-[11px]"
+                    onClick={() => toggleIntervention(value)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-[11px]"
+                onClick={runSimulation}
+                disabled={simulating || interventions.length === 0}
+              >
+                <WandSparkles className="h-3 w-3 mr-1" />
+                {simulating ? "Simulating..." : "Run Scenario"}
+              </Button>
+              {simulation ? (
+                <div className="text-[11px] text-gray-700">
+                  Risk {pct(simulation.baselineRisk)} →{" "}
+                  {pct(simulation.projectedRisk)} · Delay{" "}
+                  {simulation.baselineDelayDays}d →{" "}
+                  {simulation.projectedDelayDays}d
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded border border-emerald-100 bg-white p-2 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-semibold text-gray-900">
+                  Patient Coaching Draft
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={refreshCoaching}
+                  disabled={coachingLoading}
+                >
+                  {coachingLoading ? "Refreshing..." : "Refresh Draft"}
+                </Button>
+              </div>
+              <div className="text-[11px] text-gray-600">
+                Channel: {coaching?.channel || "SMS"}
+              </div>
+              <Textarea
+                value={coaching?.message || "No draft yet"}
+                readOnly
+                className="min-h-[70px] text-xs"
+              />
+            </div>
+
+            <div className="rounded border border-emerald-100 bg-white p-2 space-y-2">
+              <div className="text-xs font-semibold text-gray-900">
+                Outcome Learning Loop
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  value={outcomeDelay}
+                  onChange={(e) => setOutcomeDelay(e.target.value)}
+                  placeholder="Actual delay days"
+                  className="h-8 text-xs"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 text-[11px]"
+                  onClick={logOutcome}
+                  disabled={savingOutcome || !latestAssessment?.id}
+                >
+                  {savingOutcome ? "Saving..." : "Log Outcome"}
+                </Button>
+              </div>
+              <Textarea
+                value={outcomeNotes}
+                onChange={(e) => setOutcomeNotes(e.target.value)}
+                placeholder="Clinician notes"
+                className="min-h-[56px] text-xs"
+              />
+            </div>
 
             <div className="space-y-2">
               {(latestAssessment?.recommendations || [])

@@ -6,6 +6,11 @@ type CopilotInput = {
   qualityScore?: number | null;
   captureViewsCount: number;
   daysSinceLastCheckIn?: number | null;
+  previousAssessment?: {
+    overallRiskScore?: number | null;
+    driftScore?: number | null;
+    predictedDelayDays?: number | null;
+  } | null;
 };
 
 type CopilotRecommendation = {
@@ -33,8 +38,82 @@ export type CopilotAssessmentResult = {
   recommendedActions: CopilotRecommendation[];
 };
 
+export type CopilotSimulationResult = {
+  baselineRisk: number;
+  baselineDelayDays: number;
+  projectedRisk: number;
+  projectedDelayDays: number;
+  projectedConfidence: number;
+  deltaRisk: number;
+  deltaDelayDays: number;
+  interventions: string[];
+};
+
 function clamp(value: number, min = 0, max = 1): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function classifyTrend(delta: number): "IMPROVING" | "STABLE" | "WORSENING" {
+  if (delta <= -0.04) return "IMPROVING";
+  if (delta >= 0.04) return "WORSENING";
+  return "STABLE";
+}
+
+export function simulateInterventions(
+  base: {
+    overallRiskScore: number;
+    confidenceScore: number;
+    predictedDelayDays: number;
+  },
+  interventions: string[],
+): CopilotSimulationResult {
+  const normalized = Array.from(
+    new Set(interventions.map((i) => String(i).toUpperCase())),
+  );
+
+  let riskMultiplier = 1;
+  let delayMultiplier = 1;
+  let confidenceGain = 0;
+
+  if (normalized.includes("REINFORCE_WEAR")) {
+    riskMultiplier *= 0.8;
+    delayMultiplier *= 0.82;
+  }
+  if (normalized.includes("EARLY_VISIT")) {
+    riskMultiplier *= 0.78;
+    delayMultiplier *= 0.72;
+  }
+  if (normalized.includes("ELASTIC_PROTOCOL_REVIEW")) {
+    riskMultiplier *= 0.86;
+    delayMultiplier *= 0.88;
+  }
+  if (normalized.includes("RECAPTURE")) {
+    riskMultiplier *= 0.96;
+    delayMultiplier *= 0.96;
+    confidenceGain += 0.12;
+  }
+  if (normalized.includes("REFINEMENT_REVIEW")) {
+    riskMultiplier *= 0.84;
+    delayMultiplier *= 0.8;
+  }
+
+  const projectedRisk = clamp(base.overallRiskScore * riskMultiplier);
+  const projectedDelayDays = Math.max(
+    0,
+    Math.round(base.predictedDelayDays * delayMultiplier),
+  );
+  const projectedConfidence = clamp(base.confidenceScore + confidenceGain);
+
+  return {
+    baselineRisk: base.overallRiskScore,
+    baselineDelayDays: base.predictedDelayDays,
+    projectedRisk,
+    projectedDelayDays,
+    projectedConfidence,
+    deltaRisk: projectedRisk - base.overallRiskScore,
+    deltaDelayDays: projectedDelayDays - base.predictedDelayDays,
+    interventions: normalized,
+  };
 }
 
 export function buildOrthoCopilotAssessment(
@@ -68,6 +147,16 @@ export function buildOrthoCopilotAssessment(
   const overallRiskScore = clamp(
     driftScore * 0.65 + (1 - complianceScore) * 0.35,
   );
+
+  const previousRisk = Number(
+    input.previousAssessment?.overallRiskScore ?? overallRiskScore,
+  );
+  const previousDrift = Number(
+    input.previousAssessment?.driftScore ?? driftScore,
+  );
+  const riskDelta = Number((overallRiskScore - previousRisk).toFixed(3));
+  const driftDelta = Number((driftScore - previousDrift).toFixed(3));
+  const trend = classifyTrend(riskDelta);
 
   const urgency: "ROUTINE" | "SOON" | "URGENT" =
     overallRiskScore >= 0.72
@@ -136,8 +225,49 @@ export function buildOrthoCopilotAssessment(
     });
   }
 
+  const baselineDelay = Math.round(overallRiskScore * 35);
+  const v2SimulationPreview = simulateInterventions(
+    {
+      overallRiskScore,
+      confidenceScore,
+      predictedDelayDays: baselineDelay,
+    },
+    ["REINFORCE_WEAR", "EARLY_VISIT"],
+  );
+
+  const safetyFlags = {
+    decisionSupportOnly: true,
+    clinicianReviewRequired: confidenceScore < 0.55 || quality < 0.6,
+    lowDataQuality: quality < 0.6 || viewsCompleteness < 0.8,
+    confidenceTier:
+      confidenceScore >= 0.75
+        ? "HIGH"
+        : confidenceScore >= 0.55
+          ? "MEDIUM"
+          : "LOW",
+  };
+
+  const segments = {
+    upperArch: {
+      trend,
+      projectedRisk: clamp(overallRiskScore + 0.03),
+    },
+    lowerArch: {
+      trend: classifyTrend(riskDelta - 0.01),
+      projectedRisk: clamp(overallRiskScore - 0.02),
+    },
+    anterior: {
+      trend: classifyTrend(driftDelta),
+      projectedRisk: clamp(driftScore + 0.02),
+    },
+    posterior: {
+      trend: classifyTrend(driftDelta + 0.01),
+      projectedRisk: clamp(driftScore + 0.05),
+    },
+  };
+
   return {
-    modelVersion: "ortho-copilot-v1.0.0",
+    modelVersion: "ortho-copilot-v2.0.0",
     overallRiskScore,
     driftScore,
     complianceScore,
@@ -154,6 +284,22 @@ export function buildOrthoCopilotAssessment(
       viewsCompleteness,
       daysSinceLastCheckIn: input.daysSinceLastCheckIn ?? null,
       treatmentType: input.treatmentType ?? null,
+      longitudinal: {
+        previousRisk,
+        riskDelta,
+        previousDrift,
+        driftDelta,
+        trend,
+        momentum:
+          Math.abs(riskDelta) >= 0.08
+            ? "HIGH"
+            : Math.abs(riskDelta) >= 0.04
+              ? "MEDIUM"
+              : "LOW",
+      },
+      segments,
+      safetyFlags,
+      simulationPreview: v2SimulationPreview,
       caveat:
         "Decision support only. Requires orthodontist review and clinical correlation before treatment changes.",
     },

@@ -41,7 +41,12 @@ export async function POST(
     const latestAssessment = await db.orthoProgressAssessment.findFirst({
       where: { leadId: capture.leadId, userId: session.user.id },
       orderBy: { generatedAt: "desc" },
-      select: { generatedAt: true },
+      select: {
+        generatedAt: true,
+        overallRiskScore: true,
+        driftScore: true,
+        predictedDelayDays: true,
+      },
     });
 
     const complianceSignals = await db.orthoComplianceSignal.findMany({
@@ -98,6 +103,13 @@ export async function POST(
       qualityScore,
       captureViewsCount: capture.assets.length,
       daysSinceLastCheckIn: daysSinceLast,
+      previousAssessment: latestAssessment
+        ? {
+            overallRiskScore: latestAssessment.overallRiskScore,
+            driftScore: latestAssessment.driftScore,
+            predictedDelayDays: latestAssessment.predictedDelayDays,
+          }
+        : null,
     });
 
     const qualityIssues =
