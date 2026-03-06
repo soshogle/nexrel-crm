@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getMetaDb } from "@/lib/db/meta-db";
 import { getIndustryDb, type IndustryDbKey } from "@/lib/db/industry-db";
+import type { Industry as MetaIndustry } from "@prisma/client";
 import { DashboardWrapper } from "@/components/dashboard/dashboard-wrapper";
 import { ClinicProvider } from "@/lib/dental/clinic-context";
 
@@ -26,6 +27,13 @@ const INDUSTRY_KEYS: IndustryDbKey[] = [
   "RETAIL",
 ];
 
+function toMetaIndustry(value: unknown): MetaIndustry | null {
+  if (typeof value !== "string") return null;
+  return INDUSTRY_KEYS.includes(value as IndustryDbKey)
+    ? (value as MetaIndustry)
+    : null;
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -39,7 +47,7 @@ export default async function DashboardLayout({
 
   // Use session data from JWT - industry and accountStatus are in the token
   let accountStatus = session.user?.accountStatus;
-  let industry = session.user?.industry;
+  let industry: MetaIndustry | null = toMetaIndustry(session.user?.industry);
 
   // Fallback: if JWT has no industry but DB does (e.g. set-industry ran, update() didn't persist), fetch from auth DB
   if (
@@ -53,8 +61,8 @@ export default async function DashboardLayout({
         where: { id: session.user.id },
         select: { industry: true, accountStatus: true },
       });
-      if (dbUser?.industry) {
-        industry = dbUser.industry;
+      if (dbUser?.industry && toMetaIndustry(dbUser.industry)) {
+        industry = dbUser.industry as MetaIndustry;
         if (dbUser.accountStatus) accountStatus = dbUser.accountStatus;
       }
     } catch {
@@ -79,13 +87,15 @@ export default async function DashboardLayout({
           });
 
           if (tenantUser) {
-            industry = (tenantUser.industry as string | null) || key;
+            const resolvedIndustry =
+              toMetaIndustry(tenantUser.industry) || (key as MetaIndustry);
+            industry = resolvedIndustry;
 
             // Backfill auth DB so future requests resolve quickly
             try {
               await getMetaDb().user.update({
                 where: { id: session.user.id },
-                data: { industry },
+                data: { industry: resolvedIndustry },
               });
             } catch {
               // Ignore backfill failures; industry is still resolved for this request
