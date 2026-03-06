@@ -173,7 +173,9 @@ function ClinicalDashboardPageContent() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
-      const response = await fetch("/api/leads", { signal: controller.signal });
+      const response = await fetch("/api/leads?pageSize=200", {
+        signal: controller.signal,
+      });
       if (response.ok) {
         const data = await response.json();
         const leadsArray = Array.isArray(data)
@@ -181,7 +183,16 @@ function ClinicalDashboardPageContent() {
           : Array.isArray(data?.leads)
             ? data.leads
             : [];
-        setLeads(leadsArray);
+        const sortedLeads = leadsArray.slice().sort((a: any, b: any) => {
+          const aName = String(
+            a?.contactPerson || a?.businessName || a?.email || "",
+          ).toLocaleLowerCase();
+          const bName = String(
+            b?.contactPerson || b?.businessName || b?.email || "",
+          ).toLocaleLowerCase();
+          return aName.localeCompare(bName, undefined, { sensitivity: "base" });
+        });
+        setLeads(sortedLeads);
       } else {
         setLeads([]);
       }

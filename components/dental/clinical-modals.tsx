@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -55,7 +55,19 @@ export function ClinicalModals({
   onXrayRefresh,
   clinicalNotesEditor,
 }: ClinicalModalsProps) {
-  const safeLeads = leads || [];
+  const safeLeads = useMemo(
+    () =>
+      (leads || []).slice().sort((a, b) => {
+        const aName = String(
+          a?.contactPerson || a?.businessName || a?.email || "",
+        ).toLocaleLowerCase();
+        const bName = String(
+          b?.contactPerson || b?.businessName || b?.email || "",
+        ).toLocaleLowerCase();
+        return aName.localeCompare(bName, undefined, { sensitivity: "base" });
+      }),
+    [leads],
+  );
   const safeXrays = xrays || [];
   const safeProcedures = procedures || [];
   const [odontogramViewMode, setOdontogramViewMode] = useState<
