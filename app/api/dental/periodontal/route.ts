@@ -3,31 +3,31 @@
  * Handles periodontal chart CRUD operations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { getRouteDb } from '@/lib/dal/get-route-db';
-import { t } from '@/lib/i18n-server';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getRouteDb } from "@/lib/dal/get-route-db";
+import { t } from "@/lib/i18n-server";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - Get periodontal charts for a patient
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return apiErrors.unauthorized(await t('api.unauthorized'));
+      return apiErrors.unauthorized(await t("api.unauthorized"));
     }
     const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
-    const leadId = searchParams.get('leadId');
-    const clinicId = searchParams.get('clinicId');
+    const leadId = searchParams.get("leadId");
+    const clinicId = searchParams.get("clinicId");
 
     if (!leadId) {
-      return apiErrors.badRequest(await t('api.leadIdRequired'));
+      return apiErrors.badRequest(await t("api.leadIdRequired"));
     }
 
     // Build where clause with clinic filtering
@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
     // Get all periodontal charts for this patient, ordered by date
     const charts = await db.dentalPeriodontalChart.findMany({
       where,
-      orderBy: { chartDate: 'desc' },
+      orderBy: [
+        { chartDate: "desc" },
+        { updatedAt: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return NextResponse.json({
@@ -50,8 +54,8 @@ export async function GET(request: NextRequest) {
       charts,
     });
   } catch (error: any) {
-    console.error('Error fetching periodontal charts:', error);
-    return apiErrors.internal(await t('api.fetchPeriodontalFailed'));
+    console.error("Error fetching periodontal charts:", error);
+    return apiErrors.internal(await t("api.fetchPeriodontalFailed"));
   }
 }
 
@@ -60,7 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return apiErrors.unauthorized(await t('api.unauthorized'));
+      return apiErrors.unauthorized(await t("api.unauthorized"));
     }
     const db = getRouteDb(session);
 
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
     const { leadId, measurements, notes, chartDate, clinicId } = body;
 
     if (!leadId || !measurements) {
-      return apiErrors.badRequest(await t('api.measurementsRequired'));
+      return apiErrors.badRequest(await t("api.measurementsRequired"));
     }
 
     const createData: any = {
@@ -92,7 +96,10 @@ export async function POST(request: NextRequest) {
       chart,
     });
   } catch (error: any) {
-    console.error('Error creating periodontal chart:', error);
-    return apiErrors.internal(await t('api.createPeriodontalFailed'), error.message);
+    console.error("Error creating periodontal chart:", error);
+    return apiErrors.internal(
+      await t("api.createPeriodontalFailed"),
+      error.message,
+    );
   }
 }

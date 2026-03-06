@@ -53,11 +53,7 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchNotes();
-  }, [leadId]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       const response = await fetch(`/api/leads/${leadId}/notes`);
       if (response.ok) {
@@ -67,7 +63,11 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const handleSaveNote = async () => {
     if (!noteContent.trim()) {
@@ -144,7 +144,7 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
 }
 
 function ClinicalDashboardPageContent() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { activeClinic } = useClinic();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
@@ -170,8 +170,10 @@ function ClinicalDashboardPageContent() {
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
-      const response = await fetch("/api/leads");
+      const response = await fetch("/api/leads", { signal: controller.signal });
       if (response.ok) {
         const data = await response.json();
         const leadsArray = Array.isArray(data)
@@ -180,11 +182,14 @@ function ClinicalDashboardPageContent() {
             ? data.leads
             : [];
         setLeads(leadsArray);
+      } else {
+        setLeads([]);
       }
     } catch (error) {
       console.error("Error fetching leads:", error);
       toast.error("Failed to load patients");
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }, []);
@@ -221,7 +226,18 @@ function ClinicalDashboardPageContent() {
       );
       if (response.ok) {
         const data = await response.json();
-        const latestChart = data.charts?.[0];
+        const charts = Array.isArray(data?.charts) ? data.charts : [];
+        const latestChart = charts.slice().sort((a: any, b: any) => {
+          const aTs =
+            new Date(
+              a?.updatedAt || a?.createdAt || a?.chartDate || 0,
+            ).getTime() || 0;
+          const bTs =
+            new Date(
+              b?.updatedAt || b?.createdAt || b?.chartDate || 0,
+            ).getTime() || 0;
+          return bTs - aTs;
+        })[0];
         setPeriodontalData(latestChart?.measurements || null);
       }
     } catch (error) {
@@ -357,8 +373,16 @@ function ClinicalDashboardPageContent() {
   }, [leads]);
 
   useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
+
+    // In some local dev states, session can stay in "loading" for a while.
+    // We still fetch leads so the dashboard never gets stuck on a permanent spinner.
     fetchLeads();
-  }, [fetchLeads]);
+  }, [fetchLeads, sessionStatus]);
 
   useEffect(() => {
     if (selectedLeadId) {
@@ -461,6 +485,18 @@ function ClinicalDashboardPageContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading clinical dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionStatus === "unauthenticated") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-gray-700 font-medium">
+            Please sign in to access the clinical dashboard.
+          </p>
         </div>
       </div>
     );

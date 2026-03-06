@@ -127,8 +127,8 @@ export function ExactArchOdontogram({
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
   const [hoveredTooth, setHoveredTooth] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
-  const toothScale = isExpanded ? 1.45 : 1;
-  const toothGapClass = isExpanded ? "gap-1.5" : "gap-0.5";
+  const toothScale = isExpanded ? 1.58 : 1.12;
+  const toothGapClass = isExpanded ? "gap-2" : "gap-1";
 
   const upperTeeth = Array.from({ length: 16 }, (_, i) => i + 1);
   const lowerTeeth = Array.from({ length: 16 }, (_, i) => i + 17);
@@ -362,7 +362,7 @@ export function ExactArchOdontogram({
       style={{
         background:
           "linear-gradient(135deg, #c8b4e0 0%, #b8a4d4 40%, #a898c8 100%)",
-        padding: isExpanded ? "24px 36px 18px" : "16px 28px 10px",
+        padding: isExpanded ? "26px 44px 20px" : "18px 30px 12px",
       }}
     >
       {/* Left arrow */}
