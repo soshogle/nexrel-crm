@@ -53,6 +53,7 @@ interface PerioMetrics {
 interface PerioAiSidePanelProps {
   leadId?: string;
   measurements?: Record<string, any>;
+  selectedXrayId?: string;
   onToothClick?: (tooth: number) => void;
 }
 
@@ -101,11 +102,16 @@ function sevColor(sev: string) {
 export function PerioAiSidePanel({
   leadId,
   measurements,
+  selectedXrayId,
   onToothClick,
 }: PerioAiSidePanelProps) {
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [metrics, setMetrics] = useState<PerioMetrics | null>(null);
   const [xrayAvailable, setXrayAvailable] = useState(false);
+  const [odontogramAvailable, setOdontogramAvailable] = useState(false);
+  const [selectedXrayUsed, setSelectedXrayUsed] = useState(false);
+  const [selectedXrayAutoAnalyzed, setSelectedXrayAutoAnalyzed] =
+    useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<
@@ -124,6 +130,9 @@ export function PerioAiSidePanel({
     setAnalysis(null);
     setMetrics(null);
     setXrayAvailable(false);
+    setOdontogramAvailable(false);
+    setSelectedXrayUsed(false);
+    setSelectedXrayAutoAnalyzed(false);
     setError(null);
   }, [leadId]);
 
@@ -138,7 +147,7 @@ export function PerioAiSidePanel({
       const res = await fetch("/api/dental/periodontal/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, measurements }),
+        body: JSON.stringify({ leadId, measurements, selectedXrayId }),
       });
       const data = await res.json();
       if (!res.ok || !data.success)
@@ -146,12 +155,15 @@ export function PerioAiSidePanel({
       setAnalysis(data.analysis);
       setMetrics(data.metrics);
       setXrayAvailable(data.xrayDataAvailable);
+      setOdontogramAvailable(!!data.odontogramDataAvailable);
+      setSelectedXrayUsed(!!data.selectedXrayUsed);
+      setSelectedXrayAutoAnalyzed(!!data.selectedXrayAutoAnalyzed);
     } catch (e: any) {
       setError(e.message || "Failed to run analysis");
     } finally {
       setLoading(false);
     }
-  }, [leadId, measurements]);
+  }, [leadId, measurements, selectedXrayId]);
 
   const s: React.CSSProperties = {
     fontFamily: "system-ui, sans-serif",
@@ -392,26 +404,86 @@ export function PerioAiSidePanel({
         {analysis.summary}
       </p>
 
-      {/* X-ray badge */}
-      {xrayAvailable && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "4px 10px",
-            borderRadius: 6,
-            marginBottom: 12,
-            background: "rgba(99,102,241,0.08)",
-            border: "1px solid rgba(99,102,241,0.2)",
-          }}
-        >
-          <Activity size={9} color="#818cf8" />
-          <span
-            style={{ fontSize: 8, color: "#818cf8", fontFamily: "monospace" }}
-          >
-            X-ray findings integrated into this analysis
-          </span>
+      {/* Data source badges */}
+      {(xrayAvailable || odontogramAvailable || selectedXrayAutoAnalyzed) && (
+        <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+          {xrayAvailable && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: "rgba(99,102,241,0.08)",
+                border: "1px solid rgba(99,102,241,0.2)",
+              }}
+            >
+              <Activity size={9} color="#818cf8" />
+              <span
+                style={{
+                  fontSize: 8,
+                  color: "#818cf8",
+                  fontFamily: "monospace",
+                }}
+              >
+                {selectedXrayUsed
+                  ? "Selected X-ray findings integrated"
+                  : "X-ray findings integrated into this analysis"}
+              </span>
+            </div>
+          )}
+
+          {selectedXrayAutoAnalyzed && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: "rgba(16,185,129,0.10)",
+                border: "1px solid rgba(16,185,129,0.25)",
+              }}
+            >
+              <RefreshCw size={9} color="#34d399" />
+              <span
+                style={{
+                  fontSize: 8,
+                  color: "#34d399",
+                  fontFamily: "monospace",
+                }}
+              >
+                Selected X-ray had no AI result, so it was analyzed
+                automatically
+              </span>
+            </div>
+          )}
+
+          {odontogramAvailable && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: "rgba(245,158,11,0.10)",
+                border: "1px solid rgba(245,158,11,0.28)",
+              }}
+            >
+              <Sparkles size={9} color="#f59e0b" />
+              <span
+                style={{
+                  fontSize: 8,
+                  color: "#f59e0b",
+                  fontFamily: "monospace",
+                }}
+              >
+                Odontogram findings integrated into this analysis
+              </span>
+            </div>
+          )}
         </div>
       )}
 

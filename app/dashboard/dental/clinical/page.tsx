@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useClinic, ClinicProvider } from "@/lib/dental/clinic-context";
 import { SharedDashboardLayout } from "@/components/dental/shared-dashboard-layout";
@@ -155,6 +155,11 @@ function ClinicalDashboardPageContent() {
   const [procedures, setProcedures] = useState<any[]>([]);
   const [xrays, setXrays] = useState<any[]>([]);
   const [selectedXray, setSelectedXray] = useState<any | null>(null);
+  const [autoAnalyzingXrayId, setAutoAnalyzingXrayId] = useState<string | null>(
+    null,
+  );
+  const xrayAutoAnalyzeInFlightRef = useRef<Set<string>>(new Set());
+  const xrayAutoAnalyzeAttemptedRef = useRef<Set<string>>(new Set());
   const [stats, setStats] = useState({
     totalPatients: 0,
     todayAppointments: 0,
@@ -325,17 +330,79 @@ function ClinicalDashboardPageContent() {
       }
 
       setXrays(xraysArray);
-      if (xraysArray.length > 0) {
-        setSelectedXray(xraysArray[0]);
-      } else {
-        setSelectedXray(null);
-      }
+      setSelectedXray((prev: any) => {
+        if (!xraysArray.length) return null;
+        if (prev?.id) {
+          const same = xraysArray.find((x: any) => x.id === prev.id);
+          if (same) return same;
+        }
+        return xraysArray[0];
+      });
     } catch (error) {
       console.error("Error fetching X-rays:", error);
       setXrays([]);
       setSelectedXray(null);
     }
   }, [selectedLeadId, activeClinic?.id]);
+
+  useEffect(() => {
+    if (!selectedXray?.id) {
+      setAutoAnalyzingXrayId(null);
+      return;
+    }
+
+    const hasSavedAnalysis =
+      !!selectedXray.aiAnalysis &&
+      typeof selectedXray.aiAnalysis === "object" &&
+      Object.keys(selectedXray.aiAnalysis).length > 0;
+
+    if (hasSavedAnalysis) {
+      setAutoAnalyzingXrayId((current) =>
+        current === selectedXray.id ? null : current,
+      );
+      return;
+    }
+
+    if (xrayAutoAnalyzeInFlightRef.current.has(selectedXray.id)) return;
+    if (xrayAutoAnalyzeAttemptedRef.current.has(selectedXray.id)) return;
+
+    xrayAutoAnalyzeInFlightRef.current.add(selectedXray.id);
+    xrayAutoAnalyzeAttemptedRef.current.add(selectedXray.id);
+    setAutoAnalyzingXrayId(selectedXray.id);
+
+    let isCancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/dental/xrays/${selectedXray.id}/analyze`,
+          {
+            method: "POST",
+          },
+        );
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error?.error || "Failed to auto-analyze X-ray");
+        }
+
+        await fetchXrays();
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to auto-analyze selected X-ray");
+      } finally {
+        xrayAutoAnalyzeInFlightRef.current.delete(selectedXray.id);
+        if (!isCancelled) {
+          setAutoAnalyzingXrayId((current) =>
+            current === selectedXray.id ? null : current,
+          );
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedXray, fetchXrays]);
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -686,6 +753,10 @@ function ClinicalDashboardPageContent() {
               <CustomXRayAnalysis
                 xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)}
                 toothData={odontogramData}
+                isAnalyzing={
+                  autoAnalyzingXrayId ===
+                  (selectedXray?.id || (xrays.length > 0 ? xrays[0]?.id : null))
+                }
               />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">

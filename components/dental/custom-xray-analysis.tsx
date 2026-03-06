@@ -14,6 +14,7 @@ import { ImageOff, Loader2 } from "lucide-react";
 interface XRayAnalysisProps {
   xrayData?: any;
   toothData?: Record<string, { condition?: string; treatment?: string }>;
+  isAnalyzing?: boolean;
 }
 
 const EMPTY_FINDINGS = {
@@ -36,65 +37,26 @@ function deriveFindings(
 } {
   const defaults = {
     restorations: [] as string[],
-    boneLevel: "Normal — No bone loss",
-    periapical: "No pathology detected",
-    boneDensity: "92% (Healthy)",
+    boneLevel: "",
+    periapical: "",
+    boneDensity: "",
     summary: [] as string[],
   };
 
   const ai = xrayData?.aiAnalysis;
-  if (ai && typeof ai === "object") {
-    if (Array.isArray(ai.findings)) {
-      defaults.summary = ai.findings;
-    } else if (typeof ai.findings === "string" && ai.findings.length > 0) {
-      defaults.summary = ai.findings
-        .split("\n")
-        .filter((l: string) => l.trim());
-    }
-    if (ai.boneLevel) defaults.boneLevel = ai.boneLevel;
-    if (ai.periapical) defaults.periapical = ai.periapical;
-    if (ai.boneDensity) defaults.boneDensity = ai.boneDensity;
+  if (!ai || typeof ai !== "object") {
+    return EMPTY_FINDINGS;
   }
 
-  const src = toothData || xrayData?.toothData;
-  if (src && typeof src === "object") {
-    for (const [num, info] of Object.entries(src)) {
-      if (!info || typeof info !== "object") continue;
-      const cond = (info as any).condition;
-      const treat = (info as any).treatment;
-      if (cond === "filling") {
-        defaults.restorations.push(
-          `Tooth #${num}: Existing composite restoration — intact, no secondary caries`,
-        );
-      } else if (cond === "crown") {
-        defaults.restorations.push(`Tooth #${num}: Crown — margins intact`);
-      } else if (cond === "caries") {
-        defaults.restorations.push(
-          `Tooth #${num}: Caries detected — ${treat || "treatment recommended"}`,
-        );
-      } else if (cond === "root_canal") {
-        defaults.restorations.push(
-          `Tooth #${num}: Root canal therapy — periapical status WNL`,
-        );
-      } else if (cond === "implant") {
-        defaults.restorations.push(
-          `Tooth #${num}: Implant — osseointegration stable`,
-        );
-      } else if (cond === "missing" || cond === "extraction") {
-        defaults.restorations.push(
-          `Tooth #${num}: ${cond === "missing" ? "Missing" : "Extracted"}`,
-        );
-      }
-    }
+  if (Array.isArray(ai.findings)) {
+    defaults.summary = ai.findings.filter((l: string) => typeof l === "string");
+  } else if (typeof ai.findings === "string" && ai.findings.length > 0) {
+    defaults.summary = ai.findings.split("\n").filter((l: string) => l.trim());
   }
 
-  if (defaults.summary.length === 0 && defaults.restorations.length > 0) {
-    defaults.summary = [
-      ...defaults.restorations,
-      `Periodontal: ${defaults.boneLevel.includes("Normal") ? "Bone levels within normal limits, no attachment loss" : defaults.boneLevel}`,
-      "Overall: No pathology detected — routine follow-up recommended",
-    ];
-  }
+  if (typeof ai.boneLevel === "string") defaults.boneLevel = ai.boneLevel;
+  if (typeof ai.periapical === "string") defaults.periapical = ai.periapical;
+  if (typeof ai.boneDensity === "string") defaults.boneDensity = ai.boneDensity;
 
   return defaults;
 }
@@ -110,7 +72,11 @@ function resolveImageUrl(xrayData: any): string | null {
   );
 }
 
-export function CustomXRayAnalysis({ xrayData, toothData }: XRayAnalysisProps) {
+export function CustomXRayAnalysis({
+  xrayData,
+  toothData,
+  isAnalyzing = false,
+}: XRayAnalysisProps) {
   const imageUrl = useMemo(() => resolveImageUrl(xrayData), [xrayData]);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -180,43 +146,52 @@ export function CustomXRayAnalysis({ xrayData, toothData }: XRayAnalysisProps) {
           </>
         )}
 
-        {/* Diagnostic overlay badges — only when image is loaded or we have AI findings */}
-        {canShowAnalysis && (
-          <>
-            <div className="absolute top-1.5 right-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
-              <div className="text-[9px] font-medium text-gray-900">
-                Bone Level
-              </div>
-              <div
-                className={`text-[9px] font-semibold ${findings.boneLevel.includes("Normal") || findings.boneLevel.includes("Healthy") ? "text-green-600" : "text-amber-600"}`}
-              >
-                {findings.boneLevel}
-              </div>
-            </div>
+        {/* Diagnostic overlay badges — only when AI fields exist */}
+        {canShowAnalysis &&
+          (findings.boneLevel ||
+            findings.periapical ||
+            findings.boneDensity) && (
+            <>
+              {findings.boneLevel && (
+                <div className="absolute top-1.5 right-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
+                  <div className="text-[9px] font-medium text-gray-900">
+                    Bone Level
+                  </div>
+                  <div
+                    className={`text-[9px] font-semibold ${findings.boneLevel.includes("Normal") || findings.boneLevel.includes("Healthy") ? "text-green-600" : "text-amber-600"}`}
+                  >
+                    {findings.boneLevel}
+                  </div>
+                </div>
+              )}
 
-            <div className="absolute bottom-1.5 left-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
-              <div className="text-[9px] font-medium text-gray-900">
-                Periapical
-              </div>
-              <div
-                className={`text-[9px] ${findings.periapical.includes("No pathology") ? "text-green-600" : "text-amber-600"}`}
-              >
-                {findings.periapical}
-              </div>
-            </div>
+              {findings.periapical && (
+                <div className="absolute bottom-1.5 left-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
+                  <div className="text-[9px] font-medium text-gray-900">
+                    Periapical
+                  </div>
+                  <div
+                    className={`text-[9px] ${findings.periapical.includes("No pathology") ? "text-green-600" : "text-amber-600"}`}
+                  >
+                    {findings.periapical}
+                  </div>
+                </div>
+              )}
 
-            <div className="absolute bottom-1.5 right-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
-              <div className="text-[9px] font-medium text-gray-900">
-                Density
-              </div>
-              <div
-                className={`text-[9px] font-semibold ${findings.boneDensity.includes("Healthy") ? "text-green-600" : "text-amber-600"}`}
-              >
-                {findings.boneDensity}
-              </div>
-            </div>
-          </>
-        )}
+              {findings.boneDensity && (
+                <div className="absolute bottom-1.5 right-1.5 bg-white/90 border border-purple-300 rounded px-1.5 py-0.5 shadow-sm z-10">
+                  <div className="text-[9px] font-medium text-gray-900">
+                    Density
+                  </div>
+                  <div
+                    className={`text-[9px] font-semibold ${findings.boneDensity.includes("Healthy") ? "text-green-600" : "text-amber-600"}`}
+                  >
+                    {findings.boneDensity}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
       </div>
 
       {/* AI findings text */}
@@ -234,6 +209,35 @@ export function CustomXRayAnalysis({ xrayData, toothData }: XRayAnalysisProps) {
           )}
         </div>
       )}
+
+      {canShowAnalysis && !hasFindings && isAnalyzing && (
+        <div className="mt-2 text-xs text-indigo-600 font-medium">
+          Running AI analysis for this X-ray...
+        </div>
+      )}
+
+      {canShowAnalysis &&
+        !hasFindings &&
+        !isAnalyzing &&
+        !xrayData?.aiAnalysis && (
+          <div className="mt-2 text-xs text-gray-500">
+            No saved AI analysis yet for this X-ray.
+          </div>
+        )}
+
+      {canShowAnalysis && xrayData?.aiAnalysis?.recommendations && (
+        <div className="mt-2 text-xs text-gray-600 leading-snug">
+          <span className="font-medium text-gray-800">Recommendations:</span>{" "}
+          {xrayData.aiAnalysis.recommendations}
+        </div>
+      )}
+
+      {canShowAnalysis &&
+        typeof xrayData?.aiAnalysis?.confidence === "number" && (
+          <div className="mt-1 text-[11px] text-gray-500">
+            Confidence: {Math.round(xrayData.aiAnalysis.confidence * 100)}%
+          </div>
+        )}
 
       {/* Disclaimer for AI analysis */}
       {canShowAnalysis && xrayData?.aiAnalysis && (

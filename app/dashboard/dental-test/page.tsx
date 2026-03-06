@@ -66,6 +66,10 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
 
 export default function DentalTestPage() {
   const { data: session } = useSession();
+  const isDemoAccount =
+    String(session?.user?.email || "")
+      .toLowerCase()
+      .trim() === "orthodontist@nexrel.com";
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -442,6 +446,53 @@ export default function DentalTestPage() {
     }
   };
 
+  const handleCheckInSelectedPatient = async () => {
+    if (!selectedLeadId) {
+      toast.error("Please select a patient first");
+      return;
+    }
+
+    const leadAppointments = (Array.isArray(appointments) ? appointments : [])
+      .filter((apt: any) => apt?.leadId === selectedLeadId)
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.startTime || a.appointmentDate).getTime() -
+          new Date(b.startTime || b.appointmentDate).getTime(),
+      );
+
+    const targetAppointment = leadAppointments[0];
+    if (!targetAppointment?.id) {
+      toast.error("No appointment found for this patient today");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/appointments/${targetAppointment.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            metadata: {
+              checkedInAt: new Date().toISOString(),
+              checkedInFrom: "dental-management",
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error || "Failed to check in patient");
+      }
+
+      toast.success("Patient checked in");
+      await fetchStats();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to check in patient");
+    }
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -563,38 +614,42 @@ export default function DentalTestPage() {
               patient?.contactPerson || patient?.businessName || "Unknown",
             procedure: apt.title || apt.description || "Appointment",
             color: colors[idx] || "bg-gray-100 border-gray-300",
+            leadId: apt.leadId,
+            status: apt.status,
           };
         })
-      : [
-          {
-            chair: "Chair 1 - Ortho",
-            time: "9:00 AM - 10:00 AM",
-            patient: "Emily White",
-            procedure: "Ortho Adjustment",
-            color: "bg-green-100 border-green-300",
-          },
-          {
-            chair: "Chair 2 - Hygiene",
-            time: "10:30 AM - 11:30 AM",
-            patient: "Michael Brown",
-            procedure: "Prophylaxis",
-            color: "bg-teal-100 border-teal-300",
-          },
-          {
-            chair: "Chair 3 - Ortho",
-            time: "10:00 AM - 11:00 AM",
-            patient: "Emily White",
-            procedure: "Ortho Adjustment",
-            color: "bg-green-100 border-green-300",
-          },
-          {
-            chair: "Chair 4 - Restorative",
-            time: "10:30 AM - 11:30 AM",
-            patient: "Michael Brown",
-            procedure: "Prophylaxis",
-            color: "bg-teal-100 border-teal-300",
-          },
-        ];
+      : isDemoAccount
+        ? [
+            {
+              chair: "Chair 1 - Ortho",
+              time: "9:00 AM - 10:00 AM",
+              patient: "Emily White",
+              procedure: "Ortho Adjustment",
+              color: "bg-green-100 border-green-300",
+            },
+            {
+              chair: "Chair 2 - Hygiene",
+              time: "10:30 AM - 11:30 AM",
+              patient: "Michael Brown",
+              procedure: "Prophylaxis",
+              color: "bg-teal-100 border-teal-300",
+            },
+            {
+              chair: "Chair 3 - Ortho",
+              time: "10:00 AM - 11:00 AM",
+              patient: "Emily White",
+              procedure: "Ortho Adjustment",
+              color: "bg-green-100 border-green-300",
+            },
+            {
+              chair: "Chair 4 - Restorative",
+              time: "10:30 AM - 11:30 AM",
+              patient: "Michael Brown",
+              procedure: "Prophylaxis",
+              color: "bg-teal-100 border-teal-300",
+            },
+          ]
+        : [];
 
   return (
     <PanableCanvas>
@@ -687,6 +742,7 @@ export default function DentalTestPage() {
         displayFormResponses={displayFormResponses}
         displayClaims={displayClaims}
         displayMultiChairAppointments={displayMultiChairAppointments}
+        onCheckInCurrentPatient={handleCheckInSelectedPatient}
         onOpenModal={setOpenModal}
       />
 
@@ -710,6 +766,7 @@ export default function DentalTestPage() {
           <PerioAiSidePanel
             leadId={selectedLeadId ?? undefined}
             measurements={periodontalData ?? undefined}
+            selectedXrayId={selectedXray?.id}
           />
         </div>
       </div>
@@ -727,6 +784,7 @@ export default function DentalTestPage() {
         displayFormResponses={displayFormResponses}
         displayClaims={displayClaims}
         displayMultiChairAppointments={displayMultiChairAppointments}
+        onCheckInCurrentPatient={handleCheckInSelectedPatient}
         onSaveOdontogram={handleSaveOdontogram}
         onSavePeriodontalChart={handleSavePeriodontalChart}
         onTreatmentPlanSaved={async () => {
