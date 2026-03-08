@@ -57,7 +57,9 @@
     "backfill-deploy-hooks": "tsx scripts/backfill-deploy-hooks.ts",
     "publish:templates": "tsx scripts/publish-templates-to-github.ts",
     "phase4a:eyal-secret": "tsx scripts/phase4a-eyal-website-secret.ts",
-    "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts"
+    "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts",
+    "audit:dal": "tsx scripts/guardrails/audit-dal-routing.ts",
+    "audit:dal:strict": "tsx scripts/guardrails/audit-dal-routing.ts --strict"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"
@@ -146,8 +148,6 @@
     "@types/pg": "^8.16.0",
     "@types/plotly.js": "2.35.5",
     "@types/react-plotly.js": "2.6.3",
-    "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.36.2",
     "@vercel/blob": "^2.2.0",
     "@vercel/functions": "^3.4.2",
     "apify-client": "^2.22.1",
