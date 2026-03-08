@@ -1,20 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { sendSMS } from '@/lib/twilio';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { sendSMS } from "@/lib/twilio";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-function personalizeContent(content: string, vars: Record<string, string>): string {
-  if (!content) return '';
+function personalizeContent(
+  content: string,
+  vars: Record<string, string>,
+): string {
+  if (!content) return "";
   let result = content;
   for (const [key, value] of Object.entries(vars)) {
-    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
-    const singlePattern = new RegExp(`\\{${key}\\}`, 'gi');
+    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, "gi");
+    const singlePattern = new RegExp(`\\{${key}\\}`, "gi");
     result = result.replace(doublePattern, value).replace(singlePattern, value);
   }
   return result;
@@ -22,7 +26,7 @@ function personalizeContent(content: string, vars: Record<string, string>): stri
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,28 +34,41 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
-    const campaign = await prisma.smsCampaign.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const campaign = await db.smsCampaign.findUnique({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         recipients: {
-          where: { status: 'PENDING' },
+          where: { status: "PENDING" },
           include: {
-            lead: { select: { contactPerson: true, businessName: true, phone: true, email: true } },
+            lead: {
+              select: {
+                contactPerson: true,
+                businessName: true,
+                phone: true,
+                email: true,
+              },
+            },
           },
         },
       },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id: params.id },
-      data: { status: 'SENDING', sentAt: new Date() },
+      data: { status: "SENDING", sentAt: new Date() },
     });
 
     let sentCount = 0;
@@ -60,35 +77,44 @@ export async function POST(
     for (const recipient of campaign.recipients) {
       const phone = recipient.recipientPhone || recipient.lead?.phone;
       if (!phone) {
-        await prisma.smsCampaignDeal.update({
+        await db.smsCampaignDeal.update({
           where: { id: recipient.id },
-          data: { status: 'FAILED' },
+          data: { status: "FAILED" },
         });
         failCount++;
         continue;
       }
 
-      const name = recipient.recipientName || recipient.lead?.contactPerson || recipient.lead?.businessName || '';
-      const firstName = name.split(' ')[0] || '';
-      const lastName = name.split(' ').slice(1).join(' ') || '';
+      const name =
+        recipient.recipientName ||
+        recipient.lead?.contactPerson ||
+        recipient.lead?.businessName ||
+        "";
+      const firstName = name.split(" ")[0] || "";
+      const lastName = name.split(" ").slice(1).join(" ") || "";
 
       const vars = {
-        name, firstName, lastName,
+        name,
+        firstName,
+        lastName,
         contactPerson: name,
         businessName: recipient.lead?.businessName || name,
-        company: recipient.lead?.businessName || '',
-        email: recipient.lead?.email || '',
+        company: recipient.lead?.businessName || "",
+        email: recipient.lead?.email || "",
       };
 
-      const personalizedMessage = personalizeContent(campaign.message || '', vars);
+      const personalizedMessage = personalizeContent(
+        campaign.message || "",
+        vars,
+      );
 
       try {
         const result = await sendSMS(phone, personalizedMessage);
 
-        await prisma.smsCampaignDeal.update({
+        await db.smsCampaignDeal.update({
           where: { id: recipient.id },
           data: {
-            status: 'SENT',
+            status: "SENT",
             sentAt: new Date(),
             twilioSid: result?.sid || null,
           },
@@ -96,9 +122,9 @@ export async function POST(
         sentCount++;
       } catch (err) {
         console.error(`[SMS Campaign] Failed to send to ${phone}:`, err);
-        await prisma.smsCampaignDeal.update({
+        await db.smsCampaignDeal.update({
           where: { id: recipient.id },
-          data: { status: 'FAILED' },
+          data: { status: "FAILED" },
         });
         failCount++;
       }
@@ -108,17 +134,22 @@ export async function POST(
     }
 
     const totalSent = (campaign.totalSent || 0) + sentCount;
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id: params.id },
       data: {
-        status: 'SENT',
+        status: "SENT",
         sentAt: new Date(),
         totalSent,
-        totalRecipients: (campaign.totalRecipients || 0) + sentCount + failCount,
+        totalRecipients:
+          (campaign.totalRecipients || 0) + sentCount + failCount,
       },
     });
 
-    emitCRMEvent('campaign_sent', session.user.id, { entityId: params.id, entityType: 'SmsCampaign', data: { sentCount, failCount } });
+    emitCRMEvent("campaign_sent", ctx.userId, {
+      entityId: params.id,
+      entityType: "SmsCampaign",
+      data: { sentCount, failCount },
+    });
 
     return NextResponse.json({
       success: true,
@@ -127,7 +158,7 @@ export async function POST(
       message: `SMS campaign sent: ${sentCount} delivered, ${failCount} failed`,
     });
   } catch (error: unknown) {
-    console.error('Error sending SMS campaign:', error);
-    return apiErrors.internal('Failed to send campaign');
+    console.error("Error sending SMS campaign:", error);
+    return apiErrors.internal("Failed to send campaign");
   }
 }

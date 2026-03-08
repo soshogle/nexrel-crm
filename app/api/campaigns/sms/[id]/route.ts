@@ -1,17 +1,16 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,10 +18,16 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
-    const campaign = await prisma.smsCampaign.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const campaign = await db.smsCampaign.findUnique({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         recipients: {
@@ -39,19 +44,19 @@ export async function GET(
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
     return NextResponse.json(campaign);
   } catch (error: unknown) {
-    console.error('Error fetching campaign:', error);
-    return apiErrors.internal('Failed to fetch campaign');
+    console.error("Error fetching campaign:", error);
+    return apiErrors.internal("Failed to fetch campaign");
   }
 }
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -59,13 +64,19 @@ export async function PATCH(
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const body = await req.json();
     const { name, message, fromNumber, scheduledFor, status } = body;
 
-    const campaign = await prisma.smsCampaign.update({
+    const campaign = await db.smsCampaign.update({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       data: {
         name,
@@ -78,14 +89,14 @@ export async function PATCH(
 
     return NextResponse.json(campaign);
   } catch (error: unknown) {
-    console.error('Error updating campaign:', error);
-    return apiErrors.internal('Failed to update campaign');
+    console.error("Error updating campaign:", error);
+    return apiErrors.internal("Failed to update campaign");
   }
 }
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,16 +104,22 @@ export async function DELETE(
       return apiErrors.unauthorized();
     }
 
-    await prisma.smsCampaign.delete({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    await db.smsCampaign.delete({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    console.error('Error deleting campaign:', error);
-    return apiErrors.internal('Failed to delete campaign');
+    console.error("Error deleting campaign:", error);
+    return apiErrors.internal("Failed to delete campaign");
   }
 }
