@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { purchasePhoneNumber } from "@/lib/twilio-phone-numbers";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
 import { VOICE_AGENT_LIMIT } from "@/lib/voice-agent-templates";
 import { apiErrors } from "@/lib/api-error";
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const {
@@ -52,8 +59,8 @@ export async function POST(req: NextRequest) {
     // Auto-create VoiceAgent with industry-specific prompt when requested
     if (autoCreateAgent && result.phoneNumber) {
       try {
-        const user: any = await prisma.user.findUnique({
-          where: { id: session.user.id },
+        const user: any = await db.user.findUnique({
+          where: { id: ctx.userId },
           select: {
             businessName: true,
             industry: true,
@@ -66,8 +73,8 @@ export async function POST(req: NextRequest) {
 
         if (user) {
           const isSuperAdmin = user.role === "SUPER_ADMIN";
-          const existingCount = await (prisma as any).voiceAgent.count({
-            where: { userId: session.user.id },
+          const existingCount = await (db as any).voiceAgent.count({
+            where: { userId: ctx.userId },
           });
           if (!isSuperAdmin && existingCount >= VOICE_AGENT_LIMIT) {
             console.warn(
@@ -84,9 +91,9 @@ export async function POST(req: NextRequest) {
                 ? user.phone.trim()
                 : undefined;
 
-            const voiceAgent = await (prisma as any).voiceAgent.create({
+            const voiceAgent = await (db as any).voiceAgent.create({
               data: {
-                userId: session.user.id,
+                userId: ctx.userId,
                 name: `${businessName} Receptionist`,
                 businessName,
                 businessIndustry: industryLabel,
@@ -114,7 +121,7 @@ export async function POST(req: NextRequest) {
                 knowledgeBase: voiceAgent.knowledgeBase || undefined,
                 twilioPhoneNumber: result.phoneNumber,
                 twilioAccountId: result.twilioAccountId || undefined,
-                userId: session.user.id,
+                userId: ctx.userId,
                 voiceAgentId: voiceAgent.id,
                 language: user.language || "en",
               });
