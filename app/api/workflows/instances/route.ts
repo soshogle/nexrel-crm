@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/workflows/instances - List user's workflow instances
 export async function GET(request: NextRequest) {
@@ -15,18 +16,24 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const status = searchParams.get("status");
 
     const where: any = {
-      userId: session.user.id,
+      userId: ctx.userId,
     };
 
     if (status) {
       where.status = status;
     }
 
-    const instances = await prisma.aIWorkflowInstance.findMany({
+    const instances = await db.aIWorkflowInstance.findMany({
       where,
       include: {
         template: {
@@ -40,13 +47,15 @@ export async function GET(request: NextRequest) {
           select: { executions: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ success: true, instances });
   } catch (error: any) {
-    console.error('Error fetching workflow instances:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch workflow instances');
+    console.error("Error fetching workflow instances:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch workflow instances",
+    );
   }
 }
 
@@ -58,36 +67,42 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
     const { templateId, name, description, triggerType, triggerConfig } = body;
 
     if (!name || !triggerType) {
-      return apiErrors.badRequest('Missing required fields: name, triggerType');
+      return apiErrors.badRequest("Missing required fields: name, triggerType");
     }
 
     let definition: any = {};
     if (templateId) {
-      const template = await prisma.aIWorkflowTemplate.findUnique({
+      const template = await db.aIWorkflowTemplate.findUnique({
         where: { id: templateId },
       });
 
       if (!template) {
-        return apiErrors.notFound('Template not found');
+        return apiErrors.notFound("Template not found");
       }
 
       definition = template.workflowDefinition;
     }
 
-    const instance = await prisma.aIWorkflowInstance.create({
+    const instance = await db.aIWorkflowInstance.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         templateId: templateId || undefined,
         name,
         description,
         definition,
         triggerType,
         triggerConfig: triggerConfig || {},
-        status: 'DRAFT',
+        status: "DRAFT",
       },
       include: {
         template: true,
@@ -96,7 +111,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, instance });
   } catch (error: any) {
-    console.error('Error creating workflow instance:', error);
-    return apiErrors.internal(error.message || 'Failed to create workflow instance');
+    console.error("Error creating workflow instance:", error);
+    return apiErrors.internal(
+      error.message || "Failed to create workflow instance",
+    );
   }
 }

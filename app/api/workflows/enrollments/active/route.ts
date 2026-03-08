@@ -3,14 +3,15 @@
  * Returns all active enrollments across all workflows for monitoring
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,19 +20,25 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const statusParam = searchParams.get('status') || 'all';
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const statusParam = searchParams.get("status") || "all";
 
     // Build where: 'all' = no status filter (for Monitor Jobs)
     const whereClause: { workflow: { userId: string }; status?: any } = {
-      workflow: { userId: session.user.id },
+      workflow: { userId: ctx.userId },
     };
-    if (statusParam !== 'all') {
+    if (statusParam !== "all") {
       whereClause.status = statusParam as any;
     }
 
-    const enrollments = await prisma.workflowTemplateEnrollment.findMany({
+    const enrollments = await db.workflowTemplateEnrollment.findMany({
       where: whereClause,
       include: {
         workflow: {
@@ -53,14 +60,14 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        nextSendAt: 'asc', // Show next actions first
+        nextSendAt: "asc", // Show next actions first
       },
       take: limit,
     });
 
     return NextResponse.json({
       success: true,
-      enrollments: enrollments.map(e => ({
+      enrollments: enrollments.map((e) => ({
         id: e.id,
         workflowId: e.workflowId,
         workflowName: e.workflow.name,
@@ -76,7 +83,7 @@ export async function GET(request: NextRequest) {
       total: enrollments.length,
     });
   } catch (error) {
-    console.error('Error fetching active enrollments:', error);
-    return apiErrors.internal('Failed to fetch enrollments');
+    console.error("Error fetching active enrollments:", error);
+    return apiErrors.internal("Failed to fetch enrollments");
   }
 }
