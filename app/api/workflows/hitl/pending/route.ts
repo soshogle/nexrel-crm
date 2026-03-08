@@ -3,16 +3,17 @@
  * Aggregates pending HITL approvals from Real Estate and generic workflow engines
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { RE_AGENT_NAMES } from '@/lib/real-estate/workflow-templates';
-import { REAIEmployeeType } from '@prisma/client';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { RE_AGENT_NAMES } from "@/lib/real-estate/workflow-templates";
+import { REAIEmployeeType } from "@prisma/client";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,22 +22,28 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const userId = session.user.id;
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const userId = ctx.userId;
 
     // ─── Real Estate: notifications + task executions ─────────────────────
     let reNotifications: any[] = [];
     let reAwaitingApproval: any[] = [];
     try {
       const [notifs, execs] = await Promise.all([
-        prisma.rEHITLNotification.findMany({
+        db.rEHITLNotification.findMany({
           where: { userId, isActioned: false },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 50,
         }),
-        prisma.rETaskExecution.findMany({
+        db.rETaskExecution.findMany({
           where: {
             instance: { userId },
-            status: 'AWAITING_HITL',
+            status: "AWAITING_HITL",
           },
           include: {
             task: {
@@ -52,19 +59,27 @@ export async function GET(request: NextRequest) {
             instance: {
               include: {
                 template: { select: { id: true, name: true, type: true } },
-                lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } },
+                lead: {
+                  select: {
+                    id: true,
+                    businessName: true,
+                    contactPerson: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
                 deal: { select: { id: true, title: true } },
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 50,
         }),
       ]);
       reNotifications = notifs;
       reAwaitingApproval = execs;
     } catch (reErr: any) {
-      console.error('[HITL Pending] RE fetch error:', reErr);
+      console.error("[HITL Pending] RE fetch error:", reErr);
     }
 
     // Enrich RE notifications with execution data
@@ -73,10 +88,12 @@ export async function GET(request: NextRequest) {
       reExecutionMap.set(exec.id, exec);
     }
     const enrichedReNotifications = reNotifications.map((notif: any) => {
-      const execution = notif.executionId ? reExecutionMap.get(notif.executionId) : null;
+      const execution = notif.executionId
+        ? reExecutionMap.get(notif.executionId)
+        : null;
       return {
         ...notif,
-        source: 'real_estate' as const,
+        source: "real_estate" as const,
         taskExecution: execution
           ? {
               id: execution.id,
@@ -95,13 +112,16 @@ export async function GET(request: NextRequest) {
     });
 
     const enrichedReApprovals = reAwaitingApproval.map(
-      (execution: { task: { assignedAgentType: REAIEmployeeType | null }; [key: string]: unknown }) => ({
+      (execution: {
+        task: { assignedAgentType: REAIEmployeeType | null };
+        [key: string]: unknown;
+      }) => ({
         ...execution,
-        source: 'real_estate' as const,
+        source: "real_estate" as const,
         agentName: execution.task?.assignedAgentType
           ? RE_AGENT_NAMES[execution.task.assignedAgentType as REAIEmployeeType]
-          : 'System',
-      })
+          : "System",
+      }),
     );
 
     // ─── Generic (multi-industry): HITLNotification + TaskExecution ─────────
@@ -109,15 +129,15 @@ export async function GET(request: NextRequest) {
     let genericAwaitingApproval: any[] = [];
     try {
       const [notifs, execs] = await Promise.all([
-        prisma.hITLNotification.findMany({
+        db.hITLNotification.findMany({
           where: { userId, isActioned: false },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 50,
         }),
-        prisma.taskExecution.findMany({
+        db.taskExecution.findMany({
           where: {
             instance: { userId },
-            status: 'AWAITING_HITL',
+            status: "AWAITING_HITL",
           },
           include: {
             task: {
@@ -133,56 +153,76 @@ export async function GET(request: NextRequest) {
             instance: {
               include: {
                 template: { select: { id: true, name: true, industry: true } },
-                lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } },
+                lead: {
+                  select: {
+                    id: true,
+                    businessName: true,
+                    contactPerson: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
                 deal: { select: { id: true, title: true } },
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 50,
         }),
       ]);
       genericNotifications = notifs;
       genericAwaitingApproval = execs;
     } catch (genErr: any) {
-      console.error('[HITL Pending] Generic fetch error:', genErr);
+      console.error("[HITL Pending] Generic fetch error:", genErr);
     }
 
     const genericExecutionMap = new Map<string, any>();
     for (const exec of genericAwaitingApproval) {
       genericExecutionMap.set(exec.id, exec);
     }
-    const enrichedGenericNotifications = genericNotifications.map((notif: any) => {
-      const execution = notif.executionId ? genericExecutionMap.get(notif.executionId) : null;
-      return {
-        ...notif,
-        source: 'generic' as const,
-        taskExecution: execution
-          ? {
-              id: execution.id,
-              task: execution.task || null,
-              workflowInstance: execution.instance
-                ? {
-                    id: execution.instance.id,
-                    workflow: execution.instance.template || null,
-                    lead: execution.instance.lead || null,
-                    deal: execution.instance.deal || null,
-                  }
-                : null,
-            }
-          : null,
-      };
-    });
+    const enrichedGenericNotifications = genericNotifications.map(
+      (notif: any) => {
+        const execution = notif.executionId
+          ? genericExecutionMap.get(notif.executionId)
+          : null;
+        return {
+          ...notif,
+          source: "generic" as const,
+          taskExecution: execution
+            ? {
+                id: execution.id,
+                task: execution.task || null,
+                workflowInstance: execution.instance
+                  ? {
+                      id: execution.instance.id,
+                      workflow: execution.instance.template || null,
+                      lead: execution.instance.lead || null,
+                      deal: execution.instance.deal || null,
+                    }
+                  : null,
+              }
+            : null,
+        };
+      },
+    );
 
-    const enrichedGenericApprovals = genericAwaitingApproval.map((execution: any) => ({
-      ...execution,
-      source: 'generic' as const,
-      agentName: 'System',
-    }));
+    const enrichedGenericApprovals = genericAwaitingApproval.map(
+      (execution: any) => ({
+        ...execution,
+        source: "generic" as const,
+        agentName: "System",
+      }),
+    );
 
     // ─── Merge and return ──────────────────────────────────────────────────
-    const notifications = [...enrichedReNotifications, ...enrichedGenericNotifications];
-    const pendingApprovals = [...enrichedReApprovals, ...enrichedGenericApprovals];
+    const notifications = [
+      ...enrichedReNotifications,
+      ...enrichedGenericNotifications,
+    ];
+    const pendingApprovals = [
+      ...enrichedReApprovals,
+      ...enrichedGenericApprovals,
+    ];
     const totalPending = pendingApprovals.length;
 
     return NextResponse.json({
@@ -192,13 +232,14 @@ export async function GET(request: NextRequest) {
       totalPending,
     });
   } catch (error: any) {
-    console.error('[HITL Pending] Error:', error);
+    console.error("[HITL Pending] Error:", error);
     return NextResponse.json({
       success: true,
       notifications: [],
       pendingApprovals: [],
       totalPending: 0,
-      error: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" ? error?.message : undefined,
     });
   }
 }
