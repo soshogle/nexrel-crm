@@ -1,44 +1,35 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { getCrmDb } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 
 // GET /api/pipelines - Get all pipelines with stages and deals
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
     const ctx = getDalContextFromSession(session);
-    let db = ctx ? getCrmDb(ctx) : prisma;
-    // Use ctx.userId when available so pipeline/deal queries match (deal creation uses ctx.userId)
-    const userId = ctx?.userId ?? user.id;
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+    const userId = ctx.userId;
 
     const pagination = parsePagination(request);
 
     const pipelineInclude = {
       stages: {
-        orderBy: { displayOrder: 'asc' as const },
+        orderBy: { displayOrder: "asc" as const },
         include: {
           deals: {
             include: {
@@ -59,37 +50,37 @@ export async function GET(request: NextRequest) {
                 },
               },
             },
-            orderBy: { createdAt: 'desc' as const },
+            orderBy: { createdAt: "desc" as const },
           },
         },
       },
     };
 
-    const fetchPipelines = async (client: typeof prisma) => {
+    const fetchPipelines = async (client: ReturnType<typeof getCrmDb>) => {
       let pipelines = await client.pipeline.findMany({
         where: { userId },
         include: pipelineInclude,
         take: pagination.take,
         skip: pagination.skip,
-        orderBy: { createdAt: 'asc' as const },
+        orderBy: { createdAt: "asc" as const },
       });
 
       // Create default pipeline if none exists
       if (pipelines.length === 0) {
         const defaultPipeline = await client.pipeline.create({
           data: {
-            name: 'Default Pipeline',
-            description: 'Your default sales pipeline',
+            name: "Default Pipeline",
+            description: "Your default sales pipeline",
             userId,
             isDefault: true,
             stages: {
               create: [
-                { name: 'New Lead', displayOrder: 0, probability: 10 },
-                { name: 'Contacted', displayOrder: 1, probability: 25 },
-                { name: 'Qualified', displayOrder: 2, probability: 50 },
-                { name: 'Proposal Sent', displayOrder: 3, probability: 75 },
-                { name: 'Negotiation', displayOrder: 4, probability: 90 },
-                { name: 'Closed Won', displayOrder: 5, probability: 100 },
+                { name: "New Lead", displayOrder: 0, probability: 10 },
+                { name: "Contacted", displayOrder: 1, probability: 25 },
+                { name: "Qualified", displayOrder: 2, probability: 50 },
+                { name: "Proposal Sent", displayOrder: 3, probability: 75 },
+                { name: "Negotiation", displayOrder: 4, probability: 90 },
+                { name: "Closed Won", displayOrder: 5, probability: 100 },
               ],
             },
           },
@@ -100,27 +91,16 @@ export async function GET(request: NextRequest) {
       return pipelines;
     };
 
-    let pipelines;
-    try {
-      pipelines = await fetchPipelines(db);
-    } catch (dbError) {
-      if (db !== prisma) {
-        console.warn('[Pipelines] Industry DB failed, falling back to main DB:', (dbError as Error)?.message);
-        db = prisma;
-        pipelines = await fetchPipelines(prisma);
-      } else {
-        throw dbError;
-      }
-    }
+    const pipelines = await fetchPipelines(db);
 
     // Parse tags from JSON strings (safely - empty string or invalid JSON would crash)
-    const pipelinesWithParsedTags = pipelines.map(pipeline => ({
+    const pipelinesWithParsedTags = pipelines.map((pipeline) => ({
       ...pipeline,
-      stages: pipeline.stages.map(stage => ({
+      stages: pipeline.stages.map((stage) => ({
         ...stage,
-        deals: stage.deals.map(deal => {
+        deals: stage.deals.map((deal) => {
           let tags: string[] = [];
-          if (deal.tags && typeof deal.tags === 'string' && deal.tags.trim()) {
+          if (deal.tags && typeof deal.tags === "string" && deal.tags.trim()) {
             try {
               const parsed = JSON.parse(deal.tags);
               tags = Array.isArray(parsed) ? parsed : [];
@@ -134,10 +114,15 @@ export async function GET(request: NextRequest) {
     }));
 
     const total = await db.pipeline.count({ where: { userId } });
-    return paginatedResponse(pipelinesWithParsedTags, total, pagination, 'pipelines');
+    return paginatedResponse(
+      pipelinesWithParsedTags,
+      total,
+      pagination,
+      "pipelines",
+    );
   } catch (error) {
-    console.error('Error fetching pipelines:', error);
-    return apiErrors.internal('Failed to fetch pipelines');
+    console.error("Error fetching pipelines:", error);
+    return apiErrors.internal("Failed to fetch pipelines");
   }
 }
 
@@ -145,75 +130,49 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json().catch(() => ({}));
     const { name, description, color, stages } = body || {};
 
     const ctx = getDalContextFromSession(session);
-    let db = ctx ? getCrmDb(ctx) : prisma;
-
-    try {
-      const pipeline = await db.pipeline.create({
-        data: {
-          name: name ?? 'New Pipeline',
-          description: description ?? null,
-          color: color ?? null,
-          userId: user.id,
-          stages: Array.isArray(stages) ? {
-            create: stages.map((stage: { name?: string; probability?: number }, index: number) => ({
-              name: stage?.name ?? `Stage ${index + 1}`,
-              displayOrder: index,
-              probability: stage?.probability ?? 0,
-            })),
-          } : undefined,
-        },
-        include: {
-          stages: {
-            orderBy: { displayOrder: 'asc' },
-          },
-        },
-      });
-      return NextResponse.json(pipeline);
-    } catch (createError) {
-      if (db !== prisma) {
-        console.warn('[Pipelines POST] Industry DB failed, falling back to main DB:', (createError as Error)?.message);
-        const pipeline = await prisma.pipeline.create({
-          data: {
-            name: name ?? 'New Pipeline',
-            description: description ?? null,
-            color: color ?? null,
-            userId: user.id,
-            stages: Array.isArray(stages) ? {
-              create: stages.map((stage: { name?: string; probability?: number }, index: number) => ({
-                name: stage?.name ?? `Stage ${index + 1}`,
-                displayOrder: index,
-                probability: stage?.probability ?? 0,
-              })),
-            } : undefined,
-          },
-          include: {
-            stages: {
-              orderBy: { displayOrder: 'asc' },
-            },
-          },
-        });
-        return NextResponse.json(pipeline);
-      }
-      throw createError;
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
+
+    const pipeline = await db.pipeline.create({
+      data: {
+        name: name ?? "New Pipeline",
+        description: description ?? null,
+        color: color ?? null,
+        userId: ctx.userId,
+        stages: Array.isArray(stages)
+          ? {
+              create: stages.map(
+                (
+                  stage: { name?: string; probability?: number },
+                  index: number,
+                ) => ({
+                  name: stage?.name ?? `Stage ${index + 1}`,
+                  displayOrder: index,
+                  probability: stage?.probability ?? 0,
+                }),
+              ),
+            }
+          : undefined,
+      },
+      include: {
+        stages: {
+          orderBy: { displayOrder: "asc" },
+        },
+      },
+    });
+    return NextResponse.json(pipeline);
   } catch (error) {
-    console.error('Error creating pipeline:', error);
-    return apiErrors.internal('Failed to create pipeline');
+    console.error("Error creating pipeline:", error);
+    return apiErrors.internal("Failed to create pipeline");
   }
 }

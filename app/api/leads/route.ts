@@ -4,7 +4,6 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { leadService } from "@/lib/dal";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { detectLeadWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
@@ -123,26 +122,23 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger workflows on lead creation (RE and industry auto-run)
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true },
-    });
+    const industry = ctx.industry;
 
-    if (user?.industry === "REAL_ESTATE") {
+    if (industry === "REAL_ESTATE") {
       detectLeadWorkflowTriggers(session.user.id, lead.id).catch((err) => {
         console.error(
           "[RE Workflow] Failed to trigger workflow for lead:",
           err,
         );
       });
-    } else if (user?.industry) {
+    } else if (industry) {
       const { detectIndustryLeadWorkflowTriggers } = await import(
         "@/lib/industry-workflows/lead-triggers"
       );
       detectIndustryLeadWorkflowTriggers(
         session.user.id,
         lead.id,
-        user.industry,
+        industry,
       ).catch((err) => {
         console.error(
           "[Industry Workflow] Failed to trigger workflows for lead:",
