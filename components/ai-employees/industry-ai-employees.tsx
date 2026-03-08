@@ -34,6 +34,7 @@ import {
   Bot,
   Sparkles,
   RefreshCw,
+  Package,
   Mic,
   Award,
   Zap,
@@ -78,6 +79,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Target,
   UserPlus,
   Sparkles,
+  Package,
+  RefreshCw,
 };
 
 interface ProvisionedAgent {

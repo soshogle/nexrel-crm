@@ -3,7 +3,7 @@
  * Defines task types, AI agents, templates, and integrations for each industry
  */
 
-import { Industry } from '@prisma/client';
+import { Industry } from "@prisma/client";
 
 export interface IndustryTaskType {
   value: string;
@@ -32,7 +32,7 @@ export interface IndustryWorkflowTemplate {
     taskType: string;
     agentName?: string;
     delayValue: number;
-    delayUnit: 'MINUTES' | 'HOURS' | 'DAYS';
+    delayUnit: "MINUTES" | "HOURS" | "DAYS";
     isHITL: boolean;
     displayOrder: number;
   }>;
@@ -55,59 +55,223 @@ export interface IndustryConfig {
 // ==========================================
 
 export const MEDICAL_CONFIG: IndustryConfig = {
-  industry: 'MEDICAL',
+  industry: "MEDICAL",
   taskTypes: [
-    { value: 'LEAD_RESEARCH', label: 'Lead Research', icon: '🔍', color: '#3B82F6', description: 'Research lead information' },
-    { value: 'PATIENT_RESEARCH', label: 'Patient Research', icon: '👤', color: '#10B981', description: 'Research patient history and preferences' },
-    { value: 'APPOINTMENT_BOOKING', label: 'Appointment Booking', icon: '📅', color: '#8B5CF6', description: 'Schedule patient appointment' },
-    { value: 'APPOINTMENT_REMINDER', label: 'Appointment Reminder', icon: '⏰', color: '#F59E0B', description: 'Send appointment reminder' },
-    { value: 'PRESCRIPTION_REMINDER', label: 'Prescription Reminder', icon: '💊', color: '#EF4444', description: 'Remind patient about prescriptions' },
-    { value: 'TEST_RESULTS_NOTIFICATION', label: 'Test Results', icon: '📋', color: '#06B6D4', description: 'Notify patient of test results' },
-    { value: 'REFERRAL_COORDINATION', label: 'Referral Coordination', icon: '🔄', color: '#EC4899', description: 'Coordinate specialist referral' },
-    { value: 'FOLLOW_UP_CALL', label: 'Follow-up Call', icon: '📞', color: '#14B8A6', description: 'Follow-up with patient' },
-    { value: 'PATIENT_ONBOARDING', label: 'Patient Onboarding', icon: '🎯', color: '#6366F1', description: 'Onboard new patient' },
-    { value: 'POST_VISIT_FOLLOWUP', label: 'Post-Visit Follow-up', icon: '✅', color: '#84CC16', description: 'Follow up after visit' },
-    { value: 'INSURANCE_VERIFICATION', label: 'Insurance Verification', icon: '🛡️', color: '#F97316', description: 'Verify insurance coverage' },
-    { value: 'CUSTOM', label: 'Custom Task', icon: '⚙️', color: '#6B7280', description: 'Custom workflow task' },
+    {
+      value: "LEAD_RESEARCH",
+      label: "Lead Research",
+      icon: "🔍",
+      color: "#3B82F6",
+      description: "Research lead information",
+    },
+    {
+      value: "PATIENT_RESEARCH",
+      label: "Patient Research",
+      icon: "👤",
+      color: "#10B981",
+      description: "Research patient history and preferences",
+    },
+    {
+      value: "APPOINTMENT_BOOKING",
+      label: "Appointment Booking",
+      icon: "📅",
+      color: "#8B5CF6",
+      description: "Schedule patient appointment",
+    },
+    {
+      value: "APPOINTMENT_REMINDER",
+      label: "Appointment Reminder",
+      icon: "⏰",
+      color: "#F59E0B",
+      description: "Send appointment reminder",
+    },
+    {
+      value: "PRESCRIPTION_REMINDER",
+      label: "Prescription Reminder",
+      icon: "💊",
+      color: "#EF4444",
+      description: "Remind patient about prescriptions",
+    },
+    {
+      value: "TEST_RESULTS_NOTIFICATION",
+      label: "Test Results",
+      icon: "📋",
+      color: "#06B6D4",
+      description: "Notify patient of test results",
+    },
+    {
+      value: "REFERRAL_COORDINATION",
+      label: "Referral Coordination",
+      icon: "🔄",
+      color: "#EC4899",
+      description: "Coordinate specialist referral",
+    },
+    {
+      value: "FOLLOW_UP_CALL",
+      label: "Follow-up Call",
+      icon: "📞",
+      color: "#14B8A6",
+      description: "Follow-up with patient",
+    },
+    {
+      value: "PATIENT_ONBOARDING",
+      label: "Patient Onboarding",
+      icon: "🎯",
+      color: "#6366F1",
+      description: "Onboard new patient",
+    },
+    {
+      value: "POST_VISIT_FOLLOWUP",
+      label: "Post-Visit Follow-up",
+      icon: "✅",
+      color: "#84CC16",
+      description: "Follow up after visit",
+    },
+    {
+      value: "INSURANCE_VERIFICATION",
+      label: "Insurance Verification",
+      icon: "🛡️",
+      color: "#F97316",
+      description: "Verify insurance coverage",
+    },
+    {
+      value: "CUSTOM",
+      label: "Custom Task",
+      icon: "⚙️",
+      color: "#6B7280",
+      description: "Custom workflow task",
+    },
   ],
   aiAgents: [
-    { id: 'appointment_scheduler', name: 'Sarah', role: 'Appointment Scheduler', color: '#FF6B6B', description: 'Handles appointment booking and scheduling' },
-    { id: 'patient_coordinator', name: 'Michael', role: 'Patient Coordinator', color: '#4ECDC4', description: 'Manages patient communication and coordination' },
-    { id: 'referral_specialist', name: 'Jessica', role: 'Referral Specialist', color: '#45B7D1', description: 'Coordinates specialist referrals' },
-    { id: 'prescription_manager', name: 'Alex', role: 'Prescription Manager', color: '#96CEB4', description: 'Manages prescription reminders and refills' },
-    { id: 'insurance_verifier', name: 'Emma', role: 'Insurance Verifier', color: '#FFEAA7', description: 'Verifies insurance coverage' },
-    { id: 'follow_up_coordinator', name: 'David', role: 'Follow-up Coordinator', color: '#DDA0DD', description: 'Coordinates post-visit follow-ups' },
+    {
+      id: "appointment_scheduler",
+      name: "Sarah",
+      role: "Appointment Scheduler",
+      color: "#FF6B6B",
+      description: "Handles appointment booking and scheduling",
+    },
+    {
+      id: "patient_coordinator",
+      name: "Michael",
+      role: "Patient Coordinator",
+      color: "#4ECDC4",
+      description: "Manages patient communication and coordination",
+    },
+    {
+      id: "referral_specialist",
+      name: "Jessica",
+      role: "Referral Specialist",
+      color: "#45B7D1",
+      description: "Coordinates specialist referrals",
+    },
+    {
+      id: "prescription_manager",
+      name: "Alex",
+      role: "Prescription Manager",
+      color: "#96CEB4",
+      description: "Manages prescription reminders and refills",
+    },
+    {
+      id: "insurance_verifier",
+      name: "Emma",
+      role: "Insurance Verifier",
+      color: "#FFEAA7",
+      description: "Verifies insurance coverage",
+    },
+    {
+      id: "follow_up_coordinator",
+      name: "David",
+      role: "Follow-up Coordinator",
+      color: "#DDA0DD",
+      description: "Coordinates post-visit follow-ups",
+    },
   ],
   templates: [
     {
-      id: 'patient-onboarding',
-      name: 'Patient Onboarding',
-      description: 'Complete patient onboarding workflow',
-      workflowType: 'PATIENT_ONBOARDING',
+      id: "patient-onboarding",
+      name: "Patient Onboarding",
+      description: "Complete patient onboarding workflow",
+      workflowType: "PATIENT_ONBOARDING",
       tasks: [
-        { name: 'Research Patient', taskType: 'PATIENT_RESEARCH', description: 'Research patient history', delayValue: 0, delayUnit: 'MINUTES', isHITL: false, displayOrder: 1 },
-        { name: 'Verify Insurance', taskType: 'INSURANCE_VERIFICATION', description: 'Verify insurance coverage', delayValue: 30, delayUnit: 'MINUTES', isHITL: true, displayOrder: 2 },
-        { name: 'Schedule Initial Appointment', taskType: 'APPOINTMENT_BOOKING', description: 'Book first appointment', delayValue: 1, delayUnit: 'HOURS', isHITL: false, displayOrder: 3 },
-        { name: 'Send Welcome Email', taskType: 'CUSTOM', description: 'Send welcome information', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 4 },
+        {
+          name: "Research Patient",
+          taskType: "PATIENT_RESEARCH",
+          description: "Research patient history",
+          delayValue: 0,
+          delayUnit: "MINUTES",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Verify Insurance",
+          taskType: "INSURANCE_VERIFICATION",
+          description: "Verify insurance coverage",
+          delayValue: 30,
+          delayUnit: "MINUTES",
+          isHITL: true,
+          displayOrder: 2,
+        },
+        {
+          name: "Schedule Initial Appointment",
+          taskType: "APPOINTMENT_BOOKING",
+          description: "Book first appointment",
+          delayValue: 1,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 3,
+        },
+        {
+          name: "Send Welcome Email",
+          taskType: "CUSTOM",
+          description: "Send welcome information",
+          delayValue: 2,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 4,
+        },
       ],
     },
     {
-      id: 'appointment-reminder',
-      name: 'Appointment Reminder Sequence',
-      description: 'Automated appointment reminders',
-      workflowType: 'APPOINTMENT_REMINDER_SEQUENCE',
+      id: "appointment-reminder",
+      name: "Appointment Reminder Sequence",
+      description: "Automated appointment reminders",
+      workflowType: "APPOINTMENT_REMINDER_SEQUENCE",
       tasks: [
-        { name: 'Send Reminder (3 days)', taskType: 'APPOINTMENT_REMINDER', description: 'First reminder', delayValue: 3, delayUnit: 'DAYS', isHITL: false, displayOrder: 1 },
-        { name: 'Send Reminder (1 day)', taskType: 'APPOINTMENT_REMINDER', description: 'Second reminder', delayValue: 1, delayUnit: 'DAYS', isHITL: false, displayOrder: 2 },
-        { name: 'Confirm Appointment', taskType: 'FOLLOW_UP_CALL', description: 'Final confirmation call', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 3 },
+        {
+          name: "Send Reminder (3 days)",
+          taskType: "APPOINTMENT_REMINDER",
+          description: "First reminder",
+          delayValue: 3,
+          delayUnit: "DAYS",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Send Reminder (1 day)",
+          taskType: "APPOINTMENT_REMINDER",
+          description: "Second reminder",
+          delayValue: 1,
+          delayUnit: "DAYS",
+          isHITL: false,
+          displayOrder: 2,
+        },
+        {
+          name: "Confirm Appointment",
+          taskType: "FOLLOW_UP_CALL",
+          description: "Final confirmation call",
+          delayValue: 2,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 3,
+        },
       ],
     },
   ],
   fieldLabels: {
-    contact: 'Patient',
-    deal: 'Appointment',
+    contact: "Patient",
+    deal: "Appointment",
   },
-  integrations: ['Docpen', 'Calendar', 'Pharmacy Systems', 'Insurance APIs'],
+  integrations: ["Docpen", "Calendar", "Pharmacy Systems", "Insurance APIs"],
 };
 
 // ==========================================
@@ -115,46 +279,177 @@ export const MEDICAL_CONFIG: IndustryConfig = {
 // ==========================================
 
 export const RESTAURANT_CONFIG: IndustryConfig = {
-  industry: 'RESTAURANT',
+  industry: "RESTAURANT",
   taskTypes: [
-    { value: 'LEAD_RESEARCH', label: 'Lead Research', icon: '🔍', color: '#3B82F6', description: 'Research lead information' },
-    { value: 'CUSTOMER_RESEARCH', label: 'Customer Research', icon: '👤', color: '#10B981', description: 'Research customer preferences' },
-    { value: 'RESERVATION_CONFIRMATION', label: 'Reservation Confirmation', icon: '📅', color: '#8B5CF6', description: 'Confirm reservation' },
-    { value: 'RESERVATION_REMINDER', label: 'Reservation Reminder', icon: '⏰', color: '#F59E0B', description: 'Remind about reservation' },
-    { value: 'ORDER_TRACKING', label: 'Order Tracking', icon: '📦', color: '#EF4444', description: 'Track order status' },
-    { value: 'MENU_RECOMMENDATION', label: 'Menu Recommendation', icon: '🍽️', color: '#06B6D4', description: 'Recommend menu items' },
-    { value: 'LOYALTY_POINTS_UPDATE', label: 'Loyalty Points', icon: '⭐', color: '#EC4899', description: 'Update loyalty points' },
-    { value: 'FEEDBACK_REQUEST', label: 'Feedback Request', icon: '💬', color: '#14B8A6', description: 'Request customer feedback' },
-    { value: 'SPECIAL_OFFER_NOTIFICATION', label: 'Special Offer', icon: '🎁', color: '#6366F1', description: 'Send special offers' },
-    { value: 'BIRTHDAY_GREETING', label: 'Birthday Greeting', icon: '🎂', color: '#84CC16', description: 'Send birthday greeting' },
-    { value: 'CUSTOM', label: 'Custom Task', icon: '⚙️', color: '#6B7280', description: 'Custom workflow task' },
+    {
+      value: "LEAD_RESEARCH",
+      label: "Lead Research",
+      icon: "🔍",
+      color: "#3B82F6",
+      description: "Research lead information",
+    },
+    {
+      value: "CUSTOMER_RESEARCH",
+      label: "Customer Research",
+      icon: "👤",
+      color: "#10B981",
+      description: "Research customer preferences",
+    },
+    {
+      value: "RESERVATION_CONFIRMATION",
+      label: "Reservation Confirmation",
+      icon: "📅",
+      color: "#8B5CF6",
+      description: "Confirm reservation",
+    },
+    {
+      value: "RESERVATION_REMINDER",
+      label: "Reservation Reminder",
+      icon: "⏰",
+      color: "#F59E0B",
+      description: "Remind about reservation",
+    },
+    {
+      value: "ORDER_TRACKING",
+      label: "Order Tracking",
+      icon: "📦",
+      color: "#EF4444",
+      description: "Track order status",
+    },
+    {
+      value: "MENU_RECOMMENDATION",
+      label: "Menu Recommendation",
+      icon: "🍽️",
+      color: "#06B6D4",
+      description: "Recommend menu items",
+    },
+    {
+      value: "LOYALTY_POINTS_UPDATE",
+      label: "Loyalty Points",
+      icon: "⭐",
+      color: "#EC4899",
+      description: "Update loyalty points",
+    },
+    {
+      value: "FEEDBACK_REQUEST",
+      label: "Feedback Request",
+      icon: "💬",
+      color: "#14B8A6",
+      description: "Request customer feedback",
+    },
+    {
+      value: "SPECIAL_OFFER_NOTIFICATION",
+      label: "Special Offer",
+      icon: "🎁",
+      color: "#6366F1",
+      description: "Send special offers",
+    },
+    {
+      value: "BIRTHDAY_GREETING",
+      label: "Birthday Greeting",
+      icon: "🎂",
+      color: "#84CC16",
+      description: "Send birthday greeting",
+    },
+    {
+      value: "CUSTOM",
+      label: "Custom Task",
+      icon: "⚙️",
+      color: "#6B7280",
+      description: "Custom workflow task",
+    },
   ],
   aiAgents: [
-    { id: 'reservation_coordinator', name: 'Sarah', role: 'Reservation Coordinator', color: '#FF6B6B', description: 'Manages reservations' },
-    { id: 'order_tracker', name: 'Michael', role: 'Order Tracker', color: '#4ECDC4', description: 'Tracks and updates orders' },
-    { id: 'loyalty_manager', name: 'Jessica', role: 'Loyalty Manager', color: '#45B7D1', description: 'Manages loyalty program' },
-    { id: 'menu_advisor', name: 'Alex', role: 'Menu Advisor', color: '#96CEB4', description: 'Provides menu recommendations' },
-    { id: 'customer_service', name: 'Emma', role: 'Customer Service Specialist', color: '#FFEAA7', description: 'Handles customer service' },
-    { id: 'marketing_coordinator', name: 'David', role: 'Marketing Coordinator', color: '#DDA0DD', description: 'Manages marketing campaigns' },
+    {
+      id: "reservation_coordinator",
+      name: "Sarah",
+      role: "Reservation Coordinator",
+      color: "#FF6B6B",
+      description: "Manages reservations",
+    },
+    {
+      id: "order_tracker",
+      name: "Michael",
+      role: "Order Tracker",
+      color: "#4ECDC4",
+      description: "Tracks and updates orders",
+    },
+    {
+      id: "loyalty_manager",
+      name: "Jessica",
+      role: "Loyalty Manager",
+      color: "#45B7D1",
+      description: "Manages loyalty program",
+    },
+    {
+      id: "menu_advisor",
+      name: "Alex",
+      role: "Menu Advisor",
+      color: "#96CEB4",
+      description: "Provides menu recommendations",
+    },
+    {
+      id: "customer_service",
+      name: "Emma",
+      role: "Customer Service Specialist",
+      color: "#FFEAA7",
+      description: "Handles customer service",
+    },
+    {
+      id: "marketing_coordinator",
+      name: "David",
+      role: "Marketing Coordinator",
+      color: "#DDA0DD",
+      description: "Manages marketing campaigns",
+    },
   ],
   templates: [
     {
-      id: 'new-customer-welcome',
-      name: 'New Customer Welcome',
-      description: 'Welcome new customers',
-      workflowType: 'NEW_CUSTOMER_WELCOME',
+      id: "new-customer-welcome",
+      name: "New Customer Welcome",
+      description: "Welcome new customers",
+      workflowType: "NEW_CUSTOMER_WELCOME",
       tasks: [
-        { name: 'Research Customer', taskType: 'CUSTOMER_RESEARCH', description: 'Research preferences', delayValue: 0, delayUnit: 'MINUTES', isHITL: false, displayOrder: 1 },
-        { name: 'Send Welcome Email', taskType: 'CUSTOM', description: 'Welcome message', delayValue: 1, delayUnit: 'HOURS', isHITL: false, displayOrder: 2 },
-        { name: 'Enroll in Loyalty', taskType: 'LOYALTY_POINTS_UPDATE', description: 'Enroll in program', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 3 },
+        {
+          name: "Research Customer",
+          taskType: "CUSTOMER_RESEARCH",
+          description: "Research preferences",
+          delayValue: 0,
+          delayUnit: "MINUTES",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Send Welcome Email",
+          taskType: "CUSTOM",
+          description: "Welcome message",
+          delayValue: 1,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 2,
+        },
+        {
+          name: "Enroll in Loyalty",
+          taskType: "LOYALTY_POINTS_UPDATE",
+          description: "Enroll in program",
+          delayValue: 2,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 3,
+        },
       ],
     },
   ],
   fieldLabels: {
-    contact: 'Customer',
-    deal: 'Order',
+    contact: "Customer",
+    deal: "Order",
   },
-  integrations: ['POS Systems', 'Reservation Systems', 'Delivery Platforms', 'Loyalty APIs'],
+  integrations: [
+    "POS Systems",
+    "Reservation Systems",
+    "Delivery Platforms",
+    "Loyalty APIs",
+  ],
 };
 
 // ==========================================
@@ -162,46 +457,177 @@ export const RESTAURANT_CONFIG: IndustryConfig = {
 // ==========================================
 
 export const CONSTRUCTION_CONFIG: IndustryConfig = {
-  industry: 'CONSTRUCTION',
+  industry: "CONSTRUCTION",
   taskTypes: [
-    { value: 'LEAD_RESEARCH', label: 'Lead Research', icon: '🔍', color: '#3B82F6', description: 'Research lead information' },
-    { value: 'PROJECT_RESEARCH', label: 'Project Research', icon: '🏗️', color: '#10B981', description: 'Research project requirements' },
-    { value: 'QUOTE_GENERATION', label: 'Quote Generation', icon: '💰', color: '#8B5CF6', description: 'Generate project quote' },
-    { value: 'QUOTE_FOLLOWUP', label: 'Quote Follow-up', icon: '📞', color: '#F59E0B', description: 'Follow up on quote' },
-    { value: 'PERMIT_TRACKING', label: 'Permit Tracking', icon: '📋', color: '#EF4444', description: 'Track permit status' },
-    { value: 'INSPECTION_SCHEDULING', label: 'Inspection Scheduling', icon: '🔍', color: '#06B6D4', description: 'Schedule inspections' },
-    { value: 'MATERIAL_ORDERING', label: 'Material Ordering', icon: '📦', color: '#EC4899', description: 'Order materials' },
-    { value: 'PROGRESS_UPDATE', label: 'Progress Update', icon: '📊', color: '#14B8A6', description: 'Update project progress' },
-    { value: 'PAYMENT_REMINDER', label: 'Payment Reminder', icon: '💳', color: '#6366F1', description: 'Remind about payments' },
-    { value: 'PROJECT_COMPLETION', label: 'Project Completion', icon: '✅', color: '#84CC16', description: 'Complete project' },
-    { value: 'CUSTOM', label: 'Custom Task', icon: '⚙️', color: '#6B7280', description: 'Custom workflow task' },
+    {
+      value: "LEAD_RESEARCH",
+      label: "Lead Research",
+      icon: "🔍",
+      color: "#3B82F6",
+      description: "Research lead information",
+    },
+    {
+      value: "PROJECT_RESEARCH",
+      label: "Project Research",
+      icon: "🏗️",
+      color: "#10B981",
+      description: "Research project requirements",
+    },
+    {
+      value: "QUOTE_GENERATION",
+      label: "Quote Generation",
+      icon: "💰",
+      color: "#8B5CF6",
+      description: "Generate project quote",
+    },
+    {
+      value: "QUOTE_FOLLOWUP",
+      label: "Quote Follow-up",
+      icon: "📞",
+      color: "#F59E0B",
+      description: "Follow up on quote",
+    },
+    {
+      value: "PERMIT_TRACKING",
+      label: "Permit Tracking",
+      icon: "📋",
+      color: "#EF4444",
+      description: "Track permit status",
+    },
+    {
+      value: "INSPECTION_SCHEDULING",
+      label: "Inspection Scheduling",
+      icon: "🔍",
+      color: "#06B6D4",
+      description: "Schedule inspections",
+    },
+    {
+      value: "MATERIAL_ORDERING",
+      label: "Material Ordering",
+      icon: "📦",
+      color: "#EC4899",
+      description: "Order materials",
+    },
+    {
+      value: "PROGRESS_UPDATE",
+      label: "Progress Update",
+      icon: "📊",
+      color: "#14B8A6",
+      description: "Update project progress",
+    },
+    {
+      value: "PAYMENT_REMINDER",
+      label: "Payment Reminder",
+      icon: "💳",
+      color: "#6366F1",
+      description: "Remind about payments",
+    },
+    {
+      value: "PROJECT_COMPLETION",
+      label: "Project Completion",
+      icon: "✅",
+      color: "#84CC16",
+      description: "Complete project",
+    },
+    {
+      value: "CUSTOM",
+      label: "Custom Task",
+      icon: "⚙️",
+      color: "#6B7280",
+      description: "Custom workflow task",
+    },
   ],
   aiAgents: [
-    { id: 'quote_specialist', name: 'Sarah', role: 'Quote Specialist', color: '#FF6B6B', description: 'Generates project quotes' },
-    { id: 'permit_coordinator', name: 'Michael', role: 'Permit Coordinator', color: '#4ECDC4', description: 'Tracks permits' },
-    { id: 'inspection_scheduler', name: 'Jessica', role: 'Inspection Scheduler', color: '#45B7D1', description: 'Schedules inspections' },
-    { id: 'material_manager', name: 'Alex', role: 'Material Manager', color: '#96CEB4', description: 'Orders materials' },
-    { id: 'project_coordinator', name: 'Emma', role: 'Project Coordinator', color: '#FFEAA7', description: 'Coordinates projects' },
-    { id: 'client_communicator', name: 'David', role: 'Client Communicator', color: '#DDA0DD', description: 'Communicates with clients' },
+    {
+      id: "quote_specialist",
+      name: "Sarah",
+      role: "Quote Specialist",
+      color: "#FF6B6B",
+      description: "Generates project quotes",
+    },
+    {
+      id: "permit_coordinator",
+      name: "Michael",
+      role: "Permit Coordinator",
+      color: "#4ECDC4",
+      description: "Tracks permits",
+    },
+    {
+      id: "inspection_scheduler",
+      name: "Jessica",
+      role: "Inspection Scheduler",
+      color: "#45B7D1",
+      description: "Schedules inspections",
+    },
+    {
+      id: "material_manager",
+      name: "Alex",
+      role: "Material Manager",
+      color: "#96CEB4",
+      description: "Orders materials",
+    },
+    {
+      id: "project_coordinator",
+      name: "Emma",
+      role: "Project Coordinator",
+      color: "#FFEAA7",
+      description: "Coordinates projects",
+    },
+    {
+      id: "client_communicator",
+      name: "David",
+      role: "Client Communicator",
+      color: "#DDA0DD",
+      description: "Communicates with clients",
+    },
   ],
   templates: [
     {
-      id: 'lead-qualification',
-      name: 'Lead Qualification',
-      description: 'Qualify construction leads',
-      workflowType: 'LEAD_QUALIFICATION',
+      id: "lead-qualification",
+      name: "Lead Qualification",
+      description: "Qualify construction leads",
+      workflowType: "LEAD_QUALIFICATION",
       tasks: [
-        { name: 'Research Lead', taskType: 'LEAD_RESEARCH', description: 'Research lead', delayValue: 0, delayUnit: 'MINUTES', isHITL: false, displayOrder: 1 },
-        { name: 'Generate Quote', taskType: 'QUOTE_GENERATION', description: 'Create quote', delayValue: 1, delayUnit: 'HOURS', isHITL: true, displayOrder: 2 },
-        { name: 'Follow-up Call', taskType: 'QUOTE_FOLLOWUP', description: 'Follow up', delayValue: 2, delayUnit: 'DAYS', isHITL: false, displayOrder: 3 },
+        {
+          name: "Research Lead",
+          taskType: "LEAD_RESEARCH",
+          description: "Research lead",
+          delayValue: 0,
+          delayUnit: "MINUTES",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Generate Quote",
+          taskType: "QUOTE_GENERATION",
+          description: "Create quote",
+          delayValue: 1,
+          delayUnit: "HOURS",
+          isHITL: true,
+          displayOrder: 2,
+        },
+        {
+          name: "Follow-up Call",
+          taskType: "QUOTE_FOLLOWUP",
+          description: "Follow up",
+          delayValue: 2,
+          delayUnit: "DAYS",
+          isHITL: false,
+          displayOrder: 3,
+        },
       ],
     },
   ],
   fieldLabels: {
-    contact: 'Client',
-    deal: 'Project',
+    contact: "Client",
+    deal: "Project",
   },
-  integrations: ['Permit Databases', 'Material Supplier APIs', 'Inspection Systems', 'Project Management Tools'],
+  integrations: [
+    "Permit Databases",
+    "Material Supplier APIs",
+    "Inspection Systems",
+    "Project Management Tools",
+  ],
 };
 
 // ==========================================
@@ -209,86 +635,403 @@ export const CONSTRUCTION_CONFIG: IndustryConfig = {
 // ==========================================
 
 export const RETAIL_CONFIG: IndustryConfig = {
-  industry: 'RETAIL',
+  industry: "RETAIL",
   taskTypes: [
-    { value: 'LEAD_RESEARCH', label: 'Lead Research', icon: '🔍', color: '#3B82F6', description: 'Research lead information' },
-    { value: 'CUSTOMER_RESEARCH', label: 'Customer Research', icon: '👤', color: '#10B981', description: 'Research customer preferences and purchase history' },
-    { value: 'ORDER_CONFIRMATION', label: 'Order Confirmation', icon: '📦', color: '#8B5CF6', description: 'Confirm customer order' },
-    { value: 'SHIPPING_NOTIFICATION', label: 'Shipping Notification', icon: '🚚', color: '#F59E0B', description: 'Notify customer of shipment' },
-    { value: 'INVENTORY_ALERT', label: 'Inventory Alert', icon: '📊', color: '#EF4444', description: 'Alert on low stock or restock' },
-    { value: 'RETURN_PROCESSING', label: 'Return Processing', icon: '🔄', color: '#06B6D4', description: 'Process product return or exchange' },
-    { value: 'LOYALTY_POINTS_UPDATE', label: 'Loyalty Points', icon: '⭐', color: '#EC4899', description: 'Update loyalty points' },
-    { value: 'FEEDBACK_REQUEST', label: 'Feedback Request', icon: '💬', color: '#14B8A6', description: 'Request customer feedback' },
-    { value: 'PROMOTION_NOTIFICATION', label: 'Promotion Notification', icon: '🎁', color: '#6366F1', description: 'Send promotional offers' },
-    { value: 'ABANDONED_CART_FOLLOWUP', label: 'Abandoned Cart Follow-up', icon: '🛒', color: '#84CC16', description: 'Follow up on abandoned carts' },
-    { value: 'CUSTOM', label: 'Custom Task', icon: '⚙️', color: '#6B7280', description: 'Custom workflow task' },
+    {
+      value: "LEAD_RESEARCH",
+      label: "Lead Research",
+      icon: "🔍",
+      color: "#3B82F6",
+      description: "Research lead information",
+    },
+    {
+      value: "CUSTOMER_RESEARCH",
+      label: "Customer Research",
+      icon: "👤",
+      color: "#10B981",
+      description: "Research customer preferences and purchase history",
+    },
+    {
+      value: "ORDER_CONFIRMATION",
+      label: "Order Confirmation",
+      icon: "📦",
+      color: "#8B5CF6",
+      description: "Confirm customer order",
+    },
+    {
+      value: "SHIPPING_NOTIFICATION",
+      label: "Shipping Notification",
+      icon: "🚚",
+      color: "#F59E0B",
+      description: "Notify customer of shipment",
+    },
+    {
+      value: "INVENTORY_ALERT",
+      label: "Inventory Alert",
+      icon: "📊",
+      color: "#EF4444",
+      description: "Alert on low stock or restock",
+    },
+    {
+      value: "RETURN_PROCESSING",
+      label: "Return Processing",
+      icon: "🔄",
+      color: "#06B6D4",
+      description: "Process product return or exchange",
+    },
+    {
+      value: "LOYALTY_POINTS_UPDATE",
+      label: "Loyalty Points",
+      icon: "⭐",
+      color: "#EC4899",
+      description: "Update loyalty points",
+    },
+    {
+      value: "FEEDBACK_REQUEST",
+      label: "Feedback Request",
+      icon: "💬",
+      color: "#14B8A6",
+      description: "Request customer feedback",
+    },
+    {
+      value: "PROMOTION_NOTIFICATION",
+      label: "Promotion Notification",
+      icon: "🎁",
+      color: "#6366F1",
+      description: "Send promotional offers",
+    },
+    {
+      value: "ABANDONED_CART_FOLLOWUP",
+      label: "Abandoned Cart Follow-up",
+      icon: "🛒",
+      color: "#84CC16",
+      description: "Follow up on abandoned carts",
+    },
+    {
+      value: "CUSTOM",
+      label: "Custom Task",
+      icon: "⚙️",
+      color: "#6B7280",
+      description: "Custom workflow task",
+    },
   ],
   aiAgents: [
-    { id: 'order_coordinator', name: 'Sarah', role: 'Order Coordinator', color: '#FF6B6B', description: 'Manages order processing and confirmations' },
-    { id: 'inventory_manager', name: 'Michael', role: 'Inventory Manager', color: '#4ECDC4', description: 'Tracks inventory and restock alerts' },
-    { id: 'loyalty_manager', name: 'Jessica', role: 'Loyalty Manager', color: '#45B7D1', description: 'Manages loyalty and rewards program' },
-    { id: 'customer_service', name: 'Alex', role: 'Customer Service Specialist', color: '#96CEB4', description: 'Handles customer inquiries and returns' },
-    { id: 'marketing_coordinator', name: 'Emma', role: 'Marketing Coordinator', color: '#FFEAA7', description: 'Manages promotions and campaigns' },
-    { id: 'personal_shopper', name: 'David', role: 'Personal Shopper', color: '#DDA0DD', description: 'Provides personalized shopping assistance' },
+    {
+      id: "order_coordinator",
+      name: "Sarah",
+      role: "Order Coordinator",
+      color: "#FF6B6B",
+      description: "Manages order processing and confirmations",
+    },
+    {
+      id: "inventory_manager",
+      name: "Michael",
+      role: "Inventory Manager",
+      color: "#4ECDC4",
+      description: "Tracks inventory and restock alerts",
+    },
+    {
+      id: "loyalty_manager",
+      name: "Jessica",
+      role: "Loyalty Manager",
+      color: "#45B7D1",
+      description: "Manages loyalty and rewards program",
+    },
+    {
+      id: "customer_service",
+      name: "Alex",
+      role: "Customer Service Specialist",
+      color: "#96CEB4",
+      description: "Handles customer inquiries and returns",
+    },
+    {
+      id: "marketing_coordinator",
+      name: "Emma",
+      role: "Marketing Coordinator",
+      color: "#FFEAA7",
+      description: "Manages promotions and campaigns",
+    },
+    {
+      id: "personal_shopper",
+      name: "David",
+      role: "Personal Shopper",
+      color: "#DDA0DD",
+      description: "Provides personalized shopping assistance",
+    },
   ],
   templates: [
     {
-      id: 'new-customer-welcome',
-      name: 'New Customer Welcome',
-      description: 'Welcome new retail customers',
-      workflowType: 'NEW_CUSTOMER_WELCOME',
+      id: "new-customer-welcome",
+      name: "New Customer Welcome",
+      description: "Welcome new retail customers",
+      workflowType: "NEW_CUSTOMER_WELCOME",
       tasks: [
-        { name: 'Research Customer', taskType: 'CUSTOMER_RESEARCH', description: 'Research preferences', delayValue: 0, delayUnit: 'MINUTES', isHITL: false, displayOrder: 1 },
-        { name: 'Send Welcome Email', taskType: 'CUSTOM', description: 'Welcome message with first-time discount', delayValue: 1, delayUnit: 'HOURS', isHITL: false, displayOrder: 2 },
-        { name: 'Enroll in Loyalty', taskType: 'LOYALTY_POINTS_UPDATE', description: 'Enroll in rewards program', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 3 },
+        {
+          name: "Research Customer",
+          taskType: "CUSTOMER_RESEARCH",
+          description: "Research preferences",
+          delayValue: 0,
+          delayUnit: "MINUTES",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Send Welcome Email",
+          taskType: "CUSTOM",
+          description: "Welcome message with first-time discount",
+          delayValue: 1,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 2,
+        },
+        {
+          name: "Enroll in Loyalty",
+          taskType: "LOYALTY_POINTS_UPDATE",
+          description: "Enroll in rewards program",
+          delayValue: 2,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 3,
+        },
       ],
     },
     {
-      id: 'abandoned-cart-recovery',
-      name: 'Abandoned Cart Recovery',
-      description: 'Recover abandoned shopping carts',
-      workflowType: 'ABANDONED_CART_RECOVERY',
+      id: "abandoned-cart-recovery",
+      name: "Abandoned Cart Recovery",
+      description: "Recover abandoned shopping carts",
+      workflowType: "ABANDONED_CART_RECOVERY",
       tasks: [
-        { name: 'Send Cart Reminder', taskType: 'ABANDONED_CART_FOLLOWUP', description: 'Remind about items in cart', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 1 },
-        { name: 'Offer Discount', taskType: 'PROMOTION_NOTIFICATION', description: 'Send discount offer', delayValue: 1, delayUnit: 'DAYS', isHITL: false, displayOrder: 2 },
-        { name: 'Final Follow-up', taskType: 'FEEDBACK_REQUEST', description: 'Ask if they need help', delayValue: 3, delayUnit: 'DAYS', isHITL: false, displayOrder: 3 },
+        {
+          name: "Send Cart Reminder",
+          taskType: "ABANDONED_CART_FOLLOWUP",
+          description: "Remind about items in cart",
+          delayValue: 2,
+          delayUnit: "HOURS",
+          isHITL: false,
+          displayOrder: 1,
+        },
+        {
+          name: "Offer Discount",
+          taskType: "PROMOTION_NOTIFICATION",
+          description: "Send discount offer",
+          delayValue: 1,
+          delayUnit: "DAYS",
+          isHITL: false,
+          displayOrder: 2,
+        },
+        {
+          name: "Final Follow-up",
+          taskType: "FEEDBACK_REQUEST",
+          description: "Ask if they need help",
+          delayValue: 3,
+          delayUnit: "DAYS",
+          isHITL: false,
+          displayOrder: 3,
+        },
       ],
     },
   ],
   fieldLabels: {
-    contact: 'Customer',
-    deal: 'Order',
+    contact: "Customer",
+    deal: "Order",
   },
-  integrations: ['POS Systems', 'Inventory Management', 'Shipping APIs', 'Loyalty Platforms'],
+  integrations: [
+    "POS Systems",
+    "Inventory Management",
+    "Shipping APIs",
+    "Loyalty Platforms",
+  ],
 };
 
 // ==========================================
 // ORTHODONTIST INDUSTRY CONFIG (Yul Smile)
 // ==========================================
 
-import { ORTHODONTIST_WORKFLOW_TEMPLATES } from '@/lib/orthodontist/workflow-templates';
+import { ORTHODONTIST_WORKFLOW_TEMPLATES } from "@/lib/orthodontist/workflow-templates";
 
 export const ORTHODONTIST_CONFIG: IndustryConfig = {
-  industry: 'ORTHODONTIST',
+  industry: "ORTHODONTIST",
   taskTypes: [
     ...MEDICAL_CONFIG.taskTypes,
-    { value: 'CONSENT_LINK', label: 'Send Consent Link', icon: '📋', color: '#8B5CF6', description: 'Send Law 25 consent and forms link' },
-    { value: 'ORTHODONTIC_REPORT', label: 'Orthodontic Report', icon: '📄', color: '#06B6D4', description: 'Draft formal orthodontic report letter' },
-    { value: 'FINANCIAL_AGREEMENT', label: 'Financial Agreement', icon: '💰', color: '#10B981', description: 'Generate and send financial agreement' },
+    {
+      value: "CONSENT_LINK",
+      label: "Send Consent Link",
+      icon: "📋",
+      color: "#8B5CF6",
+      description: "Send Law 25 consent and forms link",
+    },
+    {
+      value: "ORTHODONTIC_REPORT",
+      label: "Orthodontic Report",
+      icon: "📄",
+      color: "#06B6D4",
+      description: "Draft formal orthodontic report letter",
+    },
+    {
+      value: "FINANCIAL_AGREEMENT",
+      label: "Financial Agreement",
+      icon: "💰",
+      color: "#10B981",
+      description: "Generate and send financial agreement",
+    },
   ],
   aiAgents: [
-    { id: 'admissions_specialist', name: 'Admissions Specialist', role: 'Admissions (Law 25)', color: '#FF6B6B', description: 'Handles pre-visit forms and consents' },
-    { id: 'referrals_specialist', name: 'Referrals Specialist', role: 'Referrals & Clinical Reports', color: '#4ECDC4', description: 'Processes referrals and drafts reports' },
-    { id: 'treatment_coordinator', name: 'Treatment Coordinator', role: 'Treatment Coordinator', color: '#45B7D1', description: 'Financial agreements and signing' },
-    { id: 'conversion_specialist', name: 'Conversion Specialist', role: 'Treatment Conversion', color: '#96CEB4', description: 'Converts undecided patients' },
+    {
+      id: "admissions_specialist",
+      name: "Admissions Specialist",
+      role: "Admissions (Law 25)",
+      color: "#FF6B6B",
+      description: "Handles pre-visit forms and consents",
+    },
+    {
+      id: "referrals_specialist",
+      name: "Referrals Specialist",
+      role: "Referrals & Clinical Reports",
+      color: "#4ECDC4",
+      description: "Processes referrals and drafts reports",
+    },
+    {
+      id: "treatment_coordinator",
+      name: "Treatment Coordinator",
+      role: "Treatment Coordinator",
+      color: "#45B7D1",
+      description: "Financial agreements and signing",
+    },
+    {
+      id: "conversion_specialist",
+      name: "Conversion Specialist",
+      role: "Treatment Conversion",
+      color: "#96CEB4",
+      description: "Converts undecided patients",
+    },
     ...MEDICAL_CONFIG.aiAgents,
   ],
   templates: ORTHODONTIST_WORKFLOW_TEMPLATES,
   fieldLabels: {
-    contact: 'Patient',
-    deal: 'Treatment Plan',
+    contact: "Patient",
+    deal: "Treatment Plan",
   },
-  integrations: ['Docpen', 'Calendar', 'Law 25 Forms', 'Insurance APIs'],
+  integrations: ["Docpen", "Calendar", "Law 25 Forms", "Insurance APIs"],
+};
+
+export const DENTIST_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "DENTIST",
+  fieldLabels: {
+    contact: "Patient",
+    deal: "Treatment",
+  },
+  integrations: ["Dental PMS", "X-Ray Systems", "Insurance APIs", "Calendar"],
+};
+
+export const MEDICAL_SPA_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "MEDICAL_SPA",
+  fieldLabels: {
+    contact: "Client",
+    deal: "Service Plan",
+  },
+  integrations: [
+    "Treatment Booking",
+    "Membership Systems",
+    "Payment APIs",
+    "Calendar",
+  ],
+};
+
+export const OPTOMETRIST_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "OPTOMETRIST",
+  fieldLabels: {
+    contact: "Patient",
+    deal: "Exam Appointment",
+  },
+  integrations: ["Vision EMR", "Lab Orders", "Insurance APIs", "Calendar"],
+};
+
+export const HEALTH_CLINIC_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "HEALTH_CLINIC",
+  fieldLabels: {
+    contact: "Patient",
+    deal: "Care Plan",
+  },
+  integrations: [
+    "Clinic EMR",
+    "Referral Systems",
+    "Insurance APIs",
+    "Calendar",
+  ],
+};
+
+export const HOSPITAL_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "HOSPITAL",
+  fieldLabels: {
+    contact: "Patient",
+    deal: "Care Episode",
+  },
+  integrations: [
+    "Hospital EHR",
+    "Department Scheduling",
+    "Referral Systems",
+    "Calendar",
+  ],
+};
+
+export const ACCOUNTING_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "ACCOUNTING",
+  fieldLabels: {
+    contact: "Client",
+    deal: "Engagement",
+  },
+  integrations: [
+    "Bookkeeping Systems",
+    "Tax Prep Platforms",
+    "E-signature",
+    "Calendar",
+  ],
+};
+
+export const LAW_CONFIG: IndustryConfig = {
+  ...MEDICAL_CONFIG,
+  industry: "LAW",
+  fieldLabels: {
+    contact: "Client",
+    deal: "Matter",
+  },
+  integrations: [
+    "Case Management",
+    "Document Automation",
+    "E-signature",
+    "Calendar",
+  ],
+};
+
+export const SPORTS_CLUB_CONFIG: IndustryConfig = {
+  ...RESTAURANT_CONFIG,
+  industry: "SPORTS_CLUB",
+  fieldLabels: {
+    contact: "Member",
+    deal: "Registration",
+  },
+  integrations: [
+    "Club Management",
+    "League Scheduling",
+    "Payment APIs",
+    "Calendar",
+  ],
+};
+
+export const TECHNOLOGY_CONFIG: IndustryConfig = {
+  ...RESTAURANT_CONFIG,
+  industry: "TECHNOLOGY",
+  fieldLabels: {
+    contact: "Lead",
+    deal: "Opportunity",
+  },
+  integrations: ["CRM", "Product Analytics", "Support Desk", "Calendar"],
 };
 
 // ==========================================
@@ -296,19 +1039,19 @@ export const ORTHODONTIST_CONFIG: IndustryConfig = {
 // ==========================================
 
 export const INDUSTRY_CONFIGS: Record<Industry, IndustryConfig> = {
-  ACCOUNTING: MEDICAL_CONFIG, // Similar structure - appointments, client follow-up
+  ACCOUNTING: ACCOUNTING_CONFIG,
   RESTAURANT: RESTAURANT_CONFIG,
-  SPORTS_CLUB: RESTAURANT_CONFIG, // Similar structure
+  SPORTS_CLUB: SPORTS_CLUB_CONFIG,
   CONSTRUCTION: CONSTRUCTION_CONFIG,
-  LAW: MEDICAL_CONFIG, // Similar structure - intake, appointments, case follow-up
+  LAW: LAW_CONFIG,
   MEDICAL: MEDICAL_CONFIG,
-  DENTIST: MEDICAL_CONFIG, // Similar to Medical
-  MEDICAL_SPA: MEDICAL_CONFIG, // Similar to Medical
-  OPTOMETRIST: MEDICAL_CONFIG, // Similar to Medical
-  HEALTH_CLINIC: MEDICAL_CONFIG, // Similar to Medical
+  DENTIST: DENTIST_CONFIG,
+  MEDICAL_SPA: MEDICAL_SPA_CONFIG,
+  OPTOMETRIST: OPTOMETRIST_CONFIG,
+  HEALTH_CLINIC: HEALTH_CLINIC_CONFIG,
   REAL_ESTATE: MEDICAL_CONFIG, // Placeholder - Real Estate has its own system
-  HOSPITAL: MEDICAL_CONFIG, // Similar to Medical
-  TECHNOLOGY: RESTAURANT_CONFIG, // Similar structure
+  HOSPITAL: HOSPITAL_CONFIG,
+  TECHNOLOGY: TECHNOLOGY_CONFIG,
   ORTHODONTIST: ORTHODONTIST_CONFIG,
   RETAIL: RETAIL_CONFIG,
 };
@@ -316,8 +1059,10 @@ export const INDUSTRY_CONFIGS: Record<Industry, IndustryConfig> = {
 /**
  * Get industry configuration
  */
-export function getIndustryConfig(industry: Industry | null | undefined): IndustryConfig | null {
-  if (!industry || industry === 'REAL_ESTATE') {
+export function getIndustryConfig(
+  industry: Industry | null | undefined,
+): IndustryConfig | null {
+  if (!industry || industry === "REAL_ESTATE") {
     return null; // Real Estate uses its own system
   }
   return INDUSTRY_CONFIGS[industry] || null;
@@ -326,28 +1071,37 @@ export function getIndustryConfig(industry: Industry | null | undefined): Indust
 /**
  * Get task type icon
  */
-export function getTaskTypeIcon(industry: Industry | null | undefined, taskType: string): string {
+export function getTaskTypeIcon(
+  industry: Industry | null | undefined,
+  taskType: string,
+): string {
   const config = getIndustryConfig(industry);
-  if (!config) return '⚙️';
-  const taskTypeConfig = config.taskTypes.find(t => t.value === taskType);
-  return taskTypeConfig?.icon || '⚙️';
+  if (!config) return "⚙️";
+  const taskTypeConfig = config.taskTypes.find((t) => t.value === taskType);
+  return taskTypeConfig?.icon || "⚙️";
 }
 
 /**
  * Get task type color
  */
-export function getTaskTypeColor(industry: Industry | null | undefined, taskType: string): string {
+export function getTaskTypeColor(
+  industry: Industry | null | undefined,
+  taskType: string,
+): string {
   const config = getIndustryConfig(industry);
-  if (!config) return '#6B7280';
-  const taskTypeConfig = config.taskTypes.find(t => t.value === taskType);
-  return taskTypeConfig?.color || '#6B7280';
+  if (!config) return "#6B7280";
+  const taskTypeConfig = config.taskTypes.find((t) => t.value === taskType);
+  return taskTypeConfig?.color || "#6B7280";
 }
 
 /**
  * Get AI agent by ID
  */
-export function getAIAgent(industry: Industry | null | undefined, agentId: string): IndustryAIAgent | null {
+export function getAIAgent(
+  industry: Industry | null | undefined,
+  agentId: string,
+): IndustryAIAgent | null {
   const config = getIndustryConfig(industry);
   if (!config) return null;
-  return config.aiAgents.find(a => a.id === agentId) || null;
+  return config.aiAgents.find((a) => a.id === agentId) || null;
 }

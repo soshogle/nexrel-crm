@@ -3,20 +3,32 @@
  * Monitor and trigger AI employee tasks
  */
 
-'use client';
+"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Bot,
   Search,
@@ -31,74 +43,97 @@ import {
   Filter,
   Settings,
   ArrowLeft,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
-import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
-import { IndustryAIEmployees } from '@/components/ai-employees/industry-ai-employees';
-import { ProfessionalAIEmployees } from '@/components/ai-employees/professional-ai-employees';
-import { hasIndustryAIEmployees } from '@/lib/industry-ai-employees/registry';
-import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
-// Generic Multi-Industry Workflow Tabs
-import { IndustryWorkflowsTab } from '@/components/workflows/industry-workflows-tab';
-import { MedicalWorkflowsTab } from '@/components/medical/workflows/medical-workflows-tab';
-import { RestaurantWorkflowsTab } from '@/components/restaurant/workflows/restaurant-workflows-tab';
-import { ConstructionWorkflowsTab } from '@/components/construction/workflows/construction-workflows-tab';
-import { DentistWorkflowsTab } from '@/components/dentist/workflows/dentist-workflows-tab';
-import { MedicalSpaWorkflowsTab } from '@/components/medical-spa/workflows/medical-spa-workflows-tab';
-import { OptometristWorkflowsTab } from '@/components/optometrist/workflows/optometrist-workflows-tab';
-import { HealthClinicWorkflowsTab } from '@/components/health-clinic/workflows/health-clinic-workflows-tab';
-import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-workflows-tab';
-import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
-import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
-import { getIndustryConfig } from '@/lib/workflows/industry-configs';
-import { UnifiedMonitor } from '@/components/workflows/unified-monitor';
-import { UnifiedActivityFeed } from '@/components/ai-employees/unified-activity-feed';
-import { AdminStatsCard } from '@/components/ai-employees/admin-stats-card';
-import { JobResultsDialog } from '@/components/ai-employees/job-results-dialog';
-import { WorkflowResultsDialog } from '@/components/ai-employees/workflow-results-dialog';
-import { SetupDialog } from '@/components/ai-employees/setup-dialog';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { Industry } from '@/lib/industry-menu-config';
+} from "lucide-react";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { RealEstateAIEmployees } from "@/components/ai-employees/real-estate-employees";
+import { IndustryAIEmployees } from "@/components/ai-employees/industry-ai-employees";
+import { ProfessionalAIEmployees } from "@/components/ai-employees/professional-ai-employees";
+import { hasIndustryAIEmployees } from "@/lib/industry-ai-employees/registry";
+import { REWorkflowsTab } from "@/components/real-estate/workflows/re-workflows-tab";
+import { MedicalWorkflowsTab } from "@/components/medical/workflows/medical-workflows-tab";
+import { RestaurantWorkflowsTab } from "@/components/restaurant/workflows/restaurant-workflows-tab";
+import { ConstructionWorkflowsTab } from "@/components/construction/workflows/construction-workflows-tab";
+import { DentistWorkflowsTab } from "@/components/dentist/workflows/dentist-workflows-tab";
+import { MedicalSpaWorkflowsTab } from "@/components/medical-spa/workflows/medical-spa-workflows-tab";
+import { OptometristWorkflowsTab } from "@/components/optometrist/workflows/optometrist-workflows-tab";
+import { HealthClinicWorkflowsTab } from "@/components/health-clinic/workflows/health-clinic-workflows-tab";
+import { HospitalWorkflowsTab } from "@/components/hospital/workflows/hospital-workflows-tab";
+import { TechnologyWorkflowsTab } from "@/components/technology/workflows/technology-workflows-tab";
+import { SportsClubWorkflowsTab } from "@/components/sports-club/workflows/sports-club-workflows-tab";
+import { RetailWorkflowsTab } from "@/components/retail/workflows/retail-workflows-tab";
+import { AccountingWorkflowsTab } from "@/components/accounting/workflows/accounting-workflows-tab";
+import { LawWorkflowsTab } from "@/components/law/workflows/law-workflows-tab";
+import { OrthodontistWorkflowsTab } from "@/components/orthodontist/workflows/orthodontist-workflows-tab";
+import { getIndustryConfig } from "@/lib/workflows/industry-configs";
+import { UnifiedMonitor } from "@/components/workflows/unified-monitor";
+import { UnifiedActivityFeed } from "@/components/ai-employees/unified-activity-feed";
+import { AdminStatsCard } from "@/components/ai-employees/admin-stats-card";
+import { JobResultsDialog } from "@/components/ai-employees/job-results-dialog";
+import { WorkflowResultsDialog } from "@/components/ai-employees/workflow-results-dialog";
+import { SetupDialog } from "@/components/ai-employees/setup-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import type { Industry } from "@/lib/industry-menu-config";
 
 /** Show Provision All when user is ADMIN/SUPER_ADMIN, or when super admin is impersonating another user */
-function canProvisionAgents(session: { user?: { role?: string; isImpersonating?: boolean; originalUserIsSuperAdmin?: boolean } } | null): boolean {
+function canProvisionAgents(
+  session: {
+    user?: {
+      role?: string;
+      isImpersonating?: boolean;
+      originalUserIsSuperAdmin?: boolean;
+    };
+  } | null,
+): boolean {
   if (!session?.user) return false;
   const u = session.user as any;
-  return u?.role === 'ADMIN' || u?.role === 'SUPER_ADMIN' || (u?.isImpersonating && u?.originalUserIsSuperAdmin) || false;
+  return (
+    u?.role === "ADMIN" ||
+    u?.role === "SUPER_ADMIN" ||
+    (u?.isImpersonating && u?.originalUserIsSuperAdmin) ||
+    false
+  );
 }
 
 /** Can manage AI employee tasks (Manage Tasks screen): BUSINESS_OWNER, AGENCY_ADMIN, ADMIN, SUPER_ADMIN */
-function canManageAIEmployeeTasks(session: { user?: { role?: string } } | null): boolean {
+function canManageAIEmployeeTasks(
+  session: { user?: { role?: string } } | null,
+): boolean {
   if (!session?.user) return false;
   const role = (session.user as any)?.role;
-  return ['SUPER_ADMIN', 'AGENCY_ADMIN', 'BUSINESS_OWNER', 'ADMIN'].includes(role || '');
+  return ["SUPER_ADMIN", "AGENCY_ADMIN", "BUSINESS_OWNER", "ADMIN"].includes(
+    role || "",
+  );
 }
 
 const VOICE_LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'ar', label: 'Arabic' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'hi', label: 'Hindi' },
+  { value: "en", label: "English" },
+  { value: "es", label: "Spanish" },
+  { value: "fr", label: "French" },
+  { value: "de", label: "German" },
+  { value: "it", label: "Italian" },
+  { value: "pt", label: "Portuguese" },
+  { value: "zh", label: "Chinese" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+  { value: "ar", label: "Arabic" },
+  { value: "ru", label: "Russian" },
+  { value: "hi", label: "Hindi" },
 ];
 
 // Full Task Manager Component - Imported from admin tasks page
-import CreateTaskDialog from '@/components/tasks/create-task-dialog';
-import TaskList from '@/components/tasks/task-list';
-import TaskCard from '@/components/tasks/task-card';
-import AISuggestionsPanel from '@/components/tasks/ai-suggestions-panel';
-import TaskKanbanBoard from '@/components/tasks/task-kanban-board';
-import TaskAnalyticsDashboard from '@/components/tasks/task-analytics-dashboard';
-import { TaskCalendarView } from '@/components/tasks/task-calendar-view';
-import MondayBoard from '@/components/tasks/monday-board';
+import CreateTaskDialog from "@/components/tasks/create-task-dialog";
+import TaskList from "@/components/tasks/task-list";
+import TaskCard from "@/components/tasks/task-card";
+import AISuggestionsPanel from "@/components/tasks/ai-suggestions-panel";
+import TaskKanbanBoard from "@/components/tasks/task-kanban-board";
+import TaskAnalyticsDashboard from "@/components/tasks/task-analytics-dashboard";
+import { TaskCalendarView } from "@/components/tasks/task-calendar-view";
+import MondayBoard from "@/components/tasks/monday-board";
 
 function TasksEmbed() {
   const { data: session } = useSession() || {};
@@ -108,13 +143,15 @@ function TasksEmbed() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [view, setView] = useState<'monday' | 'list' | 'board' | 'kanban' | 'calendar' | 'analytics'>('monday');
+  const [view, setView] = useState<
+    "monday" | "list" | "board" | "kanban" | "calendar" | "analytics"
+  >("monday");
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
 
   useEffect(() => {
     fetchTasks();
@@ -124,21 +161,22 @@ function TasksEmbed() {
   const fetchTasks = async () => {
     try {
       const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (priorityFilter !== 'all') params.append('priority', priorityFilter);
-      if (assigneeFilter !== 'all') params.append('assignedToId', assigneeFilter);
-      if (searchQuery) params.append('search', searchQuery);
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (priorityFilter !== "all") params.append("priority", priorityFilter);
+      if (assigneeFilter !== "all")
+        params.append("assignedToId", assigneeFilter);
+      if (searchQuery) params.append("search", searchQuery);
 
-      params.append('parentTaskId', 'null'); // Only top-level tasks
+      params.append("parentTaskId", "null"); // Only top-level tasks
 
       const response = await fetch(`/api/tasks?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch tasks');
+      if (!response.ok) throw new Error("Failed to fetch tasks");
 
       const data = await response.json();
       setTasks(Array.isArray(data?.tasks) ? data.tasks : []);
     } catch (error: any) {
-      console.error('Error fetching tasks:', error);
-      toast.error('Failed to load tasks');
+      console.error("Error fetching tasks:", error);
+      toast.error("Failed to load tasks");
     } finally {
       setIsLoading(false);
     }
@@ -146,13 +184,13 @@ function TasksEmbed() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/tasks/stats');
+      const response = await fetch("/api/tasks/stats");
       if (!response.ok) return;
 
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -160,19 +198,19 @@ function TasksEmbed() {
     setIsCreateDialogOpen(false);
     fetchTasks();
     fetchStats();
-    toast.success('Task created successfully');
+    toast.success("Task created successfully");
   };
 
   const handleTaskUpdated = () => {
     fetchTasks();
     fetchStats();
-    toast.success('Task updated successfully');
+    toast.success("Task updated successfully");
   };
 
   const handleTaskDeleted = () => {
     fetchTasks();
     fetchStats();
-    toast.success('Task deleted successfully');
+    toast.success("Task deleted successfully");
   };
 
   return (
@@ -238,9 +276,7 @@ function TasksEmbed() {
               <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.inProgress || 0}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Active tasks
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Active tasks</p>
             </CardContent>
           </Card>
 
@@ -255,9 +291,7 @@ function TasksEmbed() {
               <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.overdue || 0}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Need attention
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Need attention</p>
             </CardContent>
           </Card>
 
@@ -272,9 +306,7 @@ function TasksEmbed() {
               <div className="text-2xl font-bold text-gray-900">
                 {stats.summary?.completed || 0}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Tasks done
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Tasks done</p>
             </CardContent>
           </Card>
         </div>
@@ -332,10 +364,10 @@ function TasksEmbed() {
             <Button
               variant="outline"
               onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-                setPriorityFilter('all');
-                setAssigneeFilter('all');
+                setSearchQuery("");
+                setStatusFilter("all");
+                setPriorityFilter("all");
+                setAssigneeFilter("all");
               }}
               className="border-purple-200 text-gray-600 hover:bg-purple-50 hover:border-purple-300"
             >
@@ -353,25 +385,40 @@ function TasksEmbed() {
             <div>
               <CardTitle className="text-gray-900">Your Tasks</CardTitle>
               <CardDescription className="text-gray-600">
-                {tasks.length} task{tasks.length !== 1 ? 's' : ''} found
+                {tasks.length} task{tasks.length !== 1 ? "s" : ""} found
               </CardDescription>
             </div>
             <Tabs value={view} onValueChange={(v: any) => setView(v)}>
               <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
-                <TabsTrigger value="monday" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <TabsTrigger
+                  value="monday"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
                   📋 Board
                 </TabsTrigger>
-                <TabsTrigger value="list" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <TabsTrigger
+                  value="list"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
                   List
                 </TabsTrigger>
-                <TabsTrigger value="kanban" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <TabsTrigger
+                  value="kanban"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
                   Kanban
                 </TabsTrigger>
-                <TabsTrigger value="calendar" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <TabsTrigger
+                  value="calendar"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
                   <Calendar className="h-4 w-4 mr-2" />
                   Calendar
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <TabsTrigger
+                  value="analytics"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
                   Analytics
                 </TabsTrigger>
               </TabsList>
@@ -391,16 +438,16 @@ function TasksEmbed() {
                 Create your first task to get started
               </p>
             </div>
-          ) : view === 'monday' ? (
+          ) : view === "monday" ? (
             <MondayBoard isAdmin={isAdmin} />
-          ) : view === 'list' ? (
+          ) : view === "list" ? (
             <TaskList
               tasks={tasks}
               onTaskClick={setSelectedTask}
               onTaskUpdated={handleTaskUpdated}
               onTaskDeleted={handleTaskDeleted}
             />
-          ) : view === 'kanban' ? (
+          ) : view === "kanban" ? (
             <TaskKanbanBoard
               tasks={tasks}
               onTaskClick={setSelectedTask}
@@ -409,7 +456,7 @@ function TasksEmbed() {
                 setIsCreateDialogOpen(true);
               }}
             />
-          ) : view === 'calendar' ? (
+          ) : view === "calendar" ? (
             <TaskCalendarView
               tasks={tasks}
               onTaskClick={setSelectedTask}
@@ -418,7 +465,7 @@ function TasksEmbed() {
               }}
               onTaskUpdated={handleTaskUpdated}
             />
-          ) : view === 'analytics' ? (
+          ) : view === "analytics" ? (
             <TaskAnalyticsDashboard />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -486,107 +533,248 @@ export default function AIEmployeesPage() {
   const [loadingJobDetails, setLoadingJobDetails] = useState(false);
 
   // Workflow Form
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [purchaseAmount, setPurchaseAmount] = useState('');
-  const [serviceType, setServiceType] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [purchaseAmount, setPurchaseAmount] = useState("");
+  const [serviceType, setServiceType] = useState("");
   const [workflowLoading, setWorkflowLoading] = useState(false);
 
   // Workflow progress tracking
   const [workflowProgress, setWorkflowProgress] = useState<{
     active: boolean;
     currentAgent: string;
-    steps: { agent: string; status: 'pending' | 'running' | 'completed' | 'failed'; message: string }[];
-  }>({ active: false, currentAgent: '', steps: [] });
+    steps: {
+      agent: string;
+      status: "pending" | "running" | "completed" | "failed";
+      message: string;
+    }[];
+  }>({ active: false, currentAgent: "", steps: [] });
 
   // Workflow results
   const [workflowResults, setWorkflowResults] = useState<any>(null);
   const [showWorkflowResults, setShowWorkflowResults] = useState(false);
 
   // Saved workflow history (persists across dialog closes)
-  const [workflowHistory, setWorkflowHistory] = useState<Array<{
-    id: string;
-    customerName: string;
-    customerEmail: string;
-    completedAt: string;
-    results: any;
-  }>>([]);
+  const [workflowHistory, setWorkflowHistory] = useState<
+    Array<{
+      id: string;
+      customerName: string;
+      customerEmail: string;
+      completedAt: string;
+      results: any;
+    }>
+  >([]);
 
   // Workflow purpose and goal
-  const [workflowPurpose, setWorkflowPurpose] = useState<string>('customer_onboarding');
-  const [workflowGoal, setWorkflowGoal] = useState<string>('');
+  const [workflowPurpose, setWorkflowPurpose] = useState<string>(
+    "customer_onboarding",
+  );
+  const [workflowGoal, setWorkflowGoal] = useState<string>("");
 
   // Team members for assignment
-  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<
+    Array<{ id: string; name: string; email: string }>
+  >([]);
 
   // Configurable workflow steps with full flexibility
-  const [workflowSteps, setWorkflowSteps] = useState<Array<{
-    id: string;
-    name: string;
-    type: 'call' | 'sms' | 'email' | 'task' | 'appointment' | 'project' | 'custom';
-    enabled: boolean;
-    assignedTo: string;
-    delay: number;
-    delayUnit: 'minutes' | 'hours' | 'days';
-    voiceAgentId?: string;
-    appointmentId?: string;
-    customAction?: string;
-    order: number;
-  }>>([
-    { id: 'step_1', name: 'Welcome Call', type: 'call', enabled: true, assignedTo: '', delay: 0, delayUnit: 'minutes', order: 0 },
-    { id: 'step_2', name: 'Follow-up SMS', type: 'sms', enabled: true, assignedTo: '', delay: 30, delayUnit: 'minutes', order: 1 },
-    { id: 'step_3', name: 'Welcome Email', type: 'email', enabled: true, assignedTo: '', delay: 1, delayUnit: 'hours', order: 2 },
+  const [workflowSteps, setWorkflowSteps] = useState<
+    Array<{
+      id: string;
+      name: string;
+      type:
+        | "call"
+        | "sms"
+        | "email"
+        | "task"
+        | "appointment"
+        | "project"
+        | "custom";
+      enabled: boolean;
+      assignedTo: string;
+      delay: number;
+      delayUnit: "minutes" | "hours" | "days";
+      voiceAgentId?: string;
+      appointmentId?: string;
+      customAction?: string;
+      order: number;
+    }>
+  >([
+    {
+      id: "step_1",
+      name: "Welcome Call",
+      type: "call",
+      enabled: true,
+      assignedTo: "",
+      delay: 0,
+      delayUnit: "minutes",
+      order: 0,
+    },
+    {
+      id: "step_2",
+      name: "Follow-up SMS",
+      type: "sms",
+      enabled: true,
+      assignedTo: "",
+      delay: 30,
+      delayUnit: "minutes",
+      order: 1,
+    },
+    {
+      id: "step_3",
+      name: "Welcome Email",
+      type: "email",
+      enabled: true,
+      assignedTo: "",
+      delay: 1,
+      delayUnit: "hours",
+      order: 2,
+    },
   ]);
 
   // Drag state for reordering
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
 
   // Voice agents and appointments for selection
-  const [voiceAgents, setVoiceAgents] = useState<Array<{ id: string; name: string }>>([]);
-  const [appointments, setAppointments] = useState<Array<{ id: string; title: string; startTime: string }>>([]);
-  const [selectedVoiceAgentId, setSelectedVoiceAgentId] = useState<string>('');
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>('');
+  const [voiceAgents, setVoiceAgents] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [appointments, setAppointments] = useState<
+    Array<{ id: string; title: string; startTime: string }>
+  >([]);
+  const [selectedVoiceAgentId, setSelectedVoiceAgentId] = useState<string>("");
+  const [selectedAppointmentId, setSelectedAppointmentId] =
+    useState<string>("");
 
   // AI Employee Professions - virtual team members powered by AI
   const AI_PROFESSIONS = [
-    { id: 'accountant', name: 'AI Accountant', icon: '💰', description: 'Handles invoicing, expense tracking, financial reports' },
-    { id: 'developer', name: 'AI Developer', icon: '👨‍💻', description: 'Code reviews, bug fixes, technical documentation' },
-    { id: 'admin_assistant', name: 'AI Admin Assistant', icon: '📋', description: 'Scheduling, data entry, document management' },
-    { id: 'copywriter', name: 'AI Copywriter', icon: '✍️', description: 'Marketing copy, emails, social media content' },
-    { id: 'customer_support', name: 'AI Customer Support', icon: '🎧', description: 'Ticket handling, FAQ responses, customer inquiries' },
-    { id: 'sales_rep', name: 'AI Sales Rep', icon: '🤝', description: 'Lead follow-ups, proposals, deal negotiations' },
-    { id: 'hr_specialist', name: 'AI HR Specialist', icon: '👥', description: 'Recruitment, onboarding, employee management' },
-    { id: 'marketing_specialist', name: 'AI Marketing Specialist', icon: '📣', description: 'Campaign management, analytics, audience targeting' },
-    { id: 'project_manager', name: 'AI Project Manager', icon: '📊', description: 'Task coordination, timeline tracking, team updates' },
-    { id: 'legal_assistant', name: 'AI Legal Assistant', icon: '⚖️', description: 'Contract review, compliance checks, legal research' },
-    { id: 'data_analyst', name: 'AI Data Analyst', icon: '📈', description: 'Reports, dashboards, data insights' },
-    { id: 'social_media_manager', name: 'AI Social Media Manager', icon: '📱', description: 'Post scheduling, engagement, community management' },
-    { id: 'researcher', name: 'AI Researcher', icon: '🔬', description: 'Market research, competitive analysis, trend reports' },
-    { id: 'designer', name: 'AI Designer', icon: '🎨', description: 'Graphics, presentations, visual content' },
-    { id: 'virtual_receptionist', name: 'AI Virtual Receptionist', icon: '📞', description: 'Call handling, appointment booking, visitor management' },
+    {
+      id: "accountant",
+      name: "AI Accountant",
+      icon: "💰",
+      description: "Handles invoicing, expense tracking, financial reports",
+    },
+    {
+      id: "developer",
+      name: "AI Developer",
+      icon: "👨‍💻",
+      description: "Code reviews, bug fixes, technical documentation",
+    },
+    {
+      id: "admin_assistant",
+      name: "AI Admin Assistant",
+      icon: "📋",
+      description: "Scheduling, data entry, document management",
+    },
+    {
+      id: "copywriter",
+      name: "AI Copywriter",
+      icon: "✍️",
+      description: "Marketing copy, emails, social media content",
+    },
+    {
+      id: "customer_support",
+      name: "AI Customer Support",
+      icon: "🎧",
+      description: "Ticket handling, FAQ responses, customer inquiries",
+    },
+    {
+      id: "sales_rep",
+      name: "AI Sales Rep",
+      icon: "🤝",
+      description: "Lead follow-ups, proposals, deal negotiations",
+    },
+    {
+      id: "hr_specialist",
+      name: "AI HR Specialist",
+      icon: "👥",
+      description: "Recruitment, onboarding, employee management",
+    },
+    {
+      id: "marketing_specialist",
+      name: "AI Marketing Specialist",
+      icon: "📣",
+      description: "Campaign management, analytics, audience targeting",
+    },
+    {
+      id: "project_manager",
+      name: "AI Project Manager",
+      icon: "📊",
+      description: "Task coordination, timeline tracking, team updates",
+    },
+    {
+      id: "legal_assistant",
+      name: "AI Legal Assistant",
+      icon: "⚖️",
+      description: "Contract review, compliance checks, legal research",
+    },
+    {
+      id: "data_analyst",
+      name: "AI Data Analyst",
+      icon: "📈",
+      description: "Reports, dashboards, data insights",
+    },
+    {
+      id: "social_media_manager",
+      name: "AI Social Media Manager",
+      icon: "📱",
+      description: "Post scheduling, engagement, community management",
+    },
+    {
+      id: "researcher",
+      name: "AI Researcher",
+      icon: "🔬",
+      description: "Market research, competitive analysis, trend reports",
+    },
+    {
+      id: "designer",
+      name: "AI Designer",
+      icon: "🎨",
+      description: "Graphics, presentations, visual content",
+    },
+    {
+      id: "virtual_receptionist",
+      name: "AI Virtual Receptionist",
+      icon: "📞",
+      description: "Call handling, appointment booking, visitor management",
+    },
   ];
 
   // AI Team - configured AI employees with voice agents
-  const [aiTeam, setAiTeam] = useState<Array<{
-    id: string;
-    profession: string;
-    customName: string;
-    voiceAgentId: string | null;
-    voiceConfig?: { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
-    isActive: boolean;
-    createdAt: string;
-  }>>([]);
+  const [aiTeam, setAiTeam] = useState<
+    Array<{
+      id: string;
+      profession: string;
+      customName: string;
+      voiceAgentId: string | null;
+      voiceConfig?: {
+        voiceId?: string;
+        language?: string;
+        stability?: number;
+        speed?: number;
+        similarityBoost?: number;
+      } | null;
+      isActive: boolean;
+      createdAt: string;
+    }>
+  >([]);
 
   // Setup dialog
   const [showSetupDialog, setShowSetupDialog] = useState(false);
 
   // ElevenLabs voices for voice customization
-  const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ voice_id: string; name: string; category?: string }>>([]);
+  const [elevenLabsVoices, setElevenLabsVoices] = useState<
+    Array<{ voice_id: string; name: string; category?: string }>
+  >([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
 
   // New AI employee form state
-  const [newAiEmployee, setNewAiEmployee] = useState<{ profession: string; customName: string; voiceAgentId: string; voiceConfig: any }>({ profession: '', customName: '', voiceAgentId: '', voiceConfig: null });
+  const [newAiEmployee, setNewAiEmployee] = useState<{
+    profession: string;
+    customName: string;
+    voiceAgentId: string;
+    voiceConfig: any;
+  }>({ profession: "", customName: "", voiceAgentId: "", voiceConfig: null });
   const [showCreateAiEmployee, setShowCreateAiEmployee] = useState(false);
 
   // Session for industry check
@@ -596,8 +784,11 @@ export default function AIEmployeesPage() {
   );
   const userIndustry =
     resolvedIndustry || ((session?.user as any)?.industry as Industry) || null;
-  const isRealEstateUser = userIndustry === 'REAL_ESTATE';
-  const hasWorkflowSystem = userIndustry && userIndustry !== 'REAL_ESTATE' && getIndustryConfig(userIndustry) !== null;
+  const isRealEstateUser = userIndustry === "REAL_ESTATE";
+  const hasWorkflowSystem =
+    userIndustry &&
+    userIndustry !== "REAL_ESTATE" &&
+    getIndustryConfig(userIndustry) !== null;
   const hasIndustryTeam = hasIndustryAIEmployees(userIndustry);
 
   useEffect(() => {
@@ -607,8 +798,8 @@ export default function AIEmployeesPage() {
       return;
     }
 
-    if (sessionStatus === 'authenticated') {
-      fetch('/api/session/context')
+    if (sessionStatus === "authenticated") {
+      fetch("/api/session/context")
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           const industry = (data?.industry as Industry | null) || null;
@@ -621,10 +812,23 @@ export default function AIEmployeesPage() {
   // Tab parameter from URL
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const initialTab = tabParam && ['ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks', 'activity'].includes(tabParam) ? tabParam : 'ai-team';
+  const tabParam = searchParams.get("tab");
+  const initialTab =
+    tabParam &&
+    [
+      "ai-team",
+      "re-team",
+      "industry-team",
+      "workflows",
+      "monitor",
+      "tasks",
+      "activity",
+    ].includes(tabParam)
+      ? tabParam
+      : "ai-team";
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [selectedProfessionalForWorkflow, setSelectedProfessionalForWorkflow] = useState<string | null>(null);
+  const [selectedProfessionalForWorkflow, setSelectedProfessionalForWorkflow] =
+    useState<string | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -641,10 +845,14 @@ export default function AIEmployeesPage() {
   const fetchElevenLabsVoices = async () => {
     setLoadingVoices(true);
     try {
-      const res = await fetch('/api/elevenlabs/voices');
+      const res = await fetch("/api/elevenlabs/voices");
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data) ? data : (Array.isArray(data?.voices) ? data.voices : []);
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.voices)
+            ? data.voices
+            : [];
         setElevenLabsVoices(list);
       }
     } catch {
@@ -657,23 +865,33 @@ export default function AIEmployeesPage() {
   // Legacy: Fetch AI Team from API (kept for potential future use)
   const fetchAiTeam = async () => {
     try {
-      const res = await fetch('/api/ai-employees/user');
-      if (!res.ok) throw new Error('Failed to fetch');
+      const res = await fetch("/api/ai-employees/user");
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       const employees = data.employees || [];
       setAiTeam(employees);
 
       // Migration: if API is empty but localStorage has data, migrate to API
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('nexrel_ai_team') : null;
+      const saved =
+        typeof window !== "undefined"
+          ? localStorage.getItem("nexrel_ai_team")
+          : null;
       if (employees.length === 0 && saved) {
         try {
           const localTeam = JSON.parse(saved);
           if (Array.isArray(localTeam) && localTeam.length > 0) {
-            const migrated: Array<{ id: string; profession: string; customName: string; voiceAgentId: string | null; isActive: boolean; createdAt: string }> = [];
+            const migrated: Array<{
+              id: string;
+              profession: string;
+              customName: string;
+              voiceAgentId: string | null;
+              isActive: boolean;
+              createdAt: string;
+            }> = [];
             for (const emp of localTeam) {
-              const createRes = await fetch('/api/ai-employees/user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+              const createRes = await fetch("/api/ai-employees/user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   profession: emp.profession,
                   customName: emp.customName,
@@ -687,32 +905,34 @@ export default function AIEmployeesPage() {
             }
             if (migrated.length > 0) {
               setAiTeam(migrated);
-              localStorage.removeItem('nexrel_ai_team');
-              toast.success('AI Team migrated to cloud storage');
+              localStorage.removeItem("nexrel_ai_team");
+              toast.success("AI Team migrated to cloud storage");
             }
           }
         } catch (e) {
-          console.error('Migration from localStorage failed:', e);
+          console.error("Migration from localStorage failed:", e);
         }
       }
     } catch (e) {
-      console.error('Failed to load AI team', e);
+      console.error("Failed to load AI team", e);
     }
   };
 
   // Add new AI employee
   const addAiEmployee = async () => {
     if (!newAiEmployee.profession) {
-      toast.error('Please select a profession');
+      toast.error("Please select a profession");
       return;
     }
-    const profession = AI_PROFESSIONS.find(p => p.id === newAiEmployee.profession);
+    const profession = AI_PROFESSIONS.find(
+      (p) => p.id === newAiEmployee.profession,
+    );
     if (!profession) return;
     const customName = newAiEmployee.customName || profession.name;
     try {
-      const res = await fetch('/api/ai-employees/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai-employees/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profession: newAiEmployee.profession,
           customName,
@@ -722,27 +942,34 @@ export default function AIEmployeesPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to add');
+        throw new Error(err.error || "Failed to add");
       }
       const data = await res.json();
       setAiTeam((prev) => [...prev, data.employee]);
-      setNewAiEmployee({ profession: '', customName: '', voiceAgentId: '', voiceConfig: null });
+      setNewAiEmployee({
+        profession: "",
+        customName: "",
+        voiceAgentId: "",
+        voiceConfig: null,
+      });
       setShowCreateAiEmployee(false);
       toast.success(`${customName} added to your AI Team!`);
     } catch (e: any) {
-      toast.error(e.message || 'Failed to add AI Employee');
+      toast.error(e.message || "Failed to add AI Employee");
     }
   };
 
   // Remove AI employee
   const removeAiEmployee = async (id: string) => {
     try {
-      const res = await fetch(`/api/ai-employees/user/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to remove');
+      const res = await fetch(`/api/ai-employees/user/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to remove");
       setAiTeam((prev) => prev.filter((e) => e.id !== id));
-      toast.success('AI Employee removed');
+      toast.success("AI Employee removed");
     } catch (e) {
-      toast.error('Failed to remove AI Employee');
+      toast.error("Failed to remove AI Employee");
     }
   };
 
@@ -752,85 +979,114 @@ export default function AIEmployeesPage() {
     if (!emp) return;
     try {
       const res = await fetch(`/api/ai-employees/user/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !emp.isActive }),
       });
-      if (!res.ok) throw new Error('Failed to update');
-      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, isActive: !e.isActive } : e)));
+      if (!res.ok) throw new Error("Failed to update");
+      setAiTeam((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, isActive: !e.isActive } : e)),
+      );
     } catch (e) {
-      toast.error('Failed to update status');
+      toast.error("Failed to update status");
     }
   };
 
   // Update AI employee voice agent
-  const updateAiEmployeeVoiceAgent = async (id: string, voiceAgentId: string | null) => {
+  const updateAiEmployeeVoiceAgent = async (
+    id: string,
+    voiceAgentId: string | null,
+  ) => {
     try {
       const res = await fetch(`/api/ai-employees/user/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ voiceAgentId }),
       });
-      if (!res.ok) throw new Error('Failed to update');
-      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, voiceAgentId } : e)));
-      toast.success('Voice agent updated');
+      if (!res.ok) throw new Error("Failed to update");
+      setAiTeam((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, voiceAgentId } : e)),
+      );
+      toast.success("Voice agent updated");
     } catch (e) {
-      toast.error('Failed to update voice agent');
+      toast.error("Failed to update voice agent");
     }
   };
 
   // Update AI employee voice config (language, voice, etc.)
-  const updateAiEmployeeVoiceConfig = async (id: string, voiceConfig: { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null) => {
+  const updateAiEmployeeVoiceConfig = async (
+    id: string,
+    voiceConfig: {
+      voiceId?: string;
+      language?: string;
+      stability?: number;
+      speed?: number;
+      similarityBoost?: number;
+    } | null,
+  ) => {
     try {
       const res = await fetch(`/api/ai-employees/user/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ voiceConfig }),
       });
-      if (!res.ok) throw new Error('Failed to update');
-      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, voiceConfig } : e)));
-      toast.success('Voice settings updated');
+      if (!res.ok) throw new Error("Failed to update");
+      setAiTeam((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, voiceConfig } : e)),
+      );
+      toast.success("Voice settings updated");
     } catch (e) {
-      toast.error('Failed to update voice settings');
+      toast.error("Failed to update voice settings");
     }
   };
 
   // Get profession info
   const getProfessionInfo = (professionId: string) => {
-    return AI_PROFESSIONS.find(p => p.id === professionId);
+    return AI_PROFESSIONS.find((p) => p.id === professionId);
   };
 
   const fetchTeamMembers = async () => {
     try {
-      const res = await fetch('/api/team');
+      const res = await fetch("/api/team");
       if (res.ok) {
         const data = await res.json();
         setTeamMembers(Array.isArray(data?.members) ? data.members : []);
       }
-    } catch (e) { console.error('Failed to fetch team', e); }
+    } catch (e) {
+      console.error("Failed to fetch team", e);
+    }
   };
 
   // Workflow step management functions
   const addWorkflowStep = () => {
     const newStep = {
       id: `step_${Date.now()}`,
-      name: 'New Step',
-      type: 'email' as const,
+      name: "New Step",
+      type: "email" as const,
       enabled: true,
-      assignedTo: '',
+      assignedTo: "",
       delay: 0,
-      delayUnit: 'minutes' as const,
+      delayUnit: "minutes" as const,
       order: workflowSteps.length,
     };
     setWorkflowSteps([...workflowSteps, newStep]);
   };
 
   const removeWorkflowStep = (stepId: string) => {
-    setWorkflowSteps(workflowSteps.filter(s => s.id !== stepId).map((s, i) => ({ ...s, order: i })));
+    setWorkflowSteps(
+      workflowSteps
+        .filter((s) => s.id !== stepId)
+        .map((s, i) => ({ ...s, order: i })),
+    );
   };
 
-  const updateWorkflowStep = (stepId: string, updates: Partial<typeof workflowSteps[0]>) => {
-    setWorkflowSteps(workflowSteps.map(s => s.id === stepId ? { ...s, ...updates } : s));
+  const updateWorkflowStep = (
+    stepId: string,
+    updates: Partial<(typeof workflowSteps)[0]>,
+  ) => {
+    setWorkflowSteps(
+      workflowSteps.map((s) => (s.id === stepId ? { ...s, ...updates } : s)),
+    );
   };
 
   // Drag and drop handlers
@@ -842,8 +1098,8 @@ export default function AIEmployeesPage() {
     e.preventDefault();
     if (!draggedStep || draggedStep === targetId) return;
 
-    const draggedIndex = workflowSteps.findIndex(s => s.id === draggedStep);
-    const targetIndex = workflowSteps.findIndex(s => s.id === targetId);
+    const draggedIndex = workflowSteps.findIndex((s) => s.id === draggedStep);
+    const targetIndex = workflowSteps.findIndex((s) => s.id === targetId);
 
     const newSteps = [...workflowSteps];
     const [removed] = newSteps.splice(draggedIndex, 1);
@@ -859,26 +1115,152 @@ export default function AIEmployeesPage() {
   // Workflow templates
   const workflowTemplates: Record<string, typeof workflowSteps> = {
     customer_onboarding: [
-      { id: 'step_1', name: 'Welcome Call', type: 'call', enabled: true, assignedTo: '', delay: 0, delayUnit: 'minutes', order: 0 },
-      { id: 'step_2', name: 'Send Welcome Email', type: 'email', enabled: true, assignedTo: '', delay: 30, delayUnit: 'minutes', order: 1 },
-      { id: 'step_3', name: 'Schedule Onboarding Meeting', type: 'appointment', enabled: true, assignedTo: '', delay: 1, delayUnit: 'hours', order: 2 },
-      { id: 'step_4', name: 'Create Onboarding Tasks', type: 'task', enabled: true, assignedTo: '', delay: 2, delayUnit: 'hours', order: 3 },
+      {
+        id: "step_1",
+        name: "Welcome Call",
+        type: "call",
+        enabled: true,
+        assignedTo: "",
+        delay: 0,
+        delayUnit: "minutes",
+        order: 0,
+      },
+      {
+        id: "step_2",
+        name: "Send Welcome Email",
+        type: "email",
+        enabled: true,
+        assignedTo: "",
+        delay: 30,
+        delayUnit: "minutes",
+        order: 1,
+      },
+      {
+        id: "step_3",
+        name: "Schedule Onboarding Meeting",
+        type: "appointment",
+        enabled: true,
+        assignedTo: "",
+        delay: 1,
+        delayUnit: "hours",
+        order: 2,
+      },
+      {
+        id: "step_4",
+        name: "Create Onboarding Tasks",
+        type: "task",
+        enabled: true,
+        assignedTo: "",
+        delay: 2,
+        delayUnit: "hours",
+        order: 3,
+      },
     ],
     lead_nurturing: [
-      { id: 'step_1', name: 'Initial Email', type: 'email', enabled: true, assignedTo: '', delay: 0, delayUnit: 'minutes', order: 0 },
-      { id: 'step_2', name: 'Follow-up Call', type: 'call', enabled: true, assignedTo: '', delay: 2, delayUnit: 'days', order: 1 },
-      { id: 'step_3', name: 'SMS Reminder', type: 'sms', enabled: true, assignedTo: '', delay: 3, delayUnit: 'days', order: 2 },
+      {
+        id: "step_1",
+        name: "Initial Email",
+        type: "email",
+        enabled: true,
+        assignedTo: "",
+        delay: 0,
+        delayUnit: "minutes",
+        order: 0,
+      },
+      {
+        id: "step_2",
+        name: "Follow-up Call",
+        type: "call",
+        enabled: true,
+        assignedTo: "",
+        delay: 2,
+        delayUnit: "days",
+        order: 1,
+      },
+      {
+        id: "step_3",
+        name: "SMS Reminder",
+        type: "sms",
+        enabled: true,
+        assignedTo: "",
+        delay: 3,
+        delayUnit: "days",
+        order: 2,
+      },
     ],
     appointment_reminder: [
-      { id: 'step_1', name: 'Email Reminder', type: 'email', enabled: true, assignedTo: '', delay: 0, delayUnit: 'minutes', order: 0 },
-      { id: 'step_2', name: 'SMS Reminder', type: 'sms', enabled: true, assignedTo: '', delay: 1, delayUnit: 'hours', order: 1 },
-      { id: 'step_3', name: 'Confirmation Call', type: 'call', enabled: true, assignedTo: '', delay: 2, delayUnit: 'hours', order: 2 },
+      {
+        id: "step_1",
+        name: "Email Reminder",
+        type: "email",
+        enabled: true,
+        assignedTo: "",
+        delay: 0,
+        delayUnit: "minutes",
+        order: 0,
+      },
+      {
+        id: "step_2",
+        name: "SMS Reminder",
+        type: "sms",
+        enabled: true,
+        assignedTo: "",
+        delay: 1,
+        delayUnit: "hours",
+        order: 1,
+      },
+      {
+        id: "step_3",
+        name: "Confirmation Call",
+        type: "call",
+        enabled: true,
+        assignedTo: "",
+        delay: 2,
+        delayUnit: "hours",
+        order: 2,
+      },
     ],
     project_kickoff: [
-      { id: 'step_1', name: 'Kickoff Email', type: 'email', enabled: true, assignedTo: '', delay: 0, delayUnit: 'minutes', order: 0 },
-      { id: 'step_2', name: 'Create Project', type: 'project', enabled: true, assignedTo: '', delay: 30, delayUnit: 'minutes', order: 1 },
-      { id: 'step_3', name: 'Assign Initial Tasks', type: 'task', enabled: true, assignedTo: '', delay: 1, delayUnit: 'hours', order: 2 },
-      { id: 'step_4', name: 'Schedule Kickoff Meeting', type: 'appointment', enabled: true, assignedTo: '', delay: 2, delayUnit: 'hours', order: 3 },
+      {
+        id: "step_1",
+        name: "Kickoff Email",
+        type: "email",
+        enabled: true,
+        assignedTo: "",
+        delay: 0,
+        delayUnit: "minutes",
+        order: 0,
+      },
+      {
+        id: "step_2",
+        name: "Create Project",
+        type: "project",
+        enabled: true,
+        assignedTo: "",
+        delay: 30,
+        delayUnit: "minutes",
+        order: 1,
+      },
+      {
+        id: "step_3",
+        name: "Assign Initial Tasks",
+        type: "task",
+        enabled: true,
+        assignedTo: "",
+        delay: 1,
+        delayUnit: "hours",
+        order: 2,
+      },
+      {
+        id: "step_4",
+        name: "Schedule Kickoff Meeting",
+        type: "appointment",
+        enabled: true,
+        assignedTo: "",
+        delay: 2,
+        delayUnit: "hours",
+        order: 3,
+      },
     ],
     from_scratch: [],
   };
@@ -886,37 +1268,47 @@ export default function AIEmployeesPage() {
   const loadWorkflowTemplate = (templateKey: string) => {
     const template = workflowTemplates[templateKey];
     if (template) {
-      setWorkflowSteps(template.map(s => ({ ...s, id: `step_${Date.now()}_${s.order}` })));
+      setWorkflowSteps(
+        template.map((s) => ({ ...s, id: `step_${Date.now()}_${s.order}` })),
+      );
     }
     setWorkflowPurpose(templateKey);
   };
 
   const fetchVoiceAgents = async () => {
     try {
-      const res = await fetch('/api/voice-agents');
+      const res = await fetch("/api/voice-agents");
       if (res.ok) {
         const data = await res.json();
-        const agents = Array.isArray(data) ? data : (data.data ?? data.voiceAgents ?? data.agents ?? []);
-        setVoiceAgents(agents.filter((a: any) => a.status === 'ACTIVE'));
+        const agents = Array.isArray(data)
+          ? data
+          : data.data ?? data.voiceAgents ?? data.agents ?? [];
+        setVoiceAgents(agents.filter((a: any) => a.status === "ACTIVE"));
       }
-    } catch (e) { console.error('Failed to fetch voice agents', e); }
+    } catch (e) {
+      console.error("Failed to fetch voice agents", e);
+    }
   };
 
   const fetchAppointments = async () => {
     try {
-      const res = await fetch('/api/appointments');
+      const res = await fetch("/api/appointments");
       if (res.ok) {
         const data = await res.json();
-        setAppointments(Array.isArray(data?.appointments) ? data.appointments : []);
+        setAppointments(
+          Array.isArray(data?.appointments) ? data.appointments : [],
+        );
       }
-    } catch (e) { console.error('Failed to fetch appointments', e); }
+    } catch (e) {
+      console.error("Failed to fetch appointments", e);
+    }
   };
 
   const fetchJobs = async (silent = false) => {
     try {
       if (!silent) setRefreshing(true);
       setFetchError(null);
-      const response = await fetch('/api/ai-employees/jobs?limit=20');
+      const response = await fetch("/api/ai-employees/jobs?limit=20");
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -926,10 +1318,10 @@ export default function AIEmployeesPage() {
       if (data.success) {
         setJobs(Array.isArray(data?.data) ? data.data : []);
       } else {
-        throw new Error(data.error || 'Failed to fetch jobs');
+        throw new Error(data.error || "Failed to fetch jobs");
       }
     } catch (error: any) {
-      console.error('Failed to fetch jobs:', error);
+      console.error("Failed to fetch jobs:", error);
       if (!silent) {
         setFetchError(error.message);
       }
@@ -939,8 +1331,8 @@ export default function AIEmployeesPage() {
   };
 
   const viewJobResults = async (job: AIJob) => {
-    if (job.status !== 'COMPLETED' && job.status !== 'FAILED') {
-      toast.info('Job is still in progress...');
+    if (job.status !== "COMPLETED" && job.status !== "FAILED") {
+      toast.info("Job is still in progress...");
       return;
     }
 
@@ -959,7 +1351,7 @@ export default function AIEmployeesPage() {
         setShowResultsDialog(true);
       }
     } catch (error) {
-      console.error('Failed to fetch job details:', error);
+      console.error("Failed to fetch job details:", error);
       // Still show the job with available data
       setSelectedJob(job);
       setShowResultsDialog(true);
@@ -970,47 +1362,62 @@ export default function AIEmployeesPage() {
 
   const handleWorkflowTrigger = async () => {
     if (!customerName || !customerEmail) {
-      toast.error('Customer name and email are required');
+      toast.error("Customer name and email are required");
       return;
     }
 
-    const enabledSteps = workflowSteps.filter(s => s.enabled).sort((a, b) => a.order - b.order);
+    const enabledSteps = workflowSteps
+      .filter((s) => s.enabled)
+      .sort((a, b) => a.order - b.order);
     if (enabledSteps.length === 0) {
-      toast.error('At least one workflow step must be enabled');
+      toast.error("At least one workflow step must be enabled");
       return;
     }
 
     setWorkflowLoading(true);
 
     // Initialize progress tracking based on enabled steps
-    const progressSteps: { agent: string; status: 'pending' | 'running' | 'completed' | 'failed'; message: string }[] = enabledSteps.map((step, idx) => ({
+    const progressSteps: {
+      agent: string;
+      status: "pending" | "running" | "completed" | "failed";
+      message: string;
+    }[] = enabledSteps.map((step, idx) => ({
       agent: `Step ${idx + 1}: ${step.name}`,
-      status: idx === 0 ? 'running' : 'pending',
-      message: idx === 0 ? 'Starting...' : step.delay > 0 ? `Wait ${step.delay} ${step.delayUnit}` : 'Waiting...'
+      status: idx === 0 ? "running" : "pending",
+      message:
+        idx === 0
+          ? "Starting..."
+          : step.delay > 0
+            ? `Wait ${step.delay} ${step.delayUnit}`
+            : "Waiting...",
     }));
 
     setWorkflowProgress({
       active: true,
       currentAgent: enabledSteps[0].name,
-      steps: progressSteps
+      steps: progressSteps,
     });
 
     try {
       // Real-time progress updates
-      const updateProgress = (stepIndex: number, status: 'running' | 'completed', message: string) => {
-        setWorkflowProgress(prev => ({
+      const updateProgress = (
+        stepIndex: number,
+        status: "running" | "completed",
+        message: string,
+      ) => {
+        setWorkflowProgress((prev) => ({
           ...prev,
-          currentAgent: enabledSteps[stepIndex]?.name || '',
+          currentAgent: enabledSteps[stepIndex]?.name || "",
           steps: prev.steps.map((step, i) => {
-            if (i < stepIndex) return { ...step, status: 'completed' as const };
+            if (i < stepIndex) return { ...step, status: "completed" as const };
             if (i === stepIndex) return { ...step, status, message };
             return step;
-          })
+          }),
         }));
       };
 
       // Prepare workflow config with new flexible structure
-      const workflowConfig = enabledSteps.map(s => ({
+      const workflowConfig = enabledSteps.map((s) => ({
         id: s.id,
         name: s.name,
         type: s.type,
@@ -1020,15 +1427,15 @@ export default function AIEmployeesPage() {
         delayUnit: s.delayUnit,
         voiceAgentId: s.voiceAgentId,
         appointmentId: s.appointmentId,
-        order: s.order
+        order: s.order,
       }));
 
       // Start workflow with configuration
-      const response = await fetch('/api/ai-employees/workflow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai-employees/workflow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          triggerType: workflowPurpose || 'custom',
+          triggerType: workflowPurpose || "custom",
           workflowGoal: workflowGoal,
           workflowConfig: workflowConfig,
           data: {
@@ -1036,31 +1443,51 @@ export default function AIEmployeesPage() {
               name: customerName,
               email: customerEmail,
               phone: customerPhone || undefined,
-              company: customerName
+              company: customerName,
             },
             purchase: {
-              serviceType: serviceType || 'Professional Services',
+              serviceType: serviceType || "Professional Services",
               amount: parseFloat(purchaseAmount) || 5000,
-              description: `${serviceType || 'Service'} package for ${customerName}`
-            }
-          }
-        })
+              description: `${serviceType || "Service"} package for ${customerName}`,
+            },
+          },
+        }),
       });
 
       // Progress animation for enabled steps
       let animDelay = 1500;
       enabledSteps.forEach((step, idx) => {
-        const stepTypeLabel = step.type === 'call' ? 'Calling' : step.type === 'sms' ? 'Sending SMS' :
-          step.type === 'email' ? 'Sending Email' : step.type === 'task' ? 'Creating Task' :
-            step.type === 'appointment' ? 'Scheduling' : step.type === 'project' ? 'Creating Project' : 'Processing';
+        const stepTypeLabel =
+          step.type === "call"
+            ? "Calling"
+            : step.type === "sms"
+              ? "Sending SMS"
+              : step.type === "email"
+                ? "Sending Email"
+                : step.type === "task"
+                  ? "Creating Task"
+                  : step.type === "appointment"
+                    ? "Scheduling"
+                    : step.type === "project"
+                      ? "Creating Project"
+                      : "Processing";
 
         if (idx === 0) {
-          setTimeout(() => updateProgress(idx, 'completed', 'Done ✓'), animDelay);
+          setTimeout(
+            () => updateProgress(idx, "completed", "Done ✓"),
+            animDelay,
+          );
           animDelay += 1500;
         } else {
-          setTimeout(() => updateProgress(idx, 'running', `${stepTypeLabel}...`), animDelay);
+          setTimeout(
+            () => updateProgress(idx, "running", `${stepTypeLabel}...`),
+            animDelay,
+          );
           animDelay += 2000;
-          setTimeout(() => updateProgress(idx, 'completed', 'Done ✓'), animDelay);
+          setTimeout(
+            () => updateProgress(idx, "completed", "Done ✓"),
+            animDelay,
+          );
           animDelay += 500;
         }
       });
@@ -1070,16 +1497,22 @@ export default function AIEmployeesPage() {
       if (data.success) {
         // Mark all complete
         setTimeout(() => {
-          setWorkflowProgress(prev => ({
+          setWorkflowProgress((prev) => ({
             ...prev,
-            currentAgent: '',
-            steps: prev.steps.map(s => ({ ...s, status: 'completed' as const, message: 'Done ✓' }))
+            currentAgent: "",
+            steps: prev.steps.map((s) => ({
+              ...s,
+              status: "completed" as const,
+              message: "Done ✓",
+            })),
           }));
         }, 8000);
 
         setTimeout(() => {
-          toast.success(`Workflow completed! ${enabledSteps.length} steps executed successfully.`);
-          setWorkflowProgress({ active: false, currentAgent: '', steps: [] });
+          toast.success(
+            `Workflow completed! ${enabledSteps.length} steps executed successfully.`,
+          );
+          setWorkflowProgress({ active: false, currentAgent: "", steps: [] });
 
           // Create workflow result entry
           const workflowEntry = {
@@ -1087,39 +1520,41 @@ export default function AIEmployeesPage() {
             customerName,
             customerEmail,
             completedAt: new Date().toISOString(),
-            results: data.data
+            results: data.data,
           };
 
           // Store results and add to history
           setWorkflowResults({
             ...data.data,
             customerName,
-            customerEmail
+            customerEmail,
           });
 
           // Add to history (keep last 10)
-          setWorkflowHistory(prev => [workflowEntry, ...prev].slice(0, 10));
+          setWorkflowHistory((prev) => [workflowEntry, ...prev].slice(0, 10));
 
           setShowWorkflowResults(true);
-          setCustomerName('');
-          setCustomerEmail('');
-          setCustomerPhone('');
-          setPurchaseAmount('');
-          setServiceType('');
+          setCustomerName("");
+          setCustomerEmail("");
+          setCustomerPhone("");
+          setPurchaseAmount("");
+          setServiceType("");
           fetchJobs();
         }, 9000);
       } else {
-        setWorkflowProgress(prev => ({
+        setWorkflowProgress((prev) => ({
           ...prev,
           steps: prev.steps.map((s, i) =>
-            s.status === 'running' ? { ...s, status: 'failed' as const, message: 'Failed' } : s
-          )
+            s.status === "running"
+              ? { ...s, status: "failed" as const, message: "Failed" }
+              : s,
+          ),
         }));
-        toast.error(data.error || 'Failed to start workflow');
+        toast.error(data.error || "Failed to start workflow");
       }
     } catch (error: any) {
-      setWorkflowProgress({ active: false, currentAgent: '', steps: [] });
-      toast.error(error.message || 'Failed to start workflow');
+      setWorkflowProgress({ active: false, currentAgent: "", steps: [] });
+      toast.error(error.message || "Failed to start workflow");
     } finally {
       setWorkflowLoading(false);
     }
@@ -1127,11 +1562,11 @@ export default function AIEmployeesPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'COMPLETED':
+      case "COMPLETED":
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'RUNNING':
+      case "RUNNING":
         return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
-      case 'FAILED':
+      case "FAILED":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Clock className="h-4 w-4 text-gray-500" />;
@@ -1140,24 +1575,32 @@ export default function AIEmployeesPage() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
-      'COMPLETED': 'default',
-      'RUNNING': 'secondary',
-      'FAILED': 'destructive',
-      'PENDING': 'outline'
+      COMPLETED: "default",
+      RUNNING: "secondary",
+      FAILED: "destructive",
+      PENDING: "outline",
     };
-    return variants[status] || 'outline';
+    return variants[status] || "outline";
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
       <div className="relative z-10 container mx-auto py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              title="Back"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -1178,17 +1621,26 @@ export default function AIEmployeesPage() {
           </Button>
         </div>
 
-        {canProvisionAgents(session as any) && (
-          <AdminStatsCard />
-        )}
+        {canProvisionAgents(session as any) && <AdminStatsCard />}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full bg-white/80 border border-purple-200 backdrop-blur-sm ${isRealEstateUser && hasIndustryTeam ? 'grid-cols-8' :
-            isRealEstateUser ? 'grid-cols-7' :
-              hasIndustryTeam ? 'grid-cols-7' :
-                hasWorkflowSystem ? 'grid-cols-6' :
-                  'grid-cols-5'
-            }`}>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
+          <TabsList
+            className={`grid w-full bg-white/80 border border-purple-200 backdrop-blur-sm ${
+              isRealEstateUser && hasIndustryTeam
+                ? "grid-cols-8"
+                : isRealEstateUser
+                  ? "grid-cols-7"
+                  : hasIndustryTeam
+                    ? "grid-cols-7"
+                    : hasWorkflowSystem
+                      ? "grid-cols-6"
+                      : "grid-cols-5"
+            }`}
+          >
             <TabsTrigger
               value="ai-team"
               className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
@@ -1208,7 +1660,7 @@ export default function AIEmployeesPage() {
                 value="industry-team"
                 className="text-gray-600 data-[state=inactive]:hover:text-purple-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
               >
-                {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
+                {userIndustry === "DENTIST" ? "Dental Team" : "Industry Team"}
               </TabsTrigger>
             )}
             {(isRealEstateUser || hasWorkflowSystem) && (
@@ -1251,14 +1703,21 @@ export default function AIEmployeesPage() {
                       Professional AI Setup
                     </CardTitle>
                     <CardDescription>
-                      Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call. Test voice agents in the browser.
+                      Select a professional AI employee, assign a name and phone
+                      (if needed), then use in a workflow, campaign, or one-off
+                      call. Test voice agents in the browser.
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" asChild>
-                      <Link href="/dashboard/voice-agents">My Voice Agents</Link>
+                      <Link href="/dashboard/voice-agents">
+                        My Voice Agents
+                      </Link>
                     </Button>
-                    <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
+                    <Button
+                      onClick={() => setShowSetupDialog(true)}
+                      className="gap-2"
+                    >
                       <Settings className="h-4 w-4" />
                       Setup
                     </Button>
@@ -1274,17 +1733,20 @@ export default function AIEmployeesPage() {
           <SetupDialog
             open={showSetupDialog}
             onOpenChange={setShowSetupDialog}
-            onProvisionRefresh={() => { }}
+            onProvisionRefresh={() => {}}
             onSwitchToWorkflows={(professionalType) => {
               setSelectedProfessionalForWorkflow(professionalType);
-              setActiveTab('workflows');
+              setActiveTab("workflows");
             }}
           />
 
           <TabsContent value="monitor" className="space-y-4">
             {/* Unified Monitoring View - Shows all automation activity */}
             {session?.user?.id && (
-              <UnifiedMonitor userId={session.user.id} industry={userIndustry} />
+              <UnifiedMonitor
+                userId={session.user.id}
+                industry={userIndustry}
+              />
             )}
           </TabsContent>
 
@@ -1303,14 +1765,19 @@ export default function AIEmployeesPage() {
           {/* RE Team Tab - Only for Real Estate users */}
           {isRealEstateUser && (
             <TabsContent value="re-team" className="space-y-4">
-              <RealEstateAIEmployees isAdmin={canManageAIEmployeeTasks(session as any)} />
+              <RealEstateAIEmployees
+                isAdmin={canManageAIEmployeeTasks(session as any)}
+              />
             </TabsContent>
           )}
 
           {/* Industry Team Tab - Dental, Medical, etc. */}
           {hasIndustryTeam && userIndustry && (
             <TabsContent value="industry-team" className="space-y-4">
-              <IndustryAIEmployees industry={userIndustry} isAdmin={canManageAIEmployeeTasks(session as any)} />
+              <IndustryAIEmployees
+                industry={userIndustry}
+                isAdmin={canManageAIEmployeeTasks(session as any)}
+              />
             </TabsContent>
           )}
 
@@ -1318,31 +1785,69 @@ export default function AIEmployeesPage() {
           {(isRealEstateUser || hasWorkflowSystem) && (
             <TabsContent value="workflows" className="space-y-4">
               {isRealEstateUser ? (
-                <REWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'MEDICAL' ? (
-                <MedicalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'RESTAURANT' ? (
-                <RestaurantWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'CONSTRUCTION' ? (
-                <ConstructionWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'DENTIST' ? (
-                <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'MEDICAL_SPA' ? (
-                <MedicalSpaWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'OPTOMETRIST' ? (
-                <OptometristWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'HEALTH_CLINIC' ? (
-                <HealthClinicWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'HOSPITAL' ? (
-                <HospitalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'TECHNOLOGY' ? (
-                <TechnologyWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'SPORTS_CLUB' ? (
-                <SportsClubWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
-              ) : userIndustry === 'ORTHODONTIST' ? (
-                <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
+                <REWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "MEDICAL" ? (
+                <MedicalWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "RESTAURANT" ? (
+                <RestaurantWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "CONSTRUCTION" ? (
+                <ConstructionWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "DENTIST" ? (
+                <DentistWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "MEDICAL_SPA" ? (
+                <MedicalSpaWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "OPTOMETRIST" ? (
+                <OptometristWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "HEALTH_CLINIC" ? (
+                <HealthClinicWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "HOSPITAL" ? (
+                <HospitalWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "TECHNOLOGY" ? (
+                <TechnologyWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "SPORTS_CLUB" ? (
+                <SportsClubWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "RETAIL" ? (
+                <RetailWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "ACCOUNTING" ? (
+                <AccountingWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "LAW" ? (
+                <LawWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
+              ) : userIndustry === "ORTHODONTIST" ? (
+                <OrthodontistWorkflowsTab
+                  preSelectedAgent={selectedProfessionalForWorkflow}
+                />
               ) : (
-                <IndustryWorkflowsTab industry={userIndustry} preSelectedAgent={selectedProfessionalForWorkflow} />
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                  Industry workflow tab is not configured for {userIndustry}.
+                </div>
               )}
             </TabsContent>
           )}
