@@ -1,38 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { encrypt } from '@/lib/encryption';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { encrypt } from "@/lib/encryption";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'outlook-oauth-error', error: 'unauthorized' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
+        { headers: { "Content-Type": "text/html" } },
       );
     }
 
-    const code = request.nextUrl.searchParams.get('code');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return new NextResponse(
+        `<html><body><script>
+          window.opener.postMessage({ type: 'outlook-oauth-error', error: 'unauthorized' }, '*');
+          window.close();
+        </script></body></html>`,
+        { headers: { "Content-Type": "text/html" } },
+      );
+    }
+    const db = getCrmDb(ctx);
+
+    const code = request.nextUrl.searchParams.get("code");
     if (!code) {
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'outlook-oauth-error', error: 'no_code' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
+        { headers: { "Content-Type": "text/html" } },
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
 
     if (!user) {
@@ -41,62 +54,74 @@ export async function GET(request: NextRequest) {
           window.opener.postMessage({ type: 'outlook-oauth-error', error: 'user_not_found' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
+        { headers: { "Content-Type": "text/html" } },
       );
     }
 
-    const clientId = process.env.MICROSOFT_CLIENT_ID || process.env.AZURE_CLIENT_ID || '';
-    const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET || '';
+    const clientId =
+      process.env.MICROSOFT_CLIENT_ID || process.env.AZURE_CLIENT_ID || "";
+    const clientSecret =
+      process.env.MICROSOFT_CLIENT_SECRET ||
+      process.env.AZURE_CLIENT_SECRET ||
+      "";
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/outlook/callback`;
 
-    const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
+    const tokenResponse = await fetch(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      },
+    );
 
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error('Outlook token exchange failed:', tokenData);
+      console.error("Outlook token exchange failed:", tokenData);
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'outlook-oauth-error', error: 'token_exchange_failed' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
+        { headers: { "Content-Type": "text/html" } },
       );
     }
 
-    const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
+    const profileResponse = await fetch(
+      "https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName",
+      {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      },
+    );
     const profileData = await profileResponse.json();
-    const email = profileData.mail || profileData.userPrincipalName || '';
+    const email = profileData.mail || profileData.userPrincipalName || "";
 
     const expiresAt = tokenData.expires_in
       ? new Date(Date.now() + tokenData.expires_in * 1000)
       : null;
 
-    const existing = await (prisma as any).channelConnection.findFirst({
+    const existing = await db.channelConnection.findFirst({
       where: {
-        userId: user.id,
-        channelType: 'EMAIL',
+        userId: ctx.userId,
+        channelType: "EMAIL",
         channelIdentifier: email,
-        providerType: 'outlook',
+        providerType: "outlook",
       },
     });
 
     const connData = {
-      status: 'CONNECTED' as const,
+      status: "CONNECTED" as const,
       accessToken: encrypt(tokenData.access_token),
-      refreshToken: tokenData.refresh_token ? encrypt(tokenData.refresh_token) : undefined,
+      refreshToken: tokenData.refresh_token
+        ? encrypt(tokenData.refresh_token)
+        : undefined,
       expiresAt,
       displayName: email,
       providerData: {
@@ -106,17 +131,17 @@ export async function GET(request: NextRequest) {
     };
 
     if (existing) {
-      await (prisma as any).channelConnection.update({
+      await db.channelConnection.update({
         where: { id: existing.id },
         data: connData,
       });
     } else {
-      await (prisma as any).channelConnection.create({
+      await db.channelConnection.create({
         data: {
-          userId: user.id,
-          channelType: 'EMAIL',
+          userId: ctx.userId,
+          channelType: "EMAIL",
           channelIdentifier: email,
-          providerType: 'outlook',
+          providerType: "outlook",
           syncEnabled: true,
           ...connData,
         },
@@ -128,16 +153,16 @@ export async function GET(request: NextRequest) {
         window.opener.postMessage({ type: 'outlook-oauth-success' }, '*');
         window.close();
       </script></body></html>`,
-      { headers: { 'Content-Type': 'text/html' } }
+      { headers: { "Content-Type": "text/html" } },
     );
   } catch (error) {
-    console.error('Outlook callback error:', error);
+    console.error("Outlook callback error:", error);
     return new NextResponse(
       `<html><body><script>
         window.opener.postMessage({ type: 'outlook-oauth-error', error: 'callback_failed' }, '*');
         window.close();
       </script></body></html>`,
-      { headers: { 'Content-Type': 'text/html' } }
+      { headers: { "Content-Type": "text/html" } },
     );
   }
 }

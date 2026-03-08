@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
 import { generateReservationSystemPrompt } from "@/lib/voice-reservation-helper";
 import { VOICE_AGENT_LIMIT } from "@/lib/voice-agent-templates";
@@ -66,18 +67,18 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id && !session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    // Look up user from main DB (where provision writes agents). Prefer email for consistency across meta/main DB split.
-    let user = session.user.email
-      ? await prisma.user.findUnique({ where: { email: session.user.email } })
-      : null;
-    if (!user && session.user.id) {
-      user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
-    const userId = user?.id ?? session.user.id;
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({ where: { id: ctx.userId } });
+    const userId = user?.id ?? ctx.userId;
     if (!userId) {
       return apiErrors.notFound("User not found");
     }
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
     const pagination = parsePagination(request);
 
     // VoiceAgent, Industry/RE/Professional AI Employee agents all live in main DB (provision writes there)
-    const agents = await (prisma as any).voiceAgent.findMany({
+    const agents = await (db as any).voiceAgent.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       include: {
@@ -102,9 +103,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Include Industry AI Employee agents (Dental, Medical, Orthodontist, etc.)
-    const industryAgents = await (
-      prisma as any
-    ).industryAIEmployeeAgent.findMany({
+    const industryAgents = await (db as any).industryAIEmployeeAgent.findMany({
       where: { userId, status: "active" },
     });
 
@@ -122,7 +121,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Include RE AI Employee agents (Sarah, Michael, etc.) for preview
-    const reAgents = await (prisma as any).rEAIEmployeeAgent.findMany({
+    const reAgents = await (db as any).rEAIEmployeeAgent.findMany({
       where: { userId },
     });
     const reAgentsForPreview = reAgents.map((a: any) => ({
@@ -138,9 +137,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Include Professional AI Employee agents (Accountant, Developer, etc.) for preview
-    const profAgents = await (
-      prisma as any
-    ).professionalAIEmployeeAgent.findMany({
+    const profAgents = await (db as any).professionalAIEmployeeAgent.findMany({
       where: { userId },
     });
     const profAgentsForPreview = profAgents.map((a: any) => ({
@@ -156,7 +153,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get AI employee counts per agent
-    const aiEmployeeCounts = await (prisma as any).userAIEmployee.groupBy({
+    const aiEmployeeCounts = await (db as any).userAIEmployee.groupBy({
       by: ["voiceAgentId"],
       where: {
         userId,
@@ -277,17 +274,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return apiErrors.unauthorized();
+    if (!session?.user?.id) return apiErrors.unauthorized();
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
     if (!user) return apiErrors.notFound("User not found");
 
     // Enforce 12-agent limit (super admins bypass)
     if (user.role !== "SUPER_ADMIN") {
-      const existingCount = await (prisma as any).voiceAgent.count({
-        where: { userId: user.id },
+      const existingCount = await (db as any).voiceAgent.count({
+        where: { userId: ctx.userId },
       });
       if (existingCount >= VOICE_AGENT_LIMIT) {
         return NextResponse.json(
@@ -396,9 +397,9 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
 
     // Create agent in database
     const agentType = body.type || "INBOUND";
-    const agent = await (prisma as any).voiceAgent.create({
+    const agent = await (db as any).voiceAgent.create({
       data: {
-        userId: user.id,
+        userId: ctx.userId,
         name: body.name,
         description: body.description,
         type: agentType,
@@ -475,12 +476,12 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
     // Associate knowledge base files with the agent
     if (knowledgeBaseFileIds.length > 0) {
       try {
-        const ownedFiles = await (prisma as any).knowledgeBaseFile.findMany({
-          where: { id: { in: knowledgeBaseFileIds }, userId: user.id },
+        const ownedFiles = await (db as any).knowledgeBaseFile.findMany({
+          where: { id: { in: knowledgeBaseFileIds }, userId: ctx.userId },
           select: { id: true },
         });
         if (ownedFiles.length > 0) {
-          await (prisma as any).voiceAgentKnowledgeBaseFile.createMany({
+          await (db as any).voiceAgentKnowledgeBaseFile.createMany({
             data: ownedFiles.map((f: any) => ({
               voiceAgentId: agent.id,
               knowledgeBaseFileId: f.id,
@@ -504,13 +505,13 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
     ];
 
     try {
-      const whereClause: any = { userId: user.id };
+      const whereClause: any = { userId: ctx.userId };
       if (knowledgeBaseFileIds.length > 0) {
         whereClause.id = { in: knowledgeBaseFileIds };
       }
 
       const userKnowledgeBaseFiles = await (
-        prisma as any
+        db as any
       ).knowledgeBaseFile.findMany({
         where: whereClause,
         orderBy: { createdAt: "desc" },
@@ -537,8 +538,8 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
       }
 
       // Import onboarding documents
-      const userWithProgress: any = await prisma.user.findUnique({
-        where: { id: user.id },
+      const userWithProgress: any = await db.user.findUnique({
+        where: { id: ctx.userId },
         select: { onboardingProgress: true },
       } as any);
 
@@ -572,7 +573,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
       }
 
       if (enhancedKnowledgeBase) {
-        await (prisma as any).voiceAgent.update({
+        await (db as any).voiceAgent.update({
           where: { id: agent.id },
           data: {
             knowledgeBase: enhancedKnowledgeBase,
@@ -608,7 +609,7 @@ ${enhancedKnowledgeBase || "Answer customer questions professionally and helpful
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ""}`;
       }
-      await (prisma as any).voiceAgent.update({
+      await (db as any).voiceAgent.update({
         where: { id: agent.id },
         data: { systemPrompt: finalSystemPrompt },
       });
@@ -623,7 +624,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
           subscriptionCheck.success &&
           !subscriptionCheck.canUsePhoneNumbers
         ) {
-          await (prisma as any).voiceAgent.delete({ where: { id: agent.id } });
+          await (db as any).voiceAgent.delete({ where: { id: agent.id } });
           return NextResponse.json(
             {
               error: "Soshogle AI plan upgrade required",
@@ -665,7 +666,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         language: "en",
         maxCallDuration: body.maxCallDuration,
         twilioPhoneNumber: body.twilioPhoneNumber,
-        userId: user.id,
+        userId: ctx.userId,
         voiceAgentId: agent.id,
       });
 
@@ -675,7 +676,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
           provisionResult.error,
         );
         try {
-          await (prisma as any).voiceAgent.delete({ where: { id: agent.id } });
+          await (db as any).voiceAgent.delete({ where: { id: agent.id } });
         } catch (e: any) {
           console.error("[voice-agents] Rollback failed:", e.message);
         }
@@ -695,7 +696,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         provisionError.message,
       );
       try {
-        await (prisma as any).voiceAgent.delete({ where: { id: agent.id } });
+        await (db as any).voiceAgent.delete({ where: { id: agent.id } });
       } catch (e: any) {
         console.error("[voice-agents] Rollback failed:", e.message);
       }
@@ -708,7 +709,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
       );
     }
 
-    const updatedAgent = await (prisma as any).voiceAgent.findUnique({
+    const updatedAgent = await (db as any).voiceAgent.findUnique({
       where: { id: agent.id },
     });
     return NextResponse.json(updatedAgent || agent, { status: 201 });

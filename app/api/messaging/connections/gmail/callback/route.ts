@@ -1,40 +1,52 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { encrypt } from "@/lib/encryption";
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { encrypt } from '@/lib/encryption'
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'gmail-oauth-error', error: 'unauthorized' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
-      )
+        { headers: { "Content-Type": "text/html" } },
+      );
     }
 
-    const code = request.nextUrl.searchParams.get('code')
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return new NextResponse(
+        `<html><body><script>
+          window.opener.postMessage({ type: 'gmail-oauth-error', error: 'unauthorized' }, '*');
+          window.close();
+        </script></body></html>`,
+        { headers: { "Content-Type": "text/html" } },
+      );
+    }
+    const db = getCrmDb(ctx);
+
+    const code = request.nextUrl.searchParams.get("code");
     if (!code) {
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'gmail-oauth-error', error: 'no_code' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
-      )
+        { headers: { "Content-Type": "text/html" } },
+      );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
+    });
 
     if (!user) {
       return new NextResponse(
@@ -42,101 +54,105 @@ export async function GET(request: NextRequest) {
           window.opener.postMessage({ type: 'gmail-oauth-error', error: 'user_not_found' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
-      )
+        { headers: { "Content-Type": "text/html" } },
+      );
     }
 
     // Exchange code for tokens
-    const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID || ''
-    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_SECRET || ''
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/gmail/callback`
+    const googleClientId =
+      process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID || "";
+    const googleClientSecret =
+      process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_SECRET || "";
+    const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/gmail/callback`;
 
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         code,
         client_id: googleClientId,
         client_secret: googleClientSecret,
         redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
-      })
-    })
+        grant_type: "authorization_code",
+      }),
+    });
 
-    const tokenData = await tokenResponse.json()
+    const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error('Gmail token exchange failed:', tokenData)
+      console.error("Gmail token exchange failed:", tokenData);
       return new NextResponse(
         `<html><body><script>
           window.opener.postMessage({ type: 'gmail-oauth-error', error: 'token_exchange_failed' }, '*');
           window.close();
         </script></body></html>`,
-        { headers: { 'Content-Type': 'text/html' } }
-      )
+        { headers: { "Content-Type": "text/html" } },
+      );
     }
 
     // Get user's Gmail email address
     const profileResponse = await fetch(
-      'https://www.googleapis.com/oauth2/v2/userinfo',
+      "https://www.googleapis.com/oauth2/v2/userinfo",
       {
         headers: {
-          Authorization: `Bearer ${tokenData.access_token}`
-        }
-      }
-    )
-    const profileData = await profileResponse.json()
-    
-    // Calculate token expiry
-    const expiresAt = tokenData.expires_in 
-      ? new Date(Date.now() + tokenData.expires_in * 1000)
-      : null
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      },
+    );
+    const profileData = await profileResponse.json();
 
-    const existing = await prisma.channelConnection.findFirst({
+    // Calculate token expiry
+    const expiresAt = tokenData.expires_in
+      ? new Date(Date.now() + tokenData.expires_in * 1000)
+      : null;
+
+    const existing = await db.channelConnection.findFirst({
       where: {
-        userId: user.id,
-        channelType: 'EMAIL',
-        channelIdentifier: profileData.email
-      }
+        userId: ctx.userId,
+        channelType: "EMAIL",
+        channelIdentifier: profileData.email,
+      },
     });
-    
+
     const encryptedAccess = encrypt(tokenData.access_token);
-    const encryptedRefresh = tokenData.refresh_token ? encrypt(tokenData.refresh_token) : undefined;
+    const encryptedRefresh = tokenData.refresh_token
+      ? encrypt(tokenData.refresh_token)
+      : undefined;
 
     if (existing) {
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: existing.id },
         data: {
-          status: 'CONNECTED',
+          status: "CONNECTED",
           accessToken: encryptedAccess,
           refreshToken: encryptedRefresh,
           expiresAt,
           displayName: profileData.email,
           providerData: {
             email: profileData.email,
-            name: profileData.name
-          }
-        }
+            name: profileData.name,
+          },
+        },
       });
     } else {
-      await prisma.channelConnection.create({
+      await db.channelConnection.create({
         data: {
-          userId: user.id,
-          channelType: 'EMAIL',
+          userId: ctx.userId,
+          channelType: "EMAIL",
           channelIdentifier: profileData.email,
           displayName: profileData.email,
-          status: 'CONNECTED',
-          providerType: 'gmail',
+          status: "CONNECTED",
+          providerType: "gmail",
           accessToken: encryptedAccess,
           refreshToken: encryptedRefresh,
           expiresAt,
           providerData: {
             email: profileData.email,
-            name: profileData.name
-          }
-        }
+            name: profileData.name,
+          },
+        },
       });
     }
 
@@ -145,16 +161,16 @@ export async function GET(request: NextRequest) {
         window.opener.postMessage({ type: 'gmail-oauth-success' }, '*');
         window.close();
       </script></body></html>`,
-      { headers: { 'Content-Type': 'text/html' } }
-    )
+      { headers: { "Content-Type": "text/html" } },
+    );
   } catch (error) {
-    console.error('Gmail callback error:', error)
+    console.error("Gmail callback error:", error);
     return new NextResponse(
       `<html><body><script>
         window.opener.postMessage({ type: 'gmail-oauth-error', error: 'callback_failed' }, '*');
         window.close();
       </script></body></html>`,
-      { headers: { 'Content-Type': 'text/html' } }
-    )
+      { headers: { "Content-Type": "text/html" } },
+    );
   }
 }

@@ -1,14 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
-import { ensureMultilingualPrompt, getElevenLabsLanguageCode } from '@/lib/voice-languages';
-import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { generateReservationSystemPrompt } from "@/lib/voice-reservation-helper";
+import {
+  ensureMultilingualPrompt,
+  getElevenLabsLanguageCode,
+} from "@/lib/voice-languages";
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from "@/lib/voice-time-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * PATCH /api/voice-agents/[id]/sync-onboarding-docs
@@ -17,72 +21,86 @@ export const runtime = 'nodejs';
  */
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Await params in Next.js 15+
     const params = await context.params;
 
     // Fetch the voice agent
-    const agent = await prisma.voiceAgent.findUnique({
+    const agent = await db.voiceAgent.findUnique({
       where: { id: params.id },
     });
 
     if (!agent) {
-      return apiErrors.notFound('Voice agent not found');
+      return apiErrors.notFound("Voice agent not found");
     }
 
     // Verify ownership
-    if (agent.userId !== user.id) {
-      return apiErrors.forbidden('Unauthorized');
+    if (agent.userId !== ctx.userId) {
+      return apiErrors.forbidden("Unauthorized");
     }
 
-    console.log('📚 Syncing onboarding documents to agent:', agent.name);
+    console.log("📚 Syncing onboarding documents to agent:", agent.name);
 
     // Fetch onboarding documents
-    const userWithProgress = await prisma.user.findUnique({
-      where: { id: user.id },
+    const userWithProgress = await db.user.findUnique({
+      where: { id: ctx.userId },
       select: { onboardingProgress: true },
     });
 
     if (!userWithProgress?.onboardingProgress) {
-      return apiErrors.notFound('No onboarding progress found');
+      return apiErrors.notFound("No onboarding progress found");
     }
 
     let progress: any = {};
     try {
       progress = JSON.parse(userWithProgress.onboardingProgress as string);
     } catch (e) {
-      return apiErrors.internal('Could not parse onboarding progress');
+      return apiErrors.internal("Could not parse onboarding progress");
     }
 
-    if (!progress.uploadedDocuments || progress.uploadedDocuments.length === 0) {
-      return apiErrors.notFound('No onboarding documents found to sync');
+    if (
+      !progress.uploadedDocuments ||
+      progress.uploadedDocuments.length === 0
+    ) {
+      return apiErrors.notFound("No onboarding documents found to sync");
     }
 
-    console.log(`📄 Found ${progress.uploadedDocuments.length} onboarding document(s)`);
+    console.log(
+      `📄 Found ${progress.uploadedDocuments.length} onboarding document(s)`,
+    );
 
     // Build enhanced knowledge base
-    let enhancedKnowledgeBase = agent.knowledgeBase || '';
+    let enhancedKnowledgeBase = agent.knowledgeBase || "";
     let knowledgeBaseFiles: any[] = [];
 
     // Get existing knowledge base sources
     let knowledgeBaseSources: any = { texts: [], urls: [], files: [] };
-    if (agent.knowledgeBaseSources && typeof agent.knowledgeBaseSources === 'object') {
+    if (
+      agent.knowledgeBaseSources &&
+      typeof agent.knowledgeBaseSources === "object"
+    ) {
       knowledgeBaseSources = agent.knowledgeBaseSources;
     }
 
@@ -97,13 +115,13 @@ export async function PATCH(
         });
         return `\n\n--- Document ${idx + 1}: ${doc.fileName} ---\n${doc.extractedText}`;
       })
-      .join('\n');
+      .join("\n");
 
     if (documentTexts) {
       // Remove any existing onboarding document section first
       enhancedKnowledgeBase = enhancedKnowledgeBase.replace(
         /=== KNOWLEDGE BASE FROM UPLOADED DOCUMENTS ===[\s\S]*/,
-        ''
+        "",
       );
 
       // Add the new onboarding documents
@@ -112,7 +130,7 @@ export async function PATCH(
         : `=== KNOWLEDGE BASE FROM UPLOADED DOCUMENTS ===${documentTexts}`;
 
       console.log(
-        `✅ Imported ${progress.uploadedDocuments.length} document(s) (${documentTexts.length} characters)`
+        `✅ Imported ${progress.uploadedDocuments.length} document(s) (${documentTexts.length} characters)`,
       );
 
       // Rebuild system prompt with enhanced knowledge base
@@ -127,23 +145,25 @@ export async function PATCH(
       } else {
         // Rebuild the default prompt with enhanced knowledge base
         finalSystemPrompt = `You are an AI voice assistant for ${agent.businessName}${
-          agent.businessIndustry ? ` in the ${agent.businessIndustry} industry` : ''
+          agent.businessIndustry
+            ? ` in the ${agent.businessIndustry} industry`
+            : ""
         }.
 
-${enhancedKnowledgeBase || 'Answer customer questions professionally and helpfully.'}
+${enhancedKnowledgeBase || "Answer customer questions professionally and helpfully."}
 
 ${
-          agent.greetingMessage
-            ? `Start conversations with: ${agent.greetingMessage}`
-            : ''
-        }`;
+  agent.greetingMessage
+    ? `Start conversations with: ${agent.greetingMessage}`
+    : ""
+}`;
       }
 
       // Ensure multilingual prompt (removes "Respond in English" etc.)
       const multilingualPrompt = ensureMultilingualPrompt(finalSystemPrompt);
 
       // Update the agent in database
-      const updatedAgent = await prisma.voiceAgent.update({
+      const updatedAgent = await db.voiceAgent.update({
         where: { id: agent.id },
         data: {
           knowledgeBase: enhancedKnowledgeBase,
@@ -151,30 +171,33 @@ ${
           knowledgeBaseSources: {
             texts: knowledgeBaseSources.texts || [],
             urls: knowledgeBaseSources.urls || [],
-            files: [...(knowledgeBaseSources.files || []), ...knowledgeBaseFiles],
+            files: [
+              ...(knowledgeBaseSources.files || []),
+              ...knowledgeBaseFiles,
+            ],
           },
         },
       });
 
-      console.log('✅ Database updated with enhanced knowledge base');
+      console.log("✅ Database updated with enhanced knowledge base");
 
       // Update ElevenLabs agent if it exists
       if (agent.elevenLabsAgentId) {
-        console.log('🔄 Updating ElevenLabs agent:', agent.elevenLabsAgentId);
+        console.log("🔄 Updating ElevenLabs agent:", agent.elevenLabsAgentId);
 
         try {
           const apiKey = process.env.ELEVENLABS_API_KEY;
 
           if (!apiKey) {
-            console.warn('⚠️  ElevenLabs API key not configured');
+            console.warn("⚠️  ElevenLabs API key not configured");
             return NextResponse.json(
               {
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but could not sync to Soshogle Voice AI (API key not configured)',
+                  "Knowledge base updated in database but could not sync to Soshogle Voice AI (API key not configured)",
               },
-              { status: 200 }
+              { status: 200 },
             );
           }
 
@@ -183,34 +206,40 @@ ${
             `https://api.elevenlabs.io/v1/convai/agents/${agent.elevenLabsAgentId}`,
             {
               headers: {
-                'xi-api-key': apiKey,
+                "xi-api-key": apiKey,
               },
-            }
+            },
           );
 
           if (!getResponse.ok) {
             const error = await getResponse.text();
-            console.error('❌ Failed to fetch ElevenLabs agent:', error);
+            console.error("❌ Failed to fetch ElevenLabs agent:", error);
             return NextResponse.json(
               {
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but failed to fetch voice agent: ' +
+                  "Knowledge base updated in database but failed to fetch voice agent: " +
                   error,
               },
-              { status: 200 }
+              { status: 200 },
             );
           }
 
           const currentConfig = await getResponse.json();
-          console.log('📋 Current ElevenLabs config retrieved');
+          console.log("📋 Current ElevenLabs config retrieved");
 
           // Update the ElevenLabs agent prompt while preserving other settings
-          const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+          const { getConfidentialityGuard } = await import(
+            "@/lib/ai-confidentiality-guard"
+          );
           const promptWithGuard =
-            multilingualPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
-          const { PLATFORM_SETTINGS_WITH_OVERRIDES } = await import('@/lib/elevenlabs-overrides');
+            multilingualPrompt +
+            EASTERN_TIME_SYSTEM_INSTRUCTION +
+            getConfidentialityGuard();
+          const { PLATFORM_SETTINGS_WITH_OVERRIDES } = await import(
+            "@/lib/elevenlabs-overrides"
+          );
           const updatePayload = {
             conversation_config: {
               ...currentConfig.conversation_config,
@@ -219,8 +248,13 @@ ${
                 prompt: {
                   prompt: promptWithGuard,
                 },
-                first_message: agent.greetingMessage || agent.firstMessage || currentConfig.conversation_config?.agent?.first_message,
-                language: getElevenLabsLanguageCode(currentConfig.conversation_config?.agent?.language || 'en'),
+                first_message:
+                  agent.greetingMessage ||
+                  agent.firstMessage ||
+                  currentConfig.conversation_config?.agent?.first_message,
+                language: getElevenLabsLanguageCode(
+                  currentConfig.conversation_config?.agent?.language || "en",
+                ),
               },
             },
             platform_settings: {
@@ -229,60 +263,65 @@ ${
             },
           };
 
-          console.log('📤 Sending update to ElevenLabs...');
+          console.log("📤 Sending update to ElevenLabs...");
 
           const response = await fetch(
             `https://api.elevenlabs.io/v1/convai/agents/${agent.elevenLabsAgentId}`,
             {
-              method: 'PATCH',
+              method: "PATCH",
               headers: {
-                'xi-api-key': apiKey,
-                'Content-Type': 'application/json',
+                "xi-api-key": apiKey,
+                "Content-Type": "application/json",
               },
               body: JSON.stringify(updatePayload),
-            }
+            },
           );
 
           if (!response.ok) {
             const error = await response.text();
-            console.error('❌ Failed to update ElevenLabs agent:', error);
+            console.error("❌ Failed to update ElevenLabs agent:", error);
             return NextResponse.json(
               {
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but failed to sync to Soshogle Voice AI. Error: ' +
+                  "Knowledge base updated in database but failed to sync to Soshogle Voice AI. Error: " +
                   error,
               },
-              { status: 200 }
+              { status: 200 },
             );
           }
 
           const updatedElevenLabsAgent = await response.json();
-          console.log('✅ ElevenLabs agent updated successfully');
-          console.log('✅ Updated prompt length:', multilingualPrompt.length, 'characters');
+          console.log("✅ ElevenLabs agent updated successfully");
+          console.log(
+            "✅ Updated prompt length:",
+            multilingualPrompt.length,
+            "characters",
+          );
 
           return NextResponse.json({
             success: true,
             agent: updatedAgent,
             elevenLabsAgent: updatedElevenLabsAgent,
-            message: 'Onboarding documents synced successfully to both database and Soshogle Voice AI',
+            message:
+              "Onboarding documents synced successfully to both database and Soshogle Voice AI",
             details: {
               documentsCount: progress.uploadedDocuments.length,
               promptLength: multilingualPrompt.length,
             },
           });
         } catch (error: any) {
-          console.error('❌ Error updating ElevenLabs agent:', error);
+          console.error("❌ Error updating ElevenLabs agent:", error);
           return NextResponse.json(
             {
               success: true,
               agent: updatedAgent,
               warning:
-                'Knowledge base updated in database but failed to sync to Soshogle Voice AI: ' +
+                "Knowledge base updated in database but failed to sync to Soshogle Voice AI: " +
                 error.message,
             },
-            { status: 200 }
+            { status: 200 },
           );
         }
       }
@@ -290,19 +329,19 @@ ${
       return NextResponse.json({
         success: true,
         agent: updatedAgent,
-        message: 'Onboarding documents synced successfully',
+        message: "Onboarding documents synced successfully",
       });
     }
 
-    return apiErrors.badRequest('No valid document texts found to import');
+    return apiErrors.badRequest("No valid document texts found to import");
   } catch (error: any) {
-    console.error('❌ Error syncing onboarding documents:', error);
+    console.error("❌ Error syncing onboarding documents:", error);
     return NextResponse.json(
       {
-        error: 'Failed to sync onboarding documents',
+        error: "Failed to sync onboarding documents",
         details: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

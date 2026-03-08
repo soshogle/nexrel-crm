@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { generateReservationSystemPrompt } from "@/lib/voice-reservation-helper";
 import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from "@/lib/voice-time-context";
@@ -19,22 +20,28 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
 
     if (!user) {
       return apiErrors.notFound("User not found");
     }
 
-    const agent = await prisma.voiceAgent.findFirst({
+    const agent = await db.voiceAgent.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
       include: {
         callLogs: {
@@ -74,12 +81,18 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
 
     if (!user) {
@@ -97,7 +110,7 @@ export async function PUT(
 
       // Fetch only files associated with this specific agent via junction table
       const agentFileAssociations =
-        await prisma.voiceAgentKnowledgeBaseFile.findMany({
+        await db.voiceAgentKnowledgeBaseFile.findMany({
           where: {
             voiceAgentId: params.id,
           },
@@ -110,7 +123,7 @@ export async function PUT(
       // Extract the knowledge base files and filter by userId for security
       const userKnowledgeBaseFiles = agentFileAssociations
         .map((association) => association.knowledgeBaseFile)
-        .filter((file) => file.userId === user.id);
+        .filter((file) => file.userId === ctx.userId);
 
       if (userKnowledgeBaseFiles.length > 0) {
         console.log(
@@ -171,14 +184,14 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
       systemPrompt = `${LANGUAGE_PROMPT_SECTION}\n\n${systemPrompt}`;
     }
 
-    const originalAgent = await prisma.voiceAgent.findFirst({
-      where: { id: params.id, userId: user.id },
+    const originalAgent = await db.voiceAgent.findFirst({
+      where: { id: params.id, userId: ctx.userId },
     });
 
-    const agent = await prisma.voiceAgent.updateMany({
+    const agent = await db.voiceAgent.updateMany({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
       data: {
         // Basic Info
@@ -294,7 +307,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
       return apiErrors.notFound("Voice agent not found");
     }
 
-    const updatedAgent = await prisma.voiceAgent.findUnique({
+    const updatedAgent = await db.voiceAgent.findUnique({
       where: { id: params.id },
     });
 
@@ -317,10 +330,10 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         const importResult = await elevenLabsProvisioning.importPhoneNumber(
           formattedPhone,
           updatedAgent.elevenLabsAgentId,
-          user.id,
+          ctx.userId,
         );
         if (importResult.success) {
-          await prisma.voiceAgent.update({
+          await db.voiceAgent.update({
             where: { id: params.id },
             data: { elevenLabsPhoneNumberId: importResult.phoneNumberId },
           });
@@ -376,7 +389,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         await elevenLabsProvisioning.updateAgent(
           updatedAgent.elevenLabsAgentId,
           elevenLabsUpdates,
-          user.id,
+          ctx.userId,
         );
 
         console.log(
@@ -401,7 +414,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         console.log(`🔗 Updating file associations for agent ${params.id}...`);
 
         // Remove all existing associations for this agent
-        await prisma.voiceAgentKnowledgeBaseFile.deleteMany({
+        await db.voiceAgentKnowledgeBaseFile.deleteMany({
           where: {
             voiceAgentId: params.id,
           },
@@ -411,16 +424,16 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         // Add new associations if any files are provided
         if (body.knowledgeBaseFileIds.length > 0) {
           // Verify user owns these files
-          const ownedFiles = await prisma.knowledgeBaseFile.findMany({
+          const ownedFiles = await db.knowledgeBaseFile.findMany({
             where: {
               id: { in: body.knowledgeBaseFileIds },
-              userId: user.id,
+              userId: ctx.userId,
             },
             select: { id: true },
           });
 
           // Create new junction table entries
-          await prisma.voiceAgentKnowledgeBaseFile.createMany({
+          await db.voiceAgentKnowledgeBaseFile.createMany({
             data: ownedFiles.map((file) => ({
               voiceAgentId: params.id,
               knowledgeBaseFileId: file.id,
@@ -453,12 +466,18 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
     });
 
     if (!user) {
@@ -466,10 +485,10 @@ export async function DELETE(
     }
 
     // First, get the agent to retrieve the ElevenLabs agent ID
-    const agent = await prisma.voiceAgent.findFirst({
+    const agent = await db.voiceAgent.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -482,7 +501,7 @@ export async function DELETE(
       console.log(`🗑️ Deleting ElevenLabs agent: ${agent.elevenLabsAgentId}`);
       const deleteResult = await elevenLabsProvisioning.deleteAgent(
         agent.elevenLabsAgentId,
-        user.id,
+        ctx.userId,
       );
 
       if (!deleteResult.success) {
@@ -498,10 +517,10 @@ export async function DELETE(
     }
 
     // Delete from database
-    const result = await prisma.voiceAgent.deleteMany({
+    const result = await db.voiceAgent.deleteMany({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
     });
 

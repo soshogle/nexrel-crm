@@ -1,18 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET /api/voice-agents/[id]/preview-url
- * 
+ *
  * Fetches a signed WebSocket URL from ElevenLabs for browser-based voice agent preview.
  * This URL allows direct WebSocket connection to the ElevenLabs agent from the browser.
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Authenticate the user
@@ -21,13 +22,19 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     // Fetch the voice agent from the database (VoiceAgent, IndustryAIEmployeeAgent, REAIEmployeeAgent, or ProfessionalAIEmployeeAgent)
-    let voiceAgent = await prisma.voiceAgent.findUnique({
+    let voiceAgent = await db.voiceAgent.findUnique({
       where: { id: params.id },
     });
 
     let elevenLabsAgentId: string | null = null;
-    let agentName: string = '';
+    let agentName: string = "";
     let useREApiKey = false; // RE agents use ELEVENLABS_RE_API_KEY
 
     if (voiceAgent) {
@@ -35,12 +42,12 @@ export async function GET(
       agentName = voiceAgent.name;
     } else {
       // Fallback: check IndustryAIEmployeeAgent (e.g. Dental, Medical AI employees)
-      const industryAgent = await prisma.industryAIEmployeeAgent.findUnique({
+      const industryAgent = await db.industryAIEmployeeAgent.findUnique({
         where: { id: params.id },
       });
       if (industryAgent) {
-        if (industryAgent.userId !== session.user.id) {
-          return apiErrors.forbidden('Unauthorized access to this voice agent');
+        if (industryAgent.userId !== ctx.userId) {
+          return apiErrors.forbidden("Unauthorized access to this voice agent");
         }
         elevenLabsAgentId = industryAgent.elevenLabsAgentId;
         agentName = industryAgent.name;
@@ -49,12 +56,12 @@ export async function GET(
 
     if (!elevenLabsAgentId) {
       // Check REAIEmployeeAgent (Real Estate AI employees - Sarah, etc.)
-      const reAgent = await prisma.rEAIEmployeeAgent.findUnique({
+      const reAgent = await db.rEAIEmployeeAgent.findUnique({
         where: { id: params.id },
       });
       if (reAgent) {
-        if (reAgent.userId !== session.user.id) {
-          return apiErrors.forbidden('Unauthorized access to this voice agent');
+        if (reAgent.userId !== ctx.userId) {
+          return apiErrors.forbidden("Unauthorized access to this voice agent");
         }
         elevenLabsAgentId = reAgent.elevenLabsAgentId;
         agentName = reAgent.name;
@@ -64,42 +71,44 @@ export async function GET(
 
     if (!elevenLabsAgentId) {
       // Check ProfessionalAIEmployeeAgent (Accountant, Developer, etc.)
-      const profAgent = await prisma.professionalAIEmployeeAgent.findUnique({
+      const profAgent = await db.professionalAIEmployeeAgent.findUnique({
         where: { id: params.id },
       });
       if (profAgent) {
-        if (profAgent.userId !== session.user.id) {
-          return apiErrors.forbidden('Unauthorized access to this voice agent');
+        if (profAgent.userId !== ctx.userId) {
+          return apiErrors.forbidden("Unauthorized access to this voice agent");
         }
         elevenLabsAgentId = profAgent.elevenLabsAgentId;
         agentName = profAgent.name;
       }
     }
 
-    if (!elevenLabsAgentId && params.id.startsWith('crm-assistant-')) {
-      const userId = params.id.replace('crm-assistant-', '');
-      if (userId === session.user.id) {
-        const user = await prisma.user.findUnique({
+    if (!elevenLabsAgentId && params.id.startsWith("crm-assistant-")) {
+      const userId = params.id.replace("crm-assistant-", "");
+      if (userId === ctx.userId) {
+        const user = await db.user.findUnique({
           where: { id: userId },
           select: { crmVoiceAgentId: true, name: true },
         });
         if ((user as any)?.crmVoiceAgentId) {
           elevenLabsAgentId = (user as any).crmVoiceAgentId;
-          agentName = `${(user as any).name || 'Your Business'} CRM Assistant`;
+          agentName = `${(user as any).name || "Your Business"} CRM Assistant`;
         }
       }
     }
 
     if (!elevenLabsAgentId) {
-      return apiErrors.notFound('Voice agent not found');
+      return apiErrors.notFound("Voice agent not found");
     }
 
-    if (voiceAgent && voiceAgent.userId !== session.user.id) {
-      return apiErrors.forbidden('Unauthorized access to this voice agent');
+    if (voiceAgent && voiceAgent.userId !== ctx.userId) {
+      return apiErrors.forbidden("Unauthorized access to this voice agent");
     }
 
     if (!elevenLabsAgentId) {
-      return apiErrors.badRequest('Voice agent is not configured. Please run auto-configuration first.');
+      return apiErrors.badRequest(
+        "Voice agent is not configured. Please run auto-configuration first.",
+      );
     }
 
     // Get the ElevenLabs API key - RE agents use ELEVENLABS_RE_API_KEY
@@ -108,49 +117,57 @@ export async function GET(
       apiKey = process.env.ELEVENLABS_RE_API_KEY || null;
     }
     if (!apiKey) {
-      const { elevenLabsKeyManager } = await import('@/lib/elevenlabs-key-manager');
-      apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
+      const { elevenLabsKeyManager } = await import(
+        "@/lib/elevenlabs-key-manager"
+      );
+      apiKey = await elevenLabsKeyManager.getActiveApiKey(ctx.userId);
     }
     if (!apiKey) {
-      apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY || null;
+      apiKey =
+        process.env.ELEVENLABS_API_KEY ||
+        process.env.ELEVENLABS_RE_API_KEY ||
+        null;
     }
 
     if (!apiKey) {
-      return apiErrors.badRequest('Soshogle AI voice is not configured');
+      return apiErrors.badRequest("Soshogle AI voice is not configured");
     }
 
     // Fetch the signed WebSocket URL from ElevenLabs
     const elevenLabsResponse = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${elevenLabsAgentId}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'xi-api-key': apiKey,
+          "xi-api-key": apiKey,
         },
-      }
+      },
     );
 
     if (!elevenLabsResponse.ok) {
       const errorText = await elevenLabsResponse.text();
-      console.error('❌ ElevenLabs API error:', errorText);
+      console.error("❌ ElevenLabs API error:", errorText);
       return NextResponse.json(
-        { 
-          error: 'Failed to get preview URL from Soshogle AI',
-          details: errorText
+        {
+          error: "Failed to get preview URL from Soshogle AI",
+          details: errorText,
         },
-        { status: elevenLabsResponse.status }
+        { status: elevenLabsResponse.status },
       );
     }
 
     const data = await elevenLabsResponse.json();
-    
+
     // The response should contain a signed_url field
     if (!data.signed_url) {
-      console.error('❌ No signed_url in ElevenLabs response:', data);
-      return apiErrors.internal('Invalid response from Soshogle AI');
+      console.error("❌ No signed_url in ElevenLabs response:", data);
+      return apiErrors.internal("Invalid response from Soshogle AI");
     }
 
-    console.log('✅ Successfully fetched preview URL for agent:', elevenLabsAgentId);
+    console.log(
+      "✅ Successfully fetched preview URL for agent:",
+      elevenLabsAgentId,
+    );
 
     return NextResponse.json({
       success: true,
@@ -158,18 +175,17 @@ export async function GET(
       agentId: elevenLabsAgentId,
       agentName,
     });
-
   } catch (error: any) {
-    console.error('❌ Error fetching preview URL:', error);
+    console.error("❌ Error fetching preview URL:", error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: error.message
+      {
+        error: "Internal server error",
+        details: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
