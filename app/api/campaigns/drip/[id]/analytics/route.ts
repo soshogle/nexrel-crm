@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -10,44 +11,47 @@ type RouteContext = {
 
 // GET /api/campaigns/drip/[id]/analytics - Get campaign analytics
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export async function GET(
-  req: NextRequest,
-  context: RouteContext
-) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const { id } = await context.params;
 
     // Verify campaign ownership
-    const campaign = await prisma.emailDripCampaign.findFirst({
-      where: { id, userId: session.user.id },
+    const campaign = await db.emailDripCampaign.findFirst({
+      where: { id, userId: ctx.userId },
       include: {
         sequences: {
-          orderBy: { sequenceOrder: 'asc' },
+          orderBy: { sequenceOrder: "asc" },
         },
       },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
     // Get enrollment stats
-    const enrollmentStats = await prisma.emailDripEnrollment.groupBy({
-      by: ['status'],
+    const enrollmentStats = await db.emailDripEnrollment.groupBy({
+      by: ["status"],
       where: { campaignId: id },
       _count: true,
     });
 
     // Get message stats
-    const messageStats = await prisma.$queryRaw<
+    const messageStats = await db.$queryRaw<
       Array<{
         status: string;
         count: bigint;
@@ -63,7 +67,7 @@ export async function GET(
     `;
 
     // Get overall metrics
-    const overallMetrics = await prisma.$queryRaw<
+    const overallMetrics = await db.$queryRaw<
       Array<{
         total_sent: bigint;
         total_delivered: bigint;
@@ -90,7 +94,7 @@ export async function GET(
     `;
 
     // Get sequence performance
-    const sequencePerformance = await prisma.$queryRaw<
+    const sequencePerformance = await db.$queryRaw<
       Array<{
         sequence_id: string;
         sequence_name: string;
@@ -137,23 +141,19 @@ export async function GET(
     };
 
     const totalSent = Number(metrics.total_sent);
-    const openRate = totalSent > 0 
-      ? (Number(metrics.total_opened) / totalSent) * 100 
-      : 0;
-    const clickRate = totalSent > 0 
-      ? (Number(metrics.total_clicked) / totalSent) * 100 
-      : 0;
-    const replyRate = totalSent > 0 
-      ? (Number(metrics.total_replied) / totalSent) * 100 
-      : 0;
-    const bounceRate = totalSent > 0 
-      ? (Number(metrics.total_bounced) / totalSent) * 100 
-      : 0;
+    const openRate =
+      totalSent > 0 ? (Number(metrics.total_opened) / totalSent) * 100 : 0;
+    const clickRate =
+      totalSent > 0 ? (Number(metrics.total_clicked) / totalSent) * 100 : 0;
+    const replyRate =
+      totalSent > 0 ? (Number(metrics.total_replied) / totalSent) * 100 : 0;
+    const bounceRate =
+      totalSent > 0 ? (Number(metrics.total_bounced) / totalSent) * 100 : 0;
 
     // A/B test results if enabled
     let abTestResults = null;
     if (campaign.enableAbTesting) {
-      abTestResults = await prisma.$queryRaw<
+      abTestResults = await db.$queryRaw<
         Array<{
           ab_test_group: string;
           total_enrolled: bigint;
@@ -192,13 +192,13 @@ export async function GET(
       },
       enrollments: {
         total: campaign.totalEnrolled,
-        byStatus: enrollmentStats.map(s => ({
+        byStatus: enrollmentStats.map((s) => ({
           status: s.status,
           count: s._count,
         })),
       },
       messages: {
-        byStatus: messageStats.map(s => ({
+        byStatus: messageStats.map((s) => ({
           status: s.status,
           count: Number(s.count),
         })),
@@ -217,7 +217,7 @@ export async function GET(
         replyRate: Math.round(replyRate * 100) / 100,
         bounceRate: Math.round(bounceRate * 100) / 100,
       },
-      sequences: sequencePerformance.map(s => ({
+      sequences: sequencePerformance.map((s) => ({
         sequenceId: s.sequence_id,
         name: s.sequence_name,
         order: s.sequence_order,
@@ -227,20 +227,22 @@ export async function GET(
         openRate: Math.round(s.open_rate * 100) / 100,
         clickRate: Math.round(s.click_rate * 100) / 100,
       })),
-      abTest: abTestResults ? {
-        enabled: true,
-        results: abTestResults.map(r => ({
-          group: r.ab_test_group,
-          totalEnrolled: Number(r.total_enrolled),
-          totalOpened: Number(r.total_opened),
-          totalClicked: Number(r.total_clicked),
-          openRate: Math.round(r.open_rate * 100) / 100,
-          clickRate: Math.round(r.click_rate * 100) / 100,
-        })),
-      } : { enabled: false },
+      abTest: abTestResults
+        ? {
+            enabled: true,
+            results: abTestResults.map((r) => ({
+              group: r.ab_test_group,
+              totalEnrolled: Number(r.total_enrolled),
+              totalOpened: Number(r.total_opened),
+              totalClicked: Number(r.total_clicked),
+              openRate: Math.round(r.open_rate * 100) / 100,
+              clickRate: Math.round(r.click_rate * 100) / 100,
+            })),
+          }
+        : { enabled: false },
     });
   } catch (error: unknown) {
-    console.error('Error fetching analytics:', error);
-    return apiErrors.internal('Failed to fetch analytics');
+    console.error("Error fetching analytics:", error);
+    return apiErrors.internal("Failed to fetch analytics");
   }
 }
