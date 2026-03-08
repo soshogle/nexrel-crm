@@ -1,101 +1,103 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { encrypt, decrypt } from "@/lib/encryption";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { encrypt, decrypt } from '@/lib/encryption'
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return apiErrors.unauthorized()
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return apiErrors.notFound('User not found')
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
-    const { accountSid, authToken, phoneNumber } = await request.json()
+    const { accountSid, authToken, phoneNumber } = await request.json();
 
     if (!accountSid || !authToken || !phoneNumber) {
-      return apiErrors.badRequest('Missing required fields')
+      return apiErrors.badRequest("Missing required fields");
     }
 
     // Validate Twilio credentials by making a test API call
     try {
-      const twilioAuth = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      const twilioAuth = Buffer.from(`${accountSid}:${authToken}`).toString(
+        "base64",
+      );
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
         {
           headers: {
-            Authorization: `Basic ${twilioAuth}`
-          }
-        }
-      )
+            Authorization: `Basic ${twilioAuth}`,
+          },
+        },
+      );
 
       if (!response.ok) {
-        return apiErrors.badRequest('Invalid Soshogle Call credentials')
+        return apiErrors.badRequest("Invalid Soshogle Call credentials");
       }
     } catch (error) {
-      console.error('Twilio validation error:', error)
-      return apiErrors.badRequest('Failed to validate Soshogle Call credentials')
+      console.error("Twilio validation error:", error);
+      return apiErrors.badRequest(
+        "Failed to validate Soshogle Call credentials",
+      );
     }
 
     // Check if connection already exists
-    const existingConnection = await prisma.channelConnection.findFirst({
+    const existingConnection = await db.channelConnection.findFirst({
       where: {
-        userId: user.id,
-        channelType: 'SMS',
-        channelIdentifier: phoneNumber
-      }
-    })
+        userId: ctx.userId,
+        channelType: "SMS",
+        channelIdentifier: phoneNumber,
+      },
+    });
 
     if (existingConnection) {
       // Update existing connection
-      const updated = await prisma.channelConnection.update({
+      const updated = await db.channelConnection.update({
         where: { id: existingConnection.id },
         data: {
-          status: 'CONNECTED',
+          status: "CONNECTED",
           providerData: {
             accountSid: encrypt(accountSid),
             authToken: encrypt(authToken),
-            phoneNumber
-          }
-        }
-      })
+            phoneNumber,
+          },
+        },
+      });
 
-      return NextResponse.json({ success: true, connection: updated })
+      return NextResponse.json({ success: true, connection: updated });
     }
 
     // Create new connection
-    const connection = await prisma.channelConnection.create({
+    const connection = await db.channelConnection.create({
       data: {
-        userId: user.id,
-        channelType: 'SMS',
+        userId: ctx.userId,
+        channelType: "SMS",
         channelIdentifier: phoneNumber,
         displayName: `Soshogle Call ${phoneNumber}`,
-        status: 'CONNECTED',
-        providerType: 'twilio',
+        status: "CONNECTED",
+        providerType: "twilio",
         providerData: {
           accountSid: encrypt(accountSid),
           authToken: encrypt(authToken),
-          phoneNumber
-        }
-      }
-    })
+          phoneNumber,
+        },
+      },
+    });
 
-    return NextResponse.json({ success: true, connection })
+    return NextResponse.json({ success: true, connection });
   } catch (error) {
-    console.error('Failed to connect Twilio:', error)
-    return apiErrors.internal('Failed to connect Soshogle Call')
+    console.error("Failed to connect Twilio:", error);
+    return apiErrors.internal("Failed to connect Soshogle Call");
   }
 }

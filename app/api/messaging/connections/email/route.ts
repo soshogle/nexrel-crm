@@ -1,81 +1,87 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { encrypt } from "@/lib/encryption";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { encrypt } from '@/lib/encryption'
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return apiErrors.unauthorized()
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return apiErrors.notFound('User not found')
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
-    const { email, password, smtpHost, smtpPort, imapHost, imapPort } = await request.json()
+    const { email, password, smtpHost, smtpPort, imapHost, imapPort } =
+      await request.json();
 
-    if (!email || !password || !smtpHost || !smtpPort || !imapHost || !imapPort) {
-      return apiErrors.badRequest('Missing required fields')
+    if (
+      !email ||
+      !password ||
+      !smtpHost ||
+      !smtpPort ||
+      !imapHost ||
+      !imapPort
+    ) {
+      return apiErrors.badRequest("Missing required fields");
     }
 
     // Check if connection already exists
-    const existingConnection = await prisma.channelConnection.findFirst({
+    const existingConnection = await db.channelConnection.findFirst({
       where: {
-        userId: user.id,
-        channelType: 'EMAIL',
-        channelIdentifier: email
-      }
-    })
+        userId: ctx.userId,
+        channelType: "EMAIL",
+        channelIdentifier: email,
+      },
+    });
 
     const connectionData = {
-      status: 'CONNECTED' as const,
-      providerType: 'custom_email',
+      status: "CONNECTED" as const,
+      providerType: "custom_email",
       providerData: {
         email,
         password: encrypt(password),
         smtpHost,
         smtpPort: parseInt(smtpPort),
         imapHost,
-        imapPort: parseInt(imapPort)
-      }
-    }
+        imapPort: parseInt(imapPort),
+      },
+    };
 
     if (existingConnection) {
       // Update existing connection
-      const updated = await prisma.channelConnection.update({
+      const updated = await db.channelConnection.update({
         where: { id: existingConnection.id },
-        data: connectionData
-      })
+        data: connectionData,
+      });
 
-      return NextResponse.json({ success: true, connection: updated })
+      return NextResponse.json({ success: true, connection: updated });
     }
 
     // Create new connection
-    const connection = await prisma.channelConnection.create({
+    const connection = await db.channelConnection.create({
       data: {
-        userId: user.id,
-        channelType: 'EMAIL',
+        userId: ctx.userId,
+        channelType: "EMAIL",
         channelIdentifier: email,
         displayName: email,
-        ...connectionData
-      }
-    })
+        ...connectionData,
+      },
+    });
 
-    return NextResponse.json({ success: true, connection })
+    return NextResponse.json({ success: true, connection });
   } catch (error) {
-    console.error('Failed to connect email:', error)
-    return apiErrors.internal('Failed to connect email')
+    console.error("Failed to connect email:", error);
+    return apiErrors.internal("Failed to connect email");
   }
 }
