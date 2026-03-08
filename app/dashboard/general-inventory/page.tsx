@@ -99,30 +99,6 @@ export default function GeneralInventoryPage() {
     }
   }, [sessionStatus, hasInventoryAccess, userIndustry, router]);
 
-  // Show loading while checking access
-  if (
-    sessionStatus === "loading" ||
-    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
-  ) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Guard against unauthenticated state
-  if (sessionStatus === "unauthenticated" || !session) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            Please sign in to access inventory
-          </p>
-        </div>
-      </div>
-    );
-  }
   const [stats, setStats] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -222,6 +198,31 @@ export default function GeneralInventoryPage() {
     setSelectedItem(item);
     setShowAdjustmentDialog(true);
   };
+
+  // Show loading while checking access
+  if (
+    sessionStatus === "loading" ||
+    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
+  ) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state
+  if (sessionStatus === "unauthenticated" || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            Please sign in to access inventory
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

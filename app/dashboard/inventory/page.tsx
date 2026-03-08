@@ -79,31 +79,6 @@ export default function InventoryPage() {
     }
   }, [sessionStatus, hasInventoryAccess, userIndustry, router]);
 
-  // Show loading while checking access
-  if (
-    sessionStatus === "loading" ||
-    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
-  ) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Guard against unauthenticated state
-  if (sessionStatus === "unauthenticated" || !session) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            Please sign in to access inventory
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (!userIndustry) return;
     if (hasInventoryAccess) {
@@ -237,6 +212,31 @@ export default function InventoryPage() {
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  // Show loading while checking access
+  if (
+    sessionStatus === "loading" ||
+    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
+  ) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state
+  if (sessionStatus === "unauthenticated" || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            Please sign in to access inventory
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
