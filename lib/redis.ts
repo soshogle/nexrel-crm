@@ -1,21 +1,20 @@
 /**
- * Shared Upstash Redis client.
- * Used by rate limiting, caching, and any feature needing distributed state.
- * Returns null when Upstash env vars are missing (dev without Redis).
+ * Redis shim (temporarily disabled).
+ *
+ * Returning null keeps cache/rate-limit callers in safe fallback mode
+ * without any external Redis dependency.
  */
 
-import { Redis } from '@upstash/redis'
+export interface RedisLike {
+  get<T = unknown>(key: string): Promise<T | null>;
+  set(key: string, value: string, options?: { ex?: number }): Promise<unknown>;
+  del(...keys: string[]): Promise<unknown>;
+  scan(
+    cursor: number,
+    options?: { match?: string; count?: number },
+  ): Promise<[number, string[]]>;
+}
 
-let _redis: Redis | null = null
-
-export function getRedis(): Redis | null {
-  if (_redis) return _redis
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return null
-  }
-  _redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  })
-  return _redis
+export function getRedis(): RedisLike | null {
+  return null;
 }

@@ -5,8 +5,6 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Extract subdomain from hostname
 function getSubdomain(hostname: string): string | null {
@@ -158,77 +156,6 @@ export async function middleware(request: NextRequest) {
   const nonce = btoa(globalThis.crypto.randomUUID());
   const hostname = request.headers.get("host") || "";
   const subdomain = getSubdomain(hostname);
-
-  // Rate limiting for API routes
-  if (request.nextUrl.pathname.startsWith("/api/")) {
-    // Use the rightmost IP in x-forwarded-for (set by the last trusted proxy — Vercel's edge).
-    // The leftmost IP is client-supplied and can be spoofed; we fall back to x-real-ip then loopback.
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip =
-      (forwardedFor ? forwardedFor.split(",").at(-1)?.trim() : null) ??
-      request.headers.get("x-real-ip") ??
-      "127.0.0.1";
-
-    const isAuthPath = request.nextUrl.pathname.startsWith("/api/auth");
-    const isWebhookPath =
-      request.nextUrl.pathname.startsWith("/api/webhooks") ||
-      request.nextUrl.pathname.includes("webhook");
-    const isPublicPath =
-      request.nextUrl.pathname.startsWith("/api/widget") ||
-      request.nextUrl.pathname.startsWith("/api/appointments/public") ||
-      request.nextUrl.pathname.startsWith("/api/booking/");
-    const isDentalPath = request.nextUrl.pathname.startsWith("/api/dental");
-
-    const config = isAuthPath
-      ? RATE_LIMITS.auth
-      : isWebhookPath
-        ? RATE_LIMITS.webhook
-        : isPublicPath
-          ? RATE_LIMITS.public
-          : isDentalPath
-            ? RATE_LIMITS.apiHeavy
-            : RATE_LIMITS.api;
-
-    // For authenticated routes, key on userId to prevent IP-rotation bypass.
-    // Auth path keys on IP only — user hasn't authenticated yet.
-    const token =
-      !isAuthPath && !isPublicPath && !isWebhookPath
-        ? await getToken({ req: request }).catch(() => null)
-        : null;
-    const userId = token?.sub ?? undefined;
-
-    const rlKey = getRateLimitKey(
-      ip,
-      isAuthPath ? "/api/auth" : request.nextUrl.pathname,
-      userId,
-    );
-    const { allowed, remaining, resetMs } = await checkRateLimit(rlKey, config);
-
-    if (!allowed) {
-      return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": String(Math.ceil(resetMs / 1000)),
-          "X-RateLimit-Remaining": "0",
-        },
-      });
-    }
-
-    const response = nextResponseWithNonce(request, nonce);
-    response.headers.set("X-RateLimit-Remaining", String(remaining));
-
-    if (subdomain) {
-      response.headers.set("x-tenant-subdomain", subdomain);
-      response.cookies.set("tenant-subdomain", subdomain, {
-        httpOnly: false,
-        sameSite: "lax",
-        path: "/",
-      });
-    }
-
-    return applyHeaders(request, response, nonce);
-  }
 
   const response = nextResponseWithNonce(request, nonce);
 
