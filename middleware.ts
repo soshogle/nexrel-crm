@@ -157,6 +157,18 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const subdomain = getSubdomain(hostname);
 
+  const isProd = process.env.NODE_ENV === "production";
+  const isLocal =
+    hostname.includes("localhost") || hostname.startsWith("127.0.0.1");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+
+  if (isProd && !isLocal && forwardedProto === "http") {
+    const httpsUrl = request.nextUrl.clone();
+    httpsUrl.protocol = "https:";
+    const redirect = NextResponse.redirect(httpsUrl, 308);
+    return applyHeaders(request, redirect, nonce);
+  }
+
   const response = nextResponseWithNonce(request, nonce);
 
   // Add subdomain to request headers if present

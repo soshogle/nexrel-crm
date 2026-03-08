@@ -1,14 +1,21 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 
 function getEncryptionKey(): Buffer {
   const secret =
     process.env.ENCRYPTION_SECRET ||
     process.env.ENCRYPTION_KEY ||
-    process.env.NEXTAUTH_SECRET ||
-    'fallback-dev-key-32-chars-long!!';
-  return crypto.createHash('sha256').update(secret).digest();
+    process.env.NEXTAUTH_SECRET;
+
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Encryption key is not configured. Set ENCRYPTION_SECRET, ENCRYPTION_KEY, or NEXTAUTH_SECRET.",
+    );
+  }
+
+  const safeSecret = secret || "fallback-dev-key-32-chars-long!!";
+  return crypto.createHash("sha256").update(safeSecret).digest();
 }
 
 /**
@@ -19,10 +26,10 @@ export function encrypt(text: string): string {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const authTag = cipher.getAuthTag().toString('hex');
-  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  const authTag = cipher.getAuthTag().toString("hex");
+  return `${iv.toString("hex")}:${authTag}:${encrypted}`;
 }
 
 /**
@@ -32,17 +39,17 @@ export function encrypt(text: string): string {
  * re-encrypted on next write.
  */
 export function decrypt(encrypted: string): string {
-  const parts = encrypted.split(':');
+  const parts = encrypted.split(":");
 
   // AES-256-GCM format: iv:authTag:ciphertext (3 parts, each hex)
   if (parts.length === 3 && parts[0].length === 32) {
     const key = getEncryptionKey();
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
+    const iv = Buffer.from(parts[0], "hex");
+    const authTag = Buffer.from(parts[1], "hex");
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
-    let decrypted = decipher.update(parts[2], 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(parts[2], "hex", "utf8");
+    decrypted += decipher.final("utf8");
     return decrypted;
   }
 
@@ -53,12 +60,12 @@ export function decrypt(encrypted: string): string {
         process.env.ENCRYPTION_KEY ||
         process.env.ENCRYPTION_SECRET ||
         process.env.NEXTAUTH_SECRET ||
-        'fallback-dev-key-32-chars-long!!';
-      const keyBuf = Buffer.from(legacyKey.slice(0, 32).padEnd(32, '0'));
-      const iv = Buffer.from(parts[0], 'hex');
-      const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuf, iv);
-      let decrypted = decipher.update(parts[1], 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+        "fallback-dev-key-32-chars-long!!";
+      const keyBuf = Buffer.from(legacyKey.slice(0, 32).padEnd(32, "0"));
+      const iv = Buffer.from(parts[0], "hex");
+      const decipher = crypto.createDecipheriv("aes-256-cbc", keyBuf, iv);
+      let decrypted = decipher.update(parts[1], "hex", "utf8");
+      decrypted += decipher.final("utf8");
       return decrypted;
     } catch {
       // Fall through to base64
@@ -67,7 +74,7 @@ export function decrypt(encrypted: string): string {
 
   // Legacy base64 fallback
   try {
-    const decoded = Buffer.from(encrypted, 'base64').toString('utf-8');
+    const decoded = Buffer.from(encrypted, "base64").toString("utf-8");
     if (decoded && decoded !== encrypted) return decoded;
   } catch {
     // not base64
