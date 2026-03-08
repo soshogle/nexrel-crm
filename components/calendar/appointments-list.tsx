@@ -17,7 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppointmentDetailDialog } from "./appointment-detail-dialog";
 import { MakeCallDialog } from "@/components/voice-agents/make-call-dialog";
 import { getIndustryBookingConfig } from "@/lib/industry-booking-config";
@@ -34,8 +34,12 @@ export function AppointmentsList({
   onAppointmentUpdated,
   onAppointmentDeleted,
 }: AppointmentsListProps) {
-  const { data: session } = useSession() || {};
-  const industry = (session?.user as any)?.industry || null;
+  const { data: session, status } = useSession() || {};
+  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
+    ((session?.user as any)?.industry as string) || null,
+  );
+  const industry =
+    resolvedIndustry || ((session?.user as any)?.industry as string) || null;
   const config = getIndustryBookingConfig(industry);
 
   const [selectedAppointment, setSelectedAppointment] =
@@ -44,6 +48,24 @@ export function AppointmentsList({
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [appointmentForCall, setAppointmentForCall] =
     useState<Appointment | null>(null);
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as string) || null;
+    if (fromSession) {
+      setResolvedIndustry(fromSession);
+      return;
+    }
+
+    if (status === "authenticated") {
+      fetch("/api/session/context")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as string | null) || null;
+          if (resolved) setResolvedIndustry(resolved);
+        })
+        .catch(() => {});
+    }
+  }, [status, (session?.user as any)?.industry]);
 
   const statusColors: Record<string, string> = {
     SCHEDULED: "bg-blue-500/20 text-blue-400 border-blue-500/30",

@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -31,12 +31,34 @@ interface AppointmentDetailDialogProps {
 }
 
 export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate, isPast = false }: AppointmentDetailDialogProps) {
-  const { data: session } = useSession() || {}
-  const industry = (session?.user as any)?.industry || null
+  const { data: session, status } = useSession() || {}
+  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
+    ((session?.user as any)?.industry as string) || null,
+  )
+  const industry =
+    resolvedIndustry || ((session?.user as any)?.industry as string) || null
   const config = getIndustryBookingConfig(industry)
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as string) || null
+    if (fromSession) {
+      setResolvedIndustry(fromSession)
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetch('/api/session/context')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as string | null) || null
+          if (resolved) setResolvedIndustry(resolved)
+        })
+        .catch(() => {})
+    }
+  }, [status, (session?.user as any)?.industry])
 
   if (!appointment) return null
 

@@ -59,6 +59,7 @@ import { JobResultsDialog } from '@/components/ai-employees/job-results-dialog';
 import { WorkflowResultsDialog } from '@/components/ai-employees/workflow-results-dialog';
 import { SetupDialog } from '@/components/ai-employees/setup-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import type { Industry } from '@/lib/industry-menu-config';
 
 /** Show Provision All when user is ADMIN/SUPER_ADMIN, or when super admin is impersonating another user */
 function canProvisionAgents(session: { user?: { role?: string; isImpersonating?: boolean; originalUserIsSuperAdmin?: boolean } } | null): boolean {
@@ -589,11 +590,33 @@ export default function AIEmployeesPage() {
   const [showCreateAiEmployee, setShowCreateAiEmployee] = useState(false);
 
   // Session for industry check
-  const { data: session } = useSession() || {};
-  const userIndustry = (session?.user as any)?.industry;
+  const { data: session, status: sessionStatus } = useSession() || {};
+  const [resolvedIndustry, setResolvedIndustry] = useState<Industry | null>(
+    ((session?.user as any)?.industry as Industry) || null,
+  );
+  const userIndustry =
+    resolvedIndustry || ((session?.user as any)?.industry as Industry) || null;
   const isRealEstateUser = userIndustry === 'REAL_ESTATE';
   const hasWorkflowSystem = userIndustry && userIndustry !== 'REAL_ESTATE' && getIndustryConfig(userIndustry) !== null;
   const hasIndustryTeam = hasIndustryAIEmployees(userIndustry);
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as Industry) || null;
+    if (fromSession) {
+      setResolvedIndustry(fromSession);
+      return;
+    }
+
+    if (sessionStatus === 'authenticated') {
+      fetch('/api/session/context')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const industry = (data?.industry as Industry | null) || null;
+          if (industry) setResolvedIndustry(industry);
+        })
+        .catch(() => {});
+    }
+  }, [sessionStatus, (session?.user as any)?.industry]);
 
   // Tab parameter from URL
   const router = useRouter();

@@ -23,11 +23,15 @@ import MondayAppointments from "@/components/appointments/monday-appointments";
 import { getIndustryBookingConfig } from "@/lib/industry-booking-config";
 
 export default function AppointmentsPage() {
-  const { data: session } = useSession() || {};
+  const { data: session, status: sessionStatus } = useSession() || {};
+  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
+    ((session?.user as any)?.industry as string) || null,
+  );
   const isAdmin =
     (session?.user as any)?.role === "ADMIN" ||
     (session?.user as any)?.role === "SUPER_ADMIN";
-  const industry = (session?.user as any)?.industry || null;
+  const industry =
+    resolvedIndustry || ((session?.user as any)?.industry as string) || null;
   const config = getIndustryBookingConfig(industry);
 
   const [view, setView] = useState<"board" | "list" | "calendar" | "analytics">(
@@ -39,6 +43,24 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as string) || null;
+    if (fromSession) {
+      setResolvedIndustry(fromSession);
+      return;
+    }
+
+    if (sessionStatus === "authenticated") {
+      fetch("/api/session/context")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as string | null) || null;
+          if (resolved) setResolvedIndustry(resolved);
+        })
+        .catch(() => {});
+    }
+  }, [sessionStatus, (session?.user as any)?.industry]);
 
   const fetchAppointments = async () => {
     try {

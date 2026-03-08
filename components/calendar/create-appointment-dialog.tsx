@@ -35,8 +35,12 @@ interface Lead {
 }
 
 export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate }: CreateAppointmentDialogProps) {
-  const { data: session } = useSession() || {}
-  const industry = (session?.user as any)?.industry || null
+  const { data: session, status } = useSession() || {}
+  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
+    ((session?.user as any)?.industry as string) || null,
+  )
+  const industry =
+    resolvedIndustry || ((session?.user as any)?.industry as string) || null
   const config = getIndustryBookingConfig(industry)
 
   const [loading, setLoading] = useState(false)
@@ -59,6 +63,24 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
     reminderMinutes: '30',
     notes: '',
   })
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as string) || null
+    if (fromSession) {
+      setResolvedIndustry(fromSession)
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetch('/api/session/context')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as string | null) || null
+          if (resolved) setResolvedIndustry(resolved)
+        })
+        .catch(() => {})
+    }
+  }, [status, (session?.user as any)?.industry])
 
   useEffect(() => {
     if (open) {

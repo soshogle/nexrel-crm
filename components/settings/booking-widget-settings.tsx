@@ -15,7 +15,7 @@ import { useSession } from 'next-auth/react'
 import { getIndustryBookingConfig } from '@/lib/industry-booking-config'
 
 export function BookingWidgetSettings() {
-  const { data: session } = useSession() || {}
+  const { data: session, status } = useSession() || {}
   const [copied, setCopied] = useState(false)
   const [widgetUrl, setWidgetUrl] = useState('')
   const [embedCode, setEmbedCode] = useState('')
@@ -31,8 +31,30 @@ export function BookingWidgetSettings() {
   const [hoursLoading, setHoursLoading] = useState(false)
   const [hoursSaving, setHoursSaving] = useState(false)
 
-  const industry = (session?.user as any)?.industry || null
+  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
+    ((session?.user as any)?.industry as string) || null,
+  )
+  const industry =
+    resolvedIndustry || ((session?.user as any)?.industry as string) || null
   const config = getIndustryBookingConfig(industry)
+
+  useEffect(() => {
+    const fromSession = ((session?.user as any)?.industry as string) || null
+    if (fromSession) {
+      setResolvedIndustry(fromSession)
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetch('/api/session/context')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const resolved = (data?.industry as string | null) || null
+          if (resolved) setResolvedIndustry(resolved)
+        })
+        .catch(() => {})
+    }
+  }, [status, (session?.user as any)?.industry])
 
   useEffect(() => {
     if (session?.user?.id) {
