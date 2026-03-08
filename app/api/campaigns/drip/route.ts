@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/campaigns/drip - List all drip campaigns
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,11 +17,17 @@ export async function GET(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const campaigns = await prisma.emailDripCampaign.findMany({
-      where: { userId: session.user.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
+    const campaigns = await db.emailDripCampaign.findMany({
+      where: { userId: ctx.userId },
       include: {
         sequences: {
-          orderBy: { sequenceOrder: 'asc' },
+          orderBy: { sequenceOrder: "asc" },
           select: {
             id: true,
             sequenceOrder: true,
@@ -40,13 +47,13 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ campaigns });
   } catch (error: unknown) {
-    console.error('Error fetching drip campaigns:', error);
-    return apiErrors.internal('Failed to fetch campaigns');
+    console.error("Error fetching drip campaigns:", error);
+    return apiErrors.internal("Failed to fetch campaigns");
   }
 }
 
@@ -58,11 +65,17 @@ export async function POST(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const body = await req.json();
     const {
       name,
       description,
-      triggerType = 'MANUAL',
+      triggerType = "MANUAL",
       triggerConfig,
       fromName,
       fromEmail,
@@ -74,13 +87,13 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return apiErrors.badRequest('Campaign name is required');
+      return apiErrors.badRequest("Campaign name is required");
     }
 
     // Create campaign
-    const campaign = await prisma.emailDripCampaign.create({
+    const campaign = await db.emailDripCampaign.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         name,
         description,
         triggerType,
@@ -91,7 +104,7 @@ export async function POST(req: NextRequest) {
         enableAbTesting,
         abTestConfig,
         tags,
-        status: 'DRAFT',
+        status: "DRAFT",
       },
       include: {
         sequences: true,
@@ -103,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error creating drip campaign:', error);
-    return apiErrors.internal('Failed to create campaign');
+    console.error("Error creating drip campaign:", error);
+    return apiErrors.internal("Failed to create campaign");
   }
 }

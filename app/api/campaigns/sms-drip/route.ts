@@ -1,30 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
-    const campaigns = await prisma.smsCampaign.findMany({
+    const campaigns = await db.smsCampaign.findMany({
       where: {
-        userId: user.id,
+        userId: ctx.userId,
         isSequence: true,
       },
       include: {
@@ -35,46 +34,38 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ campaigns });
   } catch (error) {
-    console.error('Error fetching SMS drip campaigns:', error);
-    return apiErrors.internal('Failed to fetch SMS drip campaigns');
+    console.error("Error fetching SMS drip campaigns:", error);
+    return apiErrors.internal("Failed to fetch SMS drip campaigns");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
-    const {
-      name,
-      status,
-      triggerType,
-      fromNumber,
-      tags,
-    } = body;
+    const { name, status, triggerType, fromNumber, tags } = body;
 
-    const campaign = await prisma.smsCampaign.create({
+    const campaign = await db.smsCampaign.create({
       data: {
-        userId: user.id,
+        userId: ctx.userId,
         name,
-        message: '', // Empty for sequence campaigns
-        status: status || 'DRAFT',
+        message: "", // Empty for sequence campaigns
+        status: status || "DRAFT",
         isSequence: true,
         triggerType,
         fromNumber,
@@ -84,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ campaign });
   } catch (error) {
-    console.error('Error creating SMS drip campaign:', error);
-    return apiErrors.internal('Failed to create SMS drip campaign');
+    console.error("Error creating SMS drip campaign:", error);
+    return apiErrors.internal("Failed to create SMS drip campaign");
   }
 }
