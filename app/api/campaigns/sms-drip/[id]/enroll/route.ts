@@ -1,58 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
     const { id } = await params;
     const body = await request.json();
     const { leadIds } = body;
 
     if (!Array.isArray(leadIds) || leadIds.length === 0) {
-      return apiErrors.badRequest('leadIds must be a non-empty array');
+      return apiErrors.badRequest("leadIds must be a non-empty array");
     }
 
     // Verify campaign exists and belongs to user
-    const campaign = await prisma.smsCampaign.findFirst({
+    const campaign = await db.smsCampaign.findFirst({
       where: {
         id,
-        userId: user.id,
+        userId: ctx.userId,
       },
       include: {
         sequences: {
-          orderBy: { sequenceOrder: 'asc' },
+          orderBy: { sequenceOrder: "asc" },
           take: 1,
         },
       },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
     if (!campaign.sequences || campaign.sequences.length === 0) {
-      return apiErrors.badRequest('Campaign has no sequences configured');
+      return apiErrors.badRequest("Campaign has no sequences configured");
     }
 
     const firstSequence = campaign.sequences[0];
@@ -61,7 +60,7 @@ export async function POST(
 
     for (const leadId of leadIds) {
       // Check if already enrolled
-      const existing = await prisma.smsEnrollment.findUnique({
+      const existing = await db.smsEnrollment.findUnique({
         where: {
           campaignId_leadId: {
             campaignId: id,
@@ -84,11 +83,11 @@ export async function POST(
         nextSendAt.setHours(nextSendAt.getHours() + firstSequence.delayHours);
       }
 
-      await prisma.smsEnrollment.create({
+      await db.smsEnrollment.create({
         data: {
           campaignId: id,
           leadId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           currentSequenceId: firstSequence.id,
           currentStep: 1,
           nextSendAt,
@@ -99,7 +98,7 @@ export async function POST(
     }
 
     // Update campaign stats
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id },
       data: {
         totalEnrolled: { increment: enrolled },
@@ -108,7 +107,7 @@ export async function POST(
 
     return NextResponse.json({ enrolled, skipped });
   } catch (error) {
-    console.error('Error enrolling leads:', error);
-    return apiErrors.internal('Failed to enroll leads');
+    console.error("Error enrolling leads:", error);
+    return apiErrors.internal("Failed to enroll leads");
   }
 }

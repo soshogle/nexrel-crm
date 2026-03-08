@@ -1,29 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
     }
+    const db = getCrmDb(ctx);
 
     const { id } = await params;
     const body = await request.json();
@@ -39,18 +38,18 @@ export async function POST(
     } = body;
 
     // Verify campaign exists and belongs to user
-    const campaign = await prisma.smsCampaign.findFirst({
+    const campaign = await db.smsCampaign.findFirst({
       where: {
         id,
-        userId: user.id,
+        userId: ctx.userId,
       },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
-    const sequence = await prisma.smsSequence.create({
+    const sequence = await db.smsSequence.create({
       data: {
         campaignId: id,
         sequenceOrder,
@@ -66,7 +65,7 @@ export async function POST(
 
     return NextResponse.json({ sequence });
   } catch (error) {
-    console.error('Error creating sequence:', error);
-    return apiErrors.internal('Failed to create sequence');
+    console.error("Error creating sequence:", error);
+    return apiErrors.internal("Failed to create sequence");
   }
 }
