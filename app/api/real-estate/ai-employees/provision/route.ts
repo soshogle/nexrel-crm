@@ -1,32 +1,32 @@
 /**
  * Real Estate AI Employee Provisioning API
- * 
+ *
  * Creates ElevenLabs voice agents for all 12 RE AI Employee types.
  * Uses the dedicated RE ElevenLabs API key.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { REAIEmployeeType } from '@prisma/client';
-import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
-import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
-import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { REAIEmployeeType } from "@prisma/client";
+import { RE_AI_EMPLOYEE_PROMPTS } from "@/lib/real-estate/ai-employee-prompts";
+import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
+import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 // ElevenLabs agent creation can take 30+ seconds
 export const maxDuration = 60;
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 // Get the Real Estate specific API key
 function getREApiKey(): string {
   const apiKey = process.env.ELEVENLABS_RE_API_KEY;
   if (!apiKey) {
-    throw new Error('ELEVENLABS_RE_API_KEY environment variable is not set');
+    throw new Error("ELEVENLABS_RE_API_KEY environment variable is not set");
   }
   return apiKey;
 }
@@ -39,16 +39,23 @@ async function createElevenLabsAgent(
     systemPrompt: string;
     firstMessage: string;
     voiceId?: string;
-  }
+  },
 ): Promise<{ agentId: string }> {
-  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
-  const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+  const { getConfidentialityGuard } = await import(
+    "@/lib/ai-confidentiality-guard"
+  );
+  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import(
+    "@/lib/voice-time-context"
+  );
+  const fullPrompt =
+    config.systemPrompt +
+    EASTERN_TIME_SYSTEM_INSTRUCTION +
+    getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       name: config.name,
@@ -56,26 +63,26 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+          language: "en", // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
-        asr: { quality: 'high', provider: 'elevenlabs' },
+        asr: { quality: "high", provider: "elevenlabs" },
         tts: {
-          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_multilingual_v2',
+          voice_id: config.voiceId || "EXAVITQu4vr4xnSDxMaL",
+          model_id: "eleven_multilingual_v2",
         },
-        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
+        turn: { mode: "turn", turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
       },
       platform_settings: {
         auth: { enable_auth: false },
-        allowed_overrides: { agent: ['prompt', 'language'] },
+        allowed_overrides: { agent: ["prompt", "language"] },
       },
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('ElevenLabs agent creation failed:', error);
+    console.error("ElevenLabs agent creation failed:", error);
     throw new Error(`Failed to create ElevenLabs agent: ${error}`);
   }
 
@@ -96,10 +103,10 @@ async function getExistingAgents(userId: string) {
 async function provisionEmployee(
   userId: string,
   employeeType: REAIEmployeeType,
-  apiKey: string
+  apiKey: string,
 ): Promise<{ success: boolean; agentId?: string; error?: string }> {
   const promptConfig = RE_AI_EMPLOYEE_PROMPTS[employeeType];
-  
+
   if (!promptConfig) {
     return { success: false, error: `Unknown employee type: ${employeeType}` };
   }
@@ -126,24 +133,27 @@ async function provisionEmployee(
         employeeType,
         name: promptConfig.name,
         elevenLabsAgentId: agentId,
-        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
       },
       update: {
         elevenLabsAgentId: agentId,
         name: promptConfig.name,
-        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
         updatedAt: new Date(),
       },
     });
 
-    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
+    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+      source: "real_estate",
+      employeeType,
+    });
 
     return { success: true, agentId };
   } catch (error) {
     console.error(`Failed to provision ${employeeType}:`, error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -162,8 +172,10 @@ export async function GET(request: NextRequest) {
       select: { industry: true },
     });
 
-    if (user?.industry !== 'REAL_ESTATE') {
-      return apiErrors.forbidden('This feature is only available for Real Estate users');
+    if (user?.industry !== "REAL_ESTATE") {
+      return apiErrors.forbidden(
+        "This feature is only available for Real Estate users",
+      );
     }
 
     const agents = await getExistingAgents(session.user.id);
@@ -172,9 +184,10 @@ export async function GET(request: NextRequest) {
     provisionAIEmployeesForUser(session.user.id);
 
     // Map to include prompt info
-    const enrichedAgents = agents.map(agent => ({
+    const enrichedAgents = agents.map((agent) => ({
       ...agent,
-      description: RE_AI_EMPLOYEE_PROMPTS[agent.employeeType]?.description || '',
+      description:
+        RE_AI_EMPLOYEE_PROMPTS[agent.employeeType]?.description || "",
     }));
 
     return NextResponse.json({
@@ -184,8 +197,8 @@ export async function GET(request: NextRequest) {
       provisionedCount: agents.length,
     });
   } catch (error) {
-    console.error('Error fetching RE AI Employee agents:', error);
-    return apiErrors.internal('Failed to fetch agents');
+    console.error("Error fetching RE AI Employee agents:", error);
+    return apiErrors.internal("Failed to fetch agents");
   }
 }
 
@@ -203,8 +216,10 @@ export async function POST(request: NextRequest) {
       select: { industry: true },
     });
 
-    if (user?.industry !== 'REAL_ESTATE') {
-      return apiErrors.forbidden('This feature is only available for Real Estate users');
+    if (user?.industry !== "REAL_ESTATE") {
+      return apiErrors.forbidden(
+        "This feature is only available for Real Estate users",
+      );
     }
 
     const body = await request.json().catch(() => ({}));
@@ -215,28 +230,31 @@ export async function POST(request: NextRequest) {
     try {
       apiKey = getREApiKey();
     } catch (error) {
-      return apiErrors.internal('ElevenLabs API key not configured for Real Estate');
+      return apiErrors.internal(
+        "ElevenLabs API key not configured for Real Estate",
+      );
     }
 
     // Determine which types to provision
-    const typesToProvision: REAIEmployeeType[] = employeeTypes && employeeTypes.length > 0
-      ? employeeTypes
-      : Object.values(REAIEmployeeType);
+    const typesToProvision: REAIEmployeeType[] =
+      employeeTypes && employeeTypes.length > 0
+        ? employeeTypes
+        : Object.values(REAIEmployeeType);
 
     // Check which agents already exist
     const existingAgents = await getExistingAgents(session.user.id);
-    const existingTypes = new Set(existingAgents.map(a => a.employeeType));
+    const existingTypes = new Set(existingAgents.map((a) => a.employeeType));
 
     // Filter to only provision new types (unless force refresh requested)
     const forceRefresh = body.forceRefresh === true;
-    const typesToCreate = forceRefresh 
-      ? typesToProvision 
-      : typesToProvision.filter(t => !existingTypes.has(t));
+    const typesToCreate = forceRefresh
+      ? typesToProvision
+      : typesToProvision.filter((t) => !existingTypes.has(t));
 
     if (typesToCreate.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'All RE AI Employees are already provisioned',
+        message: "All RE AI Employees are already provisioned",
         agents: existingAgents,
       });
     }
@@ -253,13 +271,13 @@ export async function POST(request: NextRequest) {
       console.log(`Provisioning RE AI Employee: ${type}`);
       const result = await provisionEmployee(session.user.id, type, apiKey);
       results.push({ type, ...result });
-      
+
       // Small delay between API calls to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
 
     // Fetch updated list of agents
     const updatedAgents = await getExistingAgents(session.user.id);
@@ -267,14 +285,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: failCount === 0,
-      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ''}`,
-      error: failCount > 0 ? (firstError || `Provisioning failed for ${failCount} agent(s)`) : undefined,
+      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ""}`,
+      error:
+        failCount > 0
+          ? firstError || `Provisioning failed for ${failCount} agent(s)`
+          : undefined,
       results,
       agents: updatedAgents,
     });
   } catch (error) {
-    console.error('Error provisioning RE AI Employees:', error);
-    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
+    console.error("Error provisioning RE AI Employees:", error);
+    return apiErrors.internal(
+      error instanceof Error ? error.message : "Failed to provision agents",
+    );
   }
 }
 
@@ -287,10 +310,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const employeeType = searchParams.get('type') as REAIEmployeeType;
+    const employeeType = searchParams.get("type") as REAIEmployeeType;
 
     if (!employeeType) {
-      return apiErrors.badRequest('Employee type is required');
+      return apiErrors.badRequest("Employee type is required");
     }
 
     // Find and delete the agent
@@ -304,20 +327,23 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     // Try to delete from ElevenLabs (optional - don't fail if this doesn't work)
     try {
       const apiKey = getREApiKey();
-      await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agent.elevenLabsAgentId}`, {
-        method: 'DELETE',
-        headers: {
-          'xi-api-key': apiKey,
+      await fetch(
+        `${ELEVENLABS_BASE_URL}/convai/agents/${agent.elevenLabsAgentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "xi-api-key": apiKey,
+          },
         },
-      });
+      );
     } catch (error) {
-      console.warn('Failed to delete agent from ElevenLabs:', error);
+      console.warn("Failed to delete agent from ElevenLabs:", error);
     }
 
     // Delete from database
@@ -330,7 +356,7 @@ export async function DELETE(request: NextRequest) {
       message: `Deleted ${employeeType} agent`,
     });
   } catch (error) {
-    console.error('Error deleting RE AI Employee:', error);
-    return apiErrors.internal('Failed to delete agent');
+    console.error("Error deleting RE AI Employee:", error);
+    return apiErrors.internal("Failed to delete agent");
   }
 }

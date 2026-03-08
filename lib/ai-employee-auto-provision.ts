@@ -4,24 +4,32 @@
  * Triggered by: set-industry, onboarding completion, profile industry change
  */
 
-import { getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context';
-import { Industry, ProfessionalAIEmployeeType, REAIEmployeeType } from '@prisma/client';
-import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
-import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
-import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
-import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
-import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
-const db = getCrmDb({ userId: '', industry: null })
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
+import {
+  Industry,
+  ProfessionalAIEmployeeType,
+  REAIEmployeeType,
+} from "@prisma/client";
+import { RE_AI_EMPLOYEE_PROMPTS } from "@/lib/real-estate/ai-employee-prompts";
+import { getIndustryAIEmployeeModule } from "@/lib/industry-ai-employees/registry";
+import { PROFESSIONAL_EMPLOYEE_CONFIGS } from "@/lib/professional-ai-employees/config";
+import { PROFESSIONAL_EMPLOYEE_PROMPTS } from "@/lib/professional-ai-employees/prompts";
+import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
+const db = getCrmDb({ userId: "", industry: null });
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 function getREApiKey(): string | null {
-  return process.env.ELEVENLABS_RE_API_KEY || process.env.ELEVENLABS_API_KEY || null;
+  return (
+    process.env.ELEVENLABS_RE_API_KEY || process.env.ELEVENLABS_API_KEY || null
+  );
 }
 
 function getIndustryApiKey(): string | null {
-  return process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY || null;
+  return (
+    process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY || null
+  );
 }
 
 /**
@@ -30,37 +38,49 @@ function getIndustryApiKey(): string | null {
  */
 async function createElevenLabsAgent(
   apiKey: string,
-  config: { name: string; systemPrompt: string; firstMessage: string; voiceId?: string }
+  config: {
+    name: string;
+    systemPrompt: string;
+    firstMessage: string;
+    voiceId?: string;
+  },
 ): Promise<string> {
-  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
-  const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+  const { getConfidentialityGuard } = await import(
+    "@/lib/ai-confidentiality-guard"
+  );
+  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import(
+    "@/lib/voice-time-context"
+  );
+  const fullPrompt =
+    config.systemPrompt +
+    EASTERN_TIME_SYSTEM_INSTRUCTION +
+    getConfidentialityGuard();
   const payload = {
     name: config.name,
     conversation_config: {
       agent: {
         prompt: { prompt: fullPrompt },
         first_message: config.firstMessage,
-        language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+        language: "en", // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
       },
-      asr: { quality: 'high', provider: 'elevenlabs' },
+      asr: { quality: "high", provider: "elevenlabs" },
       tts: {
-        voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-        model_id: 'eleven_multilingual_v2', // Best accent quality (matches landing page)
+        voice_id: config.voiceId || "EXAVITQu4vr4xnSDxMaL",
+        model_id: "eleven_multilingual_v2", // Best accent quality (matches landing page)
       },
-      turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
+      turn: { mode: "turn", turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
       conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
     },
     platform_settings: {
       auth: { enable_auth: false },
-      allowed_overrides: { agent: ['prompt', 'language'] },
+      allowed_overrides: { agent: ["prompt", "language"] },
     },
   };
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
@@ -74,18 +94,25 @@ async function createElevenLabsAgent(
       /* ignore */
     }
     const detail = parsed.detail ?? parsed.message ?? parsed.error ?? errText;
-    const detailStr = typeof detail === 'string' ? detail : JSON.stringify(detail);
-    throw new Error(`ElevenLabs create failed (${response.status}): ${detailStr}`);
+    const detailStr =
+      typeof detail === "string" ? detail : JSON.stringify(detail);
+    throw new Error(
+      `ElevenLabs create failed (${response.status}): ${detailStr}`,
+    );
   }
 
   const data = await response.json();
   return data.agent_id;
 }
 
-async function provisionREAgents(userId: string): Promise<{ success: number; failed: number; firstError?: string }> {
+async function provisionREAgents(
+  userId: string,
+): Promise<{ success: number; failed: number; firstError?: string }> {
   const apiKey = getREApiKey();
   if (!apiKey) {
-    console.warn('[AutoProvision] RE API key not configured, skipping RE agents');
+    console.warn(
+      "[AutoProvision] RE API key not configured, skipping RE agents",
+    );
     return { success: 0, failed: 0 };
   }
 
@@ -94,9 +121,9 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
     select: { employeeType: true },
   });
   const existingTypes = new Set(existing.map((a) => a.employeeType));
-  const typesToCreate = (Object.values(REAIEmployeeType) as REAIEmployeeType[]).filter(
-    (t) => !existingTypes.has(t)
-  );
+  const typesToCreate = (
+    Object.values(REAIEmployeeType) as REAIEmployeeType[]
+  ).filter((t) => !existingTypes.has(t));
 
   if (typesToCreate.length === 0) {
     return { success: 0, failed: 0 };
@@ -125,18 +152,24 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
           employeeType,
           name: promptConfig.name,
           elevenLabsAgentId: agentId,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
         },
         update: {
           elevenLabsAgentId: agentId,
           name: promptConfig.name,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
           updatedAt: new Date(),
         },
       });
 
-      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
-        console.warn(`[AutoProvision] RE ${employeeType} tools attach failed:`, err.message)
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+        source: "real_estate",
+        employeeType,
+      }).catch((err) =>
+        console.warn(
+          `[AutoProvision] RE ${employeeType} tools attach failed:`,
+          err.message,
+        ),
       );
       success++;
       console.log(`[AutoProvision] RE ${employeeType} provisioned`);
@@ -154,14 +187,16 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
 
 async function provisionIndustryAgents(
   userId: string,
-  industry: Industry
+  industry: Industry,
 ): Promise<{ success: number; failed: number }> {
   const module = getIndustryAIEmployeeModule(industry);
   if (!module) return { success: 0, failed: 0 };
 
   const apiKey = getIndustryApiKey();
   if (!apiKey) {
-    console.warn('[AutoProvision] API key not configured, skipping industry agents');
+    console.warn(
+      "[AutoProvision] API key not configured, skipping industry agents",
+    );
     return { success: 0, failed: 0 };
   }
 
@@ -170,7 +205,9 @@ async function provisionIndustryAgents(
     select: { employeeType: true },
   });
   const existingTypes = new Set(existing.map((a) => a.employeeType));
-  const typesToCreate = module.employeeTypes.filter((t) => !existingTypes.has(t));
+  const typesToCreate = module.employeeTypes.filter(
+    (t) => !existingTypes.has(t),
+  );
 
   if (typesToCreate.length === 0) {
     return { success: 0, failed: 0 };
@@ -202,18 +239,25 @@ async function provisionIndustryAgents(
           employeeType,
           name: promptConfig.name,
           elevenLabsAgentId: agentId,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
         },
         update: {
           elevenLabsAgentId: agentId,
           name: promptConfig.name,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
           updatedAt: new Date(),
         },
       });
 
-      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
-        console.warn(`[AutoProvision] ${industry}.${employeeType} tools attach failed:`, err.message)
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+        source: "industry",
+        industry,
+        employeeType,
+      }).catch((err) =>
+        console.warn(
+          `[AutoProvision] ${industry}.${employeeType} tools attach failed:`,
+          err.message,
+        ),
       );
       success++;
       console.log(`[AutoProvision] ${industry}.${employeeType} provisioned`);
@@ -227,10 +271,14 @@ async function provisionIndustryAgents(
   return { success, failed };
 }
 
-async function provisionProfessionalAgents(userId: string): Promise<{ success: number; failed: number }> {
+async function provisionProfessionalAgents(
+  userId: string,
+): Promise<{ success: number; failed: number }> {
   const apiKey = getIndustryApiKey();
   if (!apiKey) {
-    console.warn('[AutoProvision] API key not configured, skipping professional agents');
+    console.warn(
+      "[AutoProvision] API key not configured, skipping professional agents",
+    );
     return { success: 0, failed: 0 };
   }
 
@@ -239,9 +287,9 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
     select: { employeeType: true },
   });
   const existingTypes = new Set(existing.map((a) => a.employeeType));
-  const typesToCreate = (Object.values(ProfessionalAIEmployeeType) as ProfessionalAIEmployeeType[]).filter(
-    (t) => !existingTypes.has(t)
-  );
+  const typesToCreate = (
+    Object.values(ProfessionalAIEmployeeType) as ProfessionalAIEmployeeType[]
+  ).filter((t) => !existingTypes.has(t));
 
   if (typesToCreate.length === 0) {
     return { success: 0, failed: 0 };
@@ -270,25 +318,34 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
           employeeType,
           name: config.name,
           elevenLabsAgentId: agentId,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
         },
         update: {
           elevenLabsAgentId: agentId,
           name: config.name,
-          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
           updatedAt: new Date(),
         },
       });
 
-      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
-        console.warn(`[AutoProvision] Professional ${employeeType} tools attach failed:`, err.message)
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+        source: "professional",
+        employeeType,
+      }).catch((err) =>
+        console.warn(
+          `[AutoProvision] Professional ${employeeType} tools attach failed:`,
+          err.message,
+        ),
       );
       success++;
       console.log(`[AutoProvision] Professional ${employeeType} provisioned`);
     } catch (err: unknown) {
       failed++;
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[AutoProvision] Professional ${employeeType} failed:`, msg);
+      console.error(
+        `[AutoProvision] Professional ${employeeType} failed:`,
+        msg,
+      );
     }
     await new Promise((r) => setTimeout(r, 1500)); // Longer delay to avoid rate limits
   }
@@ -304,30 +361,56 @@ async function fixExistingAgents(userId: string): Promise<void> {
   if (!apiKey) return;
 
   const [industryAgents, reAgents, profAgents] = await Promise.all([
-    db.industryAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
-    db.rEAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
-    db.professionalAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
+    db.industryAIEmployeeAgent.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        industry: true,
+        employeeType: true,
+        elevenLabsAgentId: true,
+      },
+    }),
+    db.rEAIEmployeeAgent.findMany({
+      where: { userId },
+      select: { id: true, elevenLabsAgentId: true },
+    }),
+    db.professionalAIEmployeeAgent.findMany({
+      where: { userId },
+      select: { id: true, employeeType: true, elevenLabsAgentId: true },
+    }),
   ]);
 
   const reApiKey = getREApiKey();
   for (const a of industryAgents) {
     if (a.elevenLabsAgentId) {
-      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id).catch((e) =>
-        console.warn(`[AutoProvision] Fix industry agent ${a.id}:`, e?.message)
+      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id, {
+        source: "industry",
+        industry: a.industry,
+        employeeType: a.employeeType,
+      }).catch((e) =>
+        console.warn(`[AutoProvision] Fix industry agent ${a.id}:`, e?.message),
       );
     }
   }
   for (const a of reAgents) {
     if (a.elevenLabsAgentId && reApiKey) {
-      await attachToolsToElevenLabsAgent(reApiKey, a.elevenLabsAgentId, a.id).catch((e) =>
-        console.warn(`[AutoProvision] Fix RE agent ${a.id}:`, e?.message)
+      await attachToolsToElevenLabsAgent(reApiKey, a.elevenLabsAgentId, a.id, {
+        source: "real_estate",
+      }).catch((e) =>
+        console.warn(`[AutoProvision] Fix RE agent ${a.id}:`, e?.message),
       );
     }
   }
   for (const a of profAgents) {
     if (a.elevenLabsAgentId) {
-      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id).catch((e) =>
-        console.warn(`[AutoProvision] Fix professional agent ${a.id}:`, e?.message)
+      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id, {
+        source: "professional",
+        employeeType: a.employeeType,
+      }).catch((e) =>
+        console.warn(
+          `[AutoProvision] Fix professional agent ${a.id}:`,
+          e?.message,
+        ),
       );
     }
   }
@@ -338,7 +421,9 @@ async function fixExistingAgents(userId: string): Promise<void> {
  * Safe to call multiple times; skips already-provisioned agents.
  * Also fixes existing agents (LLM + tools) when run.
  */
-export async function provisionAIEmployeesForUserAsync(userId: string): Promise<void> {
+export async function provisionAIEmployeesForUserAsync(
+  userId: string,
+): Promise<void> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { industry: true, email: true },
@@ -351,21 +436,28 @@ export async function provisionAIEmployeesForUserAsync(userId: string): Promise<
   await fixExistingAgents(userId);
 
   // Professional agents: available to ALL users (even without industry - e.g. super-admin-created accounts)
-  const { success: profSuccess, failed: profFailed } = await provisionProfessionalAgents(userId);
+  const { success: profSuccess, failed: profFailed } =
+    await provisionProfessionalAgents(userId);
   if (profSuccess > 0 || profFailed > 0) {
-    console.log(`[AutoProvision] ${user.email} Professional: ${profSuccess} provisioned, ${profFailed} failed`);
+    console.log(
+      `[AutoProvision] ${user.email} Professional: ${profSuccess} provisioned, ${profFailed} failed`,
+    );
   }
 
   const industry = user.industry as Industry | null;
   if (!industry) {
-    console.log(`[AutoProvision] ${user.email} has no industry - Professional agents done. Set industry for RE/Industry agents.`);
+    console.log(
+      `[AutoProvision] ${user.email} has no industry - Professional agents done. Set industry for RE/Industry agents.`,
+    );
     return;
   }
 
-  if (industry === 'REAL_ESTATE') {
+  if (industry === "REAL_ESTATE") {
     const { success, failed, firstError } = await provisionREAgents(userId);
     if (success > 0 || failed > 0) {
-      console.log(`[AutoProvision] ${user.email} RE: ${success} provisioned, ${failed} failed`);
+      console.log(
+        `[AutoProvision] ${user.email} RE: ${success} provisioned, ${failed} failed`,
+      );
       if (failed > 0 && firstError) {
         console.error(`[AutoProvision] First RE error: ${firstError}`);
       }
@@ -373,9 +465,14 @@ export async function provisionAIEmployeesForUserAsync(userId: string): Promise<
   } else {
     const module = getIndustryAIEmployeeModule(industry);
     if (module) {
-      const { success, failed } = await provisionIndustryAgents(userId, industry);
+      const { success, failed } = await provisionIndustryAgents(
+        userId,
+        industry,
+      );
       if (success > 0 || failed > 0) {
-        console.log(`[AutoProvision] ${user.email} ${industry}: ${success} provisioned, ${failed} failed`);
+        console.log(
+          `[AutoProvision] ${user.email} ${industry}: ${success} provisioned, ${failed} failed`,
+        );
       }
     }
   }
@@ -389,6 +486,6 @@ export async function provisionAIEmployeesForUserAsync(userId: string): Promise<
  */
 export function provisionAIEmployeesForUser(userId: string): void {
   provisionAIEmployeesForUserAsync(userId).catch((err) => {
-    console.error('[AutoProvision] Error:', err);
+    console.error("[AutoProvision] Error:", err);
   });
 }

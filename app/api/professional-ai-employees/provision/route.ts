@@ -4,44 +4,59 @@
  * Available to ALL users - RE-style provisioning
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { ProfessionalAIEmployeeType } from '@prisma/client';
-import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
-import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
-import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
-import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { ProfessionalAIEmployeeType } from "@prisma/client";
+import { PROFESSIONAL_EMPLOYEE_CONFIGS } from "@/lib/professional-ai-employees/config";
+import { PROFESSIONAL_EMPLOYEE_PROMPTS } from "@/lib/professional-ai-employees/prompts";
+import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
+import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 // ElevenLabs agent creation can take 30+ seconds
 export const maxDuration = 60;
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 function getApiKey(): string {
-  const apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY;
+  const apiKey =
+    process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY;
   if (!apiKey) {
-    throw new Error('ELEVENLABS_API_KEY or ELEVENLABS_RE_API_KEY environment variable is not set');
+    throw new Error(
+      "ELEVENLABS_API_KEY or ELEVENLABS_RE_API_KEY environment variable is not set",
+    );
   }
   return apiKey;
 }
 
 async function createElevenLabsAgent(
   apiKey: string,
-  config: { name: string; systemPrompt: string; firstMessage: string; voiceId?: string }
+  config: {
+    name: string;
+    systemPrompt: string;
+    firstMessage: string;
+    voiceId?: string;
+  },
 ): Promise<{ agentId: string }> {
-  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
-  const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+  const { getConfidentialityGuard } = await import(
+    "@/lib/ai-confidentiality-guard"
+  );
+  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import(
+    "@/lib/voice-time-context"
+  );
+  const fullPrompt =
+    config.systemPrompt +
+    EASTERN_TIME_SYSTEM_INSTRUCTION +
+    getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       name: config.name,
@@ -49,19 +64,19 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+          language: "en", // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
-        asr: { quality: 'high', provider: 'elevenlabs' },
+        asr: { quality: "high", provider: "elevenlabs" },
         tts: {
-          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_multilingual_v2',
+          voice_id: config.voiceId || "EXAVITQu4vr4xnSDxMaL",
+          model_id: "eleven_multilingual_v2",
         },
-        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
+        turn: { mode: "turn", turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
       },
       platform_settings: {
         auth: { enable_auth: false },
-        allowed_overrides: { agent: ['prompt', 'language'] },
+        allowed_overrides: { agent: ["prompt", "language"] },
       },
     }),
   });
@@ -95,10 +110,16 @@ export async function GET(request: NextRequest) {
     provisionAIEmployeesForUser(session.user.id);
 
     const enrichedAgents = agents
-      .filter((agent) => agent?.employeeType && typeof agent.employeeType === 'string')
+      .filter(
+        (agent) =>
+          agent?.employeeType && typeof agent.employeeType === "string",
+      )
       .map((agent) => ({
         ...agent,
-        description: PROFESSIONAL_EMPLOYEE_CONFIGS[agent.employeeType as ProfessionalAIEmployeeType]?.description || '',
+        description:
+          PROFESSIONAL_EMPLOYEE_CONFIGS[
+            agent.employeeType as ProfessionalAIEmployeeType
+          ]?.description || "",
       }));
 
     return NextResponse.json({
@@ -108,13 +129,13 @@ export async function GET(request: NextRequest) {
       provisionedCount: enrichedAgents.length,
     });
   } catch (error) {
-    console.error('Error fetching professional AI employees:', error);
+    console.error("Error fetching professional AI employees:", error);
     return NextResponse.json({
       success: true,
       agents: [],
       totalTypes: 12,
       provisionedCount: 0,
-      error: error instanceof Error ? error.message : 'Failed to fetch agents',
+      error: error instanceof Error ? error.message : "Failed to fetch agents",
     });
   }
 }
@@ -134,13 +155,15 @@ export async function POST(request: NextRequest) {
     try {
       apiKey = getApiKey();
     } catch {
-      return apiErrors.internal('Soshogle AI voice is not configured');
+      return apiErrors.internal("Soshogle AI voice is not configured");
     }
 
     const typesToProvision: ProfessionalAIEmployeeType[] =
       employeeTypes?.length > 0
         ? employeeTypes
-        : (Object.values(ProfessionalAIEmployeeType) as ProfessionalAIEmployeeType[]);
+        : (Object.values(
+            ProfessionalAIEmployeeType,
+          ) as ProfessionalAIEmployeeType[]);
 
     const existingAgents = await getExistingAgents(session.user.id);
     const existingTypes = new Set(existingAgents.map((a) => a.employeeType));
@@ -152,12 +175,17 @@ export async function POST(request: NextRequest) {
     if (typesToCreate.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'All Professional AI Employees are already provisioned',
+        message: "All Professional AI Employees are already provisioned",
         agents: existingAgents,
       });
     }
 
-    const results: Array<{ type: ProfessionalAIEmployeeType; success: boolean; agentId?: string; error?: string }> = [];
+    const results: Array<{
+      type: ProfessionalAIEmployeeType;
+      success: boolean;
+      agentId?: string;
+      error?: string;
+    }> = [];
 
     for (const employeeType of typesToCreate) {
       try {
@@ -181,24 +209,27 @@ export async function POST(request: NextRequest) {
             employeeType,
             name: config.name,
             elevenLabsAgentId: agentId,
-            voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+            voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
           },
           update: {
             elevenLabsAgentId: agentId,
             name: config.name,
-            voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+            voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
             updatedAt: new Date(),
           },
         });
 
-        await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
+        await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+          source: "professional",
+          employeeType,
+        });
 
         results.push({ type: employeeType, success: true, agentId });
       } catch (err) {
         results.push({
           type: employeeType,
           success: false,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: err instanceof Error ? err.message : "Unknown error",
         });
       }
       await new Promise((r) => setTimeout(r, 500));
@@ -211,13 +242,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: failCount === 0,
-      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ''}`,
-      error: failCount > 0 ? (firstError || `Provisioning failed for ${failCount} agent(s)`) : undefined,
+      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ""}`,
+      error:
+        failCount > 0
+          ? firstError || `Provisioning failed for ${failCount} agent(s)`
+          : undefined,
       results,
       agents: updatedAgents,
     });
   } catch (error) {
-    console.error('Error provisioning professional AI employees:', error);
-    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
+    console.error("Error provisioning professional AI employees:", error);
+    return apiErrors.internal(
+      error instanceof Error ? error.message : "Failed to provision agents",
+    );
   }
 }

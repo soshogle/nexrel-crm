@@ -4,27 +4,30 @@
  * Same pattern as RE provision - uses industry prompts from registry
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { Industry } from '@prisma/client';
-import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
-import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
-import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { Industry } from "@prisma/client";
+import { getIndustryAIEmployeeModule } from "@/lib/industry-ai-employees/registry";
+import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
+import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 // ElevenLabs agent creation can take 30+ seconds
 export const maxDuration = 60;
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 function getApiKey(): string {
-  const apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY;
+  const apiKey =
+    process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY;
   if (!apiKey) {
-    throw new Error('ELEVENLABS_API_KEY or ELEVENLABS_RE_API_KEY environment variable is not set');
+    throw new Error(
+      "ELEVENLABS_API_KEY or ELEVENLABS_RE_API_KEY environment variable is not set",
+    );
   }
   return apiKey;
 }
@@ -36,16 +39,23 @@ async function createElevenLabsAgent(
     systemPrompt: string;
     firstMessage: string;
     voiceId?: string;
-  }
+  },
 ): Promise<{ agentId: string }> {
-  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
-  const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+  const { getConfidentialityGuard } = await import(
+    "@/lib/ai-confidentiality-guard"
+  );
+  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import(
+    "@/lib/voice-time-context"
+  );
+  const fullPrompt =
+    config.systemPrompt +
+    EASTERN_TIME_SYSTEM_INSTRUCTION +
+    getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       name: config.name,
@@ -53,26 +63,26 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+          language: "en", // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
-        asr: { quality: 'high', provider: 'elevenlabs' },
+        asr: { quality: "high", provider: "elevenlabs" },
         tts: {
-          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_multilingual_v2',
+          voice_id: config.voiceId || "EXAVITQu4vr4xnSDxMaL",
+          model_id: "eleven_multilingual_v2",
         },
-        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
+        turn: { mode: "turn", turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
       },
       platform_settings: {
         auth: { enable_auth: false },
-        allowed_overrides: { agent: ['prompt', 'language'] },
+        allowed_overrides: { agent: ["prompt", "language"] },
       },
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('ElevenLabs agent creation failed:', error);
+    console.error("ElevenLabs agent creation failed:", error);
     throw new Error(`Failed to create ElevenLabs agent: ${error}`);
   }
 
@@ -92,7 +102,7 @@ async function provisionEmployee(
   userId: string,
   industry: Industry,
   employeeType: string,
-  apiKey: string
+  apiKey: string,
 ): Promise<{ success: boolean; agentId?: string; error?: string }> {
   const module = getIndustryAIEmployeeModule(industry);
   if (!module) {
@@ -106,7 +116,10 @@ async function provisionEmployee(
 
   const config = module.configs[employeeType];
   if (!config) {
-    return { success: false, error: `No config for employee type: ${employeeType}` };
+    return {
+      success: false,
+      error: `No config for employee type: ${employeeType}`,
+    };
   }
 
   try {
@@ -131,24 +144,28 @@ async function provisionEmployee(
         employeeType,
         name: promptConfig.name,
         elevenLabsAgentId: agentId,
-        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
       },
       update: {
         elevenLabsAgentId: agentId,
         name: promptConfig.name,
-        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        voiceId: promptConfig.voiceId || "EXAVITQu4vr4xnSDxMaL",
         updatedAt: new Date(),
       },
     });
 
-    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
+    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id, {
+      source: "industry",
+      industry,
+      employeeType,
+    });
 
     return { success: true, agentId };
   } catch (error) {
     console.error(`Failed to provision ${industry}.${employeeType}:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -162,17 +179,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const industry = searchParams.get('industry') as Industry | null;
+    const industry = searchParams.get("industry") as Industry | null;
 
     if (!industry) {
-      return apiErrors.badRequest('Industry query parameter is required');
+      return apiErrors.badRequest("Industry query parameter is required");
     }
 
     const module = getIndustryAIEmployeeModule(industry);
     if (!module) {
       return NextResponse.json(
         { error: `Industry ${industry} does not have AI employees` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -197,8 +214,8 @@ export async function GET(request: NextRequest) {
       provisionedCount: agents.length,
     });
   } catch (error) {
-    console.error('Error fetching industry AI Employee agents:', error);
-    return apiErrors.internal('Failed to fetch agents');
+    console.error("Error fetching industry AI Employee agents:", error);
+    return apiErrors.internal("Failed to fetch agents");
   }
 }
 
@@ -218,14 +235,14 @@ export async function POST(request: NextRequest) {
     };
 
     if (!industry) {
-      return apiErrors.badRequest('Industry is required');
+      return apiErrors.badRequest("Industry is required");
     }
 
     const module = getIndustryAIEmployeeModule(industry);
     if (!module) {
       return NextResponse.json(
         { error: `Industry ${industry} does not have AI employees` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -235,14 +252,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.industry !== industry) {
-      return apiErrors.forbidden('Industry does not match your account');
+      return apiErrors.forbidden("Industry does not match your account");
     }
 
     let apiKey: string;
     try {
       apiKey = getApiKey();
     } catch (error) {
-      return apiErrors.internal('Soshogle AI voice is not configured');
+      return apiErrors.internal("Soshogle AI voice is not configured");
     }
 
     const typesToProvision: string[] =
@@ -261,7 +278,7 @@ export async function POST(request: NextRequest) {
       const agents = await getExistingAgents(session.user.id, industry);
       return NextResponse.json({
         success: true,
-        message: 'All industry AI Employees are already provisioned',
+        message: "All industry AI Employees are already provisioned",
         agents: agents.map((a) => ({
           id: a.id,
           employeeType: a.employeeType,
@@ -286,7 +303,7 @@ export async function POST(request: NextRequest) {
         session.user.id,
         industry,
         type,
-        apiKey
+        apiKey,
       );
       results.push({ type, ...result });
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -300,8 +317,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: failCount === 0,
-      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ''}`,
-      error: failCount > 0 ? (firstError || `Provisioning failed for ${failCount} agent(s)`) : undefined,
+      message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ""}`,
+      error:
+        failCount > 0
+          ? firstError || `Provisioning failed for ${failCount} agent(s)`
+          : undefined,
       results,
       agents: updatedAgents.map((a) => ({
         id: a.id,
@@ -314,7 +334,9 @@ export async function POST(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Error provisioning industry AI Employees:', error);
-    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
+    console.error("Error provisioning industry AI Employees:", error);
+    return apiErrors.internal(
+      error instanceof Error ? error.message : "Failed to provision agents",
+    );
   }
 }
