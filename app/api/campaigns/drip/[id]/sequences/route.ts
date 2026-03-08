@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -10,33 +11,36 @@ type RouteContext = {
 
 // GET /api/campaigns/drip/[id]/sequences - List sequences
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export async function GET(
-  req: NextRequest,
-  context: RouteContext
-) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const { id } = await context.params;
 
     // Verify campaign ownership
-    const campaign = await prisma.emailDripCampaign.findFirst({
-      where: { id, userId: session.user.id },
+    const campaign = await db.emailDripCampaign.findFirst({
+      where: { id, userId: ctx.userId },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
-    const sequences = await prisma.emailDripSequence.findMany({
+    const sequences = await db.emailDripSequence.findMany({
       where: { campaignId: id },
-      orderBy: { sequenceOrder: 'asc' },
+      orderBy: { sequenceOrder: "asc" },
       include: {
         _count: {
           select: { messages: true },
@@ -46,37 +50,42 @@ export async function GET(
 
     return NextResponse.json(sequences);
   } catch (error: unknown) {
-    console.error('Error fetching sequences:', error);
-    return apiErrors.internal('Failed to fetch sequences');
+    console.error("Error fetching sequences:", error);
+    return apiErrors.internal("Failed to fetch sequences");
   }
 }
 
 // POST /api/campaigns/drip/[id]/sequences - Create sequence
-export async function POST(
-  req: NextRequest,
-  context: RouteContext
-) {
+export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const { id } = await context.params;
     const body = await req.json();
 
     // Verify campaign ownership
-    const campaign = await prisma.emailDripCampaign.findFirst({
-      where: { id, userId: session.user.id },
+    const campaign = await db.emailDripCampaign.findFirst({
+      where: { id, userId: ctx.userId },
     });
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
     // Don't allow adding sequences to active campaigns
-    if (campaign.status === 'ACTIVE') {
-      return apiErrors.badRequest('Cannot add sequences to active campaign. Pause it first.');
+    if (campaign.status === "ACTIVE") {
+      return apiErrors.badRequest(
+        "Cannot add sequences to active campaign. Pause it first.",
+      );
     }
 
     const {
@@ -98,20 +107,20 @@ export async function POST(
 
     // Validate required fields
     if (!name || !subject || !htmlContent) {
-      return apiErrors.badRequest('Name, subject, and content are required');
+      return apiErrors.badRequest("Name, subject, and content are required");
     }
 
     // Determine sequence order if not provided
     let order = sequenceOrder;
     if (!order) {
-      const lastSequence = await prisma.emailDripSequence.findFirst({
+      const lastSequence = await db.emailDripSequence.findFirst({
         where: { campaignId: id },
-        orderBy: { sequenceOrder: 'desc' },
+        orderBy: { sequenceOrder: "desc" },
       });
       order = (lastSequence?.sequenceOrder || 0) + 1;
     }
 
-    const sequence = await prisma.emailDripSequence.create({
+    const sequence = await db.emailDripSequence.create({
       data: {
         campaignId: id,
         name,
@@ -133,7 +142,7 @@ export async function POST(
 
     return NextResponse.json(sequence, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error creating sequence:', error);
-    return apiErrors.internal('Failed to create sequence');
+    console.error("Error creating sequence:", error);
+    return apiErrors.internal("Failed to create sequence");
   }
 }
