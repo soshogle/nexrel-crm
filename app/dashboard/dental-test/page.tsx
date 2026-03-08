@@ -31,6 +31,10 @@ import { DentalCardGrid } from "@/components/dental/dental-card-grid";
 import { DentalModals } from "@/components/dental/dental-modals";
 import { NeuralPerioChart } from "@/components/dental/neural-perio-chart";
 import { PerioAiSidePanel } from "@/components/dental/perio-ai-side-panel";
+import {
+  flagNonDemoFallback,
+  isDemoAccountEmail,
+} from "@/lib/dental/runtime-guards";
 
 function PanableCanvas({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,10 +70,7 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
 
 export default function DentalTestPage() {
   const { data: session } = useSession();
-  const isDemoAccount =
-    String(session?.user?.email || "")
-      .toLowerCase()
-      .trim() === "orthodontist@nexrel.com";
+  const isDemoAccount = isDemoAccountEmail(session?.user?.email);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -650,6 +651,23 @@ export default function DentalTestPage() {
             },
           ]
         : [];
+
+  useEffect(() => {
+    const usesFallbackSchedule =
+      !appointments.length && displayMultiChairAppointments.length > 0;
+    if (usesFallbackSchedule && !isDemoAccount) {
+      flagNonDemoFallback({
+        panel: "DentalTest.MultiChairAgenda",
+        issue: "Fallback appointment schedule rendered",
+        email: session?.user?.email,
+      });
+    }
+  }, [
+    appointments.length,
+    displayMultiChairAppointments.length,
+    isDemoAccount,
+    session?.user?.email,
+  ]);
 
   return (
     <PanableCanvas>

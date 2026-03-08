@@ -3,48 +3,64 @@
  * Exact match to image - signature area with clear and confirm buttons
  */
 
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { PenTool, X } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { PenTool, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import {
+  flagNonDemoFallback,
+  isDemoAccountEmail,
+} from "@/lib/dental/runtime-guards";
 
 export function CustomSignature() {
   const { data: session } = useSession();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const initialRenderCheckedRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(false);
-  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  const isOrthoDemo = isDemoAccountEmail(session?.user?.email);
   const [hasSignature, setHasSignature] = useState(isOrthoDemo); // Keep prefilled mock signature only for demo account
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     canvas.width = canvas.offsetWidth;
     canvas.height = 100;
 
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (!initialRenderCheckedRef.current) {
+      initialRenderCheckedRef.current = true;
+      if (!isOrthoDemo && hasSignature) {
+        flagNonDemoFallback({
+          panel: "Admin.SignatureCapture",
+          issue: "Prefilled signature fallback detected on initial render",
+          email: session?.user?.email,
+        });
+      }
+    }
 
     // Draw mock signature only for the dedicated demo account
     if (isOrthoDemo && hasSignature) {
-      ctx.font = '24px cursive';
-      ctx.fillText('Signit', 20, 50);
+      ctx.font = "24px cursive";
+      ctx.fillText("Signit", 20, 50);
     }
-  }, [hasSignature, isOrthoDemo]);
+  }, [hasSignature, isOrthoDemo, session?.user?.email]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -57,7 +73,7 @@ export function CustomSignature() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -73,7 +89,7 @@ export function CustomSignature() {
   const handleClear = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);

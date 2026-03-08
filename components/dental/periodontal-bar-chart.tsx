@@ -3,23 +3,30 @@
  * Exact match to image - bar chart visualization with green/red bars
  */
 
-'use client';
+"use client";
 
-import { ArrowUp, ArrowDown } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { ArrowUp, ArrowDown } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import {
+  flagNonDemoFallback,
+  isDemoAccountEmail,
+} from "@/lib/dental/runtime-guards";
 
 interface PeriodontalBarChartProps {
   measurements?: any;
 }
 
-export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) {
+export function PeriodontalBarChart({
+  measurements,
+}: PeriodontalBarChartProps) {
   const { data: session } = useSession();
-  const isOrthoDemo = String(session?.user?.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+  const isOrthoDemo = isDemoAccountEmail(session?.user?.email);
 
   const getToothPd = (toothNum: number): number => {
     const data = measurements?.[String(toothNum)] || measurements?.[toothNum];
-    if (!data || typeof data !== 'object') return 0;
-    const sites = ['mesial', 'buccal', 'distal', 'lingual'];
+    if (!data || typeof data !== "object") return 0;
+    const sites = ["mesial", "buccal", "distal", "lingual"];
     const values = sites
       .map((site) => Number(data?.[site]?.pd || 0))
       .filter((v) => Number.isFinite(v) && v > 0);
@@ -32,25 +39,41 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
   const chartData = Array.from({ length: 32 }, (_, i) => {
     const toothNum = i + 1;
     const pdFromData = getToothPd(toothNum);
-    const fallbackPd = (toothNum % 4 === 0) ? 3 : 2;
-    const pd = pdFromData > 0 ? pdFromData : (isOrthoDemo ? fallbackPd : 0);
+    const fallbackPd = toothNum % 4 === 0 ? 3 : 2;
+    const pd = pdFromData > 0 ? pdFromData : isOrthoDemo ? fallbackPd : 0;
     return {
       tooth: toothNum,
       pd,
-      hasArrow: isOrthoDemo && (toothNum === 6 || toothNum === 11 || toothNum === 22 || toothNum === 27),
-      arrowDirection: toothNum % 2 === 0 ? 'up' : 'down',
+      hasArrow:
+        isOrthoDemo &&
+        (toothNum === 6 ||
+          toothNum === 11 ||
+          toothNum === 22 ||
+          toothNum === 27),
+      arrowDirection: toothNum % 2 === 0 ? "up" : "down",
     };
   });
 
+  useEffect(() => {
+    const usesFallbackPd = chartData.some((t) => t.pd > 0) && !measurements;
+    if (usesFallbackPd && !isOrthoDemo) {
+      flagNonDemoFallback({
+        panel: "Clinical.PerioBarChart",
+        issue: "Fallback periodontal bar values rendered",
+        email: session?.user?.email,
+      });
+    }
+  }, [chartData, isOrthoDemo, measurements, session?.user?.email]);
+
   const getBarColor = (pd: number) => {
-    if (pd <= 0) return 'bg-gray-200';
-    if (pd <= 3) return 'bg-green-500';
-    if (pd <= 5) return 'bg-red-500';
-    return 'bg-red-700';
+    if (pd <= 0) return "bg-gray-200";
+    if (pd <= 3) return "bg-green-500";
+    if (pd <= 5) return "bg-red-500";
+    return "bg-red-700";
   };
 
   const getBarHeight = (pd: number) => {
-    if (pd <= 0) return '2px';
+    if (pd <= 0) return "2px";
     // Max height 60px for 5mm+
     return `${(pd / 5) * 60}px`;
   };
@@ -62,7 +85,10 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
         {/* Upper arch teeth numbers */}
         <div className="flex justify-between mb-2 px-2">
           {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
-            <div key={num} className="text-[10px] text-gray-600 w-6 text-center">
+            <div
+              key={num}
+              className="text-[10px] text-gray-600 w-6 text-center"
+            >
               {num}
             </div>
           ))}
@@ -75,11 +101,14 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
               <div className="relative w-4 flex flex-col items-center">
                 <div
                   className={`w-full ${getBarColor(tooth.pd)} rounded-t`}
-                  style={{ height: getBarHeight(tooth.pd), minHeight: tooth.pd > 0 ? '8px' : '2px' }}
+                  style={{
+                    height: getBarHeight(tooth.pd),
+                    minHeight: tooth.pd > 0 ? "8px" : "2px",
+                  }}
                 />
                 {tooth.hasArrow && (
                   <div className="absolute -bottom-3">
-                    {tooth.arrowDirection === 'up' ? (
+                    {tooth.arrowDirection === "up" ? (
                       <ArrowUp className="w-3 h-3 text-red-600" />
                     ) : (
                       <ArrowDown className="w-3 h-3 text-red-600" />
@@ -98,7 +127,7 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
               <div className="relative w-4 flex flex-col items-center">
                 {tooth.hasArrow && (
                   <div className="absolute -top-3">
-                    {tooth.arrowDirection === 'up' ? (
+                    {tooth.arrowDirection === "up" ? (
                       <ArrowUp className="w-3 h-3 text-red-600" />
                     ) : (
                       <ArrowDown className="w-3 h-3 text-red-600" />
@@ -107,7 +136,10 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
                 )}
                 <div
                   className={`w-full ${getBarColor(tooth.pd)} rounded-b`}
-                  style={{ height: getBarHeight(tooth.pd), minHeight: tooth.pd > 0 ? '8px' : '2px' }}
+                  style={{
+                    height: getBarHeight(tooth.pd),
+                    minHeight: tooth.pd > 0 ? "8px" : "2px",
+                  }}
                 />
               </div>
             </div>
@@ -117,7 +149,10 @@ export function PeriodontalBarChart({ measurements }: PeriodontalBarChartProps) 
         {/* Lower arch teeth numbers */}
         <div className="flex justify-between px-2">
           {Array.from({ length: 16 }, (_, i) => i + 17).map((num) => (
-            <div key={num} className="text-[10px] text-gray-600 w-6 text-center">
+            <div
+              key={num}
+              className="text-[10px] text-gray-600 w-6 text-center"
+            >
               {num}
             </div>
           ))}

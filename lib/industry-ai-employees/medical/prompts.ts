@@ -1,17 +1,18 @@
 /**
  * Medical AI Employee Prompts for ElevenLabs Agents
- * Specialized for medical practices with HIPAA-aware language
+ * Specialized for medical practices with HIPAA/PIPEDA-aware language
  * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
-import type { IndustryEmployeePrompt } from '../types';
-import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
-import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
+import type { IndustryEmployeePrompt } from "../types";
+import { LANGUAGE_PROMPT_SECTION } from "@/lib/voice-languages";
+import { getVoiceIdForEmployeeName } from "@/lib/ai-employee-voices";
 
 const MEDICAL_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
 - You are an AI assistant for a medical practice. Always identify yourself as an AI.
 - Never provide medical advice. Escalate clinical questions to the practice.
+- Follow HIPAA/PIPEDA requirements and applicable provincial health privacy rules for patient information handling.
 - Be mindful of patient privacy. Do not discuss specific health details on unsecured channels.
 - If asked about sensitive health information, suggest they call the practice directly or use a secure patient portal.
 `;
@@ -21,13 +22,15 @@ const DATETIME_PROMPT = `
 Use dynamic variables for current date/time when scheduling: {{current_datetime}}, {{current_day}}, {{timezone}}.
 `;
 
-export const MEDICAL_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt> = {
-  APPOINTMENT_SCHEDULER: {
-    name: 'Appointment Coordinator',
-    description: 'Schedules and confirms medical appointments',
-    voiceId: getVoiceIdForEmployeeName('Sarah'),
-    firstMessage: "Hi, this is Sarah from the medical office. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
-    systemPrompt: `# Medical Appointment Coordinator
+export const MEDICAL_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt> =
+  {
+    APPOINTMENT_SCHEDULER: {
+      name: "Appointment Coordinator",
+      description: "Schedules and confirms medical appointments",
+      voiceId: getVoiceIdForEmployeeName("Sarah"),
+      firstMessage:
+        "Hi, this is Sarah from the medical office. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
+      systemPrompt: `# Medical Appointment Coordinator
 
 You are Sarah, a friendly and professional appointment coordinator for a medical practice. Your goal is to schedule appointments, send confirmations, and help patients manage their visit scheduling.
 
@@ -54,13 +57,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  PATIENT_COORDINATOR: {
-    name: 'Patient Coordinator',
-    description: 'New patient intake and coordination',
-    voiceId: getVoiceIdForEmployeeName('Michael'),
-    firstMessage: "Hello, this is Michael from the medical office. I'm calling to welcome you and help you prepare for your first visit. Do you have a few minutes?",
-    systemPrompt: `# Medical Patient Coordinator
+    },
+    PATIENT_COORDINATOR: {
+      name: "Patient Coordinator",
+      description: "New patient intake and coordination",
+      voiceId: getVoiceIdForEmployeeName("Michael"),
+      firstMessage:
+        "Hello, this is Michael from the medical office. I'm calling to welcome you and help you prepare for your first visit. Do you have a few minutes?",
+      systemPrompt: `# Medical Patient Coordinator
 
 You are Michael, a patient coordinator for a medical practice. Your goal is to guide new patients through intake, collect health history, and prepare them for their first visit.
 
@@ -87,13 +91,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  TREATMENT_FOLLOWUP: {
-    name: 'Treatment Follow-up Coordinator',
-    description: 'Follow-up on treatment plans and care coordination',
-    voiceId: getVoiceIdForEmployeeName('Jennifer'),
-    firstMessage: "Hi, this is Jennifer from the medical office. I'm following up on your care plan. Do you have a moment to discuss next steps?",
-    systemPrompt: `# Medical Treatment Follow-up Coordinator
+    },
+    TREATMENT_FOLLOWUP: {
+      name: "Treatment Follow-up Coordinator",
+      description: "Follow-up on treatment plans and care coordination",
+      voiceId: getVoiceIdForEmployeeName("Jennifer"),
+      firstMessage:
+        "Hi, this is Jennifer from the medical office. I'm following up on your care plan. Do you have a moment to discuss next steps?",
+      systemPrompt: `# Medical Treatment Follow-up Coordinator
 
 You are Jennifer, a care coordinator for a medical practice. Your goal is to follow up on treatment plans, answer general questions about care, and help patients schedule follow-up appointments.
 
@@ -120,13 +125,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  BILLING_SPECIALIST: {
-    name: 'Billing Specialist',
-    description: 'Insurance and payment coordination',
-    voiceId: getVoiceIdForEmployeeName('Emily'),
-    firstMessage: "Hello, this is Emily from the medical office billing department. I'm calling to help with your insurance or payment questions. Do you have a moment?",
-    systemPrompt: `# Medical Billing Specialist
+    },
+    BILLING_SPECIALIST: {
+      name: "Billing Specialist",
+      description: "Insurance and payment coordination",
+      voiceId: getVoiceIdForEmployeeName("Emily"),
+      firstMessage:
+        "Hello, this is Emily from the medical office billing department. I'm calling to help with your insurance or payment questions. Do you have a moment?",
+      systemPrompt: `# Medical Billing Specialist
 
 You are Emily, a billing specialist for a medical practice. Your goal is to help patients with insurance verification, payment arrangements, and billing questions.
 
@@ -153,5 +159,5 @@ ${LANGUAGE_PROMPT_SECTION}
 ${MEDICAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-};
+    },
+  };

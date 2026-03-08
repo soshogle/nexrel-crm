@@ -30,6 +30,10 @@ import {
   Grid3x3,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import {
+  flagNonDemoFallback,
+  isDemoAccountEmail,
+} from "@/lib/dental/runtime-guards";
 
 const Perio3D = lazy(() =>
   import("./perio-3d").then((m) => ({ default: m.Perio3D })),
@@ -1015,10 +1019,7 @@ export function NeuralPerioChart({
 }: NeuralPerioChartProps) {
   const { data: session } = useSession();
   const chartRef = useRef<HTMLDivElement>(null);
-  const isOrthoDemo =
-    String(session?.user?.email || "")
-      .toLowerCase()
-      .trim() === "orthodontist@nexrel.com";
+  const isOrthoDemo = isDemoAccountEmail(session?.user?.email);
 
   // ── View mode (2D neural chart vs 3D) ──
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
@@ -1046,7 +1047,14 @@ export function NeuralPerioChart({
           ? DEMO
           : {};
     setLocalData(d);
-  }, [measurements, isOrthoDemo]);
+    if (d === DEMO && !isOrthoDemo) {
+      flagNonDemoFallback({
+        panel: "NeuralPerio.Chart",
+        issue: "Demo neural perio dataset was selected",
+        email: session?.user?.email,
+      });
+    }
+  }, [measurements, isOrthoDemo, session?.user?.email]);
 
   // ── Fetch exam history when leadId is provided ──
   useEffect(() => {

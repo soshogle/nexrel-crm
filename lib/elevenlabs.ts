@@ -2,6 +2,8 @@
  * ElevenLabs Text-to-Speech & Conversational AI Integration
  */
 
+import { recordDependencyResult } from "@/lib/reliability/dependency-health";
+
 interface VoiceSettings {
   stability?: number;
   similarity_boost?: number;
@@ -50,11 +52,11 @@ export interface ConversationConfigOverride {
 
 export class ElevenLabsService {
   private apiKey: string;
-  private baseUrl = 'https://api.elevenlabs.io/v1';
+  private baseUrl = "https://api.elevenlabs.io/v1";
 
   /** @param apiKeyOverride - Optional API key (e.g. user's key for Docpen). Falls back to ELEVENLABS_API_KEY env. */
   constructor(apiKeyOverride?: string) {
-    this.apiKey = apiKeyOverride || process.env.ELEVENLABS_API_KEY || '';
+    this.apiKey = apiKeyOverride || process.env.ELEVENLABS_API_KEY || "";
   }
 
   /**
@@ -63,12 +65,12 @@ export class ElevenLabsService {
   async getVoices() {
     const response = await fetch(`${this.baseUrl}/voices`, {
       headers: {
-        'xi-api-key': this.apiKey,
+        "xi-api-key": this.apiKey,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch voices from ElevenLabs');
+      throw new Error("Failed to fetch voices from ElevenLabs");
     }
 
     return response.json();
@@ -84,11 +86,12 @@ export class ElevenLabsService {
     page_size?: number;
   }) {
     const queryParams = new URLSearchParams();
-    if (params?.agent_id) queryParams.append('agent_id', params.agent_id);
-    if (params?.cursor) queryParams.append('cursor', params.cursor);
-    if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+    if (params?.agent_id) queryParams.append("agent_id", params.agent_id);
+    if (params?.cursor) queryParams.append("cursor", params.cursor);
+    if (params?.page_size)
+      queryParams.append("page_size", params.page_size.toString());
 
-    const url = `${this.baseUrl}/convai/conversations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `${this.baseUrl}/convai/conversations${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
@@ -96,21 +99,23 @@ export class ElevenLabsService {
     try {
       const response = await fetch(url, {
         headers: {
-          'xi-api-key': this.apiKey,
+          "xi-api-key": this.apiKey,
         },
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch conversations from ElevenLabs: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch conversations from ElevenLabs: ${response.statusText}`,
+        );
       }
 
       return response.json();
     } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error('ElevenLabs API request timed out. Please try again.');
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("ElevenLabs API request timed out. Please try again.");
       }
       throw err;
     }
@@ -121,10 +126,10 @@ export class ElevenLabsService {
    */
   async createConversationalAgent(config: ConversationConfig) {
     const response = await fetch(`${this.baseUrl}/convai/agents/create`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'xi-api-key': this.apiKey,
-        'Content-Type': 'application/json',
+        "xi-api-key": this.apiKey,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         conversation_config: config,
@@ -144,10 +149,10 @@ export class ElevenLabsService {
    */
   async updateConversationalAgent(agentId: string, config: ConversationConfig) {
     const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
-        'xi-api-key': this.apiKey,
-        'Content-Type': 'application/json',
+        "xi-api-key": this.apiKey,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         conversation_config: config,
@@ -166,15 +171,44 @@ export class ElevenLabsService {
    * Get agent details
    */
   async getAgent(agentId: string) {
-    const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}`, {
-      headers: {
-        'xi-api-key': this.apiKey,
-      },
-    });
+    const startedAt = Date.now();
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/convai/agents/${agentId}`, {
+        headers: {
+          "xi-api-key": this.apiKey,
+        },
+      });
+    } catch (error: any) {
+      recordDependencyResult({
+        dependency: "elevenlabs",
+        success: false,
+        source: "runtime",
+        latencyMs: Date.now() - startedAt,
+        message: error?.message || "Network error",
+      });
+      throw error;
+    }
 
     if (!response.ok) {
-      throw new Error('Failed to fetch agent details');
+      recordDependencyResult({
+        dependency: "elevenlabs",
+        success: false,
+        source: "runtime",
+        statusCode: response.status,
+        latencyMs: Date.now() - startedAt,
+        message: response.statusText,
+      });
+      throw new Error("Failed to fetch agent details");
     }
+
+    recordDependencyResult({
+      dependency: "elevenlabs",
+      success: true,
+      source: "runtime",
+      statusCode: response.status,
+      latencyMs: Date.now() - startedAt,
+    });
 
     return response.json();
   }
@@ -184,14 +218,14 @@ export class ElevenLabsService {
    */
   async deleteAgent(agentId: string) {
     const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'xi-api-key': this.apiKey,
+        "xi-api-key": this.apiKey,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to delete agent');
+      throw new Error("Failed to delete agent");
     }
 
     return true;
@@ -206,19 +240,25 @@ export class ElevenLabsService {
    * Get signed WebSocket URL for real-time conversation
    * @param agentId - The ElevenLabs agent ID
    */
-  async getSignedWebSocketUrl(agentId: string, dynamicVariables?: Record<string, string>): Promise<string> {
+  async getSignedWebSocketUrl(
+    agentId: string,
+    dynamicVariables?: Record<string, string>,
+  ): Promise<string> {
     if (!this.apiKey) {
-      throw new Error('ElevenLabs API key not configured');
+      throw new Error("ElevenLabs API key not configured");
     }
 
-    console.log('🔐 [ElevenLabs] Getting signed WebSocket URL for agent:', agentId);
+    console.log(
+      "🔐 [ElevenLabs] Getting signed WebSocket URL for agent:",
+      agentId,
+    );
     if (dynamicVariables) {
-      console.log('  📝 With dynamic variables:', dynamicVariables);
+      console.log("  📝 With dynamic variables:", dynamicVariables);
     }
 
     // Build query parameters
     const params = new URLSearchParams({ agent_id: agentId });
-    
+
     // Add dynamic variables as query parameters
     if (dynamicVariables) {
       Object.entries(dynamicVariables).forEach(([key, value]) => {
@@ -226,33 +266,71 @@ export class ElevenLabsService {
       });
     }
 
-    const response = await fetch(
-      `${this.baseUrl}/convai/conversation/get-signed-url?${params.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          'xi-api-key': this.apiKey,
+    const startedAt = Date.now();
+    let response: Response;
+    try {
+      response = await fetch(
+        `${this.baseUrl}/convai/conversation/get-signed-url?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "xi-api-key": this.apiKey,
+          },
         },
-      }
-    );
+      );
+    } catch (error: any) {
+      recordDependencyResult({
+        dependency: "elevenlabs",
+        success: false,
+        source: "runtime",
+        latencyMs: Date.now() - startedAt,
+        message: error?.message || "Network error",
+      });
+      throw error;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [ElevenLabs] Failed to get signed URL:', {
+      console.error("❌ [ElevenLabs] Failed to get signed URL:", {
         status: response.status,
         error: errorText,
       });
-      throw new Error(`Failed to get signed WebSocket URL: ${response.statusText}`);
+      recordDependencyResult({
+        dependency: "elevenlabs",
+        success: false,
+        source: "runtime",
+        statusCode: response.status,
+        latencyMs: Date.now() - startedAt,
+        message: response.statusText,
+      });
+      throw new Error(
+        `Failed to get signed WebSocket URL: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
     const signedUrl = data.signed_url;
 
     if (!signedUrl) {
-      throw new Error('No signed URL returned from ElevenLabs');
+      recordDependencyResult({
+        dependency: "elevenlabs",
+        success: false,
+        source: "runtime",
+        statusCode: response.status,
+        latencyMs: Date.now() - startedAt,
+        message: "Missing signed_url",
+      });
+      throw new Error("No signed URL returned from ElevenLabs");
     }
 
-    console.log('✅ [ElevenLabs] Got signed WebSocket URL');
+    console.log("✅ [ElevenLabs] Got signed WebSocket URL");
+    recordDependencyResult({
+      dependency: "elevenlabs",
+      success: true,
+      source: "runtime",
+      statusCode: response.status,
+      latencyMs: Date.now() - startedAt,
+    });
     return signedUrl;
   }
 
@@ -265,42 +343,48 @@ export class ElevenLabsService {
   async initiatePhoneCall(
     agentId: string,
     phoneNumber: string,
-    override?: ConversationConfigOverride
+    override?: ConversationConfigOverride,
   ) {
     if (!this.apiKey) {
-      throw new Error('ElevenLabs API key not configured');
+      throw new Error("ElevenLabs API key not configured");
     }
 
     // Ensure phone number is in E.164 format
     let formattedPhone = phoneNumber.trim();
-    if (!formattedPhone.startsWith('+')) {
+    if (!formattedPhone.startsWith("+")) {
       // Assume US number if no country code
       if (formattedPhone.length === 10) {
-        formattedPhone = '+1' + formattedPhone;
-      } else if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
-        formattedPhone = '+' + formattedPhone;
+        formattedPhone = "+1" + formattedPhone;
+      } else if (
+        formattedPhone.startsWith("1") &&
+        formattedPhone.length === 11
+      ) {
+        formattedPhone = "+" + formattedPhone;
       }
     }
 
     // First, verify the agent has a phone number assigned
-    console.log('🔍 [ElevenLabs] Checking agent configuration before call...');
+    console.log("🔍 [ElevenLabs] Checking agent configuration before call...");
     try {
       const agentDetails = await this.getAgent(agentId);
-      console.log('📋 [ElevenLabs] Agent details:', {
+      console.log("📋 [ElevenLabs] Agent details:", {
         agent_id: agentDetails.agent_id,
         name: agentDetails.name,
-        phone_number_id: agentDetails.phone_number_id || 'NO PHONE NUMBER ASSIGNED'
+        phone_number_id:
+          agentDetails.phone_number_id || "NO PHONE NUMBER ASSIGNED",
       });
-      
+
       if (!agentDetails.phone_number_id) {
-        throw new Error('Agent does not have a phone number assigned in ElevenLabs. Please click "Configure Agent" button and then "Auto-Configure" to import and assign a phone number.');
+        throw new Error(
+          'Agent does not have a phone number assigned in ElevenLabs. Please click "Configure Agent" button and then "Auto-Configure" to import and assign a phone number.',
+        );
       }
     } catch (checkError: any) {
-      console.error('❌ [ElevenLabs] Agent check failed:', checkError.message);
+      console.error("❌ [ElevenLabs] Agent check failed:", checkError.message);
       throw new Error(`Pre-call validation failed: ${checkError.message}`);
     }
 
-    console.log('📞 [ElevenLabs] Initiating outbound call:', {
+    console.log("📞 [ElevenLabs] Initiating outbound call:", {
       agentId,
       phoneNumber: formattedPhone,
     });
@@ -312,25 +396,28 @@ export class ElevenLabsService {
       body.conversation_config_override = override;
     }
 
-    const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}/call`, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': this.apiKey,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${this.baseUrl}/convai/agents/${agentId}/call`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+    );
 
-    console.log('📋 [ElevenLabs] Call API response status:', response.status);
+    console.log("📋 [ElevenLabs] Call API response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [ElevenLabs] Call initiation failed:', {
+      console.error("❌ [ElevenLabs] Call initiation failed:", {
         status: response.status,
         statusText: response.statusText,
-        errorText
+        errorText,
       });
-      
+
       // Try to parse error for better messaging
       let errorMessage = errorText;
       try {
@@ -339,22 +426,28 @@ export class ElevenLabsService {
       } catch (e) {
         // Keep original error text
       }
-      
+
       // Provide more specific error messages based on status code
       if (response.status === 404) {
-        throw new Error(`Agent not found or not properly configured in ElevenLabs. The agent may not have a phone number assigned. Please check: 1) Agent exists in ElevenLabs, 2) Phone number is imported, 3) Phone number is assigned to this agent.`);
+        throw new Error(
+          `Agent not found or not properly configured in ElevenLabs. The agent may not have a phone number assigned. Please check: 1) Agent exists in ElevenLabs, 2) Phone number is imported, 3) Phone number is assigned to this agent.`,
+        );
       } else if (response.status === 402) {
-        throw new Error('Insufficient credits or plan does not support outbound calls. Please check your ElevenLabs subscription.');
+        throw new Error(
+          "Insufficient credits or plan does not support outbound calls. Please check your ElevenLabs subscription.",
+        );
       } else if (response.status === 400) {
         throw new Error(`Invalid request: ${errorMessage}`);
       }
-      
-      throw new Error(`Failed to initiate call (${response.status}): ${errorMessage}`);
+
+      throw new Error(
+        `Failed to initiate call (${response.status}): ${errorMessage}`,
+      );
     }
 
     const result = await response.json();
-    console.log('✅ [ElevenLabs] Call initiated successfully:', result);
-    
+    console.log("✅ [ElevenLabs] Call initiated successfully:", result);
+
     return result;
   }
 
@@ -364,17 +457,23 @@ export class ElevenLabsService {
    */
   async getConversationDetails(conversationId: string) {
     try {
-      console.log('🔍 [ElevenLabs] Fetching conversation details for ID:', conversationId);
-      
-      const response = await fetch(`${this.baseUrl}/convai/conversations/${conversationId}`, {
-        headers: {
-          'xi-api-key': this.apiKey,
+      console.log(
+        "🔍 [ElevenLabs] Fetching conversation details for ID:",
+        conversationId,
+      );
+
+      const response = await fetch(
+        `${this.baseUrl}/convai/conversations/${conversationId}`,
+        {
+          headers: {
+            "xi-api-key": this.apiKey,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ [ElevenLabs] Failed to fetch conversation:', {
+        console.error("❌ [ElevenLabs] Failed to fetch conversation:", {
           status: response.status,
           error: errorText,
           conversationId,
@@ -383,17 +482,22 @@ export class ElevenLabsService {
       }
 
       const data = await response.json();
-      console.log('✅ [ElevenLabs] Conversation details fetched:', {
+      console.log("✅ [ElevenLabs] Conversation details fetched:", {
         conversationId,
         hasAudio: !!data.has_audio,
         hasTranscript: !!data.transcript,
-        transcriptLength: Array.isArray(data.transcript) ? data.transcript.length : 0,
+        transcriptLength: Array.isArray(data.transcript)
+          ? data.transcript.length
+          : 0,
         status: data.status,
       });
 
       return data;
     } catch (error: any) {
-      console.error('❌ [ElevenLabs] Error fetching conversation details:', error);
+      console.error(
+        "❌ [ElevenLabs] Error fetching conversation details:",
+        error,
+      );
       throw error;
     }
   }
@@ -405,24 +509,36 @@ export class ElevenLabsService {
    */
   async getRecordingUrl(conversationId: string): Promise<string | null> {
     try {
-      console.log('🎙️ [ElevenLabs] Checking audio availability for conversation:', conversationId);
-      
+      console.log(
+        "🎙️ [ElevenLabs] Checking audio availability for conversation:",
+        conversationId,
+      );
+
       // First check if audio is available
       const details = await this.getConversationDetails(conversationId);
-      
+
       if (!details.has_audio) {
-        console.log('⚠️  [ElevenLabs] No audio available for conversation:', conversationId);
+        console.log(
+          "⚠️  [ElevenLabs] No audio available for conversation:",
+          conversationId,
+        );
         return null;
       }
 
       // Return our internal proxy URL that handles ElevenLabs authentication
       // This allows the browser to play audio without needing API keys
       const proxyUrl = `/api/calls/audio/${conversationId}`;
-      
-      console.log('✅ [ElevenLabs] Audio available, returning proxy URL:', proxyUrl);
+
+      console.log(
+        "✅ [ElevenLabs] Audio available, returning proxy URL:",
+        proxyUrl,
+      );
       return proxyUrl;
     } catch (error) {
-      console.error('❌ [ElevenLabs] Error checking audio availability:', error);
+      console.error(
+        "❌ [ElevenLabs] Error checking audio availability:",
+        error,
+      );
       return null;
     }
   }
@@ -434,24 +550,29 @@ export class ElevenLabsService {
   async getTranscript(conversationId: string): Promise<string | null> {
     try {
       const details = await this.getConversationDetails(conversationId);
-      
+
       // ElevenLabs returns transcript as an array of turn-by-turn messages
       if (Array.isArray(details.transcript) && details.transcript.length > 0) {
         // Format: "Agent: Hello" / "User: Hi there"
         return details.transcript
           .map((turn: any) => {
-            const role = turn.role === 'agent' ? 'Agent' : 'User';
-            const message = turn.message || '';
-            const timestamp = turn.time_in_call_secs ? `[${turn.time_in_call_secs}s]` : '';
+            const role = turn.role === "agent" ? "Agent" : "User";
+            const message = turn.message || "";
+            const timestamp = turn.time_in_call_secs
+              ? `[${turn.time_in_call_secs}s]`
+              : "";
             return `${role}${timestamp}: ${message}`;
           })
-          .join('\n\n');
+          .join("\n\n");
       }
-      
-      console.log('⚠️  [ElevenLabs] No transcript available for conversation:', conversationId);
+
+      console.log(
+        "⚠️  [ElevenLabs] No transcript available for conversation:",
+        conversationId,
+      );
       return null;
     } catch (error) {
-      console.error('❌ [ElevenLabs] Error fetching transcript:', error);
+      console.error("❌ [ElevenLabs] Error fetching transcript:", error);
       return null;
     }
   }
@@ -460,19 +581,19 @@ export class ElevenLabsService {
    * Convert text to speech (basic TTS)
    */
   async textToSpeech(
-    text: string, 
-    voiceId: string = 'EXAVITQu4vr4xnSDxMaL',
-    settings?: VoiceSettings
+    text: string,
+    voiceId: string = "EXAVITQu4vr4xnSDxMaL",
+    settings?: VoiceSettings,
   ) {
     const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceId}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'xi-api-key': this.apiKey,
-        'Content-Type': 'application/json',
+        "xi-api-key": this.apiKey,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_monolingual_v1',
+        model_id: "eleven_monolingual_v1",
         voice_settings: settings || {
           stability: 0.5,
           similarity_boost: 0.75,
@@ -492,31 +613,31 @@ export class ElevenLabsService {
    * Stream text-to-speech (for real-time calls)
    */
   async streamTextToSpeech(
-    text: string, 
-    voiceId: string = 'EXAVITQu4vr4xnSDxMaL',
-    settings?: VoiceSettings
+    text: string,
+    voiceId: string = "EXAVITQu4vr4xnSDxMaL",
+    settings?: VoiceSettings,
   ) {
     const response = await fetch(
       `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'xi-api-key': this.apiKey,
-          'Content-Type': 'application/json',
+          "xi-api-key": this.apiKey,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_monolingual_v1',
+          model_id: "eleven_monolingual_v1",
           voice_settings: settings || {
             stability: 0.5,
             similarity_boost: 0.75,
           },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error('Failed to stream audio from ElevenLabs');
+      throw new Error("Failed to stream audio from ElevenLabs");
     }
 
     return response.body;
@@ -530,13 +651,13 @@ export class ElevenLabsService {
       `${this.baseUrl}/convai/conversation/get-signed-url?agent_id=${agentId}`,
       {
         headers: {
-          'xi-api-key': this.apiKey,
+          "xi-api-key": this.apiKey,
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get signed URL');
+      throw new Error("Failed to get signed URL");
     }
 
     return response.json();
@@ -546,22 +667,28 @@ export class ElevenLabsService {
    * Import Twilio phone number into ElevenLabs (Native Integration)
    * This imports the phone number and lets ElevenLabs handle all webhook configuration
    */
-  async importTwilioPhoneNumber(phoneNumber: string, label: string): Promise<{ phone_number_id: string }> {
+  async importTwilioPhoneNumber(
+    phoneNumber: string,
+    label: string,
+  ): Promise<{ phone_number_id: string }> {
     try {
       const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
       const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 
       if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-        throw new Error('Twilio credentials not configured');
+        throw new Error("Twilio credentials not configured");
       }
 
-      console.log('📞 [ElevenLabs] Importing Twilio phone number:', phoneNumber);
+      console.log(
+        "📞 [ElevenLabs] Importing Twilio phone number:",
+        phoneNumber,
+      );
 
       const response = await fetch(`${this.baseUrl}/convai/phone-numbers`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'xi-api-key': this.apiKey,
-          'Content-Type': 'application/json',
+          "xi-api-key": this.apiKey,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           phone_number: phoneNumber,
@@ -573,16 +700,23 @@ export class ElevenLabsService {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Failed to import phone number to ElevenLabs: ${error}`);
+        throw new Error(
+          `Failed to import phone number to ElevenLabs: ${error}`,
+        );
       }
 
       const result = await response.json();
-      console.log('✅ [ElevenLabs] Phone number imported, ID:', result.phone_number_id);
-      
+      console.log(
+        "✅ [ElevenLabs] Phone number imported, ID:",
+        result.phone_number_id,
+      );
+
       return result;
     } catch (error: any) {
-      console.error('❌ [ElevenLabs] Phone number import error:', error);
-      throw new Error(`Failed to import phone number to ElevenLabs: ${error.message}`);
+      console.error("❌ [ElevenLabs] Phone number import error:", error);
+      throw new Error(
+        `Failed to import phone number to ElevenLabs: ${error.message}`,
+      );
     }
   }
 
@@ -590,30 +724,43 @@ export class ElevenLabsService {
    * Assign phone number to an agent
    * After importing, assign the phone number to a specific agent
    */
-  async assignPhoneNumberToAgent(phoneNumberId: string, agentId: string): Promise<void> {
+  async assignPhoneNumberToAgent(
+    phoneNumberId: string,
+    agentId: string,
+  ): Promise<void> {
     try {
-      console.log('🔗 [ElevenLabs] Assigning phone number to agent:', { phoneNumberId, agentId });
-
-      const response = await fetch(`${this.baseUrl}/convai/phone-numbers/${phoneNumberId}`, {
-        method: 'PATCH',
-        headers: {
-          'xi-api-key': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agent_id: agentId,
-        }),
+      console.log("🔗 [ElevenLabs] Assigning phone number to agent:", {
+        phoneNumberId,
+        agentId,
       });
+
+      const response = await fetch(
+        `${this.baseUrl}/convai/phone-numbers/${phoneNumberId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "xi-api-key": this.apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            agent_id: agentId,
+          }),
+        },
+      );
 
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Failed to assign phone number to agent: ${error}`);
       }
 
-      console.log('✅ [ElevenLabs] Phone number assigned to agent successfully');
+      console.log(
+        "✅ [ElevenLabs] Phone number assigned to agent successfully",
+      );
     } catch (error: any) {
-      console.error('❌ [ElevenLabs] Phone number assignment error:', error);
-      throw new Error(`Failed to assign phone number to agent: ${error.message}`);
+      console.error("❌ [ElevenLabs] Phone number assignment error:", error);
+      throw new Error(
+        `Failed to assign phone number to agent: ${error.message}`,
+      );
     }
   }
 
@@ -622,11 +769,14 @@ export class ElevenLabsService {
    */
   async getPhoneNumber(phoneNumberId: string) {
     try {
-      const response = await fetch(`${this.baseUrl}/convai/phone-numbers/${phoneNumberId}`, {
-        headers: {
-          'xi-api-key': this.apiKey,
+      const response = await fetch(
+        `${this.baseUrl}/convai/phone-numbers/${phoneNumberId}`,
+        {
+          headers: {
+            "xi-api-key": this.apiKey,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         const error = await response.text();
@@ -635,8 +785,10 @@ export class ElevenLabsService {
 
       return response.json();
     } catch (error: any) {
-      console.error('ElevenLabs get phone number error:', error);
-      throw new Error(`Failed to get phone number from ElevenLabs: ${error.message}`);
+      console.error("ElevenLabs get phone number error:", error);
+      throw new Error(
+        `Failed to get phone number from ElevenLabs: ${error.message}`,
+      );
     }
   }
 
@@ -646,12 +798,12 @@ export class ElevenLabsService {
   async removePhoneNumber(agentId: string) {
     try {
       const agent = await this.getAgent(agentId);
-      
+
       const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'xi-api-key': this.apiKey,
-          'Content-Type': 'application/json',
+          "xi-api-key": this.apiKey,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           platform_settings: {
@@ -663,13 +815,17 @@ export class ElevenLabsService {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Failed to remove phone number from ElevenLabs agent: ${error}`);
+        throw new Error(
+          `Failed to remove phone number from ElevenLabs agent: ${error}`,
+        );
       }
 
       return response.json();
     } catch (error: any) {
-      console.error('ElevenLabs phone number removal error:', error);
-      throw new Error(`Failed to remove phone number from ElevenLabs: ${error.message}`);
+      console.error("ElevenLabs phone number removal error:", error);
+      throw new Error(
+        `Failed to remove phone number from ElevenLabs: ${error.message}`,
+      );
     }
   }
 }

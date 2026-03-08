@@ -1,17 +1,47 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { Loader2, Search, UserCog, Shield, Users, LogIn, BarChart3, LogOut, Clock, UserPlus, Edit, Phone, AlertTriangle, Settings, Trash2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import {
+  Loader2,
+  Search,
+  UserCog,
+  Shield,
+  Users,
+  LogIn,
+  BarChart3,
+  LogOut,
+  Clock,
+  UserPlus,
+  Edit,
+  Phone,
+  AlertTriangle,
+  Settings,
+  Trash2,
+  Activity,
+  RefreshCw,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,13 +51,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import UsageAnalyticsDashboard from '@/components/admin/usage-analytics-dashboard';
-import CreateBusinessOwnerDialog from '@/components/admin/create-business-owner-dialog';
-import EditUserDialog from '@/components/admin/edit-user-dialog';
-import TwilioMonitoringTab from '@/components/admin/twilio-failover/monitoring-tab';
-import FailoverEventsTab from '@/components/admin/twilio-failover/failover-events-tab';
-import AccountManagementTab from '@/components/admin/twilio-failover/account-management-tab';
+} from "@/components/ui/alert-dialog";
+import UsageAnalyticsDashboard from "@/components/admin/usage-analytics-dashboard";
+import CreateBusinessOwnerDialog from "@/components/admin/create-business-owner-dialog";
+import EditUserDialog from "@/components/admin/edit-user-dialog";
+import TwilioMonitoringTab from "@/components/admin/twilio-failover/monitoring-tab";
+import FailoverEventsTab from "@/components/admin/twilio-failover/failover-events-tab";
+import AccountManagementTab from "@/components/admin/twilio-failover/account-management-tab";
 
 const ADMIN_SESSION_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
@@ -51,6 +81,18 @@ interface User {
   };
 }
 
+interface DependencyHealthItem {
+  dependency: "openai" | "elevenlabs" | "twilio";
+  status: "unknown" | "healthy" | "degraded" | "outage";
+  failRate5m: number;
+  failRate10m: number;
+  sampleSize5m: number;
+  sampleSize10m: number;
+  consecutiveSyntheticFailures: number;
+  consecutiveSyntheticSuccesses: number;
+  updatedAt: string | null;
+}
+
 export default function PlatformAdminPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
@@ -58,42 +100,54 @@ export default function PlatformAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState<string | null>(null);
   const [approvingUser, setApprovingUser] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [industryFilter, setIndustryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [industryFilter, setIndustryFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [remainingTime, setRemainingTime] = useState<number>(ADMIN_SESSION_DURATION / 1000); // in seconds
-  const [showCreateBusinessOwnerDialog, setShowCreateBusinessOwnerDialog] = useState(false);
+  const [remainingTime, setRemainingTime] = useState<number>(
+    ADMIN_SESSION_DURATION / 1000,
+  ); // in seconds
+  const [showCreateBusinessOwnerDialog, setShowCreateBusinessOwnerDialog] =
+    useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [dependencyHealth, setDependencyHealth] = useState<
+    DependencyHealthItem[]
+  >([]);
+  const [dependencyHealthLoading, setDependencyHealthLoading] = useState(false);
+  const [dependencyHealthError, setDependencyHealthError] = useState<
+    string | null
+  >(null);
 
   // 15-minute auto-logout mechanism
   useEffect(() => {
-    if (status !== 'authenticated' || session?.user?.role !== 'SUPER_ADMIN') {
+    if (status !== "authenticated" || session?.user?.role !== "SUPER_ADMIN") {
       return;
     }
 
     // Initialize session start time
-    const sessionStartKey = 'superAdminSessionStart';
+    const sessionStartKey = "superAdminSessionStart";
     const existingStartTime = localStorage.getItem(sessionStartKey);
-    
+
     if (!existingStartTime) {
       localStorage.setItem(sessionStartKey, Date.now().toString());
     }
 
     const checkSessionTimeout = () => {
-      const startTime = parseInt(localStorage.getItem(sessionStartKey) || '0');
+      const startTime = parseInt(localStorage.getItem(sessionStartKey) || "0");
       const elapsed = Date.now() - startTime;
       const remaining = ADMIN_SESSION_DURATION - elapsed;
 
       if (remaining <= 0) {
         // Session expired - auto logout
         localStorage.removeItem(sessionStartKey);
-        toast.info('Admin session expired (15 min timeout). Please sign in again.');
-        signOut({ callbackUrl: '/auth/signin' });
+        toast.info(
+          "Admin session expired (15 min timeout). Please sign in again.",
+        );
+        signOut({ callbackUrl: "/auth/signin" });
       } else {
         // Update remaining time display
         setRemainingTime(Math.ceil(remaining / 1000));
@@ -113,12 +167,12 @@ export default function PlatformAdminPage() {
   }, [status, session, router]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (session?.user && session.user.role !== 'SUPER_ADMIN') {
-      toast.error('Forbidden: SUPER_ADMIN access required');
-      router.push('/dashboard');
-    } else if (status === 'authenticated') {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    } else if (session?.user && session.user.role !== "SUPER_ADMIN") {
+      toast.error("Forbidden: SUPER_ADMIN access required");
+      router.push("/dashboard");
+    } else if (status === "authenticated") {
       fetchUsers();
     }
   }, [status, session, router, page, roleFilter, industryFilter]);
@@ -128,80 +182,117 @@ export default function PlatformAdminPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '20',
+        limit: "20",
       });
 
       if (searchQuery) {
-        params.append('search', searchQuery);
+        params.append("search", searchQuery);
       }
 
-      if (roleFilter && roleFilter !== 'all') {
-        params.append('role', roleFilter);
+      if (roleFilter && roleFilter !== "all") {
+        params.append("role", roleFilter);
       }
 
-      if (industryFilter && industryFilter !== 'all') {
-        params.append('industry', industryFilter);
+      if (industryFilter && industryFilter !== "all") {
+        params.append("industry", industryFilter);
       }
 
-      const response = await fetch(`/api/platform-admin/users?${params.toString()}`);
+      const response = await fetch(
+        `/api/platform-admin/users?${params.toString()}`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error("Failed to fetch users");
       }
 
       const data = await response.json();
       setUsers(data.users || []);
       setTotalPages(data.pagination?.totalPages || 1);
     } catch (error: any) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const fetchDependencyHealth = async () => {
+    setDependencyHealthLoading(true);
+    try {
+      const response = await fetch("/api/health/dependencies", {
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error("Failed to fetch dependency health");
+      const data = await response.json();
+      setDependencyHealth(
+        Array.isArray(data?.dependencies) ? data.dependencies : [],
+      );
+      setDependencyHealthError(null);
+    } catch (error: any) {
+      console.error("Error fetching dependency health:", error);
+      setDependencyHealthError(
+        error?.message || "Failed to load dependency health",
+      );
+    } finally {
+      setDependencyHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status !== "authenticated" || session?.user?.role !== "SUPER_ADMIN")
+      return;
+
+    fetchDependencyHealth();
+    const intervalId = setInterval(fetchDependencyHealth, 30000);
+    return () => clearInterval(intervalId);
+  }, [status, session?.user?.role]);
+
   const handleImpersonate = async (targetUserId: string, userName: string) => {
     setIsImpersonating(targetUserId);
     try {
-      console.log('🔐 Starting impersonation for user:', userName, targetUserId);
-      
-      const response = await fetch('/api/platform-admin/impersonate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      console.log(
+        "🔐 Starting impersonation for user:",
+        userName,
+        targetUserId,
+      );
+
+      const response = await fetch("/api/platform-admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetUserId }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to impersonate user');
+        throw new Error(data.error || "Failed to impersonate user");
       }
 
       const data = await response.json();
-      console.log('✅ Impersonation session created:', data);
+      console.log("✅ Impersonation session created:", data);
 
       // Store impersonation token in localStorage
-      localStorage.setItem('impersonationToken', data.sessionToken);
-      localStorage.setItem('impersonatedUserId', targetUserId);
-      localStorage.setItem('impersonatedUserName', userName);
-      console.log('💾 Stored impersonation data in localStorage');
+      localStorage.setItem("impersonationToken", data.sessionToken);
+      localStorage.setItem("impersonatedUserId", targetUserId);
+      localStorage.setItem("impersonatedUserName", userName);
+      console.log("💾 Stored impersonation data in localStorage");
 
       toast.success(`Now impersonating ${userName}`, {
         duration: 2000,
       });
 
       // Wait a moment to show the toast
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Redirect to user's dashboard using window.location to force a full page reload
       // This ensures the session is completely refreshed and JWT callback will detect impersonation
-      console.log('🚀 Redirecting to /dashboard for impersonation...');
-      window.location.href = '/dashboard';
+      console.log("🚀 Redirecting to /dashboard for impersonation...");
+      window.location.href = "/dashboard";
     } catch (error: any) {
-      console.error('❌ Error impersonating user:', error);
-      toast.error(error.message || 'Failed to impersonate user');
+      console.error("❌ Error impersonating user:", error);
+      toast.error(error.message || "Failed to impersonate user");
       // Clean up localStorage on error
-      localStorage.removeItem('impersonationToken');
-      localStorage.removeItem('impersonatedUserId');
-      localStorage.removeItem('impersonatedUserName');
+      localStorage.removeItem("impersonationToken");
+      localStorage.removeItem("impersonatedUserId");
+      localStorage.removeItem("impersonatedUserName");
     } finally {
       setIsImpersonating(null);
     }
@@ -225,16 +316,21 @@ export default function PlatformAdminPage() {
     if (!userToDelete) return;
     setDeletingUserId(userToDelete.id);
     try {
-      const response = await fetch(`/api/platform-admin/users/${userToDelete.id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/platform-admin/users/${userToDelete.id}`,
+        {
+          method: "DELETE",
+        },
+      );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete user');
-      toast.success(`User ${userToDelete.name || userToDelete.email} has been deleted`);
+      if (!response.ok) throw new Error(data.error || "Failed to delete user");
+      toast.success(
+        `User ${userToDelete.name || userToDelete.email} has been deleted`,
+      );
       setUserToDelete(null);
       fetchUsers();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete user');
+      toast.error(error.message || "Failed to delete user");
     } finally {
       setDeletingUserId(null);
     }
@@ -244,10 +340,10 @@ export default function PlatformAdminPage() {
     try {
       setApprovingUser(userId);
 
-      const response = await fetch('/api/platform-admin/users/approve', {
-        method: 'POST',
+      const response = await fetch("/api/platform-admin/users/approve", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ userId }),
       });
@@ -255,22 +351,22 @@ export default function PlatformAdminPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to approve user');
+        throw new Error(data.error || "Failed to approve user");
       }
 
       toast.success(`User ${userName} has been approved!`);
-      
+
       // Refresh the user list
       fetchUsers();
     } catch (error: any) {
-      console.error('Error approving user:', error);
-      toast.error(error.message || 'Failed to approve user');
+      console.error("Error approving user:", error);
+      toast.error(error.message || "Failed to approve user");
     } finally {
       setApprovingUser(null);
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
@@ -285,29 +381,32 @@ export default function PlatformAdminPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <Image 
-                src="/soshogle-logo.png" 
-                alt="Soshogle Logo" 
-                width={48} 
+              <Image
+                src="/soshogle-logo.png"
+                alt="Soshogle Logo"
+                width={48}
                 height={48}
                 className="rounded-lg"
               />
-              <h1 className="text-3xl font-bold gradient-text">Platform Administration</h1>
+              <h1 className="text-3xl font-bold gradient-text">
+                Platform Administration
+              </h1>
             </div>
             <div className="flex items-center gap-3">
-              <Badge 
-                variant="outline" 
-                className={`${remainingTime < 300 ? 'bg-yellow-600 border-yellow-700' : 'bg-blue-600 border-blue-700'} text-white`}
+              <Badge
+                variant="outline"
+                className={`${remainingTime < 300 ? "bg-yellow-600 border-yellow-700" : "bg-blue-600 border-blue-700"} text-white`}
               >
                 <Clock className="h-3 w-3 mr-1" />
-                Session: {Math.floor(remainingTime / 60)}:{String(remainingTime % 60).padStart(2, '0')} remaining
+                Session: {Math.floor(remainingTime / 60)}:
+                {String(remainingTime % 60).padStart(2, "0")} remaining
               </Badge>
               <Button
                 variant="outline"
                 onClick={() => {
-                  localStorage.removeItem('superAdminSessionStart');
-                  signOut({ callbackUrl: '/auth/signin' });
-                  toast.success('Logged out successfully');
+                  localStorage.removeItem("superAdminSessionStart");
+                  signOut({ callbackUrl: "/auth/signin" });
+                  toast.success("Logged out successfully");
                 }}
                 className="bg-red-600 hover:bg-red-700 text-white border-red-700"
               >
@@ -316,31 +415,56 @@ export default function PlatformAdminPage() {
               </Button>
             </div>
           </div>
-          <p className="text-black font-semibold">Manage all users and monitor platform usage • Auto-logout after 15 minutes</p>
+          <p className="text-black font-semibold">
+            Manage all users and monitor platform usage • Auto-logout after 15
+            minutes
+          </p>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="bg-gray-900 border border-gray-800">
-            <TabsTrigger value="users" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+            <TabsTrigger
+              value="users"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
               <Users className="h-4 w-4 mr-2" />
               User Management
             </TabsTrigger>
-            <TabsTrigger value="usage" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+            <TabsTrigger
+              value="usage"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
               <BarChart3 className="h-4 w-4 mr-2" />
               Usage Analytics
             </TabsTrigger>
-            <TabsTrigger value="twilio-monitoring" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+            <TabsTrigger
+              value="twilio-monitoring"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
               <Phone className="h-4 w-4 mr-2" />
               Twilio Monitoring
             </TabsTrigger>
-            <TabsTrigger value="failover-events" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+            <TabsTrigger
+              value="failover-events"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
               <AlertTriangle className="h-4 w-4 mr-2" />
               Failover Events
             </TabsTrigger>
-            <TabsTrigger value="account-management" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+            <TabsTrigger
+              value="account-management"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
               <Settings className="h-4 w-4 mr-2" />
               Account Management
+            </TabsTrigger>
+            <TabsTrigger
+              value="dependency-health"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              Dependency Health
             </TabsTrigger>
           </TabsList>
 
@@ -348,226 +472,256 @@ export default function PlatformAdminPage() {
           <TabsContent value="users" className="space-y-6">
             {/* Filters */}
             <Card className="bg-gray-900 border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white">Search & Filters</CardTitle>
-            <CardDescription className="text-gray-400">Find and filter users</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search by name, email, or business..."
-                    className="pl-10 bg-gray-800 border-gray-700 text-white"
-                  />
-                </div>
-              </div>
-              <div className="w-full md:w-48">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Filter by role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
-                    <SelectItem value="BUSINESS_OWNER">Business Owner</SelectItem>
-                    <SelectItem value="PARENT">Parent</SelectItem>
-                    <SelectItem value="AGENCY_ADMIN">Agency Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-full md:w-48">
-                <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Filter by industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Industries</SelectItem>
-                    <SelectItem value="RESTAURANT">Restaurant</SelectItem>
-                    <SelectItem value="SPORTS_CLUB">Sports Club</SelectItem>
-                    <SelectItem value="HEALTHCARE">Healthcare</SelectItem>
-                    <SelectItem value="REAL_ESTATE">Real Estate</SelectItem>
-                    <SelectItem value="RETAIL">Retail</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                onClick={handleSearch}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-              <Button
-                onClick={() => setShowCreateBusinessOwnerDialog(true)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Create Business Owner
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* User List */}
-        <Card className="bg-gray-900 border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Users ({users.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {users.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No users found</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-purple-500/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-white">
-                            {user.name || 'Unnamed User'}
-                          </h3>
-                          <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/50">
-                            {user.role}
-                          </Badge>
-                          {user.accountStatus === 'PENDING_APPROVAL' && (
-                            <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/50 animate-pulse">
-                              Pending Approval
-                            </Badge>
-                          )}
-                          {user.accountStatus === 'ACTIVE' && (
-                            <Badge className="bg-green-500/10 text-green-400 border-green-500/50">
-                              Active
-                            </Badge>
-                          )}
-                          {user.industry && (
-                            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/50">
-                              {user.industry}
-                            </Badge>
-                          )}
-                          {!user.onboardingCompleted && (
-                            <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/50">
-                              Incomplete Onboarding
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-gray-400 text-sm mb-2">{user.email}</p>
-                        {user.businessCategory && (
-                          <p className="text-gray-500 text-sm mb-2">{user.businessCategory}</p>
-                        )}
-                        <div className="flex gap-4 text-sm text-gray-400">
-                          <span>Leads: {user._count.leads}</span>
-                          <span>Deals: {user._count.deals}</span>
-                          <span>Voice Agents: {user._count.voiceAgents}</span>
-                          <span>Appointments: {user._count.appointments}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Joined: {new Date(user.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          onClick={() => handleEditUser(user)}
-                          variant="outline"
-                          size="sm"
-                          className="bg-gray-700 hover:bg-gray-600 border-gray-600 text-white"
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        {user.accountStatus === 'PENDING_APPROVAL' && (
-                          <Button
-                            onClick={() => handleApproveUser(user.id, user.name || user.email)}
-                            disabled={approvingUser === user.id}
-                            size="sm"
-                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                          >
-                            {approvingUser === user.id ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Approving...
-                              </>
-                            ) : (
-                              <>
-                                <Shield className="h-4 w-4 mr-2" />
-                                Approve User
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        <Button
-                          onClick={() => handleImpersonate(user.id, user.name || user.email)}
-                          disabled={isImpersonating === user.id}
-                          size="sm"
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        >
-                          {isImpersonating === user.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Impersonating...
-                            </>
-                          ) : (
-                            <>
-                              <LogIn className="h-4 w-4 mr-2" />
-                              Login as User
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          onClick={() => setUserToDelete(user)}
-                          variant="outline"
-                          size="sm"
-                          className="bg-gray-700 hover:bg-red-900/50 border-red-500/50 text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
+              <CardHeader>
+                <CardTitle className="text-white">Search & Filters</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Find and filter users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        placeholder="Search by name, email, or business..."
+                        className="pl-10 bg-gray-800 border-gray-700 text-white"
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="w-full md:w-48">
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                        <SelectValue placeholder="Filter by role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Roles</SelectItem>
+                        <SelectItem value="USER">User</SelectItem>
+                        <SelectItem value="BUSINESS_OWNER">
+                          Business Owner
+                        </SelectItem>
+                        <SelectItem value="PARENT">Parent</SelectItem>
+                        <SelectItem value="AGENCY_ADMIN">
+                          Agency Admin
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-full md:w-48">
+                    <Select
+                      value={industryFilter}
+                      onValueChange={setIndustryFilter}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                        <SelectValue placeholder="Filter by industry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Industries</SelectItem>
+                        <SelectItem value="RESTAURANT">Restaurant</SelectItem>
+                        <SelectItem value="SPORTS_CLUB">Sports Club</SelectItem>
+                        <SelectItem value="HEALTHCARE">Healthcare</SelectItem>
+                        <SelectItem value="REAL_ESTATE">Real Estate</SelectItem>
+                        <SelectItem value="RETAIL">Retail</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={handleSearch}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                  <Button
+                    onClick={() => setShowCreateBusinessOwnerDialog(true)}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create Business Owner
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-6">
-                <Button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  variant="outline"
-                  className="bg-gray-800 border-gray-700 text-white"
-                >
-                  Previous
-                </Button>
-                <span className="text-gray-400">
-                  Page {page} of {totalPages}
-                </span>
-                <Button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  variant="outline"
-                  className="bg-gray-800 border-gray-700 text-white"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            {/* User List */}
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Users ({users.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {users.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No users found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-purple-500/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">
+                                {user.name || "Unnamed User"}
+                              </h3>
+                              <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/50">
+                                {user.role}
+                              </Badge>
+                              {user.accountStatus === "PENDING_APPROVAL" && (
+                                <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/50 animate-pulse">
+                                  Pending Approval
+                                </Badge>
+                              )}
+                              {user.accountStatus === "ACTIVE" && (
+                                <Badge className="bg-green-500/10 text-green-400 border-green-500/50">
+                                  Active
+                                </Badge>
+                              )}
+                              {user.industry && (
+                                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/50">
+                                  {user.industry}
+                                </Badge>
+                              )}
+                              {!user.onboardingCompleted && (
+                                <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/50">
+                                  Incomplete Onboarding
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-400 text-sm mb-2">
+                              {user.email}
+                            </p>
+                            {user.businessCategory && (
+                              <p className="text-gray-500 text-sm mb-2">
+                                {user.businessCategory}
+                              </p>
+                            )}
+                            <div className="flex gap-4 text-sm text-gray-400">
+                              <span>Leads: {user._count.leads}</span>
+                              <span>Deals: {user._count.deals}</span>
+                              <span>
+                                Voice Agents: {user._count.voiceAgents}
+                              </span>
+                              <span>
+                                Appointments: {user._count.appointments}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Joined:{" "}
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              onClick={() => handleEditUser(user)}
+                              variant="outline"
+                              size="sm"
+                              className="bg-gray-700 hover:bg-gray-600 border-gray-600 text-white"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            {user.accountStatus === "PENDING_APPROVAL" && (
+                              <Button
+                                onClick={() =>
+                                  handleApproveUser(
+                                    user.id,
+                                    user.name || user.email,
+                                  )
+                                }
+                                disabled={approvingUser === user.id}
+                                size="sm"
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                              >
+                                {approvingUser === user.id ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Approving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Approve User
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                            <Button
+                              onClick={() =>
+                                handleImpersonate(
+                                  user.id,
+                                  user.name || user.email,
+                                )
+                              }
+                              disabled={isImpersonating === user.id}
+                              size="sm"
+                              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                            >
+                              {isImpersonating === user.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Impersonating...
+                                </>
+                              ) : (
+                                <>
+                                  <LogIn className="h-4 w-4 mr-2" />
+                                  Login as User
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => setUserToDelete(user)}
+                              variant="outline"
+                              size="sm"
+                              className="bg-gray-700 hover:bg-red-900/50 border-red-500/50 text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <Button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-700 text-white"
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-gray-400">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={page === totalPages}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-700 text-white"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Usage Analytics Tab */}
@@ -585,6 +739,101 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="account-management">
             <AccountManagementTab />
+          </TabsContent>
+
+          <TabsContent value="dependency-health">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Provider Reliability Status
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Automatic classification uses rolling failure rates and
+                      synthetic probe confirmation.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchDependencyHealth}
+                    className="border-gray-700 text-gray-200 hover:bg-gray-800"
+                    disabled={dependencyHealthLoading}
+                  >
+                    {dependencyHealthLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {dependencyHealthError && (
+                  <div className="mb-4 rounded border border-red-700/60 bg-red-950/40 p-3 text-sm text-red-300">
+                    {dependencyHealthError}
+                  </div>
+                )}
+
+                {dependencyHealth.length === 0 ? (
+                  <div className="text-gray-400 text-sm">
+                    No dependency health samples yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {dependencyHealth.map((dep) => {
+                      const statusClass =
+                        dep.status === "healthy"
+                          ? "bg-green-500/10 text-green-400 border-green-500/40"
+                          : dep.status === "degraded"
+                            ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40"
+                            : dep.status === "outage"
+                              ? "bg-red-500/10 text-red-400 border-red-500/40"
+                              : "bg-gray-500/10 text-gray-300 border-gray-600";
+
+                      return (
+                        <div
+                          key={dep.dependency}
+                          className="rounded-lg border border-gray-700 bg-gray-800 p-4 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-white font-semibold uppercase">
+                              {dep.dependency}
+                            </div>
+                            <Badge className={statusClass}>{dep.status}</Badge>
+                          </div>
+                          <div className="text-xs text-gray-300 space-y-1">
+                            <div>
+                              Fail rate (5m):{" "}
+                              {(dep.failRate5m * 100).toFixed(1)}% (
+                              {dep.sampleSize5m} samples)
+                            </div>
+                            <div>
+                              Fail rate (10m):{" "}
+                              {(dep.failRate10m * 100).toFixed(1)}% (
+                              {dep.sampleSize10m} samples)
+                            </div>
+                            <div>
+                              Synthetic failures:{" "}
+                              {dep.consecutiveSyntheticFailures}
+                            </div>
+                            <div className="text-gray-500">
+                              Updated:{" "}
+                              {dep.updatedAt
+                                ? new Date(dep.updatedAt).toLocaleTimeString()
+                                : "n/a"}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -608,16 +857,26 @@ export default function PlatformAdminPage() {
       />
 
       {/* Delete User Confirmation */}
-      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
+      >
         <AlertDialogContent className="bg-gray-900 border-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete User Account?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">
+              Delete User Account?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              This will soft-delete the account for {userToDelete?.name || userToDelete?.email}. The user will no longer be able to log in. Their data (leads, deals, etc.) will be preserved for audit purposes.
+              This will soft-delete the account for{" "}
+              {userToDelete?.name || userToDelete?.email}. The user will no
+              longer be able to log in. Their data (leads, deals, etc.) will be
+              preserved for audit purposes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-gray-700 text-gray-300 hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-gray-700 text-gray-300 hover:bg-gray-800">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -632,7 +891,7 @@ export default function PlatformAdminPage() {
                   Deleting...
                 </>
               ) : (
-                'Delete'
+                "Delete"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

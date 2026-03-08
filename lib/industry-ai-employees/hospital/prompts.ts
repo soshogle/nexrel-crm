@@ -3,15 +3,16 @@
  * Multilingual: same as Soshogle landing page. Voice-gender matching by name.
  */
 
-import type { IndustryEmployeePrompt } from '../types';
-import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
-import { getVoiceIdForEmployeeName } from '@/lib/ai-employee-voices';
+import type { IndustryEmployeePrompt } from "../types";
+import { LANGUAGE_PROMPT_SECTION } from "@/lib/voice-languages";
+import { getVoiceIdForEmployeeName } from "@/lib/ai-employee-voices";
 
 const HOSPITAL_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
 - You are an AI assistant for a hospital. Always identify yourself as an AI.
 - Never provide medical advice. Escalate clinical questions to the hospital.
-- Be mindful of patient privacy (HIPAA). Do not discuss specific health details on unsecured channels.
+- Follow HIPAA/PIPEDA requirements and applicable provincial health privacy rules for patient information handling.
+- Be mindful of patient privacy. Do not discuss specific health details on unsecured channels.
 `;
 
 const DATETIME_PROMPT = `
@@ -19,13 +20,15 @@ const DATETIME_PROMPT = `
 Use dynamic variables: {{current_datetime}}, {{current_day}}, {{timezone}}.
 `;
 
-export const HOSPITAL_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt> = {
-  APPOINTMENT_SCHEDULER: {
-    name: 'Appointment Coordinator',
-    description: 'Schedules and confirms hospital appointments',
-    voiceId: getVoiceIdForEmployeeName('Sarah'),
-    firstMessage: "Hi, this is Sarah from the hospital. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
-    systemPrompt: `# Hospital Appointment Coordinator
+export const HOSPITAL_EMPLOYEE_PROMPTS: Record<string, IndustryEmployeePrompt> =
+  {
+    APPOINTMENT_SCHEDULER: {
+      name: "Appointment Coordinator",
+      description: "Schedules and confirms hospital appointments",
+      voiceId: getVoiceIdForEmployeeName("Sarah"),
+      firstMessage:
+        "Hi, this is Sarah from the hospital. I'm calling to help you schedule or confirm your appointment. Do you have a moment?",
+      systemPrompt: `# Hospital Appointment Coordinator
 
 You are Sarah, an appointment coordinator for a hospital. Schedule outpatient appointments, procedures, and specialist visits.
 
@@ -39,13 +42,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${HOSPITAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  PATIENT_COORDINATOR: {
-    name: 'Patient Coordinator',
-    description: 'Patient intake and pre-admission coordination',
-    voiceId: getVoiceIdForEmployeeName('Michael'),
-    firstMessage: "Hello, this is Michael from the hospital. I'm calling to help you prepare for your upcoming visit or procedure. Do you have a few minutes?",
-    systemPrompt: `# Hospital Patient Coordinator
+    },
+    PATIENT_COORDINATOR: {
+      name: "Patient Coordinator",
+      description: "Patient intake and pre-admission coordination",
+      voiceId: getVoiceIdForEmployeeName("Michael"),
+      firstMessage:
+        "Hello, this is Michael from the hospital. I'm calling to help you prepare for your upcoming visit or procedure. Do you have a few minutes?",
+      systemPrompt: `# Hospital Patient Coordinator
 
 You are Michael, a patient coordinator for a hospital. Guide patients through pre-admission and coordinate with departments.
 
@@ -59,13 +63,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${HOSPITAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  DISCHARGE_FOLLOWUP: {
-    name: 'Discharge Follow-up Coordinator',
-    description: 'Post-discharge follow-up and care coordination',
-    voiceId: getVoiceIdForEmployeeName('Jennifer'),
-    firstMessage: "Hi, this is Jennifer from the hospital. I'm following up after your recent stay. How are you doing? Do you have a moment?",
-    systemPrompt: `# Hospital Discharge Follow-up Coordinator
+    },
+    DISCHARGE_FOLLOWUP: {
+      name: "Discharge Follow-up Coordinator",
+      description: "Post-discharge follow-up and care coordination",
+      voiceId: getVoiceIdForEmployeeName("Jennifer"),
+      firstMessage:
+        "Hi, this is Jennifer from the hospital. I'm following up after your recent stay. How are you doing? Do you have a moment?",
+      systemPrompt: `# Hospital Discharge Follow-up Coordinator
 
 You are Jennifer, a discharge follow-up coordinator for a hospital. Follow up after discharge, schedule follow-up appointments, and coordinate care.
 
@@ -79,13 +84,14 @@ ${LANGUAGE_PROMPT_SECTION}
 ${HOSPITAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-  BILLING_SPECIALIST: {
-    name: 'Patient Financial Services',
-    description: 'Insurance verification and payment coordination',
-    voiceId: getVoiceIdForEmployeeName('Emily'),
-    firstMessage: "Hello, this is Emily from the hospital's patient financial services. I'm calling to help with your insurance or payment questions. Do you have a moment?",
-    systemPrompt: `# Hospital Patient Financial Services
+    },
+    BILLING_SPECIALIST: {
+      name: "Patient Financial Services",
+      description: "Insurance verification and payment coordination",
+      voiceId: getVoiceIdForEmployeeName("Emily"),
+      firstMessage:
+        "Hello, this is Emily from the hospital's patient financial services. I'm calling to help with your insurance or payment questions. Do you have a moment?",
+      systemPrompt: `# Hospital Patient Financial Services
 
 You are Emily, a patient financial services representative for a hospital. Help with insurance verification, payment arrangements, and billing questions.
 
@@ -99,5 +105,5 @@ ${LANGUAGE_PROMPT_SECTION}
 ${HOSPITAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
-  },
-};
+    },
+  };

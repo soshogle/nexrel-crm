@@ -3,10 +3,12 @@
  * Replaces Abacus AI RouteLLM for all chat completions
  */
 
+import { recordDependencyResult } from "@/lib/reliability/dependency-health";
+
 export interface ChatCompletionOptions {
   model?: string;
   messages: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
   temperature?: number;
@@ -28,11 +30,11 @@ export interface ChatCompletionResponse {
  */
 function mapModelName(model: string): string {
   const modelMap: Record<string, string> = {
-    'gpt-4.1-mini': 'gpt-4o-mini',
-    'gpt-4o': 'gpt-4o',
-    'gpt-4o-mini': 'gpt-4o-mini',
+    "gpt-4.1-mini": "gpt-4o-mini",
+    "gpt-4o": "gpt-4o",
+    "gpt-4o-mini": "gpt-4o-mini",
   };
-  
+
   return modelMap[model] || model;
 }
 
@@ -40,59 +42,94 @@ function mapModelName(model: string): string {
  * Call OpenAI Chat Completions API
  */
 export async function chatCompletion(
-  options: ChatCompletionOptions
+  options: ChatCompletionOptions,
 ): Promise<ChatCompletionResponse> {
+  const startedAt = Date.now();
   const apiKey = process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not configured. Please add it to your Vercel environment variables.');
+    throw new Error(
+      "OPENAI_API_KEY environment variable is not configured. Please add it to your Vercel environment variables.",
+    );
   }
 
-  const model = mapModelName(options.model || 'gpt-4o-mini');
-  const endpoint = 'https://api.openai.com/v1/chat/completions';
+  const model = mapModelName(options.model || "gpt-4o-mini");
+  const endpoint = "https://api.openai.com/v1/chat/completions";
 
-  console.log('[OpenAI Client] Calling OpenAI API:', {
+  console.log("[OpenAI Client] Calling OpenAI API:", {
     model,
     messageCount: options.messages.length,
     temperature: options.temperature,
     max_tokens: options.max_tokens,
   });
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: options.messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.max_tokens,
-      stream: options.stream ?? false,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: options.messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.max_tokens,
+        stream: options.stream ?? false,
+      }),
+    });
+  } catch (error: any) {
+    recordDependencyResult({
+      dependency: "openai",
+      success: false,
+      source: "runtime",
+      latencyMs: Date.now() - startedAt,
+      message: error?.message || "Network error",
+    });
+    throw error;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[OpenAI Client] API error:', {
+    console.error("[OpenAI Client] API error:", {
       status: response.status,
       statusText: response.statusText,
       error: errorText.substring(0, 200),
     });
 
+    recordDependencyResult({
+      dependency: "openai",
+      success: false,
+      source: "runtime",
+      statusCode: response.status,
+      latencyMs: Date.now() - startedAt,
+      message: response.statusText,
+    });
+
     if (response.status === 401) {
-      throw new Error('Invalid OpenAI API key. Please check your OPENAI_API_KEY is correct.');
+      throw new Error(
+        "Invalid OpenAI API key. Please check your OPENAI_API_KEY is correct.",
+      );
     } else if (response.status === 429) {
-      throw new Error('Rate limit exceeded. Please try again in a moment.');
+      throw new Error("Rate limit exceeded. Please try again in a moment.");
     } else if (response.status === 400) {
       throw new Error(`Invalid request: ${errorText.substring(0, 200)}`);
     }
 
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText.substring(0, 200)}`);
+    throw new Error(
+      `OpenAI API error: ${response.status} - ${errorText.substring(0, 200)}`,
+    );
   }
 
   const data = await response.json();
+  recordDependencyResult({
+    dependency: "openai",
+    success: true,
+    source: "runtime",
+    statusCode: response.status,
+    latencyMs: Date.now() - startedAt,
+  });
   return data;
 }
 
@@ -100,22 +137,22 @@ export async function chatCompletion(
  * Stream OpenAI Chat Completions API
  */
 export async function* streamChatCompletion(
-  options: ChatCompletionOptions
+  options: ChatCompletionOptions,
 ): AsyncGenerator<string, void, unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not configured.');
+    throw new Error("OPENAI_API_KEY environment variable is not configured.");
   }
 
-  const model = mapModelName(options.model || 'gpt-4o-mini');
-  const endpoint = 'https://api.openai.com/v1/chat/completions';
+  const model = mapModelName(options.model || "gpt-4o-mini");
+  const endpoint = "https://api.openai.com/v1/chat/completions";
 
   const response = await fetch(endpoint, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
@@ -133,11 +170,11 @@ export async function* streamChatCompletion(
 
   const reader = response.body?.getReader();
   if (!reader) {
-    throw new Error('No response body');
+    throw new Error("No response body");
   }
 
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = "";
 
   try {
     while (true) {
@@ -145,14 +182,14 @@ export async function* streamChatCompletion(
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
+        if (line.startsWith("data: ")) {
           const data = line.slice(6);
-          if (data === '[DONE]') return;
-          
+          if (data === "[DONE]") return;
+
           try {
             const json = JSON.parse(data);
             const content = json.choices?.[0]?.delta?.content;
