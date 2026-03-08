@@ -39,9 +39,21 @@ const ALL_TOOL_NAMES: ToolName[] = [
 ];
 
 const INDUSTRY_TOOL_ALLOWLIST: Partial<Record<Industry, ToolName[]>> = {
-  // Explicit allowlists harden these industries against accidental future tool drift.
+  // Explicit allowlists harden all industry paths against accidental future tool drift.
+  ACCOUNTING: [...ALL_TOOL_NAMES],
+  CONSTRUCTION: [...ALL_TOOL_NAMES],
+  DENTIST: [...ALL_TOOL_NAMES],
+  HEALTH_CLINIC: [...ALL_TOOL_NAMES],
+  HOSPITAL: [...ALL_TOOL_NAMES],
+  LAW: [...ALL_TOOL_NAMES],
+  MEDICAL: [...ALL_TOOL_NAMES],
+  MEDICAL_SPA: [...ALL_TOOL_NAMES],
+  OPTOMETRIST: [...ALL_TOOL_NAMES],
   ORTHODONTIST: [...ALL_TOOL_NAMES],
+  RESTAURANT: [...ALL_TOOL_NAMES],
   RETAIL: [...ALL_TOOL_NAMES],
+  SPORTS_CLUB: [...ALL_TOOL_NAMES],
+  TECHNOLOGY: [...ALL_TOOL_NAMES],
 };
 
 function getAllowedTools(ctx: ToolPolicyContext): ToolName[] {

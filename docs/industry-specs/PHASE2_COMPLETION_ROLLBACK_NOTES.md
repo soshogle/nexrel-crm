@@ -28,7 +28,7 @@ Phase 2 (industry workflow de-inheritance) was completed with additive, non-dest
 ### Wave D completed (safe tool-policy hardening)
 
 - Added optional tool-attachment context (industry/professional/real_estate)
-- Added explicit allowlist policy entries for ORTHODONTIST and RETAIL
+- Added explicit allowlist policy entries for all non-RE industries
 - Added orthodontist/retail prompt guardrail suffixes
 - Updated all provision/autoprovision call sites to pass context
 
@@ -99,3 +99,13 @@ Because no DB migrations were introduced, rollback is code-only.
 - Confirm provisioning logs for one user in each updated industry.
 - Confirm AI Employees and Workflows tabs load for updated industries.
 - Spot-check RE and Orthodontist users for parity with pre-change behavior.
+
+## Post-Phase Verification (Executed)
+
+- Added tests:
+  - `tests/unit/industry/phase2-workflow-configs.test.ts`
+  - `tests/unit/industry/ai-employee-tools-policy.test.ts`
+  - `tests/unit/industry/provisioning-smoke-matrix.test.ts`
+- Ran: `npx vitest run tests/unit/industry/*.test.ts`
+- Ran: `npm run typecheck`
+- Result: pass
