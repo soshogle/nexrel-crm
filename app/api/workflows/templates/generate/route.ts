@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/workflows/templates/generate - AI generates workflow from user behavior
 export async function POST(request: NextRequest) {
@@ -15,17 +16,23 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
     const { pattern, name, description } = body;
 
     if (!pattern || !name) {
-      return apiErrors.badRequest('Missing required fields: pattern, name');
+      return apiErrors.badRequest("Missing required fields: pattern, name");
     }
 
     // Analyze tool usage patterns to generate workflow
-    const toolActions = await prisma.toolAction.findMany({
+    const toolActions = await db.toolAction.findMany({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         success: true,
       },
       include: {
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      orderBy: { executedAt: 'desc' },
+      orderBy: { executedAt: "desc" },
       take: 100,
     });
 
@@ -47,7 +54,10 @@ export async function POST(request: NextRequest) {
     let lastTime: Date | null = null;
 
     for (const action of toolActions) {
-      if (!lastTime || action.executedAt.getTime() - lastTime.getTime() < timeWindow) {
+      if (
+        !lastTime ||
+        action.executedAt.getTime() - lastTime.getTime() < timeWindow
+      ) {
         currentSequence.push(action);
       } else {
         if (currentSequence.length > 1) {
@@ -65,12 +75,12 @@ export async function POST(request: NextRequest) {
     // Find most common sequence pattern
     const patternMap = new Map<string, number>();
     for (const seq of sequences) {
-      const key = seq.map((a: any) => a.actionType).join('->');
+      const key = seq.map((a: any) => a.actionType).join("->");
       patternMap.set(key, (patternMap.get(key) || 0) + 1);
     }
 
     const mostCommonPattern = Array.from(patternMap.entries()).sort(
-      (a, b) => b[1] - a[1]
+      (a, b) => b[1] - a[1],
     )[0];
 
     const confidence = mostCommonPattern
@@ -80,11 +90,11 @@ export async function POST(request: NextRequest) {
     // Generate workflow nodes
     const nodes: any[] = [
       {
-        id: 'trigger',
-        type: 'TRIGGER',
+        id: "trigger",
+        type: "TRIGGER",
         config: {
-          triggerType: pattern.triggerType || 'MANUAL',
-          description: 'Start the workflow',
+          triggerType: pattern.triggerType || "MANUAL",
+          description: "Start the workflow",
         },
       },
     ];
@@ -93,12 +103,12 @@ export async function POST(request: NextRequest) {
 
     // Add tool action nodes based on detected pattern
     if (mostCommonPattern) {
-      const actions = mostCommonPattern[0].split('->');
+      const actions = mostCommonPattern[0].split("->");
       actions.forEach((actionType: string, index: number) => {
         const nodeId = `action_${index + 1}`;
         nodes.push({
           id: nodeId,
-          type: 'TOOL_ACTION',
+          type: "TOOL_ACTION",
           config: {
             actionType,
             description: `Execute ${actionType}`,
@@ -106,7 +116,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Connect to previous node
-        const prevNodeId = index === 0 ? 'trigger' : `action_${index}`;
+        const prevNodeId = index === 0 ? "trigger" : `action_${index}`;
         edges.push({
           from: prevNodeId,
           to: nodeId,
@@ -115,24 +125,25 @@ export async function POST(request: NextRequest) {
 
       // Add end node
       nodes.push({
-        id: 'end',
-        type: 'END',
+        id: "end",
+        type: "END",
         config: {
-          description: 'Workflow completed',
+          description: "Workflow completed",
         },
       });
 
       edges.push({
         from: `action_${actions.length}`,
-        to: 'end',
+        to: "end",
       });
     }
 
     // Create workflow template
-    const template = await prisma.aIWorkflowTemplate.create({
+    const template = await db.aIWorkflowTemplate.create({
       data: {
         name,
-        description: description || `Auto-generated from user behavior: ${name}`,
+        description:
+          description || `Auto-generated from user behavior: ${name}`,
         pattern: mostCommonPattern
           ? {
               sequence: mostCommonPattern[0],
@@ -140,9 +151,9 @@ export async function POST(request: NextRequest) {
             }
           : {},
         confidence,
-        detectedFromUserId: session.user.id,
+        detectedFromUserId: ctx.userId,
         workflowDefinition: {
-          version: '1.0',
+          version: "1.0",
           nodes,
           edges,
         },
@@ -162,7 +173,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error generating workflow template:', error);
-    return apiErrors.internal(error.message || 'Failed to generate workflow template');
+    console.error("Error generating workflow template:", error);
+    return apiErrors.internal(
+      error.message || "Failed to generate workflow template",
+    );
   }
 }
