@@ -3,12 +3,12 @@
  * Auto-creates a default agent if none exist.
  */
 
-import { getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context';
-import { getTemplateById } from '@/lib/voice-agent-templates';
-import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
-import type { Industry } from '@/lib/industry-menu-config';
-const db = getCrmDb({ userId: '', industry: null })
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
+import { getTemplateById } from "@/lib/voice-agent-templates";
+import { LANGUAGE_PROMPT_SECTION } from "@/lib/voice-languages";
+import type { Industry } from "@/lib/industry-menu-config";
+const db = getCrmDb({ userId: "", industry: null });
 
 export interface EnsureVoiceAgentResult {
   agentId: string;
@@ -25,11 +25,11 @@ export async function ensureUserHasVoiceAgent(
   options?: {
     templateId?: string; // e.g. 'general_assistant', 'sales_assistant'
     preferredName?: string;
-  }
+  },
 ): Promise<EnsureVoiceAgentResult> {
   const existing = await db.voiceAgent.findFirst({
     where: { userId },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: "asc" },
   });
 
   if (existing) {
@@ -44,35 +44,45 @@ export async function ensureUserHasVoiceAgent(
       industry: true,
       businessDescription: true,
       language: true,
+      phone: true,
     },
   });
 
   if (!user) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   const industry = (user.industry as Industry) || null;
-  const templateId = options?.templateId || 'general_assistant';
+  const templateId = options?.templateId || "general_assistant";
   const template = getTemplateById(templateId, industry);
-  const agentName = options?.preferredName || template?.name || 'General Assistant';
-  const businessName = user.name || 'Your Business';
+  const agentName =
+    options?.preferredName || template?.name || "General Assistant";
+  const businessName = user.name || "Your Business";
+  const ownerFallbackPhone =
+    typeof user.phone === "string" && user.phone.trim().length > 0
+      ? user.phone.trim()
+      : undefined;
 
   // Create VoiceAgent record - ElevenLabs provisioning happens via existing flow
   const agent = await db.voiceAgent.create({
     data: {
       userId,
       name: agentName,
-      description: template?.description || 'Default voice assistant for calls and AI employees.',
-      type: 'INBOUND',
-      status: 'TESTING',
+      description:
+        template?.description ||
+        "Default voice assistant for calls and AI employees.",
+      type: "INBOUND",
+      status: "TESTING",
       businessName,
       businessIndustry: user.industry || undefined,
       greetingMessage: `Hello! This is ${agentName} from ${businessName}. How can I help you today?`,
       systemPrompt: template
         ? `${LANGUAGE_PROMPT_SECTION}\n\nYou are ${agentName}. ${template.promptSnippet}`
         : `${LANGUAGE_PROMPT_SECTION}\n\nYou are a professional voice assistant for ${businessName}. Answer calls politely and help callers with their inquiries.`,
-      voiceId: 'EXAVITQu4vr4xnSDxMaL',
-      language: 'en', // API only accepts single codes. Multilingual via prompt.
+      voiceId: "EXAVITQu4vr4xnSDxMaL",
+      language: "en", // API only accepts single codes. Multilingual via prompt.
+      transferPhone: ownerFallbackPhone,
+      backupPhoneNumber: ownerFallbackPhone,
     },
   });
 

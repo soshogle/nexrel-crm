@@ -10,6 +10,14 @@
       "maxDuration": 300,
       "memory": 1024
     },
+    "app/api/cron/twilio-health-monitor/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/cron/dependency-health-monitor/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
     "app/api/cron/sync-centris/route.ts": {
       "maxDuration": 300,
       "memory": 1024

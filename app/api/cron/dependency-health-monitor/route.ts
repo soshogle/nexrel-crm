@@ -8,6 +8,12 @@ import { apiErrors } from "@/lib/api-error";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function isAuthorizedCron(request: NextRequest): boolean {
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  return !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+}
+
 async function probeOpenAI(): Promise<{ success: boolean; detail: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { success: false, detail: "OPENAI_API_KEY missing" };
@@ -154,10 +160,8 @@ async function probeTwilio(): Promise<{ success: boolean; detail: string }> {
   }
 }
 
-export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+async function runMonitor(request: NextRequest) {
+  if (!isAuthorizedCron(request)) {
     return apiErrors.unauthorized();
   }
 
@@ -172,4 +176,12 @@ export async function POST(request: NextRequest) {
     probes: { openai, elevenlabs, twilio },
     overview: getDependencyHealthOverview(),
   });
+}
+
+export async function POST(request: NextRequest) {
+  return runMonitor(request);
+}
+
+export async function GET(request: NextRequest) {
+  return runMonitor(request);
 }

@@ -6,7 +6,9 @@ export async function setupTwilio(userId: string, params: any) {
   const { accountSid, authToken, phoneNumber } = params;
 
   if (!accountSid || !authToken || !phoneNumber) {
-    throw new Error("Twilio Account SID, Auth Token, and Phone Number are all required");
+    throw new Error(
+      "Twilio Account SID, Auth Token, and Phone Number are all required",
+    );
   }
 
   const ctx = await resolveDalContext(userId);
@@ -20,7 +22,8 @@ export async function setupTwilio(userId: string, params: any) {
   });
 
   return {
-    message: "✅ SMS and voice have been successfully configured! You can now send SMS and make voice calls.",
+    message:
+      "✅ SMS and voice have been successfully configured! You can now send SMS and make voice calls.",
     provider: "Soshogle AI",
     phoneNumber: phoneNumber,
     nextSteps: [
@@ -45,8 +48,10 @@ export async function purchaseTwilioNumber(userId: string, params: any) {
   });
 
   // Check if Twilio is configured
-  if (user?.smsProvider !== 'Twilio' || !user?.smsProviderConfig) {
-    throw new Error("Please configure your SMS credentials first. I can help you with that!");
+  if (user?.smsProvider !== "Twilio" || !user?.smsProviderConfig) {
+    throw new Error(
+      "Please configure your SMS credentials first. I can help you with that!",
+    );
   }
 
   // Verify credentials are valid
@@ -81,6 +86,15 @@ export async function createVoiceAgent(userId: string, params: any) {
 
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
+  const owner = await db.user.findUnique({
+    where: { id: ctx.userId },
+    select: { phone: true },
+  });
+  const ownerFallbackPhone =
+    typeof owner?.phone === "string" && owner.phone.trim().length > 0
+      ? owner.phone.trim()
+      : undefined;
+
   const voiceAgent = await db.voiceAgent.create({
     data: {
       userId: ctx.userId,
@@ -90,6 +104,8 @@ export async function createVoiceAgent(userId: string, params: any) {
       greetingMessage: prompt || "Hello! How can I help you today?",
       type: "INBOUND",
       status: "TESTING",
+      transferPhone: ownerFallbackPhone,
+      backupPhoneNumber: ownerFallbackPhone,
     },
   });
 
@@ -134,7 +150,8 @@ export async function debugVoiceAgent(userId: string, params: any) {
     return {
       success: false,
       error: "Voice agent not found",
-      message: "I couldn't find a voice agent with that name. Let me check what agents you have...",
+      message:
+        "I couldn't find a voice agent with that name. Let me check what agents you have...",
     };
   }
 
@@ -151,12 +168,14 @@ export async function debugVoiceAgent(userId: string, params: any) {
   // Diagnostic check
   const issues: string[] = [];
   const warnings: string[] = [];
-  
+
   // Check 1: Greeting message
   if (!agent.greetingMessage || agent.greetingMessage.trim().length === 0) {
     issues.push("❌ Missing greeting message");
   } else if (agent.greetingMessage.trim().length < 10) {
-    warnings.push("⚠️ Greeting message is very short (less than 10 characters)");
+    warnings.push(
+      "⚠️ Greeting message is very short (less than 10 characters)",
+    );
   }
 
   // Check 2: Voice selection
@@ -165,9 +184,13 @@ export async function debugVoiceAgent(userId: string, params: any) {
   }
 
   // Check 3: Twilio setup (using GLOBAL Twilio credentials from environment)
-  const hasTwilioCredentials = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+  const hasTwilioCredentials = !!(
+    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  );
   if (!hasTwilioCredentials) {
-    issues.push("❌ SMS/voice not configured - Global credentials missing from environment");
+    issues.push(
+      "❌ SMS/voice not configured - Global credentials missing from environment",
+    );
   }
 
   // Check 4: Phone number
@@ -189,20 +212,22 @@ export async function debugVoiceAgent(userId: string, params: any) {
 
   // Generate diagnostic report
   const isHealthy = issues.length === 0;
-  
+
   let diagnosticReport = `🔍 **Diagnostic Report for "${agent.name}"**\n\n`;
-  
+
   if (isHealthy && warnings.length === 0) {
     diagnosticReport += "✅ **Status: HEALTHY** - All checks passed!\n\n";
   } else if (isHealthy && warnings.length > 0) {
-    diagnosticReport += "⚠️ **Status: WORKING (with warnings)** - Agent works but has minor issues\n\n";
+    diagnosticReport +=
+      "⚠️ **Status: WORKING (with warnings)** - Agent works but has minor issues\n\n";
   } else {
-    diagnosticReport += "❌ **Status: NOT WORKING** - Critical issues found\n\n";
+    diagnosticReport +=
+      "❌ **Status: NOT WORKING** - Critical issues found\n\n";
   }
 
   if (issues.length > 0) {
     diagnosticReport += "**Critical Issues:**\n";
-    issues.forEach(issue => {
+    issues.forEach((issue) => {
       diagnosticReport += `${issue}\n`;
     });
     diagnosticReport += "\n";
@@ -210,7 +235,7 @@ export async function debugVoiceAgent(userId: string, params: any) {
 
   if (warnings.length > 0) {
     diagnosticReport += "**Warnings:**\n";
-    warnings.forEach(warning => {
+    warnings.forEach((warning) => {
       diagnosticReport += `${warning}\n`;
     });
     diagnosticReport += "\n";
@@ -237,12 +262,15 @@ export async function debugVoiceAgent(userId: string, params: any) {
     issues,
     warnings,
     diagnosticReport,
-    canAutoFix: issues.length > 0 && issues.every(issue => 
-      issue.includes("greeting") || 
-      issue.includes("voice") || 
-      issue.includes("business name") ||
-      issue.includes("status")
-    ),
+    canAutoFix:
+      issues.length > 0 &&
+      issues.every(
+        (issue) =>
+          issue.includes("greeting") ||
+          issue.includes("voice") ||
+          issue.includes("business name") ||
+          issue.includes("status"),
+      ),
   };
 }
 
@@ -272,7 +300,9 @@ export async function fixVoiceAgent(userId: string, params: any) {
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
   const agent = await db.voiceAgent.findFirst({
-    where: diagnostics.agent?.id ? { id: diagnostics.agent.id } : { userId: ctx.userId, name: { contains: name, mode: "insensitive" } },
+    where: diagnostics.agent?.id
+      ? { id: diagnostics.agent.id }
+      : { userId: ctx.userId, name: { contains: name, mode: "insensitive" } },
   });
 
   if (!agent) {
@@ -321,22 +351,28 @@ export async function fixVoiceAgent(userId: string, params: any) {
 
   // Check for unfixable issues
   const remainingIssues: string[] = [];
-  
+
   // Check for GLOBAL Twilio credentials (not user-specific)
-  const hasTwilioCredsForAutoFix = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+  const hasTwilioCredsForAutoFix = !!(
+    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  );
   if (!hasTwilioCredsForAutoFix) {
-    remainingIssues.push("⚠️ **Twilio not configured globally** - The platform administrator needs to configure Twilio credentials in the server environment.");
+    remainingIssues.push(
+      "⚠️ **Twilio not configured globally** - The platform administrator needs to configure Twilio credentials in the server environment.",
+    );
   }
 
   if (!user?.phone) {
-    remainingIssues.push("⚠️ **No phone number** - Add your business phone number in Settings → Company Profile");
+    remainingIssues.push(
+      "⚠️ **No phone number** - Add your business phone number in Settings → Company Profile",
+    );
   }
 
   let message = `🔧 **Fixes Applied to "${agent.name}"**\n\n`;
-  
+
   if (fixes.length > 0) {
     message += "**Completed Fixes:**\n";
-    fixes.forEach(fix => {
+    fixes.forEach((fix) => {
       message += `${fix}\n`;
     });
     message += "\n";
@@ -344,13 +380,14 @@ export async function fixVoiceAgent(userId: string, params: any) {
 
   if (remainingIssues.length > 0) {
     message += "**Remaining Setup Steps:**\n";
-    remainingIssues.forEach(issue => {
+    remainingIssues.forEach((issue) => {
       message += `${issue}\n`;
     });
     message += "\n";
     message += "Would you like me to help you set up Twilio now?";
   } else {
-    message += "✅ **All fixed!** Your voice agent is now ready to handle calls!";
+    message +=
+      "✅ **All fixed!** Your voice agent is now ready to handle calls!";
   }
 
   return {
@@ -358,7 +395,7 @@ export async function fixVoiceAgent(userId: string, params: any) {
     message,
     fixesApplied: fixes,
     remainingIssues,
-    needsTwilioSetup: remainingIssues.some(i => i.includes("Twilio")),
+    needsTwilioSetup: remainingIssues.some((i) => i.includes("Twilio")),
     agent: {
       id: agent.id,
       name: agent.name,
@@ -502,7 +539,7 @@ export async function assignPhoneToVoiceAgent(userId: string, params: any) {
     where: { id: agent.id },
     data: {
       twilioPhoneNumber: phoneNumber,
-      status: 'ACTIVE', // Activate the agent
+      status: "ACTIVE", // Activate the agent
     },
   });
 
@@ -535,8 +572,8 @@ export async function configureAutoReply(userId: string, params: any) {
   });
 
   return {
-    message: enabled 
-      ? "✅ Auto-reply has been enabled successfully!" 
+    message: enabled
+      ? "✅ Auto-reply has been enabled successfully!"
       : "✅ Auto-reply has been disabled.",
     status: enabled ? "Enabled" : "Disabled",
     channels: channels || ["Email", "SMS"],
@@ -579,13 +616,14 @@ export async function callLeadsAction(userId: string, params: any) {
   const { makeBulkOutboundCalls } = await import("@/lib/outbound-call-service");
   const result = await makeBulkOutboundCalls({
     userId,
-    criteria: params.period || params.status
-      ? {
-          period: params.period || "today",
-          status: params.status,
-          limit: params.limit || 50,
-        }
-      : undefined,
+    criteria:
+      params.period || params.status
+        ? {
+            period: params.period || "today",
+            status: params.status,
+            limit: params.limit || 50,
+          }
+        : undefined,
     purpose: params.purpose,
     notes: params.notes,
     voiceAgentId: params.voiceAgentId,
@@ -621,7 +659,9 @@ export async function draftSMSAction(userId: string, params: any) {
   const lead = leads[0];
   const toPhone = phoneNumber || lead?.phone;
   if (!toPhone) {
-    throw new Error(`Contact "${contactName}" not found or has no phone number.`);
+    throw new Error(
+      `Contact "${contactName}" not found or has no phone number.`,
+    );
   }
   return {
     message: `I've drafted an SMS for you to review. Should I send it now or schedule it for later?`,
@@ -665,7 +705,9 @@ export async function scheduleSMSAction(userId: string, params: any) {
   });
   const lead = leads[0];
   if (!lead?.phone) {
-    throw new Error(`Contact "${contactName}" not found or has no phone number.`);
+    throw new Error(
+      `Contact "${contactName}" not found or has no phone number.`,
+    );
   }
   const scheduledDate = new Date(scheduledFor);
   if (scheduledDate <= new Date()) {
@@ -737,7 +779,9 @@ export async function sendEmailAction(userId: string, params: any) {
 export async function scheduleEmailAction(userId: string, params: any) {
   const { contactName, subject, body, scheduledFor } = params;
   if (!contactName || !subject || !body || !scheduledFor) {
-    throw new Error("contactName, subject, body, and scheduledFor are required");
+    throw new Error(
+      "contactName, subject, body, and scheduledFor are required",
+    );
   }
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
@@ -826,26 +870,30 @@ export async function setupWhatsApp(userId: string, params: any) {
   if (!accountSid || !authToken || !phoneNumber) {
     return {
       message: "I'll help you configure WhatsApp Business.",
-      instructions: "To set up WhatsApp:\n1. Go to Settings → WhatsApp\n2. Enter your Twilio credentials:\n   - Account SID\n   - Auth Token\n   - WhatsApp-enabled phone number\n3. Configure the webhook in Twilio console\n\nOnce configured, you'll be able to:\n- Send and receive WhatsApp messages\n- Share media with customers\n- Run WhatsApp campaigns\n- Set up auto-replies",
-      navigateTo: '/dashboard/settings?tab=whatsapp',
-      actionRequired: true
+      instructions:
+        "To set up WhatsApp:\n1. Go to Settings → WhatsApp\n2. Enter your Twilio credentials:\n   - Account SID\n   - Auth Token\n   - WhatsApp-enabled phone number\n3. Configure the webhook in Twilio console\n\nOnce configured, you'll be able to:\n- Send and receive WhatsApp messages\n- Share media with customers\n- Run WhatsApp campaigns\n- Set up auto-replies",
+      navigateTo: "/dashboard/settings?tab=whatsapp",
+      actionRequired: true,
     };
   }
 
-  const response = await fetch(`${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/configure`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accountSid, authToken, phoneNumber })
-  });
+  const response = await fetch(
+    `${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/configure`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountSid, authToken, phoneNumber }),
+    },
+  );
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to configure WhatsApp');
+    throw new Error(error.error || "Failed to configure WhatsApp");
   }
 
   return {
-    message: '✅ WhatsApp configured successfully! You can now send messages.',
-    navigateTo: '/dashboard/messages'
+    message: "✅ WhatsApp configured successfully! You can now send messages.",
+    navigateTo: "/dashboard/messages",
   };
 }
 
@@ -853,32 +901,35 @@ export async function sendWhatsAppMessage(userId: string, params: any) {
   const { to, message, mediaUrl } = params;
 
   if (!to || !message) {
-    throw new Error('Recipient phone number and message are required');
+    throw new Error("Recipient phone number and message are required");
   }
 
-  const response = await fetch(`${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/send`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to, message, mediaUrl })
-  });
+  const response = await fetch(
+    `${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/send`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to, message, mediaUrl }),
+    },
+  );
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to send WhatsApp message');
+    throw new Error(error.error || "Failed to send WhatsApp message");
   }
 
   const data = await response.json();
 
   return {
     message: `✅ WhatsApp message sent to ${to}!`,
-    messageSid: data.messageSid
+    messageSid: data.messageSid,
   };
 }
 
 export async function getWhatsAppConversations(userId: string, params: any) {
   const { contactId } = params || {};
 
-  const url = contactId 
+  const url = contactId
     ? `${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/conversations?contactId=${contactId}`
     : `${process.env.NEXTAUTH_URL}/api/integrations/whatsapp/conversations`;
 
@@ -886,23 +937,25 @@ export async function getWhatsAppConversations(userId: string, params: any) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch conversations');
+    throw new Error(error.error || "Failed to fetch conversations");
   }
 
   const data = await response.json();
 
   const conversationsCount = data.conversations?.length || 0;
-  
+
   return {
     message: `Found ${conversationsCount} WhatsApp conversation(s)`,
-    conversations: data.conversations
+    conversations: data.conversations,
   };
 }
 
 export async function summarizeCall(userId: string, params: any) {
   const { callLogId } = params;
   if (!callLogId) throw new Error("callLogId is required");
-  const { summarizeCallAndAddNote } = await import("@/lib/call-summary-service");
+  const { summarizeCallAndAddNote } = await import(
+    "@/lib/call-summary-service"
+  );
   const result = await summarizeCallAndAddNote(callLogId, userId);
   return {
     message: `Call summarized. ${result.noteId ? "Added as note to contact." : ""}`,
@@ -918,16 +971,38 @@ export async function getSmartReplies(userId: string, params: any) {
   const { leadId, context } = params;
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
-  const lead = leadId ? await leadService.findUnique(ctx, leadId, {
-    deals: { take: 1 },
-    notes: { take: 1, orderBy: { createdAt: "desc" } },
-  }) : null;
+  const lead = leadId
+    ? await leadService.findUnique(ctx, leadId, {
+        deals: { take: 1 },
+        notes: { take: 1, orderBy: { createdAt: "desc" } },
+      })
+    : null;
   const replies = [
-    { id: "follow_up", label: "Follow up", text: "Hi! Just following up on our conversation. Would love to connect soon." },
-    { id: "thank_you", label: "Thank you", text: "Thank you for your time today. I'll be in touch with next steps." },
-    { id: "meeting", label: "Schedule meeting", text: "Would you have 15 minutes this week for a quick call? I'd love to show you how we can help." },
-    { id: "documents", label: "Send documents", text: "I'm sending over the materials we discussed. Let me know if you have any questions." },
-    { id: "check_in", label: "Check in", text: "Hi! Wanted to check in and see how things are going. Any questions I can help with?" },
+    {
+      id: "follow_up",
+      label: "Follow up",
+      text: "Hi! Just following up on our conversation. Would love to connect soon.",
+    },
+    {
+      id: "thank_you",
+      label: "Thank you",
+      text: "Thank you for your time today. I'll be in touch with next steps.",
+    },
+    {
+      id: "meeting",
+      label: "Schedule meeting",
+      text: "Would you have 15 minutes this week for a quick call? I'd love to show you how we can help.",
+    },
+    {
+      id: "documents",
+      label: "Send documents",
+      text: "I'm sending over the materials we discussed. Let me know if you have any questions.",
+    },
+    {
+      id: "check_in",
+      label: "Check in",
+      text: "Hi! Wanted to check in and see how things are going. Any questions I can help with?",
+    },
   ];
   return {
     message: "Smart replies for common situations.",

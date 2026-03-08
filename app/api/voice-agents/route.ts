@@ -312,6 +312,27 @@ export async function POST(request: NextRequest) {
       );
     }
     const body = parseResult.data;
+    const ownerPhone =
+      typeof user.phone === "string" && user.phone.trim().length > 0
+        ? user.phone.trim()
+        : null;
+    const requestedTransferPhone =
+      typeof body.transferPhone === "string" &&
+      body.transferPhone.trim().length > 0
+        ? body.transferPhone.trim()
+        : null;
+    const requestedBackupPhone =
+      typeof body.backupPhoneNumber === "string" &&
+      body.backupPhoneNumber.trim().length > 0
+        ? body.backupPhoneNumber.trim()
+        : null;
+
+    const fallbackFromOwnerProfile =
+      !requestedTransferPhone && !requestedBackupPhone;
+    const effectiveTransferPhone =
+      requestedTransferPhone || (fallbackFromOwnerProfile ? ownerPhone : null);
+    const effectiveBackupPhone =
+      requestedBackupPhone || (fallbackFromOwnerProfile ? ownerPhone : null);
 
     const knowledgeBaseTexts = Array.isArray(body.knowledgeBaseTexts)
       ? body.knowledgeBaseTexts.filter((t) => typeof t === "string" && t.trim())
@@ -427,8 +448,8 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         googleCalendarId: body.googleCalendarId,
         availableHours: body.availableHours,
         appointmentDuration: body.appointmentDuration || 30,
-        transferPhone: body.transferPhone,
-        backupPhoneNumber: body.backupPhoneNumber,
+        transferPhone: effectiveTransferPhone,
+        backupPhoneNumber: effectiveBackupPhone,
         twilioPhoneNumber: body.twilioPhoneNumber,
         enableVoicemail: body.enableVoicemail || false,
         voicemailMessage: body.voicemailMessage,

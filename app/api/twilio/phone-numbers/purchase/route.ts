@@ -1,15 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { purchasePhoneNumber } from "@/lib/twilio-phone-numbers";
+import { prisma } from "@/lib/db";
+import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
+import { VOICE_AGENT_LIMIT } from "@/lib/voice-agent-templates";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { purchasePhoneNumber } from '@/lib/twilio-phone-numbers';
-import { prisma } from '@/lib/db';
-import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
-import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,19 +19,26 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { phoneNumber, friendlyName, voiceUrl, smsUrl, autoCreateAgent = true, twilioAccountId } = body;
+    const {
+      phoneNumber,
+      friendlyName,
+      voiceUrl,
+      smsUrl,
+      autoCreateAgent = true,
+      twilioAccountId,
+    } = body;
 
     if (!phoneNumber) {
-      return apiErrors.badRequest('Phone number is required');
+      return apiErrors.badRequest("Phone number is required");
     }
 
     // Get base URL for webhooks - CRITICAL for SMS to work!
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://soshogleagents.com';
-
+    const baseUrl = process.env.NEXTAUTH_URL || "https://soshogleagents.com";
 
     const result = await purchasePhoneNumber(session.user.id, phoneNumber, {
-      friendlyName: friendlyName || 'Soshogle CRM Number',
+      friendlyName: friendlyName || "Soshogle CRM Number",
       voiceUrl: voiceUrl || `${baseUrl}/api/twilio/voice-callback`,
+      voiceFallbackUrl: `${baseUrl}/api/twilio/voice-fallback`,
       smsUrl: smsUrl || `${baseUrl}/api/twilio/sms-webhook`,
       twilioAccountId,
     });
@@ -48,18 +54,35 @@ export async function POST(req: NextRequest) {
       try {
         const user: any = await prisma.user.findUnique({
           where: { id: session.user.id },
-          select: { businessName: true, industry: true, businessDescription: true, language: true, role: true },
+          select: {
+            businessName: true,
+            industry: true,
+            businessDescription: true,
+            language: true,
+            role: true,
+            phone: true,
+          },
         } as any);
 
         if (user) {
-          const isSuperAdmin = user.role === 'SUPER_ADMIN';
-          const existingCount = await (prisma as any).voiceAgent.count({ where: { userId: session.user.id } });
+          const isSuperAdmin = user.role === "SUPER_ADMIN";
+          const existingCount = await (prisma as any).voiceAgent.count({
+            where: { userId: session.user.id },
+          });
           if (!isSuperAdmin && existingCount >= VOICE_AGENT_LIMIT) {
-            console.warn('⚠️  Voice agent limit reached, skipping auto-creation');
+            console.warn(
+              "⚠️  Voice agent limit reached, skipping auto-creation",
+            );
           } else {
-            const businessName = user.businessName || 'My Business';
+            const businessName = user.businessName || "My Business";
             const industry = user.industry || null;
-            const industryLabel = industry ? industry.replace(/_/g, ' ').toLowerCase() : 'general business';
+            const industryLabel = industry
+              ? industry.replace(/_/g, " ").toLowerCase()
+              : "general business";
+            const ownerFallbackPhone =
+              typeof user.phone === "string" && user.phone.trim().length > 0
+                ? user.phone.trim()
+                : undefined;
 
             const voiceAgent = await (prisma as any).voiceAgent.create({
               data: {
@@ -69,15 +92,18 @@ export async function POST(req: NextRequest) {
                 businessIndustry: industryLabel,
                 twilioPhoneNumber: result.phoneNumber,
                 twilioAccountId: result.twilioAccountId || undefined,
-                type: 'INBOUND',
+                type: "INBOUND",
                 greetingMessage: `Thank you for calling ${businessName}. How can I help you today?`,
                 systemPrompt: undefined,
                 knowledgeBase: user.businessDescription || undefined,
-                status: 'PENDING',
+                transferPhone: ownerFallbackPhone,
+                backupPhoneNumber: ownerFallbackPhone,
+                status: "PENDING",
               },
             });
 
-            const subscriptionCheck = await elevenLabsProvisioning.checkSubscription(session.user.id);
+            const subscriptionCheck =
+              await elevenLabsProvisioning.checkSubscription(session.user.id);
             if (subscriptionCheck.canUsePhoneNumbers) {
               const createResult = await elevenLabsProvisioning.createAgent({
                 name: voiceAgent.name,
@@ -90,21 +116,29 @@ export async function POST(req: NextRequest) {
                 twilioAccountId: result.twilioAccountId || undefined,
                 userId: session.user.id,
                 voiceAgentId: voiceAgent.id,
-                language: user.language || 'en',
+                language: user.language || "en",
               });
 
               if (createResult.success) {
                 voiceAgentId = voiceAgent.id;
               } else {
-                console.warn('⚠️  ElevenLabs agent creation failed:', createResult.error);
+                console.warn(
+                  "⚠️  ElevenLabs agent creation failed:",
+                  createResult.error,
+                );
               }
             } else {
-              console.warn('⚠️  ElevenLabs plan does not support phone numbers, agent created in DB only');
+              console.warn(
+                "⚠️  ElevenLabs plan does not support phone numbers, agent created in DB only",
+              );
             }
           }
         }
       } catch (agentError: any) {
-        console.error('⚠️  Auto-create agent error (non-fatal):', agentError.message);
+        console.error(
+          "⚠️  Auto-create agent error (non-fatal):",
+          agentError.message,
+        );
       }
     }
 
@@ -115,11 +149,10 @@ export async function POST(req: NextRequest) {
       success: true,
       phoneNumber: result.phoneNumber,
       voiceAgentId,
-      message: 'Phone number purchased successfully!'
+      message: "Phone number purchased successfully!",
     });
-
   } catch (error) {
-    console.error('Error in purchase phone number API:', error);
-    return apiErrors.internal('Failed to purchase phone number');
+    console.error("Error in purchase phone number API:", error);
+    return apiErrors.internal("Failed to purchase phone number");
   }
 }

@@ -4,13 +4,13 @@
  * Supports primary + backup accounts via TwilioAccount table
  */
 
-import { prisma } from './db';
+import { prisma } from "./db";
 import {
   getPrimaryCredentials,
   getBackupCredentials,
   getCredentialsForAccount,
   type TwilioCredentials,
-} from './twilio-credentials';
+} from "./twilio-credentials";
 
 interface AvailablePhoneNumber {
   phoneNumber: string;
@@ -31,7 +31,7 @@ interface AvailablePhoneNumber {
  */
 async function getTwilioCredentials(
   userId: string,
-  twilioAccountId?: string
+  twilioAccountId?: string,
 ): Promise<TwilioCredentials | null> {
   if (twilioAccountId) {
     return getCredentialsForAccount(twilioAccountId);
@@ -52,7 +52,7 @@ export async function searchAvailableNumbers(
     smsEnabled?: boolean;
     voiceEnabled?: boolean;
     limit?: number;
-  } = {}
+  } = {},
 ): Promise<{
   success: boolean;
   numbers?: AvailablePhoneNumber[];
@@ -60,7 +60,7 @@ export async function searchAvailableNumbers(
   error?: string;
 }> {
   const {
-    countryCode = 'US',
+    countryCode = "US",
     areaCode,
     contains,
     smsEnabled = true,
@@ -69,29 +69,31 @@ export async function searchAvailableNumbers(
   } = options;
 
   const searchWithAccount = async (
-    creds: TwilioCredentials
+    creds: TwilioCredentials,
   ): Promise<{ numbers: AvailablePhoneNumber[]; twilioAccountId?: string }> => {
     const baseUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/AvailablePhoneNumbers/${countryCode}/Local.json`;
     const params = new URLSearchParams();
-    if (areaCode) params.append('AreaCode', areaCode);
-    if (contains) params.append('Contains', contains);
-    if (smsEnabled) params.append('SmsEnabled', 'true');
-    if (voiceEnabled) params.append('VoiceEnabled', 'true');
-    params.append('PageSize', limit.toString());
+    if (areaCode) params.append("AreaCode", areaCode);
+    if (contains) params.append("Contains", contains);
+    if (smsEnabled) params.append("SmsEnabled", "true");
+    if (voiceEnabled) params.append("VoiceEnabled", "true");
+    params.append("PageSize", limit.toString());
     const url = `${baseUrl}?${params.toString()}`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
         Authorization:
-          'Basic ' +
-          Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64'),
+          "Basic " +
+          Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString(
+            "base64",
+          ),
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to search phone numbers');
+      throw new Error(errorData.message || "Failed to search phone numbers");
     }
 
     const data = await response.json();
@@ -99,9 +101,9 @@ export async function searchAvailableNumbers(
       data.available_phone_numbers?.map((num: any) => ({
         phoneNumber: num.phone_number,
         friendlyName: num.friendly_name,
-        locality: num.locality || '',
-        region: num.region || '',
-        postalCode: num.postal_code || '',
+        locality: num.locality || "",
+        region: num.region || "",
+        postalCode: num.postal_code || "",
         isoCountry: num.iso_country,
         capabilities: {
           voice: num.capabilities?.voice || false,
@@ -130,7 +132,7 @@ export async function searchAvailableNumbers(
           };
         }
       } catch (primaryErr) {
-        console.warn('Primary account search failed:', primaryErr);
+        console.warn("Primary account search failed:", primaryErr);
       }
     }
 
@@ -145,27 +147,31 @@ export async function searchAvailableNumbers(
           twilioAccountId: result.twilioAccountId,
         };
       } catch (backupErr) {
-        console.warn('Backup account search failed:', backupErr);
+        console.warn("Backup account search failed:", backupErr);
       }
     }
 
     if (!primaryCreds && !backupCreds) {
       return {
         success: false,
-        error: 'Twilio credentials not found. Please configure TWILIO_PRIMARY_* or TWILIO_BACKUP_* in environment.',
+        error:
+          "Twilio credentials not found. Please configure TWILIO_PRIMARY_* or TWILIO_BACKUP_* in environment.",
       };
     }
 
     return {
       success: true,
       numbers: [],
-      error: 'No numbers found in primary or backup accounts.',
+      error: "No numbers found in primary or backup accounts.",
     };
   } catch (error) {
-    console.error('Error searching phone numbers:', error);
+    console.error("Error searching phone numbers:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to search phone numbers',
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to search phone numbers",
     };
   }
 }
@@ -179,57 +185,73 @@ export async function purchasePhoneNumber(
   phoneNumber: string,
   options: {
     voiceUrl?: string;
+    voiceFallbackUrl?: string;
     smsUrl?: string;
     friendlyName?: string;
     twilioAccountId?: string;
-  } = {}
-): Promise<{ success: boolean; phoneNumber?: string; twilioAccountId?: string; error?: string }> {
+  } = {},
+): Promise<{
+  success: boolean;
+  phoneNumber?: string;
+  twilioAccountId?: string;
+  error?: string;
+}> {
   try {
-    const credentials = await getTwilioCredentials(userId, options.twilioAccountId);
+    const credentials = await getTwilioCredentials(
+      userId,
+      options.twilioAccountId,
+    );
 
     if (!credentials) {
       return {
         success: false,
-        error: 'Twilio credentials not found. Please configure Twilio first.',
+        error: "Twilio credentials not found. Please configure Twilio first.",
       };
     }
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/IncomingPhoneNumbers.json`;
 
     const formData = new URLSearchParams();
-    formData.append('PhoneNumber', phoneNumber);
+    formData.append("PhoneNumber", phoneNumber);
 
     if (options.friendlyName) {
-      formData.append('FriendlyName', options.friendlyName);
+      formData.append("FriendlyName", options.friendlyName);
     }
 
     if (options.voiceUrl) {
-      formData.append('VoiceUrl', options.voiceUrl);
-      formData.append('VoiceMethod', 'POST');
+      formData.append("VoiceUrl", options.voiceUrl);
+      formData.append("VoiceMethod", "POST");
+    }
+
+    if (options.voiceFallbackUrl) {
+      formData.append("VoiceFallbackUrl", options.voiceFallbackUrl);
+      formData.append("VoiceFallbackMethod", "POST");
     }
 
     if (options.smsUrl) {
-      formData.append('SmsUrl', options.smsUrl);
-      formData.append('SmsMethod', 'POST');
+      formData.append("SmsUrl", options.smsUrl);
+      formData.append("SmsMethod", "POST");
     }
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization:
-          'Basic ' +
-          Buffer.from(`${credentials.accountSid}:${credentials.authToken}`).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded',
+          "Basic " +
+          Buffer.from(
+            `${credentials.accountSid}:${credentials.authToken}`,
+          ).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formData.toString(),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Twilio purchase error:', errorData);
+      console.error("Twilio purchase error:", errorData);
       return {
         success: false,
-        error: errorData.message || 'Failed to purchase phone number',
+        error: errorData.message || "Failed to purchase phone number",
       };
     }
 
@@ -241,7 +263,7 @@ export async function purchasePhoneNumber(
         userId,
         phoneNumber: data.phone_number || phoneNumber,
         friendlyName: options.friendlyName || phoneNumber,
-        country: data.iso_country || 'US',
+        country: data.iso_country || "US",
         capabilities: {
           voice: data.capabilities?.voice || false,
           sms: data.capabilities?.sms || false,
@@ -249,14 +271,14 @@ export async function purchasePhoneNumber(
         },
         twilioSid: data.sid,
         twilioAccountId: accountId || undefined,
-        status: 'active',
+        status: "active",
       },
     });
 
     // Update user's Twilio phone number in smsProviderConfig
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { smsProviderConfig: true }
+      select: { smsProviderConfig: true },
     });
 
     if (user?.smsProviderConfig) {
@@ -268,27 +290,29 @@ export async function purchasePhoneNumber(
           where: { id: userId },
           data: {
             smsProviderConfig: JSON.stringify(config),
-            smsProviderConfigured: true
-          }
+            smsProviderConfigured: true,
+          },
         });
       } catch (error) {
-        console.error('Error updating Twilio config with phone number:', error);
+        console.error("Error updating Twilio config with phone number:", error);
       }
     }
 
-    console.log('Phone number purchased successfully:', data.phone_number);
+    console.log("Phone number purchased successfully:", data.phone_number);
 
     return {
       success: true,
       phoneNumber: data.phone_number,
       twilioAccountId: accountId,
     };
-
   } catch (error) {
-    console.error('Error purchasing phone number:', error);
+    console.error("Error purchasing phone number:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to purchase phone number'
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to purchase phone number",
     };
   }
 }
@@ -299,24 +323,40 @@ export async function purchasePhoneNumber(
  */
 export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
   success: boolean;
-  numbers?: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string; source?: 'primary' | 'backup' }>;
+  numbers?: Array<{
+    phoneNumber: string;
+    friendlyName?: string;
+    twilioAccountId?: string;
+    source?: "primary" | "backup";
+  }>;
   error?: string;
 }> {
-  const results: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string; source?: 'primary' | 'backup' }> = [];
+  const results: Array<{
+    phoneNumber: string;
+    friendlyName?: string;
+    twilioAccountId?: string;
+    source?: "primary" | "backup";
+  }> = [];
   const seen = new Set<string>();
 
   const fetchForAccount = async (
     creds: { accountSid: string; authToken: string; twilioAccountId?: string },
-    label: 'primary' | 'backup'
+    label: "primary" | "backup",
   ) => {
     const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/IncomingPhoneNumbers.json?PageSize=100`;
     const res = await fetch(url, {
       headers: {
-        Authorization: 'Basic ' + Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64'),
+        Authorization:
+          "Basic " +
+          Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString(
+            "base64",
+          ),
       },
     });
     if (!res.ok) {
-      console.warn(`[getPhoneNumbersFromPlatformAccounts] ${label} fetch failed: ${res.status} ${res.statusText}`);
+      console.warn(
+        `[getPhoneNumbersFromPlatformAccounts] ${label} fetch failed: ${res.status} ${res.statusText}`,
+      );
       return;
     }
     const data = await res.json();
@@ -336,31 +376,42 @@ export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
   };
 
   try {
-    const { getPrimaryCredentials, getBackupCredentials } = await import('./twilio-credentials');
+    const { getPrimaryCredentials, getBackupCredentials } = await import(
+      "./twilio-credentials"
+    );
     const primary = await getPrimaryCredentials();
     if (primary) {
-      await fetchForAccount(primary, 'primary');
-      console.log(`[getPhoneNumbersFromPlatformAccounts] PRIMARY: ${results.length} numbers so far`);
+      await fetchForAccount(primary, "primary");
+      console.log(
+        `[getPhoneNumbersFromPlatformAccounts] PRIMARY: ${results.length} numbers so far`,
+      );
     } else {
-      console.warn('[getPhoneNumbersFromPlatformAccounts] PRIMARY credentials not found (check TwilioAccount envKey=PRIMARY or TWILIO_ACCOUNT_SID)');
+      console.warn(
+        "[getPhoneNumbersFromPlatformAccounts] PRIMARY credentials not found (check TwilioAccount envKey=PRIMARY or TWILIO_ACCOUNT_SID)",
+      );
     }
     const backup = await getBackupCredentials();
     if (backup) {
       const beforeBackup = results.length;
-      await fetchForAccount(backup, 'backup');
-      console.log(`[getPhoneNumbersFromPlatformAccounts] BACKUP: added ${results.length - beforeBackup} numbers (total: ${results.length})`);
+      await fetchForAccount(backup, "backup");
+      console.log(
+        `[getPhoneNumbersFromPlatformAccounts] BACKUP: added ${results.length - beforeBackup} numbers (total: ${results.length})`,
+      );
     }
     // Ensure primary numbers always appear before backup (in case of any reordering)
     results.sort((a, b) => {
       const order = { primary: 0, backup: 1 };
-      return (order[a.source ?? 'backup'] ?? 1) - (order[b.source ?? 'backup'] ?? 1);
+      return (
+        (order[a.source ?? "backup"] ?? 1) - (order[b.source ?? "backup"] ?? 1)
+      );
     });
     return { success: true, numbers: results };
   } catch (err) {
-    console.error('getPhoneNumbersFromPlatformAccounts error:', err);
+    console.error("getPhoneNumbersFromPlatformAccounts error:", err);
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Failed to fetch platform numbers',
+      error:
+        err instanceof Error ? err.message : "Failed to fetch platform numbers",
     };
   }
 }
@@ -372,20 +423,20 @@ export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
  */
 export async function getOwnedPhoneNumbers(
   userId: string,
-  options?: { includePlatformPool?: boolean }
+  options?: { includePlatformPool?: boolean },
 ): Promise<{ success: boolean; numbers?: any[]; error?: string }> {
   try {
-    console.log('📞 Getting owned phone numbers for user:', userId);
+    console.log("📞 Getting owned phone numbers for user:", userId);
 
     // Fetch numbers from PurchasedPhoneNumber table for THIS USER ONLY
     const purchasedNumbers = await prisma.purchasedPhoneNumber.findMany({
       where: {
         userId: userId,
-        status: 'active'
+        status: "active",
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: "desc",
+      },
     });
 
     const seen = new Set<string>();
@@ -397,8 +448,8 @@ export async function getOwnedPhoneNumbers(
         sid: number.twilioSid,
         twilioAccountId: number.twilioAccountId,
         capabilities: number.capabilities as any,
-        country: number.country || 'US',
-        dateCreated: number.createdAt
+        country: number.country || "US",
+        dateCreated: number.createdAt,
       };
     });
 
@@ -415,7 +466,7 @@ export async function getOwnedPhoneNumbers(
               sid: null as unknown as string,
               twilioAccountId: p.twilioAccountId ?? null,
               capabilities: null,
-              country: 'US',
+              country: "US",
               dateCreated: null as unknown as Date,
             });
           }
@@ -427,14 +478,16 @@ export async function getOwnedPhoneNumbers(
 
     return {
       success: true,
-      numbers: formattedNumbers
+      numbers: formattedNumbers,
     };
-
   } catch (error) {
-    console.error('❌ Error fetching owned numbers:', error);
+    console.error("❌ Error fetching owned numbers:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch phone numbers'
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch phone numbers",
     };
   }
 }

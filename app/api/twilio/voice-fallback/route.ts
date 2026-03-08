@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveVoiceAgentByPhone } from "@/lib/dal";
+import {
+  normalizePhone,
+  resolveGlobalFailoverNumber,
+} from "@/lib/reliability/voice-fallback";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,18 +18,19 @@ function escapeXml(input: string): string {
 }
 
 function asPhone(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : null;
+  return normalizePhone(value);
 }
 
 function buildFallbackTwiml(options: {
   message: string;
   fallbackNumber?: string | null;
   voicemailMessage?: string | null;
+  industry?: string | null;
 }): string {
   const safeMessage = escapeXml(options.message);
-  const fallbackNumber = asPhone(options.fallbackNumber);
+  const fallbackNumber =
+    asPhone(options.fallbackNumber) ||
+    resolveGlobalFailoverNumber({ industry: options.industry || null });
 
   if (fallbackNumber) {
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -59,6 +64,8 @@ export async function POST(request: NextRequest) {
 
     let perAgentFallback: string | null = null;
     let voicemailMessage: string | null = null;
+    let ownerFallbackNumber: string | null = null;
+    let fallbackIndustry: string | null = null;
 
     if (to) {
       try {
@@ -68,6 +75,16 @@ export async function POST(request: NextRequest) {
             asPhone(resolved.voiceAgent.backupPhoneNumber) ||
             asPhone(resolved.voiceAgent.transferPhone) ||
             null;
+          ownerFallbackNumber = asPhone(
+            (resolved.voiceAgent as any).user?.phone,
+          );
+          fallbackIndustry =
+            (typeof (resolved.voiceAgent as any).user?.industry === "string"
+              ? ((resolved.voiceAgent as any).user.industry as string)
+              : null) ||
+            (typeof (resolved.voiceAgent as any).businessIndustry === "string"
+              ? ((resolved.voiceAgent as any).businessIndustry as string)
+              : null);
           voicemailMessage =
             typeof resolved.voiceAgent.voicemailMessage === "string"
               ? resolved.voiceAgent.voicemailMessage
@@ -78,14 +95,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const globalFallback =
-      process.env.TWILIO_FAILOVER_NUMBER || process.env.CLINIC_FAILOVER_NUMBER;
-
     const twiml = buildFallbackTwiml({
       message:
         "Our AI assistant is temporarily unavailable. Connecting you to the clinic now.",
-      fallbackNumber: perAgentFallback || globalFallback || null,
+      fallbackNumber: perAgentFallback || ownerFallbackNumber || null,
       voicemailMessage,
+      industry: fallbackIndustry,
     });
 
     return new NextResponse(twiml, {
@@ -96,10 +111,7 @@ export async function POST(request: NextRequest) {
     const twiml = buildFallbackTwiml({
       message:
         "We are temporarily unavailable. Please leave a message after the tone.",
-      fallbackNumber:
-        process.env.TWILIO_FAILOVER_NUMBER ||
-        process.env.CLINIC_FAILOVER_NUMBER ||
-        null,
+      fallbackNumber: null,
     });
 
     return new NextResponse(twiml, {

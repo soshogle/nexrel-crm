@@ -1,0 +1,35 @@
+model_list:
+  - model_name: fast_chat
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: fast_chat
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-latest
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: smart_chat
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: smart_chat
+    litellm_params:
+      model: anthropic/claude-3-7-sonnet-latest
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: smart_chat
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+  timeout: 20
+  allowed_fails: 2
+  cooldown_time: 60
+
+litellm_settings:
+  set_verbose: false

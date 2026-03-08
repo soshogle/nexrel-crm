@@ -5,6 +5,42 @@
 
 import { recordDependencyResult } from "@/lib/reliability/dependency-health";
 
+function normalizeBaseUrl(value: string): string {
+  return value.replace(/\/+$/, "");
+}
+
+function getChatCompletionsEndpoint(): string {
+  const baseUrl =
+    process.env.OPENAI_API_BASE_URL ||
+    process.env.LITELLM_BASE_URL ||
+    "https://api.openai.com/v1";
+  return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
+}
+
+function getApiKeyForEndpoint(endpoint: string): string {
+  const openaiDefaultEndpoint = "https://api.openai.com/v1/chat/completions";
+  const isDirectOpenAI = endpoint === openaiDefaultEndpoint;
+
+  if (isDirectOpenAI) {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      throw new Error(
+        "OPENAI_API_KEY environment variable is not configured. Please add it to your environment variables.",
+      );
+    }
+    return openaiKey;
+  }
+
+  const routedKey = process.env.LITELLM_API_KEY || process.env.OPENAI_API_KEY;
+  if (!routedKey) {
+    throw new Error(
+      "Missing API key for routed LLM endpoint. Set LITELLM_API_KEY (preferred) or OPENAI_API_KEY.",
+    );
+  }
+
+  return routedKey;
+}
+
 export interface ChatCompletionOptions {
   model?: string;
   messages: Array<{
@@ -45,19 +81,14 @@ export async function chatCompletion(
   options: ChatCompletionOptions,
 ): Promise<ChatCompletionResponse> {
   const startedAt = Date.now();
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY environment variable is not configured. Please add it to your Vercel environment variables.",
-    );
-  }
+  const endpoint = getChatCompletionsEndpoint();
+  const apiKey = getApiKeyForEndpoint(endpoint);
 
   const model = mapModelName(options.model || "gpt-4o-mini");
-  const endpoint = "https://api.openai.com/v1/chat/completions";
 
-  console.log("[OpenAI Client] Calling OpenAI API:", {
+  console.log("[OpenAI Client] Calling LLM endpoint:", {
     model,
+    endpoint,
     messageCount: options.messages.length,
     temperature: options.temperature,
     max_tokens: options.max_tokens,
@@ -139,14 +170,10 @@ export async function chatCompletion(
 export async function* streamChatCompletion(
   options: ChatCompletionOptions,
 ): AsyncGenerator<string, void, unknown> {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not configured.");
-  }
+  const endpoint = getChatCompletionsEndpoint();
+  const apiKey = getApiKeyForEndpoint(endpoint);
 
   const model = mapModelName(options.model || "gpt-4o-mini");
-  const endpoint = "https://api.openai.com/v1/chat/completions";
 
   const response = await fetch(endpoint, {
     method: "POST",

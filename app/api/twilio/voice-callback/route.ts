@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { elevenLabsService } from "@/lib/elevenlabs";
 import { resolveVoiceAgentByPhone } from "@/lib/dal";
 import { enhancedCallHandler } from "@/lib/integrations/enhanced-call-handler";
+import {
+  normalizePhone,
+  resolveGlobalFailoverNumber,
+} from "@/lib/reliability/voice-fallback";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,12 +22,12 @@ function escapeXml(input: string): string {
 function buildFailoverTwiml(
   message: string,
   preferredNumber?: string | null,
+  industry?: string | null,
 ): string {
   const safeMessage = escapeXml(message);
   const failoverNumber =
-    preferredNumber ||
-    process.env.TWILIO_FAILOVER_NUMBER ||
-    process.env.CLINIC_FAILOVER_NUMBER;
+    normalizePhone(preferredNumber) ||
+    resolveGlobalFailoverNumber({ industry: industry || null });
 
   if (failoverNumber) {
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -41,7 +45,7 @@ function buildFailoverTwiml(
 }
 
 function asPhone(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
+  return normalizePhone(value);
 }
 
 /**
@@ -71,18 +75,29 @@ export async function POST(request: NextRequest) {
     }
 
     const { voiceAgent, db } = resolved;
+    const agentUser = (voiceAgent as any).user;
+    const ownerFallbackNumber = asPhone(agentUser?.phone);
+    const fallbackIndustry =
+      (typeof agentUser?.industry === "string" ? agentUser.industry : null) ||
+      (typeof (voiceAgent as any).businessIndustry === "string"
+        ? ((voiceAgent as any).businessIndustry as string)
+        : null);
+
+    const preferredFailoverNumber =
+      asPhone(voiceAgent.backupPhoneNumber) ||
+      asPhone(voiceAgent.transferPhone) ||
+      ownerFallbackNumber ||
+      null;
+
     if (!voiceAgent.elevenLabsAgentId) {
       console.error(
         "[voice-callback] No ElevenLabs agent ID configured for:",
         voiceAgent.name,
       );
-      const preferredFailoverNumber =
-        asPhone(voiceAgent.backupPhoneNumber) ||
-        asPhone(voiceAgent.transferPhone) ||
-        null;
       const twiml = buildFailoverTwiml(
         "The AI assistant is not fully configured. Forwarding your call now.",
         preferredFailoverNumber,
+        fallbackIndustry,
       );
       return new NextResponse(twiml, {
         headers: { "Content-Type": "text/xml" },
@@ -170,13 +185,10 @@ export async function POST(request: NextRequest) {
         "[voice-callback] Failed to get WebSocket URL:",
         wsError.message,
       );
-      const preferredFailoverNumber =
-        asPhone(voiceAgent.backupPhoneNumber) ||
-        asPhone(voiceAgent.transferPhone) ||
-        null;
       const twiml = buildFailoverTwiml(
         "The AI assistant is temporarily unavailable. Forwarding your call now.",
         preferredFailoverNumber,
+        fallbackIndustry,
       );
       return new NextResponse(twiml, {
         headers: { "Content-Type": "text/xml" },
@@ -192,13 +204,10 @@ export async function POST(request: NextRequest) {
         console.error(
           "[voice-callback] Agent has no phone number assigned in ElevenLabs",
         );
-        const preferredFailoverNumber =
-          asPhone(voiceAgent.backupPhoneNumber) ||
-          asPhone(voiceAgent.transferPhone) ||
-          null;
         const twiml = buildFailoverTwiml(
           "The AI assistant is not fully configured. Forwarding your call now.",
           preferredFailoverNumber,
+          fallbackIndustry,
         );
         return new NextResponse(twiml, {
           headers: { "Content-Type": "text/xml" },
