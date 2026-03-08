@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getIndustryDb } from "@/lib/db/industry-db";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
 
 type RouteContext = {
   params: Promise<{ trackingId: string }>;
@@ -9,24 +9,32 @@ type RouteContext = {
 
 // GET /api/campaigns/drip/track/[trackingId]/click - Track email click
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export async function GET(
-  req: NextRequest,
-  context: RouteContext
-) {
-  try {
-    const { trackingId } = await context.params;
-    const { searchParams } = new URL(req.url);
-    const url = searchParams.get('url');
+function getCandidateDbs() {
+  const list: Array<ReturnType<typeof getIndustryDb>> = [getIndustryDb(null)];
+  const seen = new Set<string>(["main"]);
 
-    if (!url) {
-      return apiErrors.badRequest('URL parameter is required');
+  for (const key of Object.keys(process.env)) {
+    if (!key.startsWith("DATABASE_URL_")) continue;
+    const industry = key.replace("DATABASE_URL_", "");
+    if (!industry || seen.has(industry)) continue;
+    seen.add(industry);
+    try {
+      list.push(getIndustryDb(industry));
+    } catch {
+      // Ignore invalid/missing industry clients
     }
+  }
 
-    // Find message
-    const message = await prisma.emailDripMessage.findUnique({
+  return list;
+}
+
+async function findMessageByTrackingId(trackingId: string) {
+  const dbs = getCandidateDbs();
+  for (const db of dbs) {
+    const message = await db.emailDripMessage.findUnique({
       where: { trackingId },
       include: {
         enrollment: {
@@ -37,8 +45,26 @@ export async function GET(
         sequence: true,
       },
     });
+    if (message) return { db, message };
+  }
+  return null;
+}
 
-    if (message) {
+export async function GET(req: NextRequest, context: RouteContext) {
+  try {
+    const { trackingId } = await context.params;
+    const { searchParams } = new URL(req.url);
+    const url = searchParams.get("url");
+
+    if (!url) {
+      return apiErrors.badRequest("URL parameter is required");
+    }
+
+    const located = await findMessageByTrackingId(trackingId);
+    const message = located?.message;
+    const db = located?.db;
+
+    if (message && db) {
       const now = new Date();
       const updateData: any = {
         clickCount: { increment: 1 },
@@ -58,18 +84,18 @@ export async function GET(
       }
 
       // Update message status if allowed
-      if (['SENT', 'DELIVERED', 'OPENED', 'CLICKED'].includes(message.status)) {
-        updateData.status = 'CLICKED';
+      if (["SENT", "DELIVERED", "OPENED", "CLICKED"].includes(message.status)) {
+        updateData.status = "CLICKED";
       }
 
       // Update message
-      await prisma.emailDripMessage.update({
+      await db.emailDripMessage.update({
         where: { id: message.id },
         data: updateData,
       });
 
       // Update enrollment
-      await prisma.emailDripEnrollment.update({
+      await db.emailDripEnrollment.update({
         where: { id: message.enrollmentId },
         data: {
           totalClicked: { increment: 1 },
@@ -78,7 +104,7 @@ export async function GET(
       });
 
       // Update sequence stats
-      await prisma.emailDripSequence.update({
+      await db.emailDripSequence.update({
         where: { id: message.sequenceId },
         data: {
           totalClicked: { increment: 1 },
@@ -87,23 +113,26 @@ export async function GET(
 
       const userId = message.enrollment?.campaign?.userId;
       if (userId) {
-        emitCRMEvent('email_clicked', userId, { entityId: trackingId, entityType: 'EmailTracking' });
+        emitCRMEvent("email_clicked", userId, {
+          entityId: trackingId,
+          entityType: "EmailTracking",
+        });
       }
     }
 
     // Redirect to original URL
     return NextResponse.redirect(url);
   } catch (error: unknown) {
-    console.error('Error tracking email click:', error);
-    
+    console.error("Error tracking email click:", error);
+
     // Try to redirect anyway
     const { searchParams } = new URL(req.url);
-    const url = searchParams.get('url');
-    
+    const url = searchParams.get("url");
+
     if (url) {
       return NextResponse.redirect(url);
     }
-    
-    return apiErrors.internal('Failed to track click');
+
+    return apiErrors.internal("Failed to track click");
   }
 }
