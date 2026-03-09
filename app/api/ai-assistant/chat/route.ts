@@ -11,6 +11,7 @@ import {
 } from "@/lib/ai-assistant-functions";
 import { aiBrainService } from "@/lib/ai-brain-service";
 import { apiErrors } from "@/lib/api-error";
+import { runNexrelAiBrainShadow } from "@/lib/nexrel-ai-brain/shadow-runner";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -180,6 +181,39 @@ export async function POST(req: NextRequest) {
 
     if (!message || !message.trim()) {
       return apiErrors.badRequest("Message is required");
+    }
+
+    // Phase 1 shadow integration for nexrel-ai-brain.
+    // Read + suggest only; no write actions are allowed.
+    try {
+      const shadow = await runNexrelAiBrainShadow({
+        tenantId: ctx.userId,
+        userId: user.id,
+        route: "/api/ai-assistant/chat",
+        message,
+        conversationHistoryCount: conversationHistory.length,
+        contextKeys: Object.keys(context || {}),
+      });
+
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "SETTINGS_MODIFIED",
+          severity: "LOW",
+          entityType: "NEXREL_AI_BRAIN_SHADOW",
+          entityId: shadow.runId,
+          metadata: {
+            route: "/api/ai-assistant/chat",
+            mode: shadow.mode,
+            executed: shadow.executed,
+            policyDecision: shadow.policyDecision,
+          },
+          success: true,
+        },
+      });
+    } catch (shadowError) {
+      // Never block current assistant behavior during phase 1.
+      console.error("[nexrel-ai-brain] shadow run failed", shadowError);
     }
 
     // Build comprehensive context about the CRM and user's data with error handling
