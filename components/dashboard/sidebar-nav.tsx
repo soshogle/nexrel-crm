@@ -34,6 +34,7 @@ import {
   Wallet,
   Code,
   DollarSign,
+  FileText,
   ChevronDown,
   Truck,
   Database,
@@ -447,6 +448,13 @@ const adminItems = [
     requiresSuperAdmin: true,
   },
   {
+    id: "tenant-attestation" as MenuItemId,
+    title: "Tenant Attestation",
+    href: "/dashboard/admin/tenant-attestation",
+    icon: FileText,
+    requiresSuperAdmin: true,
+  },
+  {
     id: "data-monetization" as MenuItemId,
     title: "Data Monetization",
     href: "/dashboard/payments/data-monetization",
@@ -550,6 +558,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       widgets: "embedWidget",
       "manage-users": "manageUsers",
       subscriptions: "subscriptions",
+      "tenant-attestation": "tenantAttestation",
       "data-monetization": "dataMonetization",
       "parent-dashboard": "myDashboard",
       "parent-family": "myFamily",
@@ -832,6 +841,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       ? []
       : [...adminItems].filter((item) => {
           if ((item as any).requiresSuperAdmin && !isSuperAdmin) return false;
+          if ((item as any).requiresSuperAdmin && isSuperAdmin) return true;
           return isMenuItemVisible(item.id, userIndustry);
         });
 

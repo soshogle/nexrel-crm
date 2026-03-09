@@ -7,15 +7,25 @@
  *   const ctx = { userId: session.user.id, industry };
  */
 
-import type { Session } from 'next-auth';
-import type { Industry } from '@/lib/industry-menu-config';
-import { prisma } from '@/lib/db';
+import type { Session } from "next-auth";
+import type { Industry } from "@/lib/industry-menu-config";
+import { prisma } from "@/lib/db";
+import {
+  resolveTenantOverrideEnvKey,
+  resolveTenantRoutingByUserId,
+} from "@/lib/tenancy/tenant-registry";
+
+function isStrictOwnerTenancyEnabled(): boolean {
+  return process.env.TENANCY_REQUIRE_OWNER_OVERRIDE === "true";
+}
 
 /**
  * Get industry from session for DAL context.
  * Returns null if not set (DAL will use default/single DB in Phase 1).
  */
-export function getIndustryFromSession(session: Session | null): Industry | null {
+export function getIndustryFromSession(
+  session: Session | null,
+): Industry | null {
   if (!session?.user?.industry) return null;
   return session.user.industry as Industry;
 }
@@ -26,11 +36,22 @@ export function getIndustryFromSession(session: Session | null): Industry | null
 export function getDalContextFromSession(session: Session | null): {
   userId: string;
   industry: Industry | null;
+  databaseEnvKey?: string | null;
 } | null {
   if (!session?.user?.id) return null;
+  const databaseEnvKey =
+    session.user.databaseEnvKey || resolveTenantOverrideEnvKey(session.user.id);
+  if (
+    isStrictOwnerTenancyEnabled() &&
+    session.user.role === "BUSINESS_OWNER" &&
+    !databaseEnvKey
+  ) {
+    return null;
+  }
   return {
     userId: session.user.id,
     industry: getIndustryFromSession(session),
+    databaseEnvKey: databaseEnvKey ?? null,
   };
 }
 
@@ -41,11 +62,18 @@ export function getDalContextFromSession(session: Session | null): {
  */
 export function createDalContext(
   userId: string,
-  industry?: Industry | string | null
-): { userId: string; industry: Industry | null } {
+  industry?: Industry | string | null,
+  databaseEnvKey?: string | null,
+): {
+  userId: string;
+  industry: Industry | null;
+  databaseEnvKey?: string | null;
+} {
+  const resolvedEnvKey = databaseEnvKey ?? resolveTenantOverrideEnvKey(userId);
   return {
     userId,
     industry: (industry as Industry) ?? null,
+    databaseEnvKey: resolvedEnvKey ?? null,
   };
 }
 
@@ -57,10 +85,25 @@ export function createDalContext(
 export async function resolveDalContext(userId: string): Promise<{
   userId: string;
   industry: Industry | null;
+  databaseEnvKey?: string | null;
 }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { industry: true },
+    select: { industry: true, role: true },
   });
-  return createDalContext(userId, user?.industry ?? null);
+  const routing = await resolveTenantRoutingByUserId(userId);
+  if (
+    isStrictOwnerTenancyEnabled() &&
+    user?.role === "BUSINESS_OWNER" &&
+    routing?.routingMode !== "TENANT_OVERRIDE"
+  ) {
+    throw new Error(
+      "[DAL] Strict owner tenancy enabled and tenant override is missing for business owner",
+    );
+  }
+  return createDalContext(
+    userId,
+    user?.industry ?? null,
+    routing?.routingMode === "TENANT_OVERRIDE" ? routing.databaseEnvKey : null,
+  );
 }

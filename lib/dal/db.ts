@@ -5,7 +5,7 @@
  */
 
 import { prisma } from "@/lib/db";
-import { getIndustryDb } from "@/lib/db/industry-db";
+import { getDbByEnvKey, getIndustryDb } from "@/lib/db/industry-db";
 import type { DalContext } from "./types";
 
 function isStrictRoutingEnabled(): boolean {
@@ -23,6 +23,18 @@ function isIndustryRequiredEnabled(): boolean {
  */
 export function getCrmDb(ctx: DalContext) {
   const industry = ctx.industry;
+  const databaseEnvKey = ctx.databaseEnvKey;
+
+  if (databaseEnvKey) {
+    if (isStrictRoutingEnabled() && !process.env[databaseEnvKey]) {
+      throw new Error(
+        `[DAL] Missing ${databaseEnvKey} while DAL_STRICT_ROUTING=true. Refusing fallback to main DB.`,
+      );
+    }
+    if (process.env[databaseEnvKey]) {
+      return getDbByEnvKey(databaseEnvKey);
+    }
+  }
 
   if (isIndustryRequiredEnabled() && !industry) {
     throw new Error(

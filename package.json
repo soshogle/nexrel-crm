@@ -59,7 +59,9 @@
     "phase4a:eyal-secret": "tsx scripts/phase4a-eyal-website-secret.ts",
     "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts",
     "audit:dal": "tsx scripts/guardrails/audit-dal-routing.ts",
-    "audit:dal:strict": "tsx scripts/guardrails/audit-dal-routing.ts --strict"
+    "audit:dal:strict": "tsx scripts/guardrails/audit-dal-routing.ts --strict",
+    "tenancy:attestation:weekly": "tsx scripts/tenancy/generate-tenant-db-mapping-attestation.ts",
+    "tenancy:migrate-existing-owners": "tsx scripts/tenancy/migrate-existing-owners-to-dedicated-db.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"

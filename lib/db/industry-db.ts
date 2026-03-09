@@ -86,3 +86,25 @@ export function getIndustryDb(
   }
   return client;
 }
+
+export function getDbByEnvKey(databaseEnvKey: string): PrismaClient {
+  const key = `env:${databaseEnvKey}`;
+  let client = industryClients.get(key);
+  if (!client) {
+    const url = normalizeDbUrl(process.env[databaseEnvKey]);
+    if (!url) {
+      throw new Error(
+        `Missing configured database URL for env key ${databaseEnvKey}`,
+      );
+    }
+    client = new PrismaClient({
+      log:
+        process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+      datasources: {
+        db: { url },
+      },
+    });
+    industryClients.set(key, client);
+  }
+  return client;
+}

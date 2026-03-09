@@ -6,7 +6,7 @@
  * In Phase 3, industry will be used for DB routing.
  */
 
-import type { Industry } from '@/lib/industry-menu-config';
+import type { Industry } from "@/lib/industry-menu-config";
 
 export type { Industry };
 
@@ -14,4 +14,5 @@ export type { Industry };
 export interface DalContext {
   userId: string;
   industry?: Industry | null;
+  databaseEnvKey?: string | null;
 }
