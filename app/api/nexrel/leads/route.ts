@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { leadService } from "@/lib/dal";
+import { getCrmDb } from "@/lib/dal";
 import { resolveDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,23 +15,31 @@ export async function POST(request: Request) {
     if (leadOwnerId) {
       try {
         const ctx = await resolveDalContext(leadOwnerId);
-        await leadService.create(ctx, {
-          businessName: payload.companyName || `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || "ROI Lead",
-          contactPerson: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || undefined,
-          email: payload.email || undefined,
-          phone: payload.phone || undefined,
-          website: payload.websiteUrl || undefined,
-          businessCategory: payload.industry || undefined,
-          source: payload.source || "roi_calculator",
-          tags: ["roi-calculator", "landing-page"],
-          contactType: "CUSTOMER",
-        } as any);
+        await getCrmDb(ctx).lead.create({
+          data: {
+            businessName:
+              payload.companyName ||
+              `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
+              "ROI Lead",
+            contactPerson:
+              `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
+              undefined,
+            email: payload.email || undefined,
+            phone: payload.phone || undefined,
+            website: payload.websiteUrl || undefined,
+            businessCategory: payload.industry || undefined,
+            source: payload.source || "roi_calculator",
+            tags: ["roi-calculator", "landing-page"],
+            contactType: "CUSTOMER",
+          } as any,
+        });
       } catch (dbError) {
         console.error("Failed to store ROI lead:", dbError);
       }
     }
 
-    const notifyEmail = process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
+    const notifyEmail =
+      process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
     await emailService.sendEmail({
       to: notifyEmail,
       subject: "New ROI Lead",

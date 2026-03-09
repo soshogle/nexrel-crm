@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET POS ORDERS
  * List all POS orders with filtering
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,13 +19,17 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const paymentStatus = searchParams.get('paymentStatus');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const staffId = searchParams.get('staffId');
+    const status = searchParams.get("status");
+    const paymentStatus = searchParams.get("paymentStatus");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const staffId = searchParams.get("staffId");
 
     const where: any = { userId: session.user.id };
 
@@ -38,7 +42,7 @@ export async function GET(req: NextRequest) {
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
 
-    const orders = await prisma.pOSOrder.findMany({
+    const orders = await getCrmDb(ctx).pOSOrder.findMany({
       where,
       include: {
         items: true,
@@ -55,14 +59,14 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 100,
     });
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error('❌ POS orders fetch error:', error);
-    return apiErrors.internal('Failed to fetch orders');
+    console.error("❌ POS orders fetch error:", error);
+    return apiErrors.internal("Failed to fetch orders");
   }
 }
 
@@ -74,6 +78,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -93,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!items || items.length === 0) {
-      return apiErrors.badRequest('Order must have at least one item');
+      return apiErrors.badRequest("Order must have at least one item");
     }
 
     // Calculate totals
@@ -108,13 +116,13 @@ export async function POST(req: NextRequest) {
     const orderNumber = `POS-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
     // Create order with items
-    const order = await prisma.pOSOrder.create({
+    const order = await getCrmDb(ctx).pOSOrder.create({
       data: {
         userId: session.user.id,
         staffId,
         orderNumber,
-        orderType: orderType || 'DINE_IN',
-        status: 'PENDING',
+        orderType: orderType || "DINE_IN",
+        status: "PENDING",
         customerName,
         customerPhone,
         customerEmail,
@@ -124,7 +132,7 @@ export async function POST(req: NextRequest) {
         discount,
         tip,
         total,
-        paymentStatus: 'UNPAID',
+        paymentStatus: "UNPAID",
         notes,
         items: {
           create: items.map((item: any) => ({
@@ -136,7 +144,7 @@ export async function POST(req: NextRequest) {
             modifiers: item.modifiers ? JSON.stringify(item.modifiers) : null,
             notes: item.notes,
             discount: item.discount || 0,
-            tax: (item.quantity * item.unitPrice) * 0.08,
+            tax: item.quantity * item.unitPrice * 0.08,
           })),
         },
       },
@@ -155,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error('❌ POS order creation error:', error);
-    return apiErrors.internal('Failed to create order');
+    console.error("❌ POS order creation error:", error);
+    return apiErrors.internal("Failed to create order");
   }
 }

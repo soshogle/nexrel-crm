@@ -1,16 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GENERATE RECEIPT
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,17 +18,21 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await req.json();
-    const { orderId, receiptType = 'SALE', emailTo } = body;
+    const { orderId, receiptType = "SALE", emailTo } = body;
 
     // Validate required fields
     if (!orderId) {
-      return apiErrors.badRequest('Order ID is required');
+      return apiErrors.badRequest("Order ID is required");
     }
 
     // Get order details
-    const order = await prisma.pOSOrder.findFirst({
+    const order = await getCrmDb(ctx).pOSOrder.findFirst({
       where: {
         id: orderId,
         userId: session.user.id,
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Generate receipt number
@@ -62,7 +66,7 @@ export async function POST(req: NextRequest) {
     const receiptHTML = generateReceiptHTML(order, receiptNumber, receiptType);
 
     // Create receipt record
-    const receipt = await prisma.receipt.create({
+    const receipt = await getCrmDb(ctx).receipt.create({
       data: {
         userId: session.user.id,
         orderId,
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (emailTo) {
-      const { emailService } = await import('@/lib/email-service');
+      const { emailService } = await import("@/lib/email-service");
       await emailService.sendEmail({
         to: emailTo,
         subject: `Your Receipt — ${receiptNumber}`,
@@ -92,18 +96,22 @@ export async function POST(req: NextRequest) {
       receiptHTML,
     });
   } catch (error) {
-    console.error('❌ Receipt generation error:', error);
-    return apiErrors.internal('Failed to generate receipt');
+    console.error("❌ Receipt generation error:", error);
+    return apiErrors.internal("Failed to generate receipt");
   }
 }
 
 /**
  * Helper function to generate receipt HTML
  */
-function generateReceiptHTML(order: any, receiptNumber: string, receiptType: string): string {
-  const businessName = order.user.name || 'Business Name';
-  const businessPhone = order.user.phone || '';
-  const businessAddress = order.user.address || '';
+function generateReceiptHTML(
+  order: any,
+  receiptNumber: string,
+  receiptType: string,
+): string {
+  const businessName = order.user.name || "Business Name";
+  const businessPhone = order.user.phone || "";
+  const businessAddress = order.user.address || "";
 
   return `
     <!DOCTYPE html>
@@ -134,9 +142,9 @@ function generateReceiptHTML(order: any, receiptNumber: string, receiptType: str
         <div>Receipt #: ${receiptNumber}</div>
         <div>Order #: ${order.orderNumber}</div>
         <div>Date: ${new Date(order.createdAt).toLocaleString()}</div>
-        ${order.staff ? `<div>Cashier: ${order.staff.user.name}</div>` : ''}
-        ${order.tableNumber ? `<div>Table: ${order.tableNumber}</div>` : ''}
-        ${order.customerName ? `<div>Customer: ${order.customerName}</div>` : ''}
+        ${order.staff ? `<div>Cashier: ${order.staff.user.name}</div>` : ""}
+        ${order.tableNumber ? `<div>Table: ${order.tableNumber}</div>` : ""}
+        ${order.customerName ? `<div>Customer: ${order.customerName}</div>` : ""}
       </div>
 
       <div class="divider"></div>
@@ -149,9 +157,9 @@ function generateReceiptHTML(order: any, receiptNumber: string, receiptType: str
             <div>${item.quantity}x ${item.name}</div>
             <div>$${parseFloat(item.total.toString()).toFixed(2)}</div>
           </div>
-        `
+        `,
           )
-          .join('')}
+          .join("")}
       </div>
 
       <div class="divider"></div>
@@ -173,7 +181,7 @@ function generateReceiptHTML(order: any, receiptNumber: string, receiptType: str
           <div>-$${parseFloat(order.discount.toString()).toFixed(2)}</div>
         </div>
         `
-            : ''
+            : ""
         }
         ${
           parseFloat(order.tip.toString()) > 0
@@ -183,7 +191,7 @@ function generateReceiptHTML(order: any, receiptNumber: string, receiptType: str
           <div>$${parseFloat(order.tip.toString()).toFixed(2)}</div>
         </div>
         `
-            : ''
+            : ""
         }
         <div class="item total">
           <div>TOTAL:</div>
@@ -197,7 +205,7 @@ function generateReceiptHTML(order: any, receiptNumber: string, receiptType: str
           <div>${order.paymentMethod}</div>
         </div>
         `
-            : ''
+            : ""
         }
       </div>
 

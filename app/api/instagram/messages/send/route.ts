@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { conversationService } from '@/lib/dal/conversation-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { conversationService } from "@/lib/dal/conversation-service";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Send Instagram Direct Message
@@ -23,29 +23,37 @@ export async function POST(request: NextRequest) {
     const { recipientId, message, conversationId } = body;
 
     if (!recipientId || !message) {
-      return apiErrors.badRequest('Missing recipientId or message');
+      return apiErrors.badRequest("Missing recipientId or message");
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
+
     // Get Instagram connection
-    const connection: any = await prisma.channelConnection.findFirst({
+    const connection: any = await db.channelConnection.findFirst({
       where: {
         userId: session.user.id,
-        channelType: 'INSTAGRAM',
-        status: 'CONNECTED',
+        channelType: "INSTAGRAM",
+        status: "CONNECTED",
       },
     } as any);
 
     if (!connection || !connection.accessToken) {
-      return apiErrors.badRequest('Instagram not connected. Please connect your Instagram account first.');
+      return apiErrors.badRequest(
+        "Instagram not connected. Please connect your Instagram account first.",
+      );
     }
 
     // Send message via Instagram Graph API
     const instagramResponse = await fetch(
       `https://graph.instagram.com/v18.0/me/messages`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${connection.accessToken}`,
         },
         body: JSON.stringify({
@@ -56,24 +64,19 @@ export async function POST(request: NextRequest) {
             text: message,
           },
         }),
-      }
+      },
     );
 
     if (!instagramResponse.ok) {
       const errorData = await instagramResponse.json();
-      console.error('❌ Instagram send error:', errorData);
+      console.error("❌ Instagram send error:", errorData);
       return NextResponse.json(
-        { error: errorData.error?.message || 'Failed to send message' },
-        { status: instagramResponse.status }
+        { error: errorData.error?.message || "Failed to send message" },
+        { status: instagramResponse.status },
       );
     }
 
     const responseData = await instagramResponse.json();
-
-    const ctx = getDalContextFromSession(session);
-    if (!ctx) {
-      return apiErrors.unauthorized();
-    }
 
     let conversation;
     if (conversationId) {
@@ -85,29 +88,29 @@ export async function POST(request: NextRequest) {
         channelConnectionId: connection.id,
         contactIdentifier: recipientId,
         contactName: recipientId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         lastMessageAt: new Date(),
       } as any);
     } else {
       await conversationService.update(ctx, conversation.id, {
         lastMessageAt: new Date(),
-        status: 'ACTIVE',
+        status: "ACTIVE",
       });
     }
 
     // Store message in database
-    const conversationMessage = await prisma.conversationMessage.create({
+    const conversationMessage = await db.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId: session.user.id,
-        direction: 'OUTBOUND',
+        direction: "OUTBOUND",
         content: message,
         externalMessageId: responseData.message_id,
-        status: 'SENT',
+        status: "SENT",
       },
     });
 
-    console.log('✅ Instagram message sent:', responseData.message_id);
+    console.log("✅ Instagram message sent:", responseData.message_id);
 
     return NextResponse.json({
       success: true,
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
       message: conversationMessage,
     });
   } catch (error: any) {
-    console.error('❌ Error sending Instagram message:', error);
-    return apiErrors.internal(error.message || 'Failed to send message');
+    console.error("❌ Error sending Instagram message:", error);
+    return apiErrors.internal(error.message || "Failed to send message");
   }
 }

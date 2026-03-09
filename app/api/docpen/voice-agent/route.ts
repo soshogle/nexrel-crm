@@ -1,23 +1,23 @@
 /**
  * API Route: Docpen Voice Agent Management
- * 
+ *
  * GET - List user's Docpen voice agents
  * POST - Create or get a voice agent for a profession
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 // ElevenLabs agent creation/verification can take 30+ seconds
 export const maxDuration = 60;
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
-import { apiErrors } from '@/lib/api-error';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { docpenAgentProvisioning } from "@/lib/docpen/agent-provisioning";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
   try {
@@ -25,57 +25,74 @@ export async function GET() {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const agents = await prisma.docpenVoiceAgent.findMany({
+    const agents = await db.docpenVoiceAgent.findMany({
       where: {
         userId: session.user.id,
         isActive: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ agents });
   } catch (error: any) {
-    console.error('[Docpen Voice Agent] Error listing agents:', error);
-    return apiErrors.internal(error.message || 'Failed to list agents');
+    console.error("[Docpen Voice Agent] Error listing agents:", error);
+    return apiErrors.internal(error.message || "Failed to list agents");
   }
 }
 
 export async function POST(req: NextRequest) {
-  console.log('🚀 [Docpen Voice Agent API] POST endpoint called');
-  console.log('🔍 [Docpen Voice Agent API] Environment check:', {
+  console.log("🚀 [Docpen Voice Agent API] POST endpoint called");
+  console.log("🔍 [Docpen Voice Agent API] Environment check:", {
     hasDatabaseUrl: !!process.env.DATABASE_URL,
-    databaseUrlPreview: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 30)}...` : 'NOT SET',
+    databaseUrlPreview: process.env.DATABASE_URL
+      ? `${process.env.DATABASE_URL.substring(0, 30)}...`
+      : "NOT SET",
     hasElevenLabsKey: !!process.env.ELEVENLABS_API_KEY,
-    elevenLabsKeyPreview: process.env.ELEVENLABS_API_KEY ? `...${process.env.ELEVENLABS_API_KEY.slice(-8)}` : 'NOT SET',
+    elevenLabsKeyPreview: process.env.ELEVENLABS_API_KEY
+      ? `...${process.env.ELEVENLABS_API_KEY.slice(-8)}`
+      : "NOT SET",
   });
-  
+
   try {
     const session = await getServerSession(authOptions);
-    console.log('🔐 [Docpen Voice Agent API] Session check:', session ? `User: ${session.user?.email}` : 'No session');
+    console.log(
+      "🔐 [Docpen Voice Agent API] Session check:",
+      session ? `User: ${session.user?.email}` : "No session",
+    );
     if (!session?.user?.id) {
-      console.error('❌ [Docpen Voice Agent API] Unauthorized - no session');
+      console.error("❌ [Docpen Voice Agent API] Unauthorized - no session");
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    console.log('📥 [Docpen Voice Agent API] Parsing request body...');
+    console.log("📥 [Docpen Voice Agent API] Parsing request body...");
     const body = await req.json();
-    console.log('✅ [Docpen Voice Agent API] Request body parsed:', Object.keys(body));
-    const { 
-      profession, 
-      customProfession, 
+    console.log(
+      "✅ [Docpen Voice Agent API] Request body parsed:",
+      Object.keys(body),
+    );
+    const {
+      profession,
+      customProfession,
       practitionerName,
       clinicName,
       voiceGender,
       sessionContext,
-      forceCreate = false // Allow forcing new agent creation
+      forceCreate = false, // Allow forcing new agent creation
     } = body;
-    
+
     // Check URL parameter for forceCreate as well
     const url = new URL(req.url);
-    const forceCreateParam = url.searchParams.get('forceCreate') === 'true' || forceCreate;
+    const forceCreateParam =
+      url.searchParams.get("forceCreate") === "true" || forceCreate;
 
-    console.log('📥 [Docpen Voice Agent API] POST request received:', {
+    console.log("📥 [Docpen Voice Agent API] POST request received:", {
       userId: session.user.id,
       profession,
       customProfession,
@@ -86,14 +103,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!profession) {
-      console.error('❌ [Docpen Voice Agent API] Missing profession');
-      return apiErrors.badRequest('Profession is required');
+      console.error("❌ [Docpen Voice Agent API] Missing profession");
+      return apiErrors.badRequest("Profession is required");
     }
 
     // Create or get existing agent
-    console.log('🔄 [Docpen Voice Agent API] Calling getOrCreateAgent...');
-    console.log('🔄 [Docpen Voice Agent API] Force create:', forceCreateParam);
-    
+    console.log("🔄 [Docpen Voice Agent API] Calling getOrCreateAgent...");
+    console.log("🔄 [Docpen Voice Agent API] Force create:", forceCreateParam);
+
     let result;
     if (forceCreateParam) {
       const config = {
@@ -105,19 +122,27 @@ export async function POST(req: NextRequest) {
         voiceGender,
         sessionContext,
       };
-      const existingAgent = await prisma.docpenVoiceAgent.findFirst({
+      const existingAgent = await db.docpenVoiceAgent.findFirst({
         where: {
           userId: session.user.id,
           profession,
-          customProfession: profession === 'CUSTOM' ? customProfession : null,
+          customProfession: profession === "CUSTOM" ? customProfession : null,
           isActive: true,
         },
       });
       if (existingAgent) {
-        console.log('🔄 [Docpen Voice Agent API] Force recreate: cloning from existing agent', existingAgent.elevenLabsAgentId);
-        result = await docpenAgentProvisioning.createAgentFromExisting(config, existingAgent.elevenLabsAgentId);
+        console.log(
+          "🔄 [Docpen Voice Agent API] Force recreate: cloning from existing agent",
+          existingAgent.elevenLabsAgentId,
+        );
+        result = await docpenAgentProvisioning.createAgentFromExisting(
+          config,
+          existingAgent.elevenLabsAgentId,
+        );
       } else {
-        console.log('🔄 [Docpen Voice Agent API] Force create: no existing agent, creating from template');
+        console.log(
+          "🔄 [Docpen Voice Agent API] Force create: no existing agent, creating from template",
+        );
         result = await docpenAgentProvisioning.createAgent(config);
       }
     } else {
@@ -132,30 +157,38 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('📤 [Docpen Voice Agent API] getOrCreateAgent result:', {
+    console.log("📤 [Docpen Voice Agent API] getOrCreateAgent result:", {
       success: result.success,
       agentId: result.agentId,
       error: result.error,
     });
 
     if (!result.success) {
-      console.error('❌ [Docpen Voice Agent API] Agent creation failed:', result.error);
-      return apiErrors.internal(result.error || 'Failed to create agent');
+      console.error(
+        "❌ [Docpen Voice Agent API] Agent creation failed:",
+        result.error,
+      );
+      return apiErrors.internal(result.error || "Failed to create agent");
     }
 
     if (!result.agentId) {
-      console.error('❌ [Docpen Voice Agent API] No agentId returned despite success');
-      return apiErrors.internal('Agent created but no agent ID returned');
+      console.error(
+        "❌ [Docpen Voice Agent API] No agentId returned despite success",
+      );
+      return apiErrors.internal("Agent created but no agent ID returned");
     }
 
-    console.log('✅ [Docpen Voice Agent API] Successfully returning agentId:', result.agentId);
+    console.log(
+      "✅ [Docpen Voice Agent API] Successfully returning agentId:",
+      result.agentId,
+    );
     return NextResponse.json({
       success: true,
       agentId: result.agentId,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Voice Agent API] Error creating agent:', error);
-    console.error('   Error stack:', error.stack);
-    return apiErrors.internal(error.message || 'Failed to create agent');
+    console.error("❌ [Docpen Voice Agent API] Error creating agent:", error);
+    console.error("   Error stack:", error.stack);
+    return apiErrors.internal(error.message || "Failed to create agent");
   }
 }

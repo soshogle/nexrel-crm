@@ -1,14 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { syncGeneralInventoryToProduct } from "@/lib/general-inventory/product-sync";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/general-inventory/items - List all inventory items
 export async function GET(request: NextRequest) {
@@ -17,13 +17,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId');
-    const supplierId = searchParams.get('supplierId');
-    const locationId = searchParams.get('locationId');
-    const lowStock = searchParams.get('lowStock') === 'true';
-    const search = searchParams.get('search');
+    const categoryId = searchParams.get("categoryId");
+    const supplierId = searchParams.get("supplierId");
+    const locationId = searchParams.get("locationId");
+    const lowStock = searchParams.get("lowStock") === "true";
+    const search = searchParams.get("search");
 
     const where: any = {
       userId: session.user.id,
@@ -35,15 +38,15 @@ export async function GET(request: NextRequest) {
     if (locationId) where.locationId = locationId;
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { sku: { contains: search, mode: "insensitive" } },
+        { barcode: { contains: search, mode: "insensitive" } },
       ];
     }
 
     const pagination = parsePagination(request);
 
-    const items = await prisma.generalInventoryItem.findMany({
+    const items = await db.generalInventoryItem.findMany({
       where,
       include: {
         category: true,
@@ -52,19 +55,21 @@ export async function GET(request: NextRequest) {
       },
       take: pagination.take,
       skip: pagination.skip,
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     // Filter for low stock if requested
     let filteredItems = items;
     if (lowStock) {
-      filteredItems = items.filter(item => item.quantity <= item.reorderLevel);
+      filteredItems = items.filter(
+        (item) => item.quantity <= item.reorderLevel,
+      );
     }
 
-    const total = await prisma.generalInventoryItem.count({ where });
-    return paginatedResponse(filteredItems, total, pagination, 'items');
+    const total = await db.generalInventoryItem.count({ where });
+    return paginatedResponse(filteredItems, total, pagination, "items");
   } catch (error: any) {
-    console.error('Error fetching inventory items:', error);
+    console.error("Error fetching inventory items:", error);
     return apiErrors.internal(error.message);
   }
 }
@@ -76,6 +81,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -98,11 +106,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!sku || !name) {
-      return apiErrors.badRequest('SKU and name are required');
+      return apiErrors.badRequest("SKU and name are required");
     }
 
     // Check for duplicate SKU
-    const existingItem = await prisma.generalInventoryItem.findFirst({
+    const existingItem = await db.generalInventoryItem.findFirst({
       where: {
         userId: session.user.id,
         sku,
@@ -110,10 +118,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingItem) {
-      return apiErrors.badRequest('An item with this SKU already exists');
+      return apiErrors.badRequest("An item with this SKU already exists");
     }
 
-    const item = await prisma.generalInventoryItem.create({
+    const item = await db.generalInventoryItem.create({
       data: {
         userId: session.user.id,
         sku,
@@ -141,35 +149,32 @@ export async function POST(request: NextRequest) {
 
     // Create initial adjustment if quantity > 0
     if (quantity > 0) {
-      await prisma.generalInventoryAdjustment.create({
+      await db.generalInventoryAdjustment.create({
         data: {
           userId: session.user.id,
           itemId: item.id,
-          type: 'INITIAL',
+          type: "INITIAL",
           quantity,
           quantityBefore: 0,
           quantityAfter: quantity,
           toLocationId: locationId,
-          reason: 'Initial stock count',
+          reason: "Initial stock count",
         },
       });
     }
 
     // Sync to Product and website stock when General Inventory item is created with quantity
     if (quantity > 0) {
-      syncGeneralInventoryToProduct(
-        session.user.id,
-        sku,
-        quantity,
-        0
-      ).catch((err) => {
-        console.error('Failed to sync inventory to products:', err);
-      });
+      syncGeneralInventoryToProduct(session.user.id, sku, quantity, 0).catch(
+        (err) => {
+          console.error("Failed to sync inventory to products:", err);
+        },
+      );
     }
 
     return NextResponse.json({ success: true, item });
   } catch (error: any) {
-    console.error('Error creating inventory item:', error);
+    console.error("Error creating inventory item:", error);
     return apiErrors.internal(error.message);
   }
 }

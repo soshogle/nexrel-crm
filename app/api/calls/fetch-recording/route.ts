@@ -1,13 +1,13 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsService } from "@/lib/elevenlabs";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { elevenLabsService } from '@/lib/elevenlabs';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * POST /api/calls/fetch-recording
@@ -19,38 +19,44 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { callLogId } = await request.json();
 
     if (!callLogId) {
-      return apiErrors.badRequest('Missing callLogId');
+      return apiErrors.badRequest("Missing callLogId");
     }
 
     // Find the call log
-    const callLog = await prisma.callLog.findUnique({
+    const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
     });
 
     if (!callLog) {
-      return apiErrors.notFound('Call log not found');
+      return apiErrors.notFound("Call log not found");
     }
 
     // Verify ownership
     if (callLog.userId !== session.user.id) {
-      return apiErrors.forbidden('Unauthorized');
+      return apiErrors.forbidden("Unauthorized");
     }
 
     // Check if we have an ElevenLabs conversation ID
     if (!callLog.elevenLabsConversationId) {
-      return apiErrors.badRequest('No ElevenLabs conversation ID found for this call');
+      return apiErrors.badRequest(
+        "No ElevenLabs conversation ID found for this call",
+      );
     }
 
-    console.log('🎙️ [Fetch Recording] Fetching data for call:', callLogId);
+    console.log("🎙️ [Fetch Recording] Fetching data for call:", callLogId);
 
     const conversationId = callLog.elevenLabsConversationId;
 
     // Fetch recording URL
-    const recordingUrl = await elevenLabsService.getRecordingUrl(conversationId);
+    const recordingUrl =
+      await elevenLabsService.getRecordingUrl(conversationId);
 
     // Fetch transcript
     const transcript = await elevenLabsService.getTranscript(conversationId);
@@ -58,14 +64,18 @@ export async function POST(request: NextRequest) {
     // Fetch full conversation data
     let conversationData = null;
     try {
-      const details = await elevenLabsService.getConversationDetails(conversationId);
+      const details =
+        await elevenLabsService.getConversationDetails(conversationId);
       conversationData = JSON.stringify(details);
     } catch (detailsError) {
-      console.warn('⚠️  Could not fetch full conversation details:', detailsError);
+      console.warn(
+        "⚠️  Could not fetch full conversation details:",
+        detailsError,
+      );
     }
 
     // Update call log
-    const updatedCallLog = await prisma.callLog.update({
+    const updatedCallLog = await db.callLog.update({
       where: { id: callLogId },
       data: {
         ...(recordingUrl && { recordingUrl }),
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('✅ [Fetch Recording] Updated call log:', {
+    console.log("✅ [Fetch Recording] Updated call log:", {
       callLogId,
       hasRecording: !!recordingUrl,
       hasTranscript: !!transcript,
@@ -88,8 +98,8 @@ export async function POST(request: NextRequest) {
       hasTranscript: !!transcript,
     });
   } catch (error: any) {
-    console.error('❌ [Fetch Recording] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch recording');
+    console.error("❌ [Fetch Recording] Error:", error);
+    return apiErrors.internal(error.message || "Failed to fetch recording");
   }
 }
 
@@ -103,20 +113,25 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Find all completed calls without recordings
-    const callsNeedingRecordings = await prisma.callLog.findMany({
+    const callsNeedingRecordings = await db.callLog.findMany({
       where: {
         userId: session.user.id,
-        status: 'COMPLETED',
+        status: "COMPLETED",
         recordingUrl: null,
         elevenLabsConversationId: { not: null },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 50, // Limit to prevent timeout
     });
 
-    console.log(`🎙️ [Backfill Recordings] Found ${callsNeedingRecordings.length} calls to backfill`);
+    console.log(
+      `🎙️ [Backfill Recordings] Found ${callsNeedingRecordings.length} calls to backfill`,
+    );
 
     const results = [];
     let successCount = 0;
@@ -127,22 +142,28 @@ export async function GET(request: NextRequest) {
         const conversationId = callLog.elevenLabsConversationId!;
 
         // Fetch recording URL
-        const recordingUrl = await elevenLabsService.getRecordingUrl(conversationId);
+        const recordingUrl =
+          await elevenLabsService.getRecordingUrl(conversationId);
 
         // Fetch transcript
-        const transcript = await elevenLabsService.getTranscript(conversationId);
+        const transcript =
+          await elevenLabsService.getTranscript(conversationId);
 
         // Fetch full conversation data
         let conversationData = null;
         try {
-          const details = await elevenLabsService.getConversationDetails(conversationId);
+          const details =
+            await elevenLabsService.getConversationDetails(conversationId);
           conversationData = JSON.stringify(details);
         } catch (detailsError) {
-          console.warn('⚠️  Could not fetch conversation details for:', callLog.id);
+          console.warn(
+            "⚠️  Could not fetch conversation details for:",
+            callLog.id,
+          );
         }
 
         // Update call log
-        await prisma.callLog.update({
+        await db.callLog.update({
           where: { id: callLog.id },
           data: {
             ...(recordingUrl && { recordingUrl }),
@@ -169,7 +190,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`✅ [Backfill Recordings] Complete: ${successCount} success, ${failCount} failed`);
+    console.log(
+      `✅ [Backfill Recordings] Complete: ${successCount} success, ${failCount} failed`,
+    );
 
     return NextResponse.json({
       success: true,
@@ -179,7 +202,7 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (error: any) {
-    console.error('❌ [Backfill Recordings] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to backfill recordings');
+    console.error("❌ [Backfill Recordings] Error:", error);
+    return apiErrors.internal(error.message || "Failed to backfill recordings");
   }
 }

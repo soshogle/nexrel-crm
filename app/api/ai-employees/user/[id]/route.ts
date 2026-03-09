@@ -4,41 +4,48 @@
  * DELETE: Remove employee
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const id = params.id;
     const body = await request.json();
     const { customName, voiceAgentId, voiceConfig, isActive } = body;
 
-    const existing = await prisma.userAIEmployee.findFirst({
+    const existing = await db.userAIEmployee.findFirst({
       where: { id, userId: session.user.id },
     });
 
     if (!existing) {
-      return apiErrors.notFound('Employee not found');
+      return apiErrors.notFound("Employee not found");
     }
 
     const updateData: Record<string, unknown> = {};
     if (customName !== undefined) updateData.customName = String(customName);
-    if (voiceAgentId !== undefined) updateData.voiceAgentId = voiceAgentId || null;
-    if (voiceConfig !== undefined) updateData.voiceConfig = voiceConfig && typeof voiceConfig === 'object' ? voiceConfig : null;
+    if (voiceAgentId !== undefined)
+      updateData.voiceAgentId = voiceAgentId || null;
+    if (voiceConfig !== undefined)
+      updateData.voiceConfig =
+        voiceConfig && typeof voiceConfig === "object" ? voiceConfig : null;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
-    const employee = await prisma.userAIEmployee.update({
+    const employee = await db.userAIEmployee.update({
       where: { id },
       data: updateData,
     });
@@ -56,38 +63,45 @@ export async function PATCH(
       },
     });
   } catch (error: any) {
-    console.error('[API] PATCH /api/ai-employees/user/[id]:', error);
-    return apiErrors.internal(error.message || 'Failed to update AI Team employee');
+    console.error("[API] PATCH /api/ai-employees/user/[id]:", error);
+    return apiErrors.internal(
+      error.message || "Failed to update AI Team employee",
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const id = params.id;
 
-    const existing = await prisma.userAIEmployee.findFirst({
+    const existing = await db.userAIEmployee.findFirst({
       where: { id, userId: session.user.id },
     });
 
     if (!existing) {
-      return apiErrors.notFound('Employee not found');
+      return apiErrors.notFound("Employee not found");
     }
 
-    await prisma.userAIEmployee.delete({
+    await db.userAIEmployee.delete({
       where: { id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[API] DELETE /api/ai-employees/user/[id]:', error);
-    return apiErrors.internal(error.message || 'Failed to delete AI Team employee');
+    console.error("[API] DELETE /api/ai-employees/user/[id]:", error);
+    return apiErrors.internal(
+      error.message || "Failed to delete AI Team employee",
+    );
   }
 }

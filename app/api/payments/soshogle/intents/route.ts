@@ -7,9 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { soshoglePay } from '@/lib/payments';
 import { fraudDetectionClient } from '@/lib/payments/fraud-detection-client';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -45,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Get payment method details for fraud detection
     const paymentMethod = paymentMethodId
-      ? await prisma.soshoglePaymentMethod.findUnique({
+      ? await getCrmDb(ctx).soshoglePaymentMethod.findUnique({
           where: { id: paymentMethodId },
         })
       : null;

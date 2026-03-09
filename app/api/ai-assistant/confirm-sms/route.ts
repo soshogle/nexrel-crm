@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sendSMS } from "@/lib/messaging-service";
-import { prisma } from "@/lib/db";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
 import { leadService } from "@/lib/dal/lead-service";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -56,7 +56,9 @@ export async function POST(req: NextRequest) {
 
     if (action === "schedule") {
       if (!scheduledFor) {
-        return apiErrors.badRequest("scheduledFor is required when action is schedule");
+        return apiErrors.badRequest(
+          "scheduledFor is required when action is schedule",
+        );
       }
 
       const scheduledDate = new Date(scheduledFor);
@@ -68,27 +70,42 @@ export async function POST(req: NextRequest) {
       if (!ctx) {
         return apiErrors.unauthorized();
       }
+      const db = getCrmDb(ctx);
       const lead = leadId
         ? await leadService.findUnique(ctx, leadId)
-        : (await leadService.findMany(ctx, {
-            where: {
-              OR: [
-                { contactPerson: { contains: contactName, mode: "insensitive" } },
-                { businessName: { contains: contactName, mode: "insensitive" } },
-              ],
-            },
-            take: 1,
-            orderBy: { createdAt: "desc" },
-          }))[0];
+        : (
+            await leadService.findMany(ctx, {
+              where: {
+                OR: [
+                  {
+                    contactPerson: {
+                      contains: contactName,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    businessName: {
+                      contains: contactName,
+                      mode: "insensitive",
+                    },
+                  },
+                ],
+              },
+              take: 1,
+              orderBy: { createdAt: "desc" },
+            })
+          )[0];
 
       if (!lead?.phone) {
         return NextResponse.json(
-          { error: `Contact "${contactName}" not found or has no phone number` },
-          { status: 400 }
+          {
+            error: `Contact "${contactName}" not found or has no phone number`,
+          },
+          { status: 400 },
         );
       }
 
-      await prisma.scheduledSms.create({
+      await db.scheduledSms.create({
         data: {
           userId: session.user.id,
           leadId: lead.id,

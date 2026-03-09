@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { workflowEngine } from "@/lib/workflow-engine";
 import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
 import { conversationService } from "@/lib/dal/conversation-service";
 import crypto from "crypto";
 import { apiErrors } from "@/lib/api-error";
+import { getMetaDb } from "@/lib/db/meta-db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -104,14 +105,15 @@ async function processMessagingEvent(event: any, pageId: string) {
     console.log(`📧 Processing message from ${senderId} to page ${pageId}`);
 
     // Find the channel connection for this page
-    const channelConnection: any = await prisma.channelConnection.findFirst({
-      where: {
-        providerType: "FACEBOOK",
-        channelType: "FACEBOOK_MESSENGER",
-        channelIdentifier: pageId,
-        status: "CONNECTED",
-      },
-    } as any);
+    const channelConnection: any =
+      await getMetaDb().channelConnection.findFirst({
+        where: {
+          providerType: "FACEBOOK",
+          channelType: "FACEBOOK_MESSENGER",
+          channelIdentifier: pageId,
+          status: "CONNECTED",
+        },
+      } as any);
 
     if (!channelConnection) {
       console.error(
@@ -132,6 +134,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const senderName = senderProfile?.name || `Messenger User ${senderId}`;
 
     const ctx = await resolveDalContext(channelConnection.userId);
+    const db = getCrmDb(ctx);
     let conversation: any = await conversationService.findFirst(ctx, {
       channelConnectionId: channelConnection.id,
       contactIdentifier: senderId,
@@ -152,7 +155,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const messageText = messageData.text || "[Attachment]";
     const messageId = messageData.mid;
 
-    const incomingMessage = await prisma.conversationMessage.create({
+    const incomingMessage = await db.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId: channelConnection.userId,

@@ -1,21 +1,21 @@
 /**
  * API Route: Handle Docpen Voice Agent Function Calls
- * 
+ *
  * POST - Process custom function calls from ElevenLabs agent
  * These are called via webhook when the agent uses custom functions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import OpenAI from 'openai';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { leadService } from '@/lib/dal/lead-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import OpenAI from "openai";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // Lazy initialization - only create client when actually needed
 let openaiClient: OpenAI | null = null;
@@ -24,7 +24,7 @@ function getOpenAIClient(): OpenAI {
   if (!openaiClient) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
+      throw new Error("OPENAI_API_KEY environment variable is not set");
     }
     openaiClient = new OpenAI({
       apiKey,
@@ -41,26 +41,27 @@ async function lookupPatientHistory(params: {
   historyType?: string;
   userId: string;
 }) {
-  const { patientName, historyType = 'all', userId } = params;
+  const { patientName, historyType = "all", userId } = params;
 
   const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [
-        { contactPerson: { contains: patientName, mode: 'insensitive' } },
-        { businessName: { contains: patientName, mode: 'insensitive' } },
-        { email: { contains: patientName, mode: 'insensitive' } },
+        { contactPerson: { contains: patientName, mode: "insensitive" } },
+        { businessName: { contains: patientName, mode: "insensitive" } },
+        { email: { contains: patientName, mode: "insensitive" } },
       ],
     },
     take: 3,
     include: {
       notes: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 10,
       },
       docpenSessions: {
-        where: { status: 'SIGNED' },
-        orderBy: { sessionDate: 'desc' },
+        where: { status: "SIGNED" },
+        orderBy: { sessionDate: "desc" },
         take: 3,
         include: {
           soapNotes: {
@@ -81,34 +82,36 @@ async function lookupPatientHistory(params: {
   const patient = leads[0] as any;
   const response: Record<string, any> = {
     found: true,
-    patientName: patient.contactPerson || patient.businessName || 'Unknown',
+    patientName: patient.contactPerson || patient.businessName || "Unknown",
     email: patient.email,
     phone: patient.phone,
   };
 
-  if (historyType === 'all' || historyType === 'visits') {
-    response.recentVisits = patient.docpenSessions?.map((s: any) => ({
-      date: s.sessionDate,
-      chiefComplaint: s.chiefComplaint,
-      assessment: s.soapNotes?.[0]?.assessment?.substring(0, 200),
-    })) || [];
+  if (historyType === "all" || historyType === "visits") {
+    response.recentVisits =
+      patient.docpenSessions?.map((s: any) => ({
+        date: s.sessionDate,
+        chiefComplaint: s.chiefComplaint,
+        assessment: s.soapNotes?.[0]?.assessment?.substring(0, 200),
+      })) || [];
   }
 
-  if (historyType === 'all' || historyType === 'notes') {
-    response.notes = patient.notes?.map((n: any) => ({
-      date: n.createdAt,
-      content: n.content?.substring(0, 200),
-    })) || [];
+  if (historyType === "all" || historyType === "notes") {
+    response.notes =
+      patient.notes?.map((n: any) => ({
+        date: n.createdAt,
+        content: n.content?.substring(0, 200),
+      })) || [];
   }
 
   // Get upcoming appointments separately
-  if (historyType === 'all' || historyType === 'appointments') {
-    const appointments = await prisma.bookingAppointment.findMany({
+  if (historyType === "all" || historyType === "appointments") {
+    const appointments = await db.bookingAppointment.findMany({
       where: {
         leadId: patient.id,
         appointmentDate: { gt: new Date() },
       },
-      orderBy: { appointmentDate: 'asc' },
+      orderBy: { appointmentDate: "asc" },
       take: 5,
     });
     response.upcomingAppointments = appointments.map((a: any) => ({
@@ -135,10 +138,10 @@ async function checkDrugInteraction(params: {
 
   try {
     const response = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4o",
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `You are a pharmacology expert assistant. Provide concise, clinically relevant drug interaction information.
 
 Format your response as:
@@ -149,8 +152,8 @@ Format your response as:
 Be brief - this is for real-time clinical use.`,
         },
         {
-          role: 'user',
-          content: `Check for interactions between these medications: ${allDrugs.join(', ')}`,
+          role: "user",
+          content: `Check for interactions between these medications: ${allDrugs.join(", ")}`,
         },
       ],
       temperature: 0.3,
@@ -159,14 +162,18 @@ Be brief - this is for real-time clinical use.`,
 
     return {
       drugs: allDrugs,
-      interaction: response.choices[0]?.message?.content || 'Unable to determine interaction.',
-      disclaimer: 'This is AI-generated information. Always verify with official drug databases.',
+      interaction:
+        response.choices[0]?.message?.content ||
+        "Unable to determine interaction.",
+      disclaimer:
+        "This is AI-generated information. Always verify with official drug databases.",
     };
   } catch (error) {
     return {
       drugs: allDrugs,
-      error: 'Unable to check drug interactions at this time.',
-      recommendation: 'Please consult a pharmacist or drug interaction database.',
+      error: "Unable to check drug interactions at this time.",
+      recommendation:
+        "Please consult a pharmacist or drug interaction database.",
     };
   }
 }
@@ -178,30 +185,35 @@ async function medicalReferenceLookup(params: {
   query: string;
   referenceType?: string;
 }) {
-  const { query, referenceType = 'general' } = params;
+  const { query, referenceType = "general" } = params;
 
   try {
-    let systemPrompt = 'You are a medical reference assistant. Provide concise, accurate information.';
-    
-    if (referenceType === 'icd10') {
-      systemPrompt = 'You are an ICD-10 coding expert. Provide the most relevant ICD-10 codes for the condition described.';
-    } else if (referenceType === 'cpt') {
-      systemPrompt = 'You are a CPT coding expert. Provide the most relevant CPT procedure codes.';
-    } else if (referenceType === 'dosage') {
-      systemPrompt = 'You are a clinical pharmacist. Provide standard dosing guidelines with typical ranges.';
-    } else if (referenceType === 'guidelines') {
-      systemPrompt = 'You are a clinical guidelines expert. Summarize relevant practice guidelines.';
+    let systemPrompt =
+      "You are a medical reference assistant. Provide concise, accurate information.";
+
+    if (referenceType === "icd10") {
+      systemPrompt =
+        "You are an ICD-10 coding expert. Provide the most relevant ICD-10 codes for the condition described.";
+    } else if (referenceType === "cpt") {
+      systemPrompt =
+        "You are a CPT coding expert. Provide the most relevant CPT procedure codes.";
+    } else if (referenceType === "dosage") {
+      systemPrompt =
+        "You are a clinical pharmacist. Provide standard dosing guidelines with typical ranges.";
+    } else if (referenceType === "guidelines") {
+      systemPrompt =
+        "You are a clinical guidelines expert. Summarize relevant practice guidelines.";
     }
 
     const response = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4o",
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `${systemPrompt}\n\nBe brief and direct - this is for real-time clinical use. Include relevant codes when applicable.`,
         },
         {
-          role: 'user',
+          role: "user",
           content: query,
         },
       ],
@@ -212,13 +224,13 @@ async function medicalReferenceLookup(params: {
     return {
       query,
       referenceType,
-      result: response.choices[0]?.message?.content || 'No information found.',
-      disclaimer: 'AI-generated reference. Verify with official sources.',
+      result: response.choices[0]?.message?.content || "No information found.",
+      disclaimer: "AI-generated reference. Verify with official sources.",
     };
   } catch (error) {
     return {
       query,
-      error: 'Unable to lookup reference at this time.',
+      error: "Unable to lookup reference at this time.",
     };
   }
 }
@@ -231,20 +243,20 @@ async function suggestSOAPContent(params: {
   context?: string;
   profession?: string;
 }) {
-  const { section, context, profession = 'general' } = params;
+  const { section, context, profession = "general" } = params;
 
   try {
     const response = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4o",
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `You are a medical documentation assistant specializing in ${profession}. 
 Generate appropriate SOAP note content for the ${section.toUpperCase()} section.
 Be professional, use standard medical terminology, and be concise.`,
         },
         {
-          role: 'user',
+          role: "user",
           content: context
             ? `Based on this context: ${context}\n\nSuggest ${section} section content.`
             : `Provide a template for the ${section} section in a ${profession} consultation.`,
@@ -256,12 +268,14 @@ Be professional, use standard medical terminology, and be concise.`,
 
     return {
       section,
-      suggestion: response.choices[0]?.message?.content || 'Unable to generate suggestion.',
+      suggestion:
+        response.choices[0]?.message?.content ||
+        "Unable to generate suggestion.",
     };
   } catch (error) {
     return {
       section,
-      error: 'Unable to generate SOAP content at this time.',
+      error: "Unable to generate SOAP content at this time.",
     };
   }
 }
@@ -269,7 +283,7 @@ Be professional, use standard medical terminology, and be concise.`,
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const apiSecret = req.headers.get('x-api-secret');
+    const apiSecret = req.headers.get("x-api-secret");
     if (!session && apiSecret !== process.env.INTERNAL_API_SECRET) {
       return apiErrors.unauthorized();
     }
@@ -277,27 +291,30 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { function_name, parameters, user_id } = body;
 
-    console.log(`🧰 [Docpen Functions] Received call: ${function_name}`, parameters);
+    console.log(
+      `🧰 [Docpen Functions] Received call: ${function_name}`,
+      parameters,
+    );
 
     let result: any;
 
     switch (function_name) {
-      case 'lookup_patient_history':
+      case "lookup_patient_history":
         result = await lookupPatientHistory({
           ...parameters,
           userId: user_id,
         });
         break;
 
-      case 'check_drug_interaction':
+      case "check_drug_interaction":
         result = await checkDrugInteraction(parameters);
         break;
 
-      case 'medical_reference_lookup':
+      case "medical_reference_lookup":
         result = await medicalReferenceLookup(parameters);
         break;
 
-      case 'suggest_soap_content':
+      case "suggest_soap_content":
         result = await suggestSOAPContent(parameters);
         break;
 
@@ -309,7 +326,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('[Docpen Functions] Error:', error);
-    return apiErrors.internal(error.message || 'Function execution failed');
+    console.error("[Docpen Functions] Error:", error);
+    return apiErrors.internal(error.message || "Function execution failed");
   }
 }

@@ -7,7 +7,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import crypto from 'crypto';
 import { apiErrors } from '@/lib/api-error';
 
@@ -22,12 +23,16 @@ export async function POST() {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const token = `ehr_${crypto.randomBytes(24).toString('hex')}`;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + TOKEN_EXPIRY_DAYS);
 
-    await prisma.apiKey.upsert({
+    await getCrmDb(ctx).apiKey.upsert({
       where: {
         userId_service_keyName: {
           userId: session.user.id,

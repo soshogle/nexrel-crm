@@ -3,58 +3,65 @@
  * Generate comprehensive reports with export capabilities
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { websiteOrderService } from '@/lib/website-builder/order-service';
-import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { websiteOrderService } from "@/lib/website-builder/order-service";
+import { websiteStockSyncService } from "@/lib/website-builder/stock-sync-service";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
-    const reportType = searchParams.get('type') || 'sales';
-    const format = searchParams.get('format') || 'json'; // json, csv
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const reportType = searchParams.get("type") || "sales";
+    const format = searchParams.get("format") || "json"; // json, csv
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
 
     let report: any = {};
 
     switch (reportType) {
-      case 'sales':
+      case "sales":
         report = await generateSalesReport(params.id, start, end);
         break;
-      case 'inventory':
+      case "inventory":
         report = await generateInventoryReport(params.id);
         break;
-      case 'products':
-        report = await generateProductsReport(params.id);
+      case "products":
+        report = await generateProductsReport(ctx, params.id);
         break;
-      case 'customers':
+      case "customers":
         report = await generateCustomersReport(params.id, start, end);
         break;
       default:
-        return apiErrors.badRequest('Invalid report type');
+        return apiErrors.badRequest("Invalid report type");
     }
 
-    if (format === 'csv') {
+    if (format === "csv") {
       const csv = convertToCSV(report);
       return new Response(csv, {
         headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition': `attachment; filename="${reportType}-report-${Date.now()}.csv"`,
+          "Content-Type": "text/csv",
+          "Content-Disposition": `attachment; filename="${reportType}-report-${Date.now()}.csv"`,
         },
       });
     }
@@ -67,15 +74,15 @@ export async function GET(
       data: report,
     });
   } catch (error: any) {
-    console.error('Error generating report:', error);
-    return apiErrors.internal(error.message || 'Failed to generate report');
+    console.error("Error generating report:", error);
+    return apiErrors.internal(error.message || "Failed to generate report");
   }
 }
 
 async function generateSalesReport(websiteId: string, start: Date, end: Date) {
   const orders = await websiteOrderService.getWebsiteOrders(websiteId);
   const filteredOrders = orders.filter(
-    (o) => new Date(o.createdAt) >= start && new Date(o.createdAt) <= end
+    (o) => new Date(o.createdAt) >= start && new Date(o.createdAt) <= end,
   );
 
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.total, 0);
@@ -85,7 +92,7 @@ async function generateSalesReport(websiteId: string, start: Date, end: Date) {
   // Daily breakdown
   const dailySales: Record<string, { revenue: number; orders: number }> = {};
   filteredOrders.forEach((order) => {
-    const date = new Date(order.createdAt).toISOString().split('T')[0];
+    const date = new Date(order.createdAt).toISOString().split("T")[0];
     if (!dailySales[date]) {
       dailySales[date] = { revenue: 0, orders: 0 };
     }
@@ -117,7 +124,8 @@ async function generateSalesReport(websiteId: string, start: Date, end: Date) {
 
 async function generateInventoryReport(websiteId: string) {
   const status = await websiteStockSyncService.getWebsiteStockStatus(websiteId);
-  const healthScore = await websiteStockSyncService.calculateInventoryHealthScore(websiteId);
+  const healthScore =
+    await websiteStockSyncService.calculateInventoryHealthScore(websiteId);
 
   return {
     healthScore,
@@ -132,8 +140,11 @@ async function generateInventoryReport(websiteId: string) {
   };
 }
 
-async function generateProductsReport(websiteId: string) {
-  const websiteProducts = await prisma.websiteProduct.findMany({
+async function generateProductsReport(
+  ctx: NonNullable<ReturnType<typeof getDalContextFromSession>>,
+  websiteId: string,
+) {
+  const websiteProducts = await getCrmDb(ctx).websiteProduct.findMany({
     where: { websiteId },
     include: {
       product: true,
@@ -153,13 +164,20 @@ async function generateProductsReport(websiteId: string) {
   };
 }
 
-async function generateCustomersReport(websiteId: string, start: Date, end: Date) {
+async function generateCustomersReport(
+  websiteId: string,
+  start: Date,
+  end: Date,
+) {
   const orders = await websiteOrderService.getWebsiteOrders(websiteId);
   const filteredOrders = orders.filter(
-    (o) => new Date(o.createdAt) >= start && new Date(o.createdAt) <= end
+    (o) => new Date(o.createdAt) >= start && new Date(o.createdAt) <= end,
   );
 
-  const customers: Record<string, { email: string; name: string; orders: number; totalSpent: number }> = {};
+  const customers: Record<
+    string,
+    { email: string; name: string; orders: number; totalSpent: number }
+  > = {};
   filteredOrders.forEach((order) => {
     if (!customers[order.customerEmail]) {
       customers[order.customerEmail] = {
@@ -175,7 +193,9 @@ async function generateCustomersReport(websiteId: string, start: Date, end: Date
 
   return {
     totalCustomers: Object.keys(customers).length,
-    customers: Object.values(customers).sort((a, b) => b.totalSpent - a.totalSpent),
+    customers: Object.values(customers).sort(
+      (a, b) => b.totalSpent - a.totalSpent,
+    ),
   };
 }
 
@@ -184,7 +204,7 @@ function convertToCSV(report: any): string {
   if (report.summary) {
     return Object.entries(report.summary)
       .map(([key, value]) => `${key},${value}`)
-      .join('\n');
+      .join("\n");
   }
   return JSON.stringify(report);
 }

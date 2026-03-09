@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { apiErrors } from "@/lib/api-error";
 
 /**
@@ -18,9 +20,12 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get user's role first - BUSINESS_OWNERS are NEVER parents
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: { role: true, parentRole: true },
     });
@@ -40,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     // For other users, check if they have a household and parent role
-    const household = await prisma.clubOSHousehold.findUnique({
+    const household = await db.clubOSHousehold.findUnique({
       where: { userId: session.user.id },
     });
 

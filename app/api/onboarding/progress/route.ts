@@ -1,23 +1,27 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { apiErrors } from '@/lib/api-error';
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
       select: {
         onboardingProgress: true,
         onboardingCompleted: true,
@@ -37,14 +41,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const { progress, completed } = await req.json();
 
-    await prisma.user.update({
-      where: { email: session.user.email },
+    await db.user.update({
+      where: { id: session.user.id },
       data: {
         onboardingProgress: progress || {},
         onboardingCompleted: completed || false,

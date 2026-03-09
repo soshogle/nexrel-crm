@@ -3,32 +3,32 @@
  * Get failover events
  */
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
+    if (!session?.user || session.user.role !== "SUPER_ADMIN") {
       return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const status = searchParams.get('status');
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const status = searchParams.get("status");
 
     const where: any = {};
     if (status) {
       where.status = status;
     }
 
-    const events = await prisma.twilioFailoverEvent.findMany({
+    const events = await getMetaDb().twilioFailoverEvent.findMany({
       where,
       include: {
         fromAccount: {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { detectedAt: 'desc' },
+      orderBy: { detectedAt: "desc" },
       take: limit,
     });
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       events,
     });
   } catch (error: any) {
-    console.error('Get events error:', error);
-    return apiErrors.internal(error.message || 'Failed to get events');
+    console.error("Get events error:", error);
+    return apiErrors.internal(error.message || "Failed to get events");
   }
 }

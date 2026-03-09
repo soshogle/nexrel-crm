@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/general-inventory/categories
 export async function GET(request: NextRequest) {
@@ -15,20 +15,23 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const categories = await prisma.generalInventoryCategory.findMany({
+    const categories = await db.generalInventoryCategory.findMany({
       where: { userId: session.user.id },
       include: {
         _count: {
           select: { items: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return apiErrors.internal(error.message);
   }
 }
@@ -40,15 +43,18 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { name, description, parentId } = body;
 
     if (!name) {
-      return apiErrors.badRequest('Name is required');
+      return apiErrors.badRequest("Name is required");
     }
 
-    const category = await prisma.generalInventoryCategory.create({
+    const category = await db.generalInventoryCategory.create({
       data: {
         userId: session.user.id,
         name,
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, category });
   } catch (error: any) {
-    console.error('Error creating category:', error);
+    console.error("Error creating category:", error);
     return apiErrors.internal(error.message);
   }
 }

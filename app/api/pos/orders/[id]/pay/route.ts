@@ -1,25 +1,29 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * PROCESS PAYMENT FOR ORDER
  * Integrates with existing payment system (Soshogle Pay)
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -28,11 +32,11 @@ export async function POST(
 
     // Validate required fields
     if (!paymentMethod || !amountPaid) {
-      return apiErrors.badRequest('Payment method and amount are required');
+      return apiErrors.badRequest("Payment method and amount are required");
     }
 
     // Get order
-    const order = await prisma.pOSOrder.findFirst({
+    const order = await getCrmDb(ctx).pOSOrder.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -43,31 +47,31 @@ export async function POST(
     });
 
     if (!order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Check if already paid
-    if (order.paymentStatus === 'PAID') {
-      return apiErrors.badRequest('Order is already paid');
+    if (order.paymentStatus === "PAID") {
+      return apiErrors.badRequest("Order is already paid");
     }
 
     // Determine payment status
-    let paymentStatus = 'PAID';
+    let paymentStatus = "PAID";
     const totalPaid = parseFloat(amountPaid.toString());
     const orderTotal = parseFloat(order.total.toString());
 
     if (totalPaid < orderTotal) {
-      paymentStatus = 'PARTIALLY_PAID';
+      paymentStatus = "PARTIALLY_PAID";
     }
 
     // Update order
-    const updatedOrder = await prisma.pOSOrder.update({
+    const updatedOrder = await getCrmDb(ctx).pOSOrder.update({
       where: { id: params.id },
       data: {
         paymentMethod: paymentMethod,
         paymentStatus: paymentStatus as any,
-        paidAt: paymentStatus === 'PAID' ? new Date() : undefined,
-        status: paymentStatus === 'PAID' ? 'COMPLETED' : order.status,
+        paidAt: paymentStatus === "PAID" ? new Date() : undefined,
+        status: paymentStatus === "PAID" ? "COMPLETED" : order.status,
       },
       include: {
         items: true,
@@ -93,7 +97,7 @@ export async function POST(
       remainingBalance: orderTotal - totalPaid,
     });
   } catch (error) {
-    console.error('❌ Payment processing error:', error);
-    return apiErrors.internal('Failed to process payment');
+    console.error("❌ Payment processing error:", error);
+    return apiErrors.internal("Failed to process payment");
   }
 }

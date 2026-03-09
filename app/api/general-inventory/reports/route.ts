@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/general-inventory/reports - Generate various inventory reports
 export async function GET(request: NextRequest) {
@@ -15,21 +15,24 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const reportType = searchParams.get('type') || 'all';
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const reportType = searchParams.get("type") || "all";
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     const reports: any = {};
 
     // Stock Movement Report
-    if (reportType === 'all' || reportType === 'stock-movement') {
+    if (reportType === "all" || reportType === "stock-movement") {
       const dateFilter: any = {};
       if (startDate) dateFilter.gte = new Date(startDate);
       if (endDate) dateFilter.lte = new Date(endDate);
 
-      const adjustments = await prisma.generalInventoryAdjustment.findMany({
+      const adjustments = await db.generalInventoryAdjustment.findMany({
         where: {
           userId: session.user.id,
           ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 100,
       });
 
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
         acc[adj.type].items.push({
           itemName: adj.item.name,
           itemSku: adj.item.sku,
-          category: adj.item.category?.name || 'Uncategorized',
+          category: adj.item.category?.name || "Uncategorized",
           quantity: adj.quantity,
           type: adj.type,
           date: adj.createdAt,
@@ -85,8 +88,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Inventory Valuation Report
-    if (reportType === 'all' || reportType === 'valuation') {
-      const items = await prisma.generalInventoryItem.findMany({
+    if (reportType === "all" || reportType === "valuation") {
+      const items = await db.generalInventoryItem.findMany({
         where: {
           userId: session.user.id,
           isActive: true,
@@ -111,9 +114,14 @@ export async function GET(request: NextRequest) {
         totalSellingValue += sellingValue;
 
         // By Category
-        const catName = item.category?.name || 'Uncategorized';
+        const catName = item.category?.name || "Uncategorized";
         if (!valuationByCategory[catName]) {
-          valuationByCategory[catName] = { items: 0, quantity: 0, costValue: 0, sellingValue: 0 };
+          valuationByCategory[catName] = {
+            items: 0,
+            quantity: 0,
+            costValue: 0,
+            sellingValue: 0,
+          };
         }
         valuationByCategory[catName].items++;
         valuationByCategory[catName].quantity += item.quantity;
@@ -121,9 +129,14 @@ export async function GET(request: NextRequest) {
         valuationByCategory[catName].sellingValue += sellingValue;
 
         // By Supplier
-        const suppName = item.supplier?.name || 'No Supplier';
+        const suppName = item.supplier?.name || "No Supplier";
         if (!valuationBySupplier[suppName]) {
-          valuationBySupplier[suppName] = { items: 0, quantity: 0, costValue: 0, sellingValue: 0 };
+          valuationBySupplier[suppName] = {
+            items: 0,
+            quantity: 0,
+            costValue: 0,
+            sellingValue: 0,
+          };
         }
         valuationBySupplier[suppName].items++;
         valuationBySupplier[suppName].quantity += item.quantity;
@@ -131,9 +144,14 @@ export async function GET(request: NextRequest) {
         valuationBySupplier[suppName].sellingValue += sellingValue;
 
         // By Location
-        const locName = item.location?.name || 'No Location';
+        const locName = item.location?.name || "No Location";
         if (!valuationByLocation[locName]) {
-          valuationByLocation[locName] = { items: 0, quantity: 0, costValue: 0, sellingValue: 0 };
+          valuationByLocation[locName] = {
+            items: 0,
+            quantity: 0,
+            costValue: 0,
+            sellingValue: 0,
+          };
         }
         valuationByLocation[locName].items++;
         valuationByLocation[locName].quantity += item.quantity;
@@ -147,7 +165,10 @@ export async function GET(request: NextRequest) {
         totalCostValue,
         totalSellingValue,
         potentialProfit: totalSellingValue - totalCostValue,
-        profitMargin: totalCostValue > 0 ? ((totalSellingValue - totalCostValue) / totalCostValue) * 100 : 0,
+        profitMargin:
+          totalCostValue > 0
+            ? ((totalSellingValue - totalCostValue) / totalCostValue) * 100
+            : 0,
         byCategory: valuationByCategory,
         bySupplier: valuationBySupplier,
         byLocation: valuationByLocation,
@@ -165,13 +186,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Low Stock Alert Report
-    if (reportType === 'all' || reportType === 'low-stock') {
-      const lowStockItems = await prisma.generalInventoryItem.findMany({
+    if (reportType === "all" || reportType === "low-stock") {
+      const lowStockItems = await db.generalInventoryItem.findMany({
         where: {
           userId: session.user.id,
           isActive: true,
           OR: [
-            { quantity: { lte: prisma.generalInventoryItem.fields.reorderLevel } },
+            { quantity: { lte: db.generalInventoryItem.fields.reorderLevel } },
             { quantity: 0 },
           ],
         },
@@ -180,15 +201,17 @@ export async function GET(request: NextRequest) {
           supplier: { select: { name: true } },
           location: { select: { name: true } },
         },
-        orderBy: { quantity: 'asc' },
+        orderBy: { quantity: "asc" },
       });
 
       const outOfStock = lowStockItems.filter((item) => item.quantity === 0);
       const criticalStock = lowStockItems.filter(
-        (item) => item.quantity > 0 && item.quantity <= item.reorderLevel / 2
+        (item) => item.quantity > 0 && item.quantity <= item.reorderLevel / 2,
       );
       const lowStock = lowStockItems.filter(
-        (item) => item.quantity > item.reorderLevel / 2 && item.quantity <= item.reorderLevel
+        (item) =>
+          item.quantity > item.reorderLevel / 2 &&
+          item.quantity <= item.reorderLevel,
       );
 
       reports.lowStock = {
@@ -200,25 +223,25 @@ export async function GET(request: NextRequest) {
           id: item.id,
           name: item.name,
           sku: item.sku,
-          category: item.category?.name || 'Uncategorized',
-          supplier: item.supplier?.name || 'No Supplier',
-          location: item.location?.name || 'No Location',
+          category: item.category?.name || "Uncategorized",
+          supplier: item.supplier?.name || "No Supplier",
+          location: item.location?.name || "No Location",
           quantity: item.quantity,
           reorderLevel: item.reorderLevel,
           reorderQuantity: item.reorderQuantity,
           status:
             item.quantity === 0
-              ? 'OUT_OF_STOCK'
+              ? "OUT_OF_STOCK"
               : item.quantity <= item.reorderLevel / 2
-              ? 'CRITICAL'
-              : 'LOW',
+                ? "CRITICAL"
+                : "LOW",
         })),
       };
     }
 
     // Category Performance Report
-    if (reportType === 'all' || reportType === 'category-performance') {
-      const categories = await prisma.generalInventoryCategory.findMany({
+    if (reportType === "all" || reportType === "category-performance") {
+      const categories = await db.generalInventoryCategory.findMany({
         where: { userId: session.user.id },
         include: {
           items: {
@@ -234,14 +257,17 @@ export async function GET(request: NextRequest) {
 
       const categoryPerformance = categories.map((cat) => {
         const totalItems = cat.items.length;
-        const totalQuantity = cat.items.reduce((sum, item) => sum + item.quantity, 0);
+        const totalQuantity = cat.items.reduce(
+          (sum, item) => sum + item.quantity,
+          0,
+        );
         const totalCostValue = cat.items.reduce(
           (sum, item) => sum + (item.costPrice || 0) * item.quantity,
-          0
+          0,
         );
         const totalSellingValue = cat.items.reduce(
           (sum, item) => sum + (item.sellingPrice || 0) * item.quantity,
-          0
+          0,
         );
 
         return {
@@ -255,13 +281,13 @@ export async function GET(request: NextRequest) {
       });
 
       reports.categoryPerformance = categoryPerformance.sort(
-        (a, b) => b.totalCostValue - a.totalCostValue
+        (a, b) => b.totalCostValue - a.totalCostValue,
       );
     }
 
     return NextResponse.json({ success: true, reports });
   } catch (error: any) {
-    console.error('Error generating reports:', error);
-    return apiErrors.internal(error.message || 'Failed to generate reports');
+    console.error("Error generating reports:", error);
+    return apiErrors.internal(error.message || "Failed to generate reports");
   }
 }

@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { REAIEmployeeType } from "@prisma/client";
 import { RE_AI_EMPLOYEE_PROMPTS } from "@/lib/real-estate/ai-employee-prompts";
 import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
@@ -93,14 +94,18 @@ async function createElevenLabsAgent(
 }
 
 // Get existing agents for a user
-async function getExistingAgents(userId: string) {
-  return prisma.rEAIEmployeeAgent.findMany({
+async function getExistingAgents(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+) {
+  return db.rEAIEmployeeAgent.findMany({
     where: { userId },
   });
 }
 
 // Provision a single RE AI Employee
 async function provisionEmployee(
+  db: ReturnType<typeof getCrmDb>,
   userId: string,
   employeeType: REAIEmployeeType,
   apiKey: string,
@@ -121,7 +126,7 @@ async function provisionEmployee(
     });
 
     // Store in database
-    const record = await prisma.rEAIEmployeeAgent.upsert({
+    const record = await db.rEAIEmployeeAgent.upsert({
       where: {
         userId_employeeType: {
           userId,
@@ -166,19 +171,18 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Verify user is in Real Estate industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    if (user?.industry !== "REAL_ESTATE") {
+    // Verify user is in Real Estate industry
+    if (ctx.industry !== "REAL_ESTATE") {
       return apiErrors.forbidden(
         "This feature is only available for Real Estate users",
       );
     }
 
-    const agents = await getExistingAgents(session.user.id);
+    const agents = await getExistingAgents(db, session.user.id);
 
     // Trigger auto-provision/fix in background (fixes existing agents' LLM + tools)
     provisionAIEmployeesForUser(session.user.id);
@@ -210,13 +214,12 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Verify user is in Real Estate industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    if (user?.industry !== "REAL_ESTATE") {
+    // Verify user is in Real Estate industry
+    if (ctx.industry !== "REAL_ESTATE") {
       return apiErrors.forbidden(
         "This feature is only available for Real Estate users",
       );
@@ -242,7 +245,7 @@ export async function POST(request: NextRequest) {
         : Object.values(REAIEmployeeType);
 
     // Check which agents already exist
-    const existingAgents = await getExistingAgents(session.user.id);
+    const existingAgents = await getExistingAgents(db, session.user.id);
     const existingTypes = new Set(existingAgents.map((a) => a.employeeType));
 
     // Filter to only provision new types (unless force refresh requested)
@@ -269,7 +272,7 @@ export async function POST(request: NextRequest) {
 
     for (const type of typesToCreate) {
       console.log(`Provisioning RE AI Employee: ${type}`);
-      const result = await provisionEmployee(session.user.id, type, apiKey);
+      const result = await provisionEmployee(db, session.user.id, type, apiKey);
       results.push({ type, ...result });
 
       // Small delay between API calls to avoid rate limiting
@@ -280,7 +283,7 @@ export async function POST(request: NextRequest) {
     const failCount = results.filter((r) => !r.success).length;
 
     // Fetch updated list of agents
-    const updatedAgents = await getExistingAgents(session.user.id);
+    const updatedAgents = await getExistingAgents(db, session.user.id);
     const firstError = results.find((r) => !r.success)?.error;
 
     return NextResponse.json({
@@ -309,6 +312,10 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
     const employeeType = searchParams.get("type") as REAIEmployeeType;
 
@@ -317,7 +324,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Find and delete the agent
-    const agent = await prisma.rEAIEmployeeAgent.findUnique({
+    const agent = await db.rEAIEmployeeAgent.findUnique({
       where: {
         userId_employeeType: {
           userId: session.user.id,
@@ -347,7 +354,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete from database
-    await prisma.rEAIEmployeeAgent.delete({
+    await db.rEAIEmployeeAgent.delete({
       where: { id: agent.id },
     });
 

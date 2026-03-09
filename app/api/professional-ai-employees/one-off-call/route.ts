@@ -3,16 +3,17 @@
  * POST: Initiate an immediate call to a contact using a provisioned professional agent
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { elevenLabsService } from '@/lib/elevenlabs';
-import { ProfessionalAIEmployeeType } from '@prisma/client';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsService } from "@/lib/elevenlabs";
+import { ProfessionalAIEmployeeType } from "@prisma/client";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await request.json().catch(() => ({}));
     const { employeeType, contactName, contactPhone } = body as {
@@ -29,35 +35,41 @@ export async function POST(request: NextRequest) {
     };
 
     if (!employeeType || !contactName || !contactPhone) {
-      return apiErrors.badRequest('employeeType, contactName, and contactPhone are required');
+      return apiErrors.badRequest(
+        "employeeType, contactName, and contactPhone are required",
+      );
     }
 
-    const agent = await prisma.professionalAIEmployeeAgent.findUnique({
+    const agent = await db.professionalAIEmployeeAgent.findUnique({
       where: {
         userId_employeeType: { userId: session.user.id, employeeType },
       },
     });
 
     if (!agent) {
-      return apiErrors.notFound('Professional AI agent not provisioned. Please provision this agent first.');
+      return apiErrors.notFound(
+        "Professional AI agent not provisioned. Please provision this agent first.",
+      );
     }
 
     if (!agent.elevenLabsAgentId) {
-      return apiErrors.badRequest('Agent is not fully configured for voice calls.');
+      return apiErrors.badRequest(
+        "Agent is not fully configured for voice calls.",
+      );
     }
 
-    let formattedPhone = contactPhone.trim().replace(/\D/g, '');
+    let formattedPhone = contactPhone.trim().replace(/\D/g, "");
     if (formattedPhone.length === 10) {
-      formattedPhone = '+1' + formattedPhone;
-    } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
-      formattedPhone = '+' + formattedPhone;
-    } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+      formattedPhone = "+1" + formattedPhone;
+    } else if (formattedPhone.length === 11 && formattedPhone.startsWith("1")) {
+      formattedPhone = "+" + formattedPhone;
+    } else if (!formattedPhone.startsWith("+")) {
+      formattedPhone = "+" + formattedPhone;
     }
 
     const callResult = await elevenLabsService.initiatePhoneCall(
       agent.elevenLabsAgentId,
-      formattedPhone
+      formattedPhone,
     );
 
     return NextResponse.json({
@@ -66,7 +78,7 @@ export async function POST(request: NextRequest) {
       message: `Call to ${contactName} initiated. They should receive the call shortly.`,
     });
   } catch (error: any) {
-    console.error('Professional one-off call error:', error);
-    return apiErrors.internal(error.message || 'Failed to initiate call');
+    console.error("Professional one-off call error:", error);
+    return apiErrors.internal(error.message || "Failed to initiate call");
   }
 }

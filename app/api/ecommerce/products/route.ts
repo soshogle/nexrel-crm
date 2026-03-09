@@ -1,79 +1,97 @@
-
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 
 // Helper function to sync with inventory
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function syncWithInventory(userId: string, productData: any, action: 'create' | 'update') {
+async function syncWithInventory(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  productData: any,
+  action: "create" | "update",
+) {
   try {
     // Find or create inventory item for this product
-    const inventoryItem = await prisma.generalInventoryItem.findFirst({
+    const inventoryItem = await db.generalInventoryItem.findFirst({
       where: {
         userId,
         sku: productData.sku,
       },
     });
 
-    if (action === 'create' && !inventoryItem) {
+    if (action === "create" && !inventoryItem) {
       // Create new inventory item
-      const newItem = await prisma.generalInventoryItem.create({
+      const newItem = await db.generalInventoryItem.create({
         data: {
           userId,
           sku: productData.sku,
           name: productData.name,
-          description: productData.description || '',
+          description: productData.description || "",
           quantity: productData.stockQuantity || 0,
           sellingPrice: Math.round((productData.price || 0) * 100), // Convert to cents
-          imageUrl: productData.imageUrl || '',
-          notes: 'Auto-synced from CRM E-commerce store',
+          imageUrl: productData.imageUrl || "",
+          notes: "Auto-synced from CRM E-commerce store",
         },
       });
 
       // Create initial stock adjustment
       if (productData.stockQuantity && productData.stockQuantity > 0) {
-        await prisma.generalInventoryAdjustment.create({
+        await db.generalInventoryAdjustment.create({
           data: {
             userId,
             itemId: newItem.id,
-            type: 'INITIAL',
+            type: "INITIAL",
             quantity: productData.stockQuantity,
             quantityBefore: 0,
             quantityAfter: productData.stockQuantity,
-            reason: 'Initial stock from e-commerce product creation',
+            reason: "Initial stock from e-commerce product creation",
           },
         });
       }
-    } else if (action === 'update' && inventoryItem) {
+    } else if (action === "update" && inventoryItem) {
       // Update existing inventory item
-      await prisma.generalInventoryItem.update({
+      await db.generalInventoryItem.update({
         where: { id: inventoryItem.id },
         data: {
           name: productData.name,
           description: productData.description || inventoryItem.description,
-          quantity: productData.stockQuantity !== undefined ? productData.stockQuantity : inventoryItem.quantity,
-          sellingPrice: productData.price ? Math.round(productData.price * 100) : inventoryItem.sellingPrice,
+          quantity:
+            productData.stockQuantity !== undefined
+              ? productData.stockQuantity
+              : inventoryItem.quantity,
+          sellingPrice: productData.price
+            ? Math.round(productData.price * 100)
+            : inventoryItem.sellingPrice,
           imageUrl: productData.imageUrl || inventoryItem.imageUrl,
         },
       });
 
       // Create stock adjustment if quantity changed
-      if (productData.stockQuantity !== undefined && productData.stockQuantity !== inventoryItem.quantity) {
-        await prisma.generalInventoryAdjustment.create({
+      if (
+        productData.stockQuantity !== undefined &&
+        productData.stockQuantity !== inventoryItem.quantity
+      ) {
+        await db.generalInventoryAdjustment.create({
           data: {
             userId,
             itemId: inventoryItem.id,
-            type: productData.stockQuantity > inventoryItem.quantity ? 'ADJUSTMENT' : 'ADJUSTMENT',
-            quantity: Math.abs(productData.stockQuantity - inventoryItem.quantity),
+            type:
+              productData.stockQuantity > inventoryItem.quantity
+                ? "ADJUSTMENT"
+                : "ADJUSTMENT",
+            quantity: Math.abs(
+              productData.stockQuantity - inventoryItem.quantity,
+            ),
             quantityBefore: inventoryItem.quantity,
             quantityAfter: productData.stockQuantity,
-            reason: 'Stock adjusted from e-commerce product update',
+            reason: "Stock adjusted from e-commerce product update",
           },
         });
       }
@@ -81,7 +99,7 @@ async function syncWithInventory(userId: string, productData: any, action: 'crea
 
     return { success: true };
   } catch (error) {
-    console.error('Inventory sync error:', error);
+    console.error("Inventory sync error:", error);
     return { success: false, error };
   }
 }
@@ -89,19 +107,26 @@ async function syncWithInventory(userId: string, productData: any, action: 'crea
 // GET /api/ecommerce/products - List all products for the authenticated user
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return apiErrors.unauthorized()
+      return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const { searchParams } = new URL(req.url)
-    const categoryId = searchParams.get('categoryId')
-    const active = searchParams.get('active')
-    const pagination = parsePagination(req)
+    const { searchParams } = new URL(req.url);
+    const categoryId = searchParams.get("categoryId");
+    const active = searchParams.get("active");
+    const pagination = parsePagination(req);
 
-    const where: any = { userId: session.user.id, ...(categoryId && { categoryId }), ...(active && { active: active === 'true' }) }
+    const where: any = {
+      userId: session.user.id,
+      ...(categoryId && { categoryId }),
+      ...(active && { active: active === "true" }),
+    };
 
-    const products = await prisma.product.findMany({
+    const products = await db.product.findMany({
       where,
       include: {
         category: true,
@@ -109,27 +134,30 @@ export async function GET(req: NextRequest) {
       take: pagination.take,
       skip: pagination.skip,
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
+    });
 
-    const total = await prisma.product.count({ where })
-    return paginatedResponse(products, total, pagination, 'products')
+    const total = await db.product.count({ where });
+    return paginatedResponse(products, total, pagination, "products");
   } catch (error) {
-    console.error('Error fetching products:', error)
-    return apiErrors.internal('Failed to fetch products')
+    console.error("Error fetching products:", error);
+    return apiErrors.internal("Failed to fetch products");
   }
 }
 
 // POST /api/ecommerce/products - Create a new product
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return apiErrors.unauthorized()
+      return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const body = await req.json()
+    const body = await req.json();
     const {
       name,
       description,
@@ -147,23 +175,23 @@ export async function POST(req: NextRequest) {
       tags,
       metaTitle,
       metaDescription,
-    } = body
+    } = body;
 
     // Validate required fields
     if (!name || !price || !sku) {
-      return apiErrors.badRequest('Name, price, and SKU are required')
+      return apiErrors.badRequest("Name, price, and SKU are required");
     }
 
     // Check if SKU already exists
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await db.product.findUnique({
       where: { sku },
-    })
+    });
 
     if (existingProduct) {
-      return apiErrors.badRequest('A product with this SKU already exists')
+      return apiErrors.badRequest("A product with this SKU already exists");
     }
 
-    const product = await prisma.product.create({
+    const product = await db.product.create({
       data: {
         userId: session.user.id,
         name,
@@ -186,21 +214,26 @@ export async function POST(req: NextRequest) {
       include: {
         category: true,
       },
-    })
+    });
 
     // Sync with inventory system
-    await syncWithInventory(session.user.id, {
-      sku: product.sku,
-      name: product.name,
-      description: product.description,
-      stockQuantity: product.inventory,
-      price: product.price / 100, // Convert from cents to dollars
-      imageUrl: product.imageUrl,
-    }, 'create');
+    await syncWithInventory(
+      db,
+      session.user.id,
+      {
+        sku: product.sku,
+        name: product.name,
+        description: product.description,
+        stockQuantity: product.inventory,
+        price: product.price / 100, // Convert from cents to dollars
+        imageUrl: product.imageUrl,
+      },
+      "create",
+    );
 
-    return NextResponse.json(product, { status: 201 })
+    return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    console.error('Error creating product:', error)
-    return apiErrors.internal('Failed to create product')
+    console.error("Error creating product:", error);
+    return apiErrors.internal("Failed to create product");
   }
 }

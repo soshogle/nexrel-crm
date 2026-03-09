@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 type RESettingsState = {
@@ -31,7 +32,10 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return apiErrors.unauthorized();
 
-    const user = await prisma.user.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const user = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: {
         name: true,
@@ -48,7 +52,7 @@ export async function GET(request: NextRequest) {
     const onboarding = (user.onboardingProgress as Record<string, any> | null) || {};
     const reSettings = normalizeSettings(onboarding.realEstateSettings);
 
-    const apiKeys = await prisma.apiKey.findMany({
+    const apiKeys = await getCrmDb(ctx).apiKey.findMany({
       where: {
         userId: session.user.id,
         service: 'real_estate',
@@ -103,13 +107,16 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return apiErrors.unauthorized();
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     const body = await request.json();
     const profile = body?.profile || {};
     const apiSettings = body?.apiSettings || {};
     const notifications = body?.notifications || {};
     const voiceSettings = body?.voiceSettings || {};
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: { onboardingProgress: true },
     });
@@ -129,7 +136,7 @@ export async function PUT(request: NextRequest) {
       },
     };
 
-    await prisma.user.update({
+    await getCrmDb(ctx).user.update({
       where: { id: session.user.id },
       data: {
         name: String(profile.agentName || '') || null,
@@ -146,7 +153,7 @@ export async function PUT(request: NextRequest) {
 
     const upsertKey = async (keyName: string, keyValue: string) => {
       if (!keyValue) return;
-      await prisma.apiKey.upsert({
+      await getCrmDb(ctx).apiKey.upsert({
         where: {
           userId_service_keyName: {
             userId: session.user.id,

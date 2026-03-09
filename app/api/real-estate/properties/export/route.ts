@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 /**
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -28,7 +33,7 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'centris';
     const status = searchParams.get('status');
 
-    const properties = await prisma.rEProperty.findMany({
+    const properties = await getCrmDb(ctx).rEProperty.findMany({
       where: {
         userId: session.user.id,
         ...(status ? { listingStatus: status as any } : {}),

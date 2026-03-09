@@ -1,61 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/debug/impersonation-status - Check impersonation session status
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return apiErrors.unauthorized('Not authenticated');
+      return apiErrors.unauthorized("Not authenticated");
     }
 
     // Debug endpoints are admin-only
     const role = (session.user as any)?.role;
-    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Admin access required');
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Admin access required");
     }
 
     // Get all sessions for this user
-    const allSessions = await prisma.superAdminSession.findMany({
+    const allSessions = await getMetaDb().superAdminSession.findMany({
       where: {
         superAdminId: session.user.id,
       },
-      orderBy: { startedAt: 'desc' },
+      orderBy: { startedAt: "desc" },
       take: 10,
       include: {
         superAdmin: {
-          select: { name: true, email: true }
+          select: { name: true, email: true },
         },
         impersonatedUser: {
-          select: { name: true, email: true }
-        }
-      }
+          select: { name: true, email: true },
+        },
+      },
     });
 
     // Check for active session
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    const activeSession = await prisma.superAdminSession.findFirst({
+    const activeSession = await getMetaDb().superAdminSession.findFirst({
       where: {
         superAdminId: session.user.id,
         isActive: true,
         lastActivity: {
-          gte: fifteenMinutesAgo
-        }
+          gte: fifteenMinutesAgo,
+        },
       },
       include: {
         superAdmin: {
-          select: { name: true, email: true }
+          select: { name: true, email: true },
         },
         impersonatedUser: {
-          select: { name: true, email: true }
-        }
-      }
+          select: { name: true, email: true },
+        },
+      },
     });
 
     return NextResponse.json({
@@ -66,16 +66,18 @@ export async function GET(request: NextRequest) {
         superAdminId: session.user.superAdminId,
         superAdminName: session.user.superAdminName,
       },
-      activeImpersonationSession: activeSession ? {
-        id: activeSession.id,
-        sessionToken: activeSession.sessionToken,
-        superAdmin: activeSession.superAdmin,
-        impersonatedUser: activeSession.impersonatedUser,
-        isActive: activeSession.isActive,
-        startedAt: activeSession.startedAt,
-        lastActivity: activeSession.lastActivity,
-      } : null,
-      allSessions: allSessions.map(s => ({
+      activeImpersonationSession: activeSession
+        ? {
+            id: activeSession.id,
+            sessionToken: activeSession.sessionToken,
+            superAdmin: activeSession.superAdmin,
+            impersonatedUser: activeSession.impersonatedUser,
+            isActive: activeSession.isActive,
+            startedAt: activeSession.startedAt,
+            lastActivity: activeSession.lastActivity,
+          }
+        : null,
+      allSessions: allSessions.map((s) => ({
         id: s.id,
         superAdmin: s.superAdmin,
         impersonatedUser: s.impersonatedUser,
@@ -85,14 +87,17 @@ export async function GET(request: NextRequest) {
         endedAt: s.endedAt,
       })),
       localStorage: {
-        impersonationToken: request.headers.get('x-impersonation-token'),
-        impersonatedUserId: request.headers.get('x-impersonated-user-id'),
+        impersonationToken: request.headers.get("x-impersonation-token"),
+        impersonatedUserId: request.headers.get("x-impersonated-user-id"),
       },
       queryTime: new Date().toISOString(),
       fifteenMinutesCutoff: fifteenMinutesAgo.toISOString(),
     });
   } catch (error: any) {
-    console.error('Error checking impersonation status:', error);
-    return apiErrors.internal('Failed to check impersonation status', error.message);
+    console.error("Error checking impersonation status:", error);
+    return apiErrors.internal(
+      "Failed to check impersonation status",
+      error.message,
+    );
   }
 }

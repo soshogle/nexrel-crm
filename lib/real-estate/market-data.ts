@@ -3,7 +3,8 @@
  * in CMA reports, listing presentations, buyer/seller reports, etc.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
 
 export interface MarketSnapshot {
   region: string;
@@ -37,24 +38,31 @@ export interface MarketContext {
  * data (stored by municipality in `city` and admin-region in `region`) is found.
  */
 export async function getMarketContext(
-  _userId: string,
+  userId: string,
   opts: {
     region?: string;
     city?: string;
     state?: string;
     propertyCategory?: string;
     months?: number;
-  } = {}
+  } = {},
 ): Promise<MarketContext> {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const { region, city, state, propertyCategory, months = 12 } = opts;
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
 
   const locationConditions: any[] = [];
-  if (region) locationConditions.push({ region: { contains: region, mode: 'insensitive' } });
+  if (region)
+    locationConditions.push({
+      region: { contains: region, mode: "insensitive" },
+    });
   if (city) {
-    locationConditions.push({ city: { contains: city, mode: 'insensitive' } });
-    locationConditions.push({ region: { contains: city, mode: 'insensitive' } });
+    locationConditions.push({ city: { contains: city, mode: "insensitive" } });
+    locationConditions.push({
+      region: { contains: city, mode: "insensitive" },
+    });
   }
 
   // Use shared Quebec stats (Centris) — not user-specific
@@ -62,15 +70,15 @@ export async function getMarketContext(
     isShared: true,
     periodStart: { gte: cutoff },
     ...(locationConditions.length > 0 && { OR: locationConditions }),
-    ...(state && { state: { equals: state, mode: 'insensitive' } }),
+    ...(state && { state: { equals: state, mode: "insensitive" } }),
     ...(propertyCategory && {
-      propertyCategory: { contains: propertyCategory, mode: 'insensitive' },
+      propertyCategory: { contains: propertyCategory, mode: "insensitive" },
     }),
   };
 
-  let rows = await prisma.rEMarketStats.findMany({
+  let rows = await db.rEMarketStats.findMany({
     where,
-    orderBy: { periodStart: 'desc' },
+    orderBy: { periodStart: "desc" },
     take: 200,
   });
 
@@ -80,18 +88,20 @@ export async function getMarketContext(
       isShared: true,
       periodStart: { gte: cutoff },
       ...(propertyCategory && {
-        propertyCategory: { contains: propertyCategory, mode: 'insensitive' },
+        propertyCategory: { contains: propertyCategory, mode: "insensitive" },
       }),
-      ...(state && { state: { equals: state, mode: 'insensitive' } }),
+      ...(state && { state: { equals: state, mode: "insensitive" } }),
     };
-    rows = await prisma.rEMarketStats.findMany({
+    rows = await db.rEMarketStats.findMany({
       where: fallbackWhere,
-      orderBy: { periodStart: 'desc' },
+      orderBy: { periodStart: "desc" },
       take: 200,
     });
   }
 
-  const monthlyRows = rows.filter((r) => r.periodType === 'MONTHLY' && !r.priceRange);
+  const monthlyRows = rows.filter(
+    (r) => r.periodType === "MONTHLY" && !r.priceRange,
+  );
   const priceRangeRows = rows.filter((r) => !!r.priceRange);
 
   const toSnapshot = (r: (typeof rows)[0]): MarketSnapshot => ({
@@ -116,7 +126,7 @@ export async function getMarketContext(
   const current = trend.length > 0 ? trend[trend.length - 1] : null;
   const priceByRange = priceRangeRows.map((r) => ({
     ...toSnapshot(r),
-    period: r.priceRange || '',
+    period: r.priceRange || "",
   }));
 
   const summary = buildMarketSummary(current, trend);
@@ -126,17 +136,17 @@ export async function getMarketContext(
 
 function buildMarketSummary(
   current: MarketSnapshot | null,
-  trend: MarketSnapshot[]
+  trend: MarketSnapshot[],
 ): string {
-  if (!current) return 'No market data available for this area.';
+  if (!current) return "No market data available for this area.";
 
   const parts: string[] = [];
   const region = current.region;
-  const cat = current.propertyCategory || 'properties';
+  const cat = current.propertyCategory || "properties";
 
   if (current.medianSalePrice) {
     parts.push(
-      `The median sale price for ${cat} in ${region} is $${current.medianSalePrice.toLocaleString()}`
+      `The median sale price for ${cat} in ${region} is $${current.medianSalePrice.toLocaleString()}`,
     );
   }
   if (current.domAvg) {
@@ -144,7 +154,7 @@ function buildMarketSummary(
   }
   if (current.closePriceToAskingRatio) {
     parts.push(
-      `with a close-to-asking price ratio of ${current.closePriceToAskingRatio}%`
+      `with a close-to-asking price ratio of ${current.closePriceToAskingRatio}%`,
     );
   }
 
@@ -159,8 +169,14 @@ function buildMarketSummary(
       if (first > 0) {
         const pctChange = ((last - first) / first) * 100;
         const direction =
-          pctChange > 2 ? 'trending upward' : pctChange < -2 ? 'trending downward' : 'stable';
-        parts.push(`Prices are ${direction} over the past ${recentPrices.length} months`);
+          pctChange > 2
+            ? "trending upward"
+            : pctChange < -2
+              ? "trending downward"
+              : "stable";
+        parts.push(
+          `Prices are ${direction} over the past ${recentPrices.length} months`,
+        );
       }
     }
   }
@@ -170,7 +186,7 @@ function buildMarketSummary(
   }
 
   if (parts.length === 0) return `Limited market data available for ${region}.`;
-  return parts.join(', ') + '.';
+  return parts.join(", ") + ".";
 }
 
 /**
@@ -179,7 +195,12 @@ function buildMarketSummary(
  */
 export async function getLiveRegionalMedian(
   userId: string,
-  opts: { city?: string; region?: string; state?: string; propertyCategory?: string }
+  opts: {
+    city?: string;
+    region?: string;
+    state?: string;
+    propertyCategory?: string;
+  },
 ): Promise<number | null> {
   const ctx = await getMarketContext(userId, {
     city: opts.city || opts.region,
@@ -200,27 +221,29 @@ export function marketBulletPoints(ctx: MarketContext): string[] {
   const bullets: string[] = [];
   const { current, trend } = ctx;
 
-  if (!current) return ['Market data not yet available for this area'];
+  if (!current) return ["Market data not yet available for this area"];
 
   if (current.medianSalePrice) {
     bullets.push(
-      `Median sale price: $${current.medianSalePrice.toLocaleString()} (${current.region})`
+      `Median sale price: $${current.medianSalePrice.toLocaleString()} (${current.region})`,
     );
   }
   if (current.avgSalePrice) {
-    bullets.push(`Average sale price: $${current.avgSalePrice.toLocaleString()}`);
+    bullets.push(
+      `Average sale price: $${current.avgSalePrice.toLocaleString()}`,
+    );
   }
   if (current.domAvg) {
     bullets.push(`Average days on market: ${current.domAvg} days`);
   }
   if (current.closePriceToAskingRatio) {
     bullets.push(
-      `Sale-to-list price ratio: ${current.closePriceToAskingRatio}%`
+      `Sale-to-list price ratio: ${current.closePriceToAskingRatio}%`,
     );
   }
   if (current.closePriceToOriginalRatio) {
     bullets.push(
-      `Sale-to-original price ratio: ${current.closePriceToOriginalRatio}%`
+      `Sale-to-original price ratio: ${current.closePriceToOriginalRatio}%`,
     );
   }
   if (current.activeInventory) {
@@ -233,7 +256,9 @@ export function marketBulletPoints(ctx: MarketContext): string[] {
       .map((t) => t.domAvg)
       .filter(Boolean) as number[];
     if (recentDOM.length >= 2) {
-      const avg = Math.round(recentDOM.reduce((a, b) => a + b, 0) / recentDOM.length);
+      const avg = Math.round(
+        recentDOM.reduce((a, b) => a + b, 0) / recentDOM.length,
+      );
       bullets.push(`3-month average DOM: ${avg} days`);
     }
   }

@@ -1,45 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/soshogle/oauth/facebook/callback - Handle Facebook OAuth callback
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const state = searchParams.get('state'); // userId
-    const error = searchParams.get('error');
+    const code = searchParams.get("code");
+    const state = searchParams.get("state"); // userId
+    const error = searchParams.get("error");
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://nexrel.soshogleagents.com';
+    const baseUrl =
+      process.env.NEXTAUTH_URL || "https://nexrel.soshogleagents.com";
 
     if (error) {
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=${encodeURIComponent(error)}`
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=${encodeURIComponent(error)}`,
       );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=missing_parameters`
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=missing_parameters`,
       );
     }
 
     // Exchange code for access token
-    const tokenUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
+    const tokenUrl = "https://graph.facebook.com/v18.0/oauth/access_token";
     const redirectUri = `${baseUrl}/api/soshogle/oauth/facebook/callback`;
 
     // Support both FACEBOOK_CLIENT_ID and FACEBOOK_APP_ID for compatibility
-    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
-    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
+    const clientId =
+      process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const clientSecret =
+      process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
 
     if (!clientId || !clientSecret) {
-      console.error('Facebook OAuth credentials missing. Required env vars: FACEBOOK_CLIENT_ID/FACEBOOK_APP_ID and FACEBOOK_CLIENT_SECRET/FACEBOOK_APP_SECRET');
+      console.error(
+        "Facebook OAuth credentials missing. Required env vars: FACEBOOK_CLIENT_ID/FACEBOOK_APP_ID and FACEBOOK_CLIENT_SECRET/FACEBOOK_APP_SECRET",
+      );
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=oauth_not_configured`
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=oauth_not_configured`,
       );
     }
 
@@ -54,31 +60,34 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error('Facebook OAuth error:', tokenData);
+      console.error("Facebook OAuth error:", tokenData);
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=token_exchange_failed`
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=token_exchange_failed`,
       );
     }
 
     // Get user info
     const userResponse = await fetch(
-      `https://graph.facebook.com/me?fields=id,name&access_token=${tokenData.access_token}`
+      `https://graph.facebook.com/me?fields=id,name&access_token=${tokenData.access_token}`,
     );
     const userData = await userResponse.json();
 
+    const ctx = await resolveDalContext(state);
+    const db = getCrmDb(ctx);
+
     // Store connection in database
     // Check if connection already exists
-    const existingConnection = await prisma.channelConnection.findFirst({
+    const existingConnection = await db.channelConnection.findFirst({
       where: {
         userId: state,
-        providerType: 'FACEBOOK',
-        channelType: 'FACEBOOK_MESSENGER',
+        providerType: "FACEBOOK",
+        channelType: "FACEBOOK_MESSENGER",
       },
     });
 
     if (existingConnection) {
       // Update existing connection
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: existingConnection.id },
         data: {
           accessToken: tokenData.access_token,
@@ -86,28 +95,28 @@ export async function GET(request: NextRequest) {
           tokenExpiresAt: tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000)
             : null,
-          displayName: userData.name || 'Facebook Account',
+          displayName: userData.name || "Facebook Account",
           channelIdentifier: userData.id || null,
-          status: 'CONNECTED',
+          status: "CONNECTED",
           isActive: true,
           lastSyncedAt: new Date(),
         },
       });
     } else {
       // Create new connection
-      await prisma.channelConnection.create({
+      await db.channelConnection.create({
         data: {
           userId: state,
-          channelType: 'FACEBOOK_MESSENGER',
-          providerType: 'FACEBOOK',
+          channelType: "FACEBOOK_MESSENGER",
+          providerType: "FACEBOOK",
           accessToken: tokenData.access_token,
           refreshToken: null,
           tokenExpiresAt: tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000)
             : null,
-          displayName: userData.name || 'Facebook Account',
+          displayName: userData.name || "Facebook Account",
           channelIdentifier: userData.id || null,
-          status: 'CONNECTED',
+          status: "CONNECTED",
           isActive: true,
           lastSyncedAt: new Date(),
         },
@@ -115,13 +124,14 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/soshogle?soshogle_connected=success`
+      `${baseUrl}/dashboard/soshogle?soshogle_connected=success`,
     );
   } catch (error: any) {
-    console.error('Facebook OAuth callback error:', error);
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://nexrel.soshogleagents.com';
+    console.error("Facebook OAuth callback error:", error);
+    const baseUrl =
+      process.env.NEXTAUTH_URL || "https://nexrel.soshogleagents.com";
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=callback_failed`
+      `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=callback_failed`,
     );
   }
 }

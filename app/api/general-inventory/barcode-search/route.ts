@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/general-inventory/barcode-search - Search inventory by barcode or SKU
 export async function GET(request: NextRequest) {
@@ -15,16 +15,19 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q') || '';
+    const query = searchParams.get("q") || "";
 
     if (!query || query.trim().length === 0) {
-      return apiErrors.badRequest('Search query is required');
+      return apiErrors.badRequest("Search query is required");
     }
 
     // Search by barcode or SKU (exact match or starts with)
-    const items = await prisma.generalInventoryItem.findMany({
+    const items = await db.generalInventoryItem.findMany({
       where: {
         userId: session.user.id,
         isActive: true,
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
         location: { select: { id: true, name: true } },
       },
       take: 10,
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     return NextResponse.json({
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
       count: items.length,
     });
   } catch (error: any) {
-    console.error('Error searching by barcode:', error);
-    return apiErrors.internal(error.message || 'Search failed');
+    console.error("Error searching by barcode:", error);
+    return apiErrors.internal(error.message || "Search failed");
   }
 }

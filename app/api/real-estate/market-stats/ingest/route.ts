@@ -5,7 +5,8 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 import { parseAllCentrisPdfs, parseAllJlrMonthlyReports, type CentrisStatRow } from '@/lib/real-estate/centris-pdf-parser';
 import path from 'path';
@@ -21,7 +22,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return apiErrors.unauthorized();
 
-    const user = await prisma.user.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const user = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
     const records = Array.from(deduped.values());
 
     // Delete existing shared Quebec stats (Centris + JLR)
-    await prisma.rEMarketStats.deleteMany({
+    await getCrmDb(ctx).rEMarketStats.deleteMany({
       where: {
         isShared: true,
         source: { in: ['centris_pdf', 'jlr_monthly_report'] },
@@ -114,7 +118,7 @@ export async function POST(request: NextRequest) {
     const BATCH_SIZE = 500;
     for (let i = 0; i < batchData.length; i += BATCH_SIZE) {
       const batch = batchData.slice(i, i + BATCH_SIZE);
-      const result = await prisma.rEMarketStats.createMany({ data: batch as any });
+      const result = await getCrmDb(ctx).rEMarketStats.createMany({ data: batch as any });
       created += result.count;
     }
 

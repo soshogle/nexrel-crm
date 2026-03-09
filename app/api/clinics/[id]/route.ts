@@ -3,31 +3,35 @@
  * Get, update, delete specific clinic
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { verifyClinicPermission } from '@/lib/dental/clinic-permissions';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { verifyClinicPermission } from "@/lib/dental/clinic-permissions";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - Get clinic details
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { id } = await params;
 
     // Verify user has access to this clinic
-    const userClinic = await prisma.userClinic.findFirst({
+    const userClinic = await db.userClinic.findFirst({
       where: {
         userId: session.user.id,
         clinicId: id,
@@ -38,7 +42,7 @@ export async function GET(
     });
 
     if (!userClinic) {
-      return apiErrors.notFound('Clinic not found');
+      return apiErrors.notFound("Clinic not found");
     }
 
     return NextResponse.json({
@@ -50,21 +54,24 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error('Error fetching clinic:', error);
-    return apiErrors.internal('Failed to fetch clinic', error.message);
+    console.error("Error fetching clinic:", error);
+    return apiErrors.internal("Failed to fetch clinic", error.message);
   }
 }
 
 // PATCH - Update clinic
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { id } = await params;
     const body = await request.json();
@@ -73,21 +80,23 @@ export async function PATCH(
     const canEdit = await verifyClinicPermission(
       session.user.id,
       id,
-      'canManageSettings'
+      "canManageSettings",
     );
 
     if (!canEdit) {
-      return apiErrors.forbidden('Unauthorized - Admin or Owner access required');
+      return apiErrors.forbidden(
+        "Unauthorized - Admin or Owner access required",
+      );
     }
 
-    const clinic = await prisma.clinic.update({
+    const clinic = await db.clinic.update({
       where: { id },
       data: body,
     });
 
     return NextResponse.json({ success: true, clinic });
   } catch (error: any) {
-    console.error('Error updating clinic:', error);
-    return apiErrors.internal('Failed to update clinic', error.message);
+    console.error("Error updating clinic:", error);
+    return apiErrors.internal("Failed to update clinic", error.message);
   }
 }

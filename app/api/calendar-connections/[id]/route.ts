@@ -1,41 +1,35 @@
-
 /**
  * Individual Calendar Connection API
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
-    const connection = await prisma.calendarConnection.findFirst({
+    const connection = await getCrmDb(ctx).calendarConnection.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
       select: {
         id: true,
@@ -54,34 +48,29 @@ export async function GET(
     });
 
     if (!connection) {
-      return apiErrors.notFound('Connection not found');
+      return apiErrors.notFound("Connection not found");
     }
 
     return NextResponse.json({ connection });
   } catch (error) {
-    console.error('Error fetching calendar connection:', error);
-    return apiErrors.internal('Failed to fetch calendar connection');
+    console.error("Error fetching calendar connection:", error);
+    return apiErrors.internal("Failed to fetch calendar connection");
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -93,18 +82,19 @@ export async function PATCH(
       calendarId,
     } = body;
 
-    const connection = await prisma.calendarConnection.findFirst({
+    const db = getCrmDb(ctx);
+    const connection = await db.calendarConnection.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
     });
 
     if (!connection) {
-      return apiErrors.notFound('Connection not found');
+      return apiErrors.notFound("Connection not found");
     }
 
-    const updated = await prisma.calendarConnection.update({
+    const updated = await db.calendarConnection.update({
       where: { id: params.id },
       data: {
         calendarName,
@@ -118,48 +108,44 @@ export async function PATCH(
 
     return NextResponse.json({ connection: updated });
   } catch (error) {
-    console.error('Error updating calendar connection:', error);
-    return apiErrors.internal('Failed to update calendar connection');
+    console.error("Error updating calendar connection:", error);
+    return apiErrors.internal("Failed to update calendar connection");
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
-    const connection = await prisma.calendarConnection.findFirst({
+    const db = getCrmDb(ctx);
+    const connection = await db.calendarConnection.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: ctx.userId,
       },
     });
 
     if (!connection) {
-      return apiErrors.notFound('Connection not found');
+      return apiErrors.notFound("Connection not found");
     }
 
-    await prisma.calendarConnection.delete({
+    await db.calendarConnection.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting calendar connection:', error);
-    return apiErrors.internal('Failed to delete calendar connection');
+    console.error("Error deleting calendar connection:", error);
+    return apiErrors.internal("Failed to delete calendar connection");
   }
 }

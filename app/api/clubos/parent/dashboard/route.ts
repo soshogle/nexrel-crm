@@ -1,15 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { addDays } from 'date-fns';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { addDays } from "date-fns";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/parent/dashboard - Get parent dashboard data
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,16 +18,19 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get household for the user
-    let household = await prisma.clubOSHousehold.findUnique({
+    let household = await db.clubOSHousehold.findUnique({
       where: { userId: session.user.id },
       include: {
         members: {
           include: {
             registrations: {
               where: {
-                status: { in: ['PENDING', 'APPROVED', 'ACTIVE'] },
+                status: { in: ["PENDING", "APPROVED", "ACTIVE"] },
               },
               include: {
                 program: {
@@ -42,37 +46,40 @@ export async function GET(request: NextRequest) {
                   },
                 },
               },
-              orderBy: { createdAt: 'desc' },
+              orderBy: { createdAt: "desc" },
             },
           },
-          orderBy: { firstName: 'asc' },
+          orderBy: { firstName: "asc" },
         },
       },
     });
 
     // If no household exists, check if user is actually a parent
     if (!household) {
-      const user = await prisma.user.findUnique({
+      const user = await getMetaDb().user.findUnique({
         where: { id: session.user.id },
       });
 
       if (!user) {
-        return apiErrors.notFound('User not found');
+        return apiErrors.notFound("User not found");
       }
 
       // ONLY create household for actual parents, not business owners
-      if (user.parentRole || user.role === 'PARENT') {
+      if (user.parentRole || user.role === "PARENT") {
         // For standalone parents without a club owner, they need to sign up via a club code
         return NextResponse.json(
-          { 
-            error: 'No sports club found. Please sign up using a club code provided by your organization.',
-            noClub: true
+          {
+            error:
+              "No sports club found. Please sign up using a club code provided by your organization.",
+            noClub: true,
           },
-          { status: 404 }
+          { status: 404 },
         );
       } else {
         // Business owners should not access the parent dashboard
-        return apiErrors.forbidden('This dashboard is for parents only. Business owners should use the main dashboard.');
+        return apiErrors.forbidden(
+          "This dashboard is for parents only. Business owners should use the main dashboard.",
+        );
       }
     }
 
@@ -84,9 +91,9 @@ export async function GET(request: NextRequest) {
     household.members.forEach((member) => {
       member.registrations.forEach((reg) => {
         totalBalance += reg.balanceDue;
-        if (reg.status === 'ACTIVE') {
+        if (reg.status === "ACTIVE") {
           activeRegistrations++;
-        } else if (reg.status === 'PENDING') {
+        } else if (reg.status === "PENDING") {
           pendingRegistrations++;
         }
       });
@@ -98,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     // Get all teams for the member's registrations
     const memberIds = household.members.map((m) => m.id);
-    const teamMemberships = await prisma.clubOSTeamMember.findMany({
+    const teamMemberships = await db.clubOSTeamMember.findMany({
       where: {
         memberId: { in: memberIds },
       },
@@ -112,31 +119,31 @@ export async function GET(request: NextRequest) {
     // Get schedules where any of these teams are involved
     // CRITICAL FIX: Use clubOwnerId (business owner) for schedules, not parent's userId
     let upcomingSchedules: any[] = [];
-    
+
     if (household.clubOwnerId) {
-      upcomingSchedules = await prisma.clubOSSchedule.findMany({
+      upcomingSchedules = await db.clubOSSchedule.findMany({
         where: {
           userId: household.clubOwnerId, // ✅ Use club owner's ID, not parent's
           startTime: {
             gte: today,
             lte: nextMonth,
           },
-          status: 'SCHEDULED',
+          status: "SCHEDULED",
           OR: [
             { homeTeamId: { in: teamIds } },
             { awayTeamId: { in: teamIds } },
             { practiceTeamId: { in: teamIds } },
           ],
         },
-      include: {
-        venue: {
-          select: {
-            name: true,
+        include: {
+          venue: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-      orderBy: { startTime: 'asc' },
-      take: 10,
+        orderBy: { startTime: "asc" },
+        take: 10,
       });
     }
 
@@ -148,7 +155,9 @@ export async function GET(request: NextRequest) {
       pendingRegistrations,
     });
   } catch (error: any) {
-    console.error('Error fetching parent dashboard:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch dashboard data');
+    console.error("Error fetching parent dashboard:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch dashboard data",
+    );
   }
 }

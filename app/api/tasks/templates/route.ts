@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/tasks/templates - List task templates
 export async function GET(request: NextRequest) {
@@ -16,8 +16,11 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
+    const category = searchParams.get("category");
 
     const where: any = {
       userId: session.user.id,
@@ -27,18 +30,15 @@ export async function GET(request: NextRequest) {
       where.category = category;
     }
 
-    const templates = await prisma.taskTemplate.findMany({
+    const templates = await getCrmDb(ctx).taskTemplate.findMany({
       where,
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ category: "asc" }, { name: "asc" }],
     });
 
     return NextResponse.json({ templates });
   } catch (error: any) {
-    console.error('Error fetching templates:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch templates');
+    console.error("Error fetching templates:", error);
+    return apiErrors.internal(error.message || "Failed to fetch templates");
   }
 }
 
@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -62,15 +65,15 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name) {
-      return apiErrors.badRequest('Name is required');
+      return apiErrors.badRequest("Name is required");
     }
 
-    const template = await prisma.taskTemplate.create({
+    const template = await getCrmDb(ctx).taskTemplate.create({
       data: {
         name,
         description: description || null,
         category: category || null,
-        defaultPriority: defaultPriority || 'MEDIUM',
+        defaultPriority: defaultPriority || "MEDIUM",
         estimatedHours: estimatedHours || null,
         tags: tags || [],
         checklistItems: checklistItems || [],
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ template });
   } catch (error: any) {
-    console.error('Error creating template:', error);
-    return apiErrors.internal(error.message || 'Failed to create template');
+    console.error("Error creating template:", error);
+    return apiErrors.internal(error.message || "Failed to create template");
   }
 }

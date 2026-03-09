@@ -1,29 +1,32 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // PUT /api/general-inventory/locations/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { name, address, type, isDefault } = body;
 
     // Verify ownership
-    const existingLocation = await prisma.generalInventoryLocation.findFirst({
+    const existingLocation = await db.generalInventoryLocation.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -31,12 +34,12 @@ export async function PUT(
     });
 
     if (!existingLocation) {
-      return apiErrors.notFound('Location not found');
+      return apiErrors.notFound("Location not found");
     }
 
     // If setting as default, unset other defaults
     if (isDefault) {
-      await prisma.generalInventoryLocation.updateMany({
+      await db.generalInventoryLocation.updateMany({
         where: {
           userId: session.user.id,
           isDefault: true,
@@ -46,7 +49,7 @@ export async function PUT(
       });
     }
 
-    const location = await prisma.generalInventoryLocation.update({
+    const location = await db.generalInventoryLocation.update({
       where: { id: params.id },
       data: {
         name,
@@ -58,7 +61,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, location });
   } catch (error: any) {
-    console.error('Error updating location:', error);
+    console.error("Error updating location:", error);
     return apiErrors.internal(error.message);
   }
 }
@@ -66,16 +69,19 @@ export async function PUT(
 // DELETE /api/general-inventory/locations/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Verify ownership
-    const existingLocation = await prisma.generalInventoryLocation.findFirst({
+    const existingLocation = await db.generalInventoryLocation.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -88,21 +94,23 @@ export async function DELETE(
     });
 
     if (!existingLocation) {
-      return apiErrors.notFound('Location not found');
+      return apiErrors.notFound("Location not found");
     }
 
     // Check if location has items
     if (existingLocation._count.items > 0) {
-      return apiErrors.badRequest('Cannot delete location with items. Please remove or reassign items first.');
+      return apiErrors.badRequest(
+        "Cannot delete location with items. Please remove or reassign items first.",
+      );
     }
 
-    await prisma.generalInventoryLocation.delete({
+    await db.generalInventoryLocation.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error deleting location:', error);
+    console.error("Error deleting location:", error);
     return apiErrors.internal(error.message);
   }
 }

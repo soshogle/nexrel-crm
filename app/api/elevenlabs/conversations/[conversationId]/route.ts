@@ -1,19 +1,20 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Fetch specific conversation details from ElevenLabs
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: { conversationId: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +26,7 @@ export async function GET(
     const apiKey = process.env.ELEVENLABS_API_KEY;
 
     if (!apiKey) {
-      return apiErrors.internal('ElevenLabs API key not configured');
+      return apiErrors.internal("ElevenLabs API key not configured");
     }
 
     // Fetch conversation details from ElevenLabs
@@ -33,9 +34,9 @@ export async function GET(
       `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
       {
         headers: {
-          'xi-api-key': apiKey,
+          "xi-api-key": apiKey,
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -45,17 +46,17 @@ export async function GET(
     const conversation = await response.json();
 
     // Format transcript
-    let transcript = '';
+    let transcript = "";
     if (conversation.transcript && Array.isArray(conversation.transcript)) {
       transcript = conversation.transcript
         .map((turn: any) => {
-          const role = turn.role === 'agent' ? 'Agent' : 'User';
+          const role = turn.role === "agent" ? "Agent" : "User";
           const timestamp = turn.time_in_call_secs
-            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, '0')}]`
-            : '';
+            ? `[${Math.floor(turn.time_in_call_secs / 60)}:${String(Math.floor(turn.time_in_call_secs % 60)).padStart(2, "0")}]`
+            : "";
           return `${timestamp} ${role}: ${turn.message}`;
         })
-        .join('\n');
+        .join("\n");
     }
 
     // Get audio URL if available - use our proxy endpoint
@@ -71,12 +72,14 @@ export async function GET(
         ...conversation,
         formatted_transcript: transcript,
         audio_url: audioUrl,
-        agent_name: conversation.agent_name || 'Unknown Agent',
+        agent_name: conversation.agent_name || "Unknown Agent",
       },
     });
   } catch (error: any) {
-    console.error('❌ [Conversation Details] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch conversation details');
+    console.error("❌ [Conversation Details] Error:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch conversation details",
+    );
   }
 }
 
@@ -85,21 +88,24 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: { conversationId: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     // Check authentication
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Check if user is SUPER_ADMIN (either directly or when impersonating)
     let isSuperAdmin = false;
     let actualAdminId = session.user.id;
-    
-    console.log('🔍 [Delete Call] Checking super admin access:', {
+
+    console.log("🔍 [Delete Call] Checking super admin access:", {
       userId: session.user.id,
       userRole: session.user.role,
       isImpersonating: session.user.isImpersonating,
@@ -108,39 +114,43 @@ export async function DELETE(
 
     if (session.user.isImpersonating && session.user.superAdminId) {
       // Super admin is impersonating another user
-      console.log('🎭 [Delete Call] Super admin impersonating, checking original admin');
-      
-      const superAdmin = await prisma.user.findUnique({
+      console.log(
+        "🎭 [Delete Call] Super admin impersonating, checking original admin",
+      );
+
+      const superAdmin = await getMetaDb().user.findUnique({
         where: { id: session.user.superAdminId },
         select: { role: true },
       });
-      
-      if (superAdmin?.role === 'SUPER_ADMIN') {
+
+      if (superAdmin?.role === "SUPER_ADMIN") {
         isSuperAdmin = true;
         actualAdminId = session.user.superAdminId;
-        console.log('✅ [Delete Call] Verified super admin via impersonation');
+        console.log("✅ [Delete Call] Verified super admin via impersonation");
       }
     } else {
       // Check if current user is directly a super admin
-      const user = await prisma.user.findUnique({
+      const user = await getMetaDb().user.findUnique({
         where: { id: session.user.id },
         select: { role: true },
       });
 
-      if (user?.role === 'SUPER_ADMIN') {
+      if (user?.role === "SUPER_ADMIN") {
         isSuperAdmin = true;
-        console.log('✅ [Delete Call] Verified direct super admin');
+        console.log("✅ [Delete Call] Verified direct super admin");
       }
     }
 
     if (!isSuperAdmin) {
-      console.log('❌ [Delete Call] Access denied - not a super admin');
-      return apiErrors.forbidden('Forbidden: Only super admins can delete calls');
+      console.log("❌ [Delete Call] Access denied - not a super admin");
+      return apiErrors.forbidden(
+        "Forbidden: Only super admins can delete calls",
+      );
     }
 
     const { conversationId } = params;
 
-    console.log('🗑️ [Delete Call] Super admin deleting conversation:', {
+    console.log("🗑️ [Delete Call] Super admin deleting conversation:", {
       conversationId,
       adminId: actualAdminId,
       adminEmail: session.user.email,
@@ -148,26 +158,29 @@ export async function DELETE(
     });
 
     // Delete the call log from database
-    const deletedCall = await prisma.callLog.deleteMany({
+    const deletedCall = await db.callLog.deleteMany({
       where: {
         elevenLabsConversationId: conversationId,
       },
     });
 
-    console.log('✅ [Delete Call] Deleted call records:', deletedCall.count);
+    console.log("✅ [Delete Call] Deleted call records:", deletedCall.count);
 
     if (deletedCall.count === 0) {
       // If no records found, it might be okay (already deleted or never stored)
-      console.log('⚠️ [Delete Call] No call records found for conversation:', conversationId);
+      console.log(
+        "⚠️ [Delete Call] No call records found for conversation:",
+        conversationId,
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Call deleted successfully',
+      message: "Call deleted successfully",
       deletedCount: deletedCall.count,
     });
   } catch (error: any) {
-    console.error('❌ [Delete Call] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to delete call');
+    console.error("❌ [Delete Call] Error:", error);
+    return apiErrors.internal(error.message || "Failed to delete call");
   }
 }

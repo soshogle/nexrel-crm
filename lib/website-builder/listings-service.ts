@@ -3,12 +3,12 @@
  * Fetches and updates property listings in the service template's Neon DB
  */
 
-import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
-import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
-import { getMetaDb } from '@/lib/db/meta-db';
-import { prisma } from '@/lib/db';
-import { Pool } from 'pg';
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
+import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { prisma } from "@/lib/db";
+import { Pool } from "pg";
 
 export type GalleryItem = string | { url: string; motionDisabled?: boolean };
 
@@ -34,7 +34,9 @@ function getPool(connectionString: string): Pool {
   return pool;
 }
 
-export async function getWebsiteListingsCount(websiteId: string): Promise<{ count: number; error?: string }> {
+export async function getWebsiteListingsCount(
+  websiteId: string,
+): Promise<{ count: number; error?: string }> {
   try {
     const resolved = await resolveWebsiteDb(websiteId);
     if (!resolved) return { count: 0 };
@@ -44,12 +46,14 @@ export async function getWebsiteListingsCount(websiteId: string): Promise<{ coun
       select: { neonDatabaseUrl: true, templateType: true },
     });
 
-    if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+    if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
       return { count: 0 };
     }
 
     const pool = getPool(website.neonDatabaseUrl);
-    const result = await pool.query('SELECT COUNT(*)::int as c FROM properties');
+    const result = await pool.query(
+      "SELECT COUNT(*)::int as c FROM properties",
+    );
     const count = result.rows[0]?.c ?? 0;
     return { count };
   } catch (e) {
@@ -57,9 +61,11 @@ export async function getWebsiteListingsCount(websiteId: string): Promise<{ coun
   }
 }
 
-export async function getWebsiteListings(websiteId: string): Promise<PropertyListing[]> {
+export async function getWebsiteListings(
+  websiteId: string,
+): Promise<PropertyListing[]> {
   const resolved = await resolveWebsiteDb(websiteId);
-  if (!resolved) throw new Error('Website not found');
+  if (!resolved) throw new Error("Website not found");
 
   const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
@@ -67,11 +73,13 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
   });
 
   if (!website?.neonDatabaseUrl) {
-    throw new Error('Website has no database configured');
+    throw new Error("Website has no database configured");
   }
 
-  if (website.templateType !== 'SERVICE') {
-    throw new Error('Listings are only available for service template websites');
+  if (website.templateType !== "SERVICE") {
+    throw new Error(
+      "Listings are only available for service template websites",
+    );
   }
 
   const pool = getPool(website.neonDatabaseUrl);
@@ -79,7 +87,7 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
   const result = await pool.query(
     `SELECT id, title, slug, address, price, main_image_url, gallery_images, COALESCE(is_secret, false) as is_secret
      FROM properties
-     ORDER BY is_featured DESC, created_at DESC`
+     ORDER BY is_featured DESC, created_at DESC`,
   );
 
   return result.rows.map((row: any) => ({
@@ -99,7 +107,7 @@ export async function getWebsiteListings(websiteId: string): Promise<PropertyLis
  * Used to sort Listing Management page to match broker's website display order.
  */
 export async function getWebsiteListingOrderForCrmMatch(
-  websiteId: string
+  websiteId: string,
 ): Promise<Array<{ mls_number: string | null; address: string }>> {
   const resolved = await resolveWebsiteDb(websiteId);
   if (!resolved) return [];
@@ -109,19 +117,19 @@ export async function getWebsiteListingOrderForCrmMatch(
     select: { neonDatabaseUrl: true, templateType: true },
   });
 
-  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+  if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
     return [];
   }
 
   const pool = getPool(website.neonDatabaseUrl);
   const result = await pool.query(
     `SELECT mls_number, address FROM properties
-     ORDER BY is_featured DESC, created_at DESC`
+     ORDER BY is_featured DESC, created_at DESC`,
   );
 
   return result.rows.map((row: any) => ({
     mls_number: row.mls_number ?? null,
-    address: row.address ?? '',
+    address: row.address ?? "",
   }));
 }
 
@@ -130,7 +138,7 @@ export async function getWebsiteListingOrderForCrmMatch(
  * These are the broker's own listings (imported from their centrisBrokerUrl).
  */
 export async function getBrokerFeaturedMlsNumbers(
-  websiteId: string
+  websiteId: string,
 ): Promise<string[]> {
   const resolved = await resolveWebsiteDb(websiteId);
   if (!resolved) return [];
@@ -140,16 +148,18 @@ export async function getBrokerFeaturedMlsNumbers(
     select: { neonDatabaseUrl: true, templateType: true },
   });
 
-  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+  if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
     return [];
   }
 
   const pool = getPool(website.neonDatabaseUrl);
   const result = await pool.query(
-    `SELECT mls_number FROM properties WHERE is_featured = true AND mls_number IS NOT NULL`
+    `SELECT mls_number FROM properties WHERE is_featured = true AND mls_number IS NOT NULL`,
   );
 
-  return result.rows.map((row: any) => row.mls_number as string).filter(Boolean);
+  return result.rows
+    .map((row: any) => row.mls_number as string)
+    .filter(Boolean);
 }
 
 /**
@@ -157,13 +167,13 @@ export async function getBrokerFeaturedMlsNumbers(
  * matches a featured listing on the broker's website.
  */
 export async function flagBrokerListingsFromWebsite(
-  userId: string
+  userId: string,
 ): Promise<{ flagged: number; error?: string }> {
   try {
     const ctx = createDalContext(userId, await getUserIndustry(userId));
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
-      where: { userId: ctx.userId, templateType: 'SERVICE' },
+      where: { userId: ctx.userId, templateType: "SERVICE" },
       select: { id: true },
     });
 
@@ -172,7 +182,7 @@ export async function flagBrokerListingsFromWebsite(
     const featuredMls = await getBrokerFeaturedMlsNumbers(website.id);
     if (featuredMls.length === 0) return { flagged: 0 };
 
-    const result = await prisma.rEProperty.updateMany({
+    const result = await db.rEProperty.updateMany({
       where: {
         userId,
         mlsNumber: { in: featuredMls },
@@ -190,34 +200,36 @@ export async function flagBrokerListingsFromWebsite(
 export async function updatePropertySecret(
   websiteId: string,
   propertyId: number,
-  isSecret: boolean
+  isSecret: boolean,
 ): Promise<void> {
   const resolved = await resolveWebsiteDb(websiteId);
-  if (!resolved) throw new Error('Website not found');
+  if (!resolved) throw new Error("Website not found");
 
   const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
 
-  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
-    throw new Error('Listings are only available for service template websites');
+  if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
+    throw new Error(
+      "Listings are only available for service template websites",
+    );
   }
 
   const pool = getPool(website.neonDatabaseUrl);
   await pool.query(
     `UPDATE properties SET is_secret = $1, updated_at = NOW() WHERE id = $2`,
-    [isSecret, propertyId]
+    [isSecret, propertyId],
   );
 }
 
 export async function updatePropertyGallery(
   websiteId: string,
   propertyId: number,
-  galleryImages: GalleryItem[]
+  galleryImages: GalleryItem[],
 ): Promise<void> {
   const resolved = await resolveWebsiteDb(websiteId);
-  if (!resolved) throw new Error('Website not found');
+  if (!resolved) throw new Error("Website not found");
 
   const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
@@ -225,11 +237,13 @@ export async function updatePropertyGallery(
   });
 
   if (!website?.neonDatabaseUrl) {
-    throw new Error('Website has no database configured');
+    throw new Error("Website has no database configured");
   }
 
-  if (website.templateType !== 'SERVICE') {
-    throw new Error('Listings are only available for service template websites');
+  if (website.templateType !== "SERVICE") {
+    throw new Error(
+      "Listings are only available for service template websites",
+    );
   }
 
   const pool = getPool(website.neonDatabaseUrl);
@@ -238,7 +252,7 @@ export async function updatePropertyGallery(
     `UPDATE properties
      SET gallery_images = $1::jsonb, updated_at = NOW()
      WHERE id = $2`,
-    [JSON.stringify(galleryImages), propertyId]
+    [JSON.stringify(galleryImages), propertyId],
   );
 }
 
@@ -261,7 +275,7 @@ export interface SyncListingInput {
   listPrice?: number | null;
   rentPrice?: number | null;
   rentPriceLabel?: string | null;
-  listingType?: 'sale' | 'rent';
+  listingType?: "sale" | "rent";
   mlsNumber?: string | null;
   photos?: string[] | null;
   description?: string | null;
@@ -299,19 +313,22 @@ export interface SyncListingInput {
 
 export async function syncListingToWebsite(
   userId: string,
-  listing: SyncListingInput
+  listing: SyncListingInput,
 ): Promise<{ success: boolean; websiteId?: string; error?: string }> {
   try {
     const industry = await getUserIndustry(userId);
     const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
-      where: { userId: ctx.userId, templateType: 'SERVICE' },
+      where: { userId: ctx.userId, templateType: "SERVICE" },
       select: { id: true, neonDatabaseUrl: true },
     });
 
     if (!website?.neonDatabaseUrl) {
-      return { success: false, error: 'No SERVICE website with database found' };
+      return {
+        success: false,
+        error: "No SERVICE website with database found",
+      };
     }
 
     const pool = getPool(website.neonDatabaseUrl);
@@ -320,8 +337,8 @@ export async function syncListingToWebsite(
     const title = fullAddress;
     const slug = fullAddress
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
       .slice(0, 120);
 
     const photos = Array.isArray(listing.photos) ? listing.photos : [];
@@ -329,24 +346,34 @@ export async function syncListingToWebsite(
     const galleryImages = photos.length > 1 ? photos.slice(1) : [];
 
     const statusMap: Record<string, string> = {
-      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold', RENTED: 'rented',
-      EXPIRED: 'expired', WITHDRAWN: 'withdrawn', COMING_SOON: 'coming_soon',
+      ACTIVE: "active",
+      PENDING: "pending",
+      SOLD: "sold",
+      RENTED: "rented",
+      EXPIRED: "expired",
+      WITHDRAWN: "withdrawn",
+      COMING_SOON: "coming_soon",
     };
-    const status = statusMap[listing.listingStatus || 'ACTIVE'] || 'active';
+    const status = statusMap[listing.listingStatus || "ACTIVE"] || "active";
 
     const typeMap: Record<string, string> = {
-      SINGLE_FAMILY: 'house', CONDO: 'condo', TOWNHOUSE: 'townhouse',
-      MULTI_FAMILY: 'multi-family', LAND: 'land', COMMERCIAL: 'commercial', OTHER: 'other',
+      SINGLE_FAMILY: "house",
+      CONDO: "condo",
+      TOWNHOUSE: "townhouse",
+      MULTI_FAMILY: "multi-family",
+      LAND: "land",
+      COMMERCIAL: "commercial",
+      OTHER: "other",
     };
-    const propertyType = typeMap[listing.propertyType || 'OTHER'] || 'house';
+    const propertyType = typeMap[listing.propertyType || "OTHER"] || "house";
 
-    const listingType = listing.listingType || 'sale';
+    const listingType = listing.listingType || "sale";
     const displayPrice =
-      status === 'sold' || status === 'rented'
+      status === "sold" || status === "rented"
         ? null
-        : listingType === 'rent'
-          ? (listing.rentPrice ?? null)
-          : (listing.listPrice ?? null);
+        : listingType === "rent"
+          ? listing.rentPrice ?? null
+          : listing.listPrice ?? null;
 
     // Build the features JSON for the website (amenities, inclusions, proximity, etc.)
     let featuresJson: Record<string, unknown> | null = null;
@@ -388,41 +415,41 @@ export async function syncListingToWebsite(
     `;
 
     await pool.query(upsertQuery, [
-      title,                                                   // $1
-      slug,                                                    // $2
-      fullAddress,                                             // $3
-      listing.city || '',                                      // $4
-      listing.state || null,                                   // $5  province
-      listing.zip || null,                                     // $6  postal_code
-      listing.neighborhood || null,                            // $7
-      propertyType,                                            // $8
-      listingType,                                             // $9
-      status,                                                  // $10
-      displayPrice,                                            // $11
-      listing.priceLabel || listing.rentPriceLabel || null,     // $12 price_label
-      listing.beds || null,                                    // $13
-      listing.baths || null,                                   // $14
-      listing.rooms || null,                                   // $15
-      listing.sqft ? String(listing.sqft) : null,              // $16 area
-      listing.areaUnit || null,                                // $17 area_unit
-      listing.lotSize || null,                                 // $18 lot_area
-      listing.yearBuilt || null,                               // $19 year_built
-      mainImage,                                               // $20
-      JSON.stringify(galleryImages),                           // $21 gallery_images
-      featuresJson ? JSON.stringify(featuresJson) : null,      // $22 features
+      title, // $1
+      slug, // $2
+      fullAddress, // $3
+      listing.city || "", // $4
+      listing.state || null, // $5  province
+      listing.zip || null, // $6  postal_code
+      listing.neighborhood || null, // $7
+      propertyType, // $8
+      listingType, // $9
+      status, // $10
+      displayPrice, // $11
+      listing.priceLabel || listing.rentPriceLabel || null, // $12 price_label
+      listing.beds || null, // $13
+      listing.baths || null, // $14
+      listing.rooms || null, // $15
+      listing.sqft ? String(listing.sqft) : null, // $16 area
+      listing.areaUnit || null, // $17 area_unit
+      listing.lotSize || null, // $18 lot_area
+      listing.yearBuilt || null, // $19 year_built
+      mainImage, // $20
+      JSON.stringify(galleryImages), // $21 gallery_images
+      featuresJson ? JSON.stringify(featuresJson) : null, // $22 features
       listing.roomDetails ? JSON.stringify(listing.roomDetails) : null, // $23 room_details
-      listing.lat || null,                                     // $24
-      listing.lng || null,                                     // $25
-      listing.isBrokerListing === true,                        // $26 is_featured — only broker's own listings
-      listing.mlsNumber || null,                               // $27
-      listing.description || null,                             // $28
-      listing.addendum || null,                                // $29
-      listing.virtualTourUrl || null,                          // $30 original_url
+      listing.lat || null, // $24
+      listing.lng || null, // $25
+      listing.isBrokerListing === true, // $26 is_featured — only broker's own listings
+      listing.mlsNumber || null, // $27
+      listing.description || null, // $28
+      listing.addendum || null, // $29
+      listing.virtualTourUrl || null, // $30 original_url
     ]);
 
     return { success: true, websiteId: website.id };
   } catch (e: any) {
-    console.error('[syncListingToWebsite] Error:', e.message);
+    console.error("[syncListingToWebsite] Error:", e.message);
     return { success: false, error: e.message };
   }
 }
@@ -431,7 +458,7 @@ export async function syncListingToWebsite(
 export async function searchWebsiteListings(
   userId: string,
   query: string,
-  limit = 20
+  limit = 20,
 ): Promise<{
   results: Array<{
     id: number;
@@ -456,12 +483,12 @@ export async function searchWebsiteListings(
     const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
-      where: { userId: ctx.userId, templateType: 'SERVICE' },
+      where: { userId: ctx.userId, templateType: "SERVICE" },
       select: { id: true, neonDatabaseUrl: true },
     });
 
     if (!website?.neonDatabaseUrl) {
-      return { results: [], error: 'No SERVICE website with database found' };
+      return { results: [], error: "No SERVICE website with database found" };
     }
 
     const pool = getPool(website.neonDatabaseUrl);
@@ -475,7 +502,7 @@ export async function searchWebsiteListings(
        WHERE mls_number ILIKE $1 OR address ILIKE $1 OR title ILIKE $1
        ORDER BY is_featured DESC, created_at DESC
        LIMIT $2`,
-      [q, limit]
+      [q, limit],
     );
 
     return { results: result.rows, websiteId: website.id };
@@ -492,55 +519,68 @@ export async function syncStatusToWebsite(
   userId: string,
   mlsNumber: string | null,
   address: string | null,
-  status: string
+  status: string,
 ): Promise<{ success: boolean; updated: number; error?: string }> {
   try {
     const industry = await getUserIndustry(userId);
     const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
-      where: { userId: ctx.userId, templateType: 'SERVICE' },
+      where: { userId: ctx.userId, templateType: "SERVICE" },
       select: { id: true, neonDatabaseUrl: true },
     });
 
     if (!website?.neonDatabaseUrl) {
-      return { success: false, updated: 0, error: 'No SERVICE website with database found' };
+      return {
+        success: false,
+        updated: 0,
+        error: "No SERVICE website with database found",
+      };
     }
 
     const statusMap: Record<string, string> = {
-      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold', RENTED: 'rented',
-      EXPIRED: 'expired', WITHDRAWN: 'withdrawn', COMING_SOON: 'coming_soon',
+      ACTIVE: "active",
+      PENDING: "pending",
+      SOLD: "sold",
+      RENTED: "rented",
+      EXPIRED: "expired",
+      WITHDRAWN: "withdrawn",
+      COMING_SOON: "coming_soon",
     };
-    const dbStatus = statusMap[status] || 'active';
+    const dbStatus = statusMap[status] || "active";
 
     const pool = getPool(website.neonDatabaseUrl);
     let result;
 
     // When sold or rented, hide price on the website (do not reveal sale/rent amounts)
-    const hidePrice = dbStatus === 'sold' || dbStatus === 'rented';
+    const hidePrice = dbStatus === "sold" || dbStatus === "rented";
 
     if (mlsNumber) {
       result = hidePrice
         ? await pool.query(
-          `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
-          [dbStatus, mlsNumber]
-        )
+            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE mls_number = $2`,
+            [dbStatus, mlsNumber],
+          )
         : await pool.query(
-          `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
-          [dbStatus, mlsNumber]
-        );
+            `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
+            [dbStatus, mlsNumber],
+          );
     } else if (address) {
       result = hidePrice
         ? await pool.query(
-          `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
-          [dbStatus, `%${address}%`]
-        )
+            `UPDATE properties SET status = $1, price = NULL, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+            [dbStatus, `%${address}%`],
+          )
         : await pool.query(
-          `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
-          [dbStatus, `%${address}%`]
-        );
+            `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+            [dbStatus, `%${address}%`],
+          );
     } else {
-      return { success: false, updated: 0, error: 'No MLS number or address to match' };
+      return {
+        success: false,
+        updated: 0,
+        error: "No MLS number or address to match",
+      };
     }
 
     return { success: true, updated: result.rowCount ?? 0 };
@@ -559,13 +599,16 @@ export async function syncStatusChangesToWebsite(userId: string): Promise<{
   error?: string;
 }> {
   try {
+    const industry = await getUserIndustry(userId);
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
     const [soldProps, rentedListings] = await Promise.all([
-      prisma.rEProperty.findMany({
-        where: { userId, listingStatus: 'SOLD', mlsNumber: { not: null } },
+      db.rEProperty.findMany({
+        where: { userId, listingStatus: "SOLD", mlsNumber: { not: null } },
         select: { mlsNumber: true },
       }),
-      prisma.rERentalListing.findMany({
-        where: { userId, listingStatus: 'RENTED', mlsNumber: { not: null } },
+      db.rERentalListing.findMany({
+        where: { userId, listingStatus: "RENTED", mlsNumber: { not: null } },
         select: { mlsNumber: true },
       }),
     ]);
@@ -575,13 +618,18 @@ export async function syncStatusChangesToWebsite(userId: string): Promise<{
 
     for (const p of soldProps) {
       if (p.mlsNumber) {
-        const r = await syncStatusToWebsite(userId, p.mlsNumber, null, 'SOLD');
+        const r = await syncStatusToWebsite(userId, p.mlsNumber, null, "SOLD");
         if (r.updated > 0) soldUpdated += r.updated;
       }
     }
     for (const r of rentedListings) {
       if (r.mlsNumber) {
-        const res = await syncStatusToWebsite(userId, r.mlsNumber, null, 'RENTED');
+        const res = await syncStatusToWebsite(
+          userId,
+          r.mlsNumber,
+          null,
+          "RENTED",
+        );
         if (res.updated > 0) rentedUpdated += res.updated;
       }
     }
@@ -592,7 +640,10 @@ export async function syncStatusChangesToWebsite(userId: string): Promise<{
   }
 }
 
-export async function getPropertyForEdit(websiteId: string, propertyId: number): Promise<PropertyListing | null> {
+export async function getPropertyForEdit(
+  websiteId: string,
+  propertyId: number,
+): Promise<PropertyListing | null> {
   const resolved = await resolveWebsiteDb(websiteId);
   if (!resolved) return null;
 
@@ -601,7 +652,7 @@ export async function getPropertyForEdit(websiteId: string, propertyId: number):
     select: { neonDatabaseUrl: true, templateType: true },
   });
 
-  if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+  if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
     return null;
   }
 
@@ -611,7 +662,7 @@ export async function getPropertyForEdit(websiteId: string, propertyId: number):
     `SELECT id, title, slug, address, main_image_url, gallery_images
      FROM properties
      WHERE id = $1`,
-    [propertyId]
+    [propertyId],
   );
 
   if (result.rows.length === 0) return null;

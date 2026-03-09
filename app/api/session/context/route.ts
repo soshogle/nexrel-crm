@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getMetaDb } from "@/lib/db/meta-db";
 import { getIndustryDb, type IndustryDbKey } from "@/lib/db/industry-db";
 import { apiErrors } from "@/lib/api-error";
 
@@ -34,7 +34,7 @@ export async function GET() {
     let industry = (session.user.industry as string | null) || null;
 
     if (!industry) {
-      const mainUser = await prisma.user.findUnique({
+      const mainUser = await getMetaDb().user.findUnique({
         where: { id: session.user.id },
         select: { industry: true },
       });

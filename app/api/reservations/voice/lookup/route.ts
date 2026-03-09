@@ -1,36 +1,48 @@
-
 /**
  * Voice AI Reservation Lookup Endpoint
- * 
+ *
  * Looks up a reservation by confirmation code.
  * Useful for customers calling to modify or cancel reservations.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { format } from 'date-fns';
+import { NextRequest, NextResponse } from "next/server";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { format } from "date-fns";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { confirmationCode, userId } = body;
 
-    if (!confirmationCode) {
+    if (!userId) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          message: 'Please provide your confirmation code.',
-          error: 'Missing confirmation code' 
+          message: "Please provide the business identifier.",
+          error: "Missing userId",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const reservation = await prisma.reservation.findFirst({
+    const ctx = await resolveDalContext(userId);
+
+    if (!confirmationCode) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please provide your confirmation code.",
+          error: "Missing confirmation code",
+        },
+        { status: 400 },
+      );
+    }
+
+    const reservation = await getCrmDb(ctx).reservation.findFirst({
       where: {
         confirmationCode: confirmationCode.toUpperCase(),
         ...(userId && { userId }),
@@ -44,15 +56,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: `I couldn't find a reservation with confirmation code ${confirmationCode.split('').join(' ')}. Could you please check the code and try again?`,
+          message: `I couldn't find a reservation with confirmation code ${confirmationCode.split("").join(" ")}. Could you please check the code and try again?`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Format the response in a voice-friendly way
-    const dateFormatted = format(new Date(reservation.reservationDate), 'MMMM do, yyyy');
-    const message = `I found your reservation for ${reservation.customerName}, party of ${reservation.partySize}, on ${dateFormatted} at ${reservation.reservationTime}. The status is ${reservation.status.toLowerCase()}. ${reservation.table ? `You're reserved at ${reservation.table.tableName}.` : ''} How can I help you with this reservation?`;
+    const dateFormatted = format(
+      new Date(reservation.reservationDate),
+      "MMMM do, yyyy",
+    );
+    const message = `I found your reservation for ${reservation.customerName}, party of ${reservation.partySize}, on ${dateFormatted} at ${reservation.reservationTime}. The status is ${reservation.status.toLowerCase()}. ${reservation.table ? `You're reserved at ${reservation.table.tableName}.` : ""} How can I help you with this reservation?`;
 
     return NextResponse.json({
       success: true,
@@ -63,7 +78,7 @@ export async function POST(request: NextRequest) {
         customerName: reservation.customerName,
         customerPhone: reservation.customerPhone,
         customerEmail: reservation.customerEmail,
-        date: format(new Date(reservation.reservationDate), 'yyyy-MM-dd'),
+        date: format(new Date(reservation.reservationDate), "yyyy-MM-dd"),
         time: reservation.reservationTime,
         partySize: reservation.partySize,
         status: reservation.status,
@@ -73,14 +88,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Error looking up reservation:', error);
+    console.error("❌ Error looking up reservation:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        message: 'System error occurred while looking up your reservation',
-        error: error.message 
+        message: "System error occurred while looking up your reservation",
+        error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

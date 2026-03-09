@@ -12,7 +12,6 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createDalContext } from "@/lib/context/industry-context";
-import { prisma } from "@/lib/db";
 import { leadService } from "@/lib/dal/lead-service";
 import { noteService } from "@/lib/dal/note-service";
 import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
@@ -20,7 +19,7 @@ import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
 import { syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -43,7 +42,15 @@ function blurPrice(price: number): string {
   return "$" + "•".repeat(Math.min(len, 6));
 }
 
-function blurComparables(comparables: ComparableProperty[]): { addressBlurred: string; priceBlurred: string; bedrooms: number | null; bathrooms: number | null; status: string }[] {
+function blurComparables(
+  comparables: ComparableProperty[],
+): {
+  addressBlurred: string;
+  priceBlurred: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  status: string;
+}[] {
   return comparables.map((c) => ({
     addressBlurred: blurAddress(c.address) + (c.city ? `, ${c.city}` : ""),
     priceBlurred: blurPrice(c.price),
@@ -55,7 +62,7 @@ function blurComparables(comparables: ComparableProperty[]): { addressBlurred: s
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: websiteId } = await params;
@@ -92,7 +99,9 @@ export async function POST(
     }
 
     if (!contact?.name || !contact?.email) {
-      return apiErrors.badRequest("Name and email are required to receive your evaluation");
+      return apiErrors.badRequest(
+        "Name and email are required to receive your evaluation",
+      );
     }
 
     const evaluation = await runPropertyEvaluation(
@@ -109,22 +118,26 @@ export async function POST(
         livingArea: propertyDetails.livingArea,
       },
       website.userId,
-      null
+      null,
     );
 
     const blurredComparables = blurComparables(evaluation.comparables);
 
-    const user = await prisma.user.findUnique({
+    const user = await resolved.db.user.findUnique({
       where: { id: website.userId },
       select: { id: true, email: true, industry: true },
     });
 
-    const agencyConfig = (website.agencyConfig as Record<string, unknown> | null) || {};
+    const agencyConfig =
+      (website.agencyConfig as Record<string, unknown> | null) || {};
     const replyToEmail =
-      (agencyConfig.email as string)?.trim() || (user?.email as string)?.trim() || null;
+      (agencyConfig.email as string)?.trim() ||
+      (user?.email as string)?.trim() ||
+      null;
 
     // Use user's industry for lead/sync (pipeline lives in user's industry DB)
-    const userIndustry = (user?.industry as string) || resolved.industry || null;
+    const userIndustry =
+      (user?.industry as string) || resolved.industry || null;
 
     if (user) {
       const ctx = createDalContext(user.id, userIndustry);
@@ -147,7 +160,10 @@ export async function POST(
         content: `Property Evaluation: ${propertyDetails.address}\nEstimated value: $${evaluation.estimatedValue.toLocaleString()}\nComparables: ${evaluation.comparables.length}`,
       });
       syncLeadCreatedToPipeline(user.id, lead, userIndustry).catch((err) => {
-        console.error("[property-evaluation] Failed to sync lead to pipeline:", err);
+        console.error(
+          "[property-evaluation] Failed to sync lead to pipeline:",
+          err,
+        );
       });
     }
 
@@ -155,15 +171,22 @@ export async function POST(
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
       const resend = new Resend(resendKey);
-      const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-      const emailHtml = buildEvaluationEmailHtmlBlurred(evaluation, contact.name, blurredComparables);
+      const fromEmail =
+        process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+      const emailHtml = buildEvaluationEmailHtmlBlurred(
+        evaluation,
+        contact.name,
+        blurredComparables,
+      );
 
       await resend.emails.send({
         from: `Property Evaluation <${fromEmail}>`,
         to: contact.email,
         subject: `Your Property Evaluation: ${propertyDetails.address}`,
         html: emailHtml,
-        ...(replyToEmail && replyToEmail.includes("@") ? { reply_to: replyToEmail } : {}),
+        ...(replyToEmail && replyToEmail.includes("@")
+          ? { reply_to: replyToEmail }
+          : {}),
       });
     }
 
@@ -179,7 +202,11 @@ export async function POST(
         comparablesBlurred: blurredComparables,
         comparablesCount: evaluation.comparables.length,
       },
-      contact: { name: contact.name, email: contact.email, phone: contact.phone },
+      contact: {
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+      },
     });
   } catch (error: any) {
     console.error("[property-evaluation]", error);
@@ -190,11 +217,18 @@ export async function POST(
 function buildEvaluationEmailHtmlBlurred(
   evaluation: any,
   name: string,
-  blurredComparables: { addressBlurred: string; priceBlurred: string; bedrooms: number | null; bathrooms: number | null; status: string }[]
+  blurredComparables: {
+    addressBlurred: string;
+    priceBlurred: string;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    status: string;
+  }[],
 ): string {
-  const valueStr = evaluation.estimatedValue > 0
-    ? `$${evaluation.estimatedValue.toLocaleString()}`
-    : "Contact us for a detailed appraisal";
+  const valueStr =
+    evaluation.estimatedValue > 0
+      ? `$${evaluation.estimatedValue.toLocaleString()}`
+      : "Contact us for a detailed appraisal";
   const fallbackNote = evaluation.usedRegionalFallback
     ? "<p style='font-size:12px;color:#888;margin-top:8px;'>This estimate is based on regional market statistics. For a more accurate valuation, we recommend a personalized comparative market analysis.</p>"
     : "";
@@ -222,7 +256,7 @@ function buildEvaluationEmailHtmlBlurred(
           <td style="padding:8px;">${c.bathrooms ?? "—"}</td>
           <td style="padding:8px;">${c.status}</td>
         </tr>
-        `
+        `,
           )
           .join("")}
       </table>

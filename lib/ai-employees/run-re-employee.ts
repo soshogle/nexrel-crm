@@ -4,12 +4,12 @@
  * Phase 2: Actual outreach (SMS, calls) + custom templates
  */
 
-import { prisma } from '@/lib/db';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { leadService } from '@/lib/dal/lead-service';
-import type { REAIEmployeeType } from '@prisma/client';
-import { sendSMSToLead } from '@/lib/ai-employees/outreach-helper';
-import { getTaskTemplate } from '@/lib/ai-employees/template-helper';
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { leadService } from "@/lib/dal/lead-service";
+import type { REAIEmployeeType } from "@prisma/client";
+import { sendSMSToLead } from "@/lib/ai-employees/outreach-helper";
+import { getTaskTemplate } from "@/lib/ai-employees/template-helper";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -22,16 +22,16 @@ export interface REExecutionResult {
 }
 
 const DEFAULT_SPEED_TO_LEAD_MSG =
-  'Hi {firstName}! Thanks for your inquiry. A team member will reach out shortly. In the meantime, feel free to reply with any questions.';
+  "Hi {firstName}! Thanks for your inquiry. A team member will reach out shortly. In the meantime, feel free to reply with any questions.";
 
 async function executeSpeedToLead(
   userId: string,
-  template?: { smsTemplate?: string | null } | null
+  template?: { smsTemplate?: string | null } | null,
 ): Promise<REExecutionResult> {
   const ctx = await resolveDalContext(userId);
   const newLeads = await leadService.findMany(ctx, {
     where: {
-      status: 'NEW',
+      status: "NEW",
       lastContactedAt: null,
       createdAt: {
         gte: new Date(Date.now() - 60 * 60 * 1000),
@@ -49,14 +49,14 @@ async function executeSpeedToLead(
       await delay(200);
     }
     await leadService.update(ctx, lead.id, {
-      status: 'CONTACTED',
+      status: "CONTACTED",
       lastContactedAt: new Date(),
     });
   }
 
   return {
     success: true,
-    employeeType: 'RE_SPEED_TO_LEAD',
+    employeeType: "RE_SPEED_TO_LEAD",
     tasksCompleted: sent,
     summary: `Sent ${sent} instant responses to ${newLeads.length} new leads`,
     details: { leadIds: newLeads.map((l) => l.id), sent },
@@ -64,19 +64,21 @@ async function executeSpeedToLead(
 }
 
 async function executeFSBOOutreach(userId: string): Promise<REExecutionResult> {
-  const fsboListings = await prisma.rEFSBOListing.findMany({
-    where: { status: 'NEW', contactAttempts: { lt: 3 } },
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
+  const fsboListings = await db.rEFSBOListing.findMany({
+    where: { status: "NEW", contactAttempts: { lt: 3 } },
     take: 20,
   });
 
   let contacted = 0;
   for (const listing of fsboListings) {
-    await prisma.rEFSBOListing.update({
+    await db.rEFSBOListing.update({
       where: { id: listing.id },
       data: {
         contactAttempts: { increment: 1 },
         lastContactedAt: new Date(),
-        status: listing.contactAttempts >= 2 ? 'CONTACTED' : 'NEW',
+        status: listing.contactAttempts >= 2 ? "CONTACTED" : "NEW",
       },
     });
     contacted++;
@@ -84,18 +86,22 @@ async function executeFSBOOutreach(userId: string): Promise<REExecutionResult> {
 
   return {
     success: true,
-    employeeType: 'RE_FSBO_OUTREACH',
+    employeeType: "RE_FSBO_OUTREACH",
     tasksCompleted: contacted,
     summary: `Contacted ${contacted} FSBO listings`,
     details: { listingIds: fsboListings.map((l) => l.id) },
   };
 }
 
-async function executeStaleDiagnostic(userId: string): Promise<REExecutionResult> {
-  const staleProperties = await prisma.rEProperty.findMany({
+async function executeStaleDiagnostic(
+  userId: string,
+): Promise<REExecutionResult> {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
+  const staleProperties = await db.rEProperty.findMany({
     where: {
       userId,
-      listingStatus: 'ACTIVE',
+      listingStatus: "ACTIVE",
       daysOnMarket: { gte: 21 },
     },
     take: 10,
@@ -103,7 +109,7 @@ async function executeStaleDiagnostic(userId: string): Promise<REExecutionResult
 
   const diagnostics = [];
   for (const property of staleProperties) {
-    const existingDiagnostic = await prisma.rEStaleDiagnostic.findFirst({
+    const existingDiagnostic = await db.rEStaleDiagnostic.findFirst({
       where: {
         userId,
         propertyId: property.id,
@@ -112,17 +118,17 @@ async function executeStaleDiagnostic(userId: string): Promise<REExecutionResult
     });
 
     if (!existingDiagnostic) {
-      const diagnostic = await prisma.rEStaleDiagnostic.create({
+      const diagnostic = await db.rEStaleDiagnostic.create({
         data: {
           userId,
           propertyId: property.id,
           address: property.address,
           listPrice: property.listPrice,
           daysOnMarket: property.daysOnMarket,
-          analysisJson: { status: 'pending_analysis' },
+          analysisJson: { status: "pending_analysis" },
           topReasons: [],
           actionPlan: [],
-          status: 'PENDING',
+          status: "PENDING",
         },
       });
       diagnostics.push(diagnostic);
@@ -131,7 +137,7 @@ async function executeStaleDiagnostic(userId: string): Promise<REExecutionResult
 
   return {
     success: true,
-    employeeType: 'RE_STALE_DIAGNOSTIC',
+    employeeType: "RE_STALE_DIAGNOSTIC",
     tasksCompleted: diagnostics.length,
     summary: `Created ${diagnostics.length} stale listing diagnostics for analysis`,
     details: { diagnosticIds: diagnostics.map((d) => d.id) },
@@ -140,16 +146,26 @@ async function executeStaleDiagnostic(userId: string): Promise<REExecutionResult
 
 async function executeMarketReport(
   userId: string,
-  reportType: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS'
+  reportType:
+    | "WEEKLY_MARKET_UPDATE"
+    | "MONTHLY_MARKET_REPORT"
+    | "QUARTERLY_ANALYSIS",
 ): Promise<REExecutionResult> {
-  const user = await prisma.user.findUnique({
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: { operatingLocation: true, name: true },
   });
-  const region = user?.operatingLocation || 'Local Market';
+  const region = user?.operatingLocation || "Local Market";
 
-  const days = reportType === 'WEEKLY_MARKET_UPDATE' ? 7 : reportType === 'MONTHLY_MARKET_REPORT' ? 30 : 90;
-  const existingReport = await prisma.rEMarketReport.findFirst({
+  const days =
+    reportType === "WEEKLY_MARKET_UPDATE"
+      ? 7
+      : reportType === "MONTHLY_MARKET_REPORT"
+        ? 30
+        : 90;
+  const existingReport = await db.rEMarketReport.findFirst({
     where: {
       userId,
       type: reportType,
@@ -169,17 +185,19 @@ async function executeMarketReport(
 
   const currentDate = new Date();
   const periodStart = new Date();
-  if (reportType === 'WEEKLY_MARKET_UPDATE') periodStart.setDate(currentDate.getDate() - 7);
-  else if (reportType === 'MONTHLY_MARKET_REPORT') periodStart.setMonth(currentDate.getMonth() - 1);
+  if (reportType === "WEEKLY_MARKET_UPDATE")
+    periodStart.setDate(currentDate.getDate() - 7);
+  else if (reportType === "MONTHLY_MARKET_REPORT")
+    periodStart.setMonth(currentDate.getMonth() - 1);
   else periodStart.setMonth(currentDate.getMonth() - 3);
 
   const titleMap = {
-    WEEKLY_MARKET_UPDATE: 'Weekly Market Update',
-    MONTHLY_MARKET_REPORT: 'Monthly Market Report',
-    QUARTERLY_ANALYSIS: 'Quarterly Analysis',
+    WEEKLY_MARKET_UPDATE: "Weekly Market Update",
+    MONTHLY_MARKET_REPORT: "Monthly Market Report",
+    QUARTERLY_ANALYSIS: "Quarterly Analysis",
   };
 
-  const report = await prisma.rEMarketReport.create({
+  const report = await db.rEMarketReport.create({
     data: {
       userId,
       type: reportType,
@@ -187,7 +205,7 @@ async function executeMarketReport(
       region,
       periodStart,
       periodEnd: currentDate,
-      executiveSummary: 'Report generation in progress...',
+      executiveSummary: "Report generation in progress...",
     },
   });
 
@@ -200,12 +218,14 @@ async function executeMarketReport(
   };
 }
 
-async function executeColdReactivation(userId: string): Promise<REExecutionResult> {
+async function executeColdReactivation(
+  userId: string,
+): Promise<REExecutionResult> {
   const ctx = await resolveDalContext(userId);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const coldLeads = await leadService.findMany(ctx, {
     where: {
-      status: { in: ['CONTACTED', 'QUALIFIED'] },
+      status: { in: ["CONTACTED", "QUALIFIED"] },
       lastContactedAt: { lt: thirtyDaysAgo },
     },
     take: 25,
@@ -217,19 +237,21 @@ async function executeColdReactivation(userId: string): Promise<REExecutionResul
 
   return {
     success: true,
-    employeeType: 'RE_COLD_REACTIVATION',
+    employeeType: "RE_COLD_REACTIVATION",
     tasksCompleted: coldLeads.length,
     summary: `Re-engaged ${coldLeads.length} cold leads`,
     details: { leadIds: coldLeads.map((l) => l.id) },
   };
 }
 
-async function executeSphereNurture(userId: string): Promise<REExecutionResult> {
+async function executeSphereNurture(
+  userId: string,
+): Promise<REExecutionResult> {
   const ctx = await resolveDalContext(userId);
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
   const pastClients = await leadService.findMany(ctx, {
     where: {
-      status: 'CONVERTED',
+      status: "CONVERTED",
       lastContactedAt: { lt: sixtyDaysAgo },
     },
     take: 20,
@@ -241,7 +263,7 @@ async function executeSphereNurture(userId: string): Promise<REExecutionResult> 
 
   return {
     success: true,
-    employeeType: 'RE_SPHERE_NURTURE',
+    employeeType: "RE_SPHERE_NURTURE",
     tasksCompleted: pastClients.length,
     summary: `Nurtured ${pastClients.length} past clients in your sphere`,
     details: { clientIds: pastClients.map((c) => c.id) },
@@ -251,46 +273,46 @@ async function executeSphereNurture(userId: string): Promise<REExecutionResult> 
 export async function executeREEmployee(
   userId: string,
   employeeType: REAIEmployeeType,
-  options?: { storeHistory?: boolean }
+  options?: { storeHistory?: boolean },
 ): Promise<REExecutionResult> {
   const template =
-    employeeType === 'RE_SPEED_TO_LEAD'
-      ? await getTaskTemplate(userId, 're', null, employeeType, employeeType)
+    employeeType === "RE_SPEED_TO_LEAD"
+      ? await getTaskTemplate(userId, "re", null, employeeType, employeeType)
       : null;
 
   let result: REExecutionResult;
 
   switch (employeeType) {
-    case 'RE_SPEED_TO_LEAD':
+    case "RE_SPEED_TO_LEAD":
       result = await executeSpeedToLead(userId, template);
       break;
-    case 'RE_FSBO_OUTREACH':
+    case "RE_FSBO_OUTREACH":
       result = await executeFSBOOutreach(userId);
       break;
-    case 'RE_STALE_DIAGNOSTIC':
+    case "RE_STALE_DIAGNOSTIC":
       result = await executeStaleDiagnostic(userId);
       break;
-    case 'RE_MARKET_UPDATE':
-      result = await executeMarketReport(userId, 'WEEKLY_MARKET_UPDATE');
+    case "RE_MARKET_UPDATE":
+      result = await executeMarketReport(userId, "WEEKLY_MARKET_UPDATE");
       break;
-    case 'RE_COLD_REACTIVATION':
+    case "RE_COLD_REACTIVATION":
       result = await executeColdReactivation(userId);
       break;
-    case 'RE_SPHERE_NURTURE':
+    case "RE_SPHERE_NURTURE":
       result = await executeSphereNurture(userId);
       break;
-    case 'RE_EXPIRED_OUTREACH':
-    case 'RE_DOCUMENT_CHASER':
-    case 'RE_SHOWING_CONFIRM':
-    case 'RE_LISTING_BOOST':
-    case 'RE_CMA_GENERATOR':
-    case 'RE_BUYER_FOLLOWUP':
+    case "RE_EXPIRED_OUTREACH":
+    case "RE_DOCUMENT_CHASER":
+    case "RE_SHOWING_CONFIRM":
+    case "RE_LISTING_BOOST":
+    case "RE_CMA_GENERATOR":
+    case "RE_BUYER_FOLLOWUP":
       result = {
         success: true,
         employeeType,
         tasksCompleted: 0,
         summary: `${employeeType} execution queued for asynchronous processing.`,
-        details: { status: 'queued' },
+        details: { status: "queued" },
       };
       break;
     default:
@@ -303,12 +325,14 @@ export async function executeREEmployee(
   }
 
   if (options?.storeHistory !== false) {
-    await prisma.rEAIEmployeeExecution.create({
+    const ctx = await resolveDalContext(userId);
+    const db = getCrmDb(ctx);
+    await db.rEAIEmployeeExecution.create({
       data: {
         userId,
         employeeType: employeeType as any,
         employeeName: null,
-        status: result.success ? 'completed' : 'failed',
+        status: result.success ? "completed" : "failed",
         result: { ...result, details: result.details || {} } as any,
         completedAt: new Date(),
       },

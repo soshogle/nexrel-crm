@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { encrypt, decrypt } from '@/lib/encryption';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { encrypt } from "@/lib/encryption";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/tools/instances - List user's installed tools
 export async function GET(request: NextRequest) {
@@ -15,9 +16,12 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const status = searchParams.get("status");
 
     const where: any = {
       userId: session.user.id,
@@ -27,7 +31,7 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    const instances = await prisma.toolInstance.findMany({
+    const instances = await db.toolInstance.findMany({
       where,
       include: {
         definition: {
@@ -44,7 +48,7 @@ export async function GET(request: NextRequest) {
           select: { actions: true },
         },
       },
-      orderBy: { installedAt: 'desc' },
+      orderBy: { installedAt: "desc" },
     });
 
     // Sanitize response - don't send encrypted credentials to client
@@ -55,8 +59,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, instances: sanitized });
   } catch (error: any) {
-    console.error('Error fetching tool instances:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch tool instances');
+    console.error("Error fetching tool instances:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch tool instances",
+    );
   }
 }
 
@@ -67,25 +73,30 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { definitionId, name, description, credentials, config } = body;
 
     if (!definitionId || !name || !credentials) {
-      return apiErrors.badRequest('Missing required fields: definitionId, name, credentials');
+      return apiErrors.badRequest(
+        "Missing required fields: definitionId, name, credentials",
+      );
     }
 
     // Check if definition exists
-    const definition = await prisma.toolDefinition.findUnique({
+    const definition = await db.toolDefinition.findUnique({
       where: { id: definitionId },
     });
 
     if (!definition) {
-      return apiErrors.notFound('Tool definition not found');
+      return apiErrors.notFound("Tool definition not found");
     }
 
     // Check if user already has this tool installed
-    const existing = await prisma.toolInstance.findUnique({
+    const existing = await db.toolInstance.findUnique({
       where: {
         userId_definitionId: {
           userId: session.user.id,
@@ -95,13 +106,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return apiErrors.conflict('Tool already installed. Use update endpoint to modify.');
+      return apiErrors.conflict(
+        "Tool already installed. Use update endpoint to modify.",
+      );
     }
 
     // Encrypt credentials
     const encryptedCredentials = encrypt(JSON.stringify(credentials));
 
-    const instance = await prisma.toolInstance.create({
+    const instance = await db.toolInstance.create({
       data: {
         userId: session.user.id,
         definitionId,
@@ -109,7 +122,7 @@ export async function POST(request: NextRequest) {
         description,
         credentials: { encrypted: encryptedCredentials },
         config: config || {},
-        status: 'TESTING', // Start in testing mode
+        status: "TESTING", // Start in testing mode
       },
       include: {
         definition: true,
@@ -117,7 +130,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Increment install count
-    await prisma.toolDefinition.update({
+    await db.toolDefinition.update({
       where: { id: definitionId },
       data: { installCount: { increment: 1 } },
     });
@@ -130,7 +143,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error installing tool:', error);
-    return apiErrors.internal(error.message || 'Failed to install tool');
+    console.error("Error installing tool:", error);
+    return apiErrors.internal(error.message || "Failed to install tool");
   }
 }

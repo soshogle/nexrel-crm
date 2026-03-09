@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Check Instagram Connection Status
@@ -17,11 +18,14 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const connection = await prisma.channelConnection.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const connection = await getCrmDb(ctx).channelConnection.findFirst({
       where: {
         userId: session.user.id,
-        channelType: 'INSTAGRAM',
-        status: 'CONNECTED',
+        channelType: "INSTAGRAM",
+        status: "CONNECTED",
       },
       select: {
         id: true,
@@ -42,7 +46,9 @@ export async function GET(request: NextRequest) {
       ...connection,
     });
   } catch (error: any) {
-    console.error('❌ Error checking Instagram status:', error);
-    return apiErrors.internal(error.message || 'Failed to check Instagram status');
+    console.error("❌ Error checking Instagram status:", error);
+    return apiErrors.internal(
+      error.message || "Failed to check Instagram status",
+    );
   }
 }

@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 import { getMarketContext } from '@/lib/real-estate/market-data';
 
@@ -34,6 +35,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -116,7 +121,7 @@ Provide your response in the following JSON format:
 
 Respond with raw JSON only. Do not include code blocks, markdown, or any other formatting.`;
 
-    const localSoldComps = await prisma.rEProperty.findMany({
+    const localSoldComps = await getCrmDb(ctx).rEProperty.findMany({
       where: {
         userId: session.user.id,
         listingStatus: 'SOLD',
@@ -220,7 +225,7 @@ Provide a detailed stale listing diagnostic.`;
     }
 
     // Save the diagnostic to the database
-    const diagnostic = await prisma.rEStaleDiagnostic.create({
+    const diagnostic = await getCrmDb(ctx).rEStaleDiagnostic.create({
       data: {
         userId: session.user.id,
         address,

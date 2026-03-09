@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { ProfessionalAIEmployeeType } from "@prisma/client";
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from "@/lib/professional-ai-employees/config";
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from "@/lib/professional-ai-employees/prompts";
@@ -90,8 +91,11 @@ async function createElevenLabsAgent(
   return { agentId: data.agent_id };
 }
 
-async function getExistingAgents(userId: string) {
-  return prisma.professionalAIEmployeeAgent.findMany({
+async function getExistingAgents(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+) {
+  return db.professionalAIEmployeeAgent.findMany({
     where: { userId },
   });
 }
@@ -104,7 +108,11 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const agents = await getExistingAgents(session.user.id);
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
+    const agents = await getExistingAgents(db, session.user.id);
 
     // Trigger auto-provision/fix in background (fixes existing agents' LLM + tools)
     provisionAIEmployeesForUser(session.user.id);
@@ -148,6 +156,10 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const body = await request.json().catch(() => undefined);
     const { employeeTypes, forceRefresh } = body || {};
 
@@ -165,7 +177,7 @@ export async function POST(request: NextRequest) {
             ProfessionalAIEmployeeType,
           ) as ProfessionalAIEmployeeType[]);
 
-    const existingAgents = await getExistingAgents(session.user.id);
+    const existingAgents = await getExistingAgents(db, session.user.id);
     const existingTypes = new Set(existingAgents.map((a) => a.employeeType));
 
     const typesToCreate = forceRefresh
@@ -200,7 +212,7 @@ export async function POST(request: NextRequest) {
           voiceId: promptConfig.voiceId,
         });
 
-        const record = await prisma.professionalAIEmployeeAgent.upsert({
+        const record = await db.professionalAIEmployeeAgent.upsert({
           where: {
             userId_employeeType: { userId: session.user.id, employeeType },
           },
@@ -237,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     const successCount = results.filter((r) => r.success).length;
     const failCount = results.filter((r) => !r.success).length;
-    const updatedAgents = await getExistingAgents(session.user.id);
+    const updatedAgents = await getExistingAgents(db, session.user.id);
     const firstError = results.find((r) => !r.success)?.error;
 
     return NextResponse.json({

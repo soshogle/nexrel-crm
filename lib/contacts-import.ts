@@ -1,5 +1,5 @@
 import { resolveDalContext } from "@/lib/context/industry-context";
-import { leadService } from "@/lib/dal";
+import { getCrmDb, leadService } from "@/lib/dal";
 import { normalizeContactType, normalizeLeadStatus } from "@/lib/contact-input";
 
 export interface ImportResult {
@@ -79,6 +79,8 @@ export async function importContactsFromCSV(
 
   const success: any[] = [];
   const errors: string[] = [];
+  const ctx = await resolveDalContext(userId);
+  getCrmDb(ctx);
 
   // Process each row (skip header) - Support up to 5000 contacts
   for (let i = 1; i < Math.min(rows.length, 5001); i++) {
@@ -126,7 +128,6 @@ export async function importContactsFromCSV(
         continue;
       }
 
-      const ctx = await resolveDalContext(userId);
       // Create contact
       const contact = await leadService.create(ctx, {
         businessName: businessName,

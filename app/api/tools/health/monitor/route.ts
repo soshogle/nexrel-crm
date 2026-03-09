@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/tools/health/monitor - Calculate health metrics for all user's tools
 export async function POST(request: NextRequest) {
@@ -14,8 +15,11 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const instances = await prisma.toolInstance.findMany({
+    const instances = await db.toolInstance.findMany({
       where: {
         userId: session.user.id,
       },
@@ -26,7 +30,7 @@ export async function POST(request: NextRequest) {
               gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
             },
           },
-          orderBy: { executedAt: 'desc' },
+          orderBy: { executedAt: "desc" },
         },
       },
     });
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
     for (const instance of instances) {
       if (instance.actions.length === 0) {
         // No recent activity
-        const metric = await prisma.toolHealthMetric.create({
+        const metric = await db.toolHealthMetric.create({
           data: {
             userId: session.user.id,
             instanceId: instance.id,
@@ -46,7 +50,7 @@ export async function POST(request: NextRequest) {
             errorRateScore: 0,
             usageScore: 0,
             hasIssues: true,
-            issuesSummary: 'No activity in the last 7 days',
+            issuesSummary: "No activity in the last 7 days",
           },
         });
         healthMetrics.push(metric);
@@ -55,15 +59,22 @@ export async function POST(request: NextRequest) {
 
       // Calculate component scores
       const totalCalls = instance.actions.length;
-      const successfulCalls = instance.actions.filter((a: any) => a.success).length;
+      const successfulCalls = instance.actions.filter(
+        (a: any) => a.success,
+      ).length;
       const avgResponseTime =
-        instance.actions.reduce((sum: number, a: any) => sum + (a.duration || 0), 0) /
-        totalCalls;
+        instance.actions.reduce(
+          (sum: number, a: any) => sum + (a.duration || 0),
+          0,
+        ) / totalCalls;
 
       const availabilityScore = (successfulCalls / totalCalls) * 100;
 
       // Performance score based on response time (assuming 1000ms is baseline)
-      const performanceScore = Math.max(0, Math.min(100, 100 - (avgResponseTime - 1000) / 50));
+      const performanceScore = Math.max(
+        0,
+        Math.min(100, 100 - (avgResponseTime - 1000) / 50),
+      );
 
       // Error rate score
       const errorRate = 1 - successfulCalls / totalCalls;
@@ -82,12 +93,12 @@ export async function POST(request: NextRequest) {
 
       // Identify issues
       const issues = [];
-      if (availabilityScore < 90) issues.push('Low availability');
-      if (performanceScore < 70) issues.push('Slow response times');
-      if (errorRateScore < 80) issues.push('High error rate');
-      if (usageScore < 30) issues.push('Low usage frequency');
+      if (availabilityScore < 90) issues.push("Low availability");
+      if (performanceScore < 70) issues.push("Slow response times");
+      if (errorRateScore < 80) issues.push("High error rate");
+      if (usageScore < 30) issues.push("Low usage frequency");
 
-      const metric = await prisma.toolHealthMetric.create({
+      const metric = await db.toolHealthMetric.create({
         data: {
           userId: session.user.id,
           instanceId: instance.id,
@@ -97,7 +108,7 @@ export async function POST(request: NextRequest) {
           errorRateScore: Math.round(errorRateScore),
           usageScore: Math.round(usageScore),
           hasIssues: issues.length > 0,
-          issuesSummary: issues.length > 0 ? issues.join(', ') : null,
+          issuesSummary: issues.length > 0 ? issues.join(", ") : null,
         },
       });
 
@@ -106,7 +117,7 @@ export async function POST(request: NextRequest) {
       // Generate recommendations or retirement suggestions
       if (healthScore < 50) {
         // Consider retirement
-        const existingRetirement = await prisma.toolRetirement.findFirst({
+        const existingRetirement = await db.toolRetirement.findFirst({
           where: {
             userId: session.user.id,
             instanceId: instance.id,
@@ -115,11 +126,11 @@ export async function POST(request: NextRequest) {
         });
 
         if (!existingRetirement) {
-          await prisma.toolRetirement.create({
+          await db.toolRetirement.create({
             data: {
               userId: session.user.id,
               instanceId: instance.id,
-              reason: `Low health score (${Math.round(healthScore)}/100). Issues: ${issues.join(', ')}`,
+              reason: `Low health score (${Math.round(healthScore)}/100). Issues: ${issues.join(", ")}`,
               usageStats: {
                 last7Days: totalCalls,
                 successRate: `${Math.round(availabilityScore)}%`,
@@ -137,8 +148,8 @@ export async function POST(request: NextRequest) {
       healthMetrics,
     });
   } catch (error: any) {
-    console.error('Error monitoring tool health:', error);
-    return apiErrors.internal(error.message || 'Failed to monitor tool health');
+    console.error("Error monitoring tool health:", error);
+    return apiErrors.internal(error.message || "Failed to monitor tool health");
   }
 }
 
@@ -149,8 +160,10 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    const metrics = await prisma.toolHealthMetric.findMany({
+    const metrics = await getCrmDb(ctx).toolHealthMetric.findMany({
       where: {
         userId: session.user.id,
       },
@@ -166,13 +179,15 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { recordedAt: 'desc' },
+      orderBy: { recordedAt: "desc" },
       take: 100,
     });
 
     return NextResponse.json({ success: true, metrics });
   } catch (error: any) {
-    console.error('Error fetching health metrics:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch health metrics');
+    console.error("Error fetching health metrics:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch health metrics",
+    );
   }
 }

@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Check Instagram connection status
@@ -17,11 +18,14 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const connection = await prisma.channelConnection.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const connection = await getCrmDb(ctx).channelConnection.findFirst({
       where: {
         userId: session.user.id,
-        channelType: 'INSTAGRAM',
-        status: 'CONNECTED',
+        channelType: "INSTAGRAM",
+        status: "CONNECTED",
       },
       select: {
         id: true,
@@ -39,18 +43,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if token is expired
-    const isExpired = connection.expiresAt && new Date(connection.expiresAt) < new Date();
+    const isExpired =
+      connection.expiresAt && new Date(connection.expiresAt) < new Date();
 
     return NextResponse.json({
       isConnected: !isExpired,
       connection: {
         ...connection,
-        username: connection.displayName?.replace('@', '') || 'Instagram Account',
+        username:
+          connection.displayName?.replace("@", "") || "Instagram Account",
       },
       needsRefresh: isExpired,
     });
   } catch (error: any) {
-    console.error('Instagram status check error:', error);
-    return apiErrors.internal(error.message || 'Failed to check Instagram status');
+    console.error("Instagram status check error:", error);
+    return apiErrors.internal(
+      error.message || "Failed to check Instagram status",
+    );
   }
 }

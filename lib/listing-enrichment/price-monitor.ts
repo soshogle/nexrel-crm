@@ -10,10 +10,14 @@
  *   5. Push changed prices to the owner's website DB
  */
 
-import { prisma } from '@/lib/db';
-import { scrapeCentrisDetail } from './centris-detail';
-import { enrichViaGoogleSearch, type PropertyLookupData } from './google-search';
-import { syncListingToWebsite } from '@/lib/website-builder/listings-service';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { scrapeCentrisDetail } from "./centris-detail";
+import {
+  enrichViaGoogleSearch,
+  type PropertyLookupData,
+} from "./google-search";
+import { syncListingToWebsite } from "@/lib/website-builder/listings-service";
 
 const DELAY_MS = 2000;
 const MAX_PER_RUN = 50;
@@ -35,7 +39,7 @@ function extractPriceFromHtml(html: string): number | null {
   for (const p of patterns) {
     const m = html.match(p);
     if (m?.[1]) {
-      const num = parseInt(m[1].replace(/[\s,]/g, ''), 10);
+      const num = parseInt(m[1].replace(/[\s,]/g, ""), 10);
       if (num > 10_000 && num < 100_000_000) return num;
     }
   }
@@ -52,7 +56,7 @@ function extractRentPriceFromHtml(html: string): number | null {
   for (const p of patterns) {
     const m = html.match(p);
     if (m?.[1]) {
-      const num = parseInt(m[1].replace(/[\s,]/g, ''), 10);
+      const num = parseInt(m[1].replace(/[\s,]/g, ""), 10);
       if (num > 100 && num < 50_000) return num;
     }
   }
@@ -66,10 +70,10 @@ async function fetchHtml(url: string): Promise<string | null> {
     const timeout = setTimeout(() => controller.abort(), 15_000);
     const res = await fetch(url, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-CA,en;q=0.9,fr-CA;q=0.8',
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "en-CA,en;q=0.9,fr-CA;q=0.8",
       },
       signal: controller.signal,
     });
@@ -85,17 +89,34 @@ interface ScrapedPrice {
   price: number | null;
   source: string;
   sourceUrl?: string;
-  detectedStatus?: 'sold' | 'rented' | 'off_market' | null;
+  detectedStatus?: "sold" | "rented" | "off_market" | null;
 }
 
-const SOLD_PATTERNS = [/vendu/i, />sold</i, /"status"\s*:\s*"sold"/i, /this\s+listing\s+is\s+no\s+longer\s+available/i];
+const SOLD_PATTERNS = [
+  /vendu/i,
+  />sold</i,
+  /"status"\s*:\s*"sold"/i,
+  /this\s+listing\s+is\s+no\s+longer\s+available/i,
+];
 const RENTED_PATTERNS = [/loué/i, />rented</i, /"status"\s*:\s*"rented"/i];
-const OFF_MARKET_PATTERNS = [/listing\s+not\s+found/i, /cette\s+annonce\s+n['']est\s+plus\s+disponible/i, /no\s+longer\s+available/i];
+const OFF_MARKET_PATTERNS = [
+  /listing\s+not\s+found/i,
+  /cette\s+annonce\s+n['']est\s+plus\s+disponible/i,
+  /no\s+longer\s+available/i,
+];
 
-function detectStatusFromHtml(html: string): 'sold' | 'rented' | 'off_market' | null {
-  for (const p of SOLD_PATTERNS) { if (p.test(html)) return 'sold'; }
-  for (const p of RENTED_PATTERNS) { if (p.test(html)) return 'rented'; }
-  for (const p of OFF_MARKET_PATTERNS) { if (p.test(html)) return 'off_market'; }
+function detectStatusFromHtml(
+  html: string,
+): "sold" | "rented" | "off_market" | null {
+  for (const p of SOLD_PATTERNS) {
+    if (p.test(html)) return "sold";
+  }
+  for (const p of RENTED_PATTERNS) {
+    if (p.test(html)) return "rented";
+  }
+  for (const p of OFF_MARKET_PATTERNS) {
+    if (p.test(html)) return "off_market";
+  }
   return null;
 }
 
@@ -108,22 +129,32 @@ async function scrapeLivePrice(
   mlsNumber: string | null,
   originalUrl: string | null,
   city: string,
-  listingType: 'sale' | 'rent'
+  listingType: "sale" | "rent",
 ): Promise<ScrapedPrice> {
   // Tier 1: Direct Centris page scrape
-  if (originalUrl?.includes('centris.ca')) {
+  if (originalUrl?.includes("centris.ca")) {
     const html = await fetchHtml(originalUrl);
     if (html && html.length > 1000) {
       const detectedStatus = detectStatusFromHtml(html);
       const price =
-        listingType === 'rent'
+        listingType === "rent"
           ? extractRentPriceFromHtml(html)
           : extractPriceFromHtml(html);
       if (price || detectedStatus) {
-        return { price, source: 'centris', sourceUrl: originalUrl, detectedStatus };
+        return {
+          price,
+          source: "centris",
+          sourceUrl: originalUrl,
+          detectedStatus,
+        };
       }
     } else if (html !== null && html.length < 500) {
-      return { price: null, source: 'centris', sourceUrl: originalUrl, detectedStatus: 'off_market' };
+      return {
+        price: null,
+        source: "centris",
+        sourceUrl: originalUrl,
+        detectedStatus: "off_market",
+      };
     }
   }
 
@@ -136,7 +167,7 @@ async function scrapeLivePrice(
         if (lookupData.listPrice) {
           return {
             price: lookupData.listPrice,
-            source: 'google',
+            source: "google",
             sourceUrl,
           };
         }
@@ -146,7 +177,7 @@ async function scrapeLivePrice(
     }
   }
 
-  return { price: null, source: 'none' };
+  return { price: null, source: "none" };
 }
 
 export interface PriceMonitorResult {
@@ -158,7 +189,7 @@ export interface PriceMonitorResult {
   changes: Array<{
     mlsNumber: string | null;
     address: string;
-    listingType: 'sale' | 'rent';
+    listingType: "sale" | "rent";
     oldPrice: number | null;
     newPrice: number | null;
     changeType: string;
@@ -173,14 +204,16 @@ export interface PriceMonitorResult {
  */
 export async function runPriceMonitor(
   userId: string,
-  options: { limit?: number; verbose?: boolean } = {}
+  options: { limit?: number; verbose?: boolean } = {},
 ): Promise<PriceMonitorResult> {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const { limit = MAX_PER_RUN, verbose = false } = options;
   const startTime = Date.now();
 
   const [saleListings, rentalListings] = await Promise.all([
-    prisma.rEProperty.findMany({
-      where: { userId, listingStatus: 'ACTIVE', mlsNumber: { not: null } },
+    db.rEProperty.findMany({
+      where: { userId, listingStatus: "ACTIVE", mlsNumber: { not: null } },
       select: {
         id: true,
         mlsNumber: true,
@@ -190,10 +223,10 @@ export async function runPriceMonitor(
         isBrokerListing: true,
       },
       take: limit,
-      orderBy: { updatedAt: 'asc' },
+      orderBy: { updatedAt: "asc" },
     }),
-    prisma.rERentalListing.findMany({
-      where: { userId, listingStatus: 'ACTIVE', mlsNumber: { not: null } },
+    db.rERentalListing.findMany({
+      where: { userId, listingStatus: "ACTIVE", mlsNumber: { not: null } },
       select: {
         id: true,
         mlsNumber: true,
@@ -202,7 +235,7 @@ export async function runPriceMonitor(
         rentPrice: true,
       },
       take: Math.floor(limit / 2),
-      orderBy: { updatedAt: 'asc' },
+      orderBy: { updatedAt: "asc" },
     }),
   ]);
 
@@ -222,7 +255,7 @@ export async function runPriceMonitor(
     if (verbose) {
       console.log(
         `[price-monitor] [${result.checked}/${saleListings.length + rentalListings.length}] ` +
-          `Sale: ${listing.mlsNumber} — ${listing.address}`
+          `Sale: ${listing.mlsNumber} — ${listing.address}`,
       );
     }
 
@@ -235,26 +268,35 @@ export async function runPriceMonitor(
         listing.mlsNumber,
         centrisUrl,
         listing.city,
-        'sale'
+        "sale",
       );
 
       // Detect status changes (sold, rented, off-market) from Centris HTML
       if (scraped.detectedStatus) {
         const newStatus =
-          scraped.detectedStatus === 'sold' ? 'SOLD' as const :
-          scraped.detectedStatus === 'rented' ? 'SOLD' as const :
-          scraped.detectedStatus === 'off_market' ? 'WITHDRAWN' as const : null;
+          scraped.detectedStatus === "sold"
+            ? ("SOLD" as const)
+            : scraped.detectedStatus === "rented"
+              ? ("SOLD" as const)
+              : scraped.detectedStatus === "off_market"
+                ? ("WITHDRAWN" as const)
+                : null;
 
         if (newStatus) {
-          await prisma.rEProperty.update({
+          await db.rEProperty.update({
             where: { id: listing.id },
             data: {
               listingStatus: newStatus,
-              ...(newStatus === 'SOLD' ? { soldDate: new Date(), soldPrice: scraped.price ?? listing.listPrice } : {}),
+              ...(newStatus === "SOLD"
+                ? {
+                    soldDate: new Date(),
+                    soldPrice: scraped.price ?? listing.listPrice,
+                  }
+                : {}),
             },
           });
 
-          await prisma.rEPriceChange.create({
+          await db.rEPriceChange.create({
             data: {
               userId,
               propertyId: listing.id,
@@ -262,9 +304,14 @@ export async function runPriceMonitor(
               address: listing.address,
               oldPrice: listing.listPrice,
               newPrice: scraped.price,
-              changeType: scraped.detectedStatus === 'sold' ? 'sold' : scraped.detectedStatus === 'rented' ? 'rented' : 'delisted',
+              changeType:
+                scraped.detectedStatus === "sold"
+                  ? "sold"
+                  : scraped.detectedStatus === "rented"
+                    ? "rented"
+                    : "delisted",
               changePercent: null,
-              listingType: 'sale',
+              listingType: "sale",
               source: scraped.source,
               sourceUrl: scraped.sourceUrl,
             },
@@ -274,11 +321,11 @@ export async function runPriceMonitor(
             await syncListingToWebsite(userId, {
               address: listing.address,
               city: listing.city,
-              state: '',
-              zip: '',
+              state: "",
+              zip: "",
               listPrice: scraped.price ?? listing.listPrice ?? 0,
               mlsNumber: listing.mlsNumber,
-              listingType: 'sale',
+              listingType: "sale",
               listingStatus: newStatus,
               isBrokerListing: listing.isBrokerListing ?? false,
             });
@@ -288,7 +335,7 @@ export async function runPriceMonitor(
           result.changes.push({
             mlsNumber: listing.mlsNumber,
             address: listing.address,
-            listingType: 'sale',
+            listingType: "sale",
             oldPrice: listing.listPrice,
             newPrice: scraped.price,
             changeType: scraped.detectedStatus,
@@ -296,7 +343,9 @@ export async function runPriceMonitor(
           });
 
           if (verbose) {
-            console.log(`  ⚑ Status changed to ${scraped.detectedStatus}: ${listing.address}`);
+            console.log(
+              `  ⚑ Status changed to ${scraped.detectedStatus}: ${listing.address}`,
+            );
           }
           continue;
         }
@@ -306,9 +355,9 @@ export async function runPriceMonitor(
         const diff = scraped.price - listing.listPrice;
         if (Math.abs(diff) > 100) {
           const changePercent = (diff / listing.listPrice) * 100;
-          const changeType = diff > 0 ? 'increase' : 'decrease';
+          const changeType = diff > 0 ? "increase" : "decrease";
 
-          await prisma.rEPriceChange.create({
+          await db.rEPriceChange.create({
             data: {
               userId,
               propertyId: listing.id,
@@ -318,13 +367,13 @@ export async function runPriceMonitor(
               newPrice: scraped.price,
               changeType,
               changePercent: Math.round(changePercent * 100) / 100,
-              listingType: 'sale',
+              listingType: "sale",
               source: scraped.source,
               sourceUrl: scraped.sourceUrl,
             },
           });
 
-          await prisma.rEProperty.update({
+          await db.rEProperty.update({
             where: { id: listing.id },
             data: { listPrice: scraped.price },
           });
@@ -333,12 +382,12 @@ export async function runPriceMonitor(
             await syncListingToWebsite(userId, {
               address: listing.address,
               city: listing.city,
-              state: '',
-              zip: '',
+              state: "",
+              zip: "",
               listPrice: scraped.price,
               mlsNumber: listing.mlsNumber,
-              listingType: 'sale',
-              listingStatus: 'ACTIVE',
+              listingType: "sale",
+              listingStatus: "ACTIVE",
               isBrokerListing: listing.isBrokerListing ?? false,
             });
           } catch {}
@@ -347,7 +396,7 @@ export async function runPriceMonitor(
           result.changes.push({
             mlsNumber: listing.mlsNumber,
             address: listing.address,
-            listingType: 'sale',
+            listingType: "sale",
             oldPrice: listing.listPrice,
             newPrice: scraped.price,
             changeType,
@@ -355,9 +404,9 @@ export async function runPriceMonitor(
           });
 
           if (verbose) {
-            const arrow = diff > 0 ? '↑' : '↓';
+            const arrow = diff > 0 ? "↑" : "↓";
             console.log(
-              `  ${arrow} Price changed: $${listing.listPrice.toLocaleString()} → $${scraped.price.toLocaleString()} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%)`
+              `  ${arrow} Price changed: $${listing.listPrice.toLocaleString()} → $${scraped.price.toLocaleString()} (${changePercent > 0 ? "+" : ""}${changePercent.toFixed(1)}%)`,
             );
           }
         }
@@ -376,7 +425,7 @@ export async function runPriceMonitor(
     if (verbose) {
       console.log(
         `[price-monitor] [${result.checked}/${saleListings.length + rentalListings.length}] ` +
-          `Rent: ${listing.mlsNumber} — ${listing.address}`
+          `Rent: ${listing.mlsNumber} — ${listing.address}`,
       );
     }
 
@@ -389,16 +438,16 @@ export async function runPriceMonitor(
         listing.mlsNumber,
         centrisUrl,
         listing.city,
-        'rent'
+        "rent",
       );
 
       if (scraped.price !== null && listing.rentPrice !== null) {
         const diff = scraped.price - listing.rentPrice;
         if (Math.abs(diff) > 10) {
           const changePercent = (diff / listing.rentPrice) * 100;
-          const changeType = diff > 0 ? 'increase' : 'decrease';
+          const changeType = diff > 0 ? "increase" : "decrease";
 
-          await prisma.rEPriceChange.create({
+          await db.rEPriceChange.create({
             data: {
               userId,
               rentalId: listing.id,
@@ -408,13 +457,13 @@ export async function runPriceMonitor(
               newPrice: scraped.price,
               changeType,
               changePercent: Math.round(changePercent * 100) / 100,
-              listingType: 'rent',
+              listingType: "rent",
               source: scraped.source,
               sourceUrl: scraped.sourceUrl,
             },
           });
 
-          await prisma.rERentalListing.update({
+          await db.rERentalListing.update({
             where: { id: listing.id },
             data: { rentPrice: scraped.price },
           });
@@ -423,7 +472,7 @@ export async function runPriceMonitor(
           result.changes.push({
             mlsNumber: listing.mlsNumber,
             address: listing.address,
-            listingType: 'rent',
+            listingType: "rent",
             oldPrice: listing.rentPrice,
             newPrice: scraped.price,
             changeType,
@@ -431,9 +480,9 @@ export async function runPriceMonitor(
           });
 
           if (verbose) {
-            const arrow = diff > 0 ? '↑' : '↓';
+            const arrow = diff > 0 ? "↑" : "↓";
             console.log(
-              `  ${arrow} Rent changed: $${listing.rentPrice.toLocaleString()} → $${scraped.price.toLocaleString()} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%)`
+              `  ${arrow} Rent changed: $${listing.rentPrice.toLocaleString()} → $${scraped.price.toLocaleString()} (${changePercent > 0 ? "+" : ""}${changePercent.toFixed(1)}%)`,
             );
           }
         }
@@ -455,7 +504,7 @@ export async function runPriceMonitor(
  */
 export async function getRecentPriceChanges(
   userId: string,
-  limit = 50
+  limit = 50,
 ): Promise<
   Array<{
     id: string;
@@ -471,9 +520,11 @@ export async function getRecentPriceChanges(
     syncedToWebsite: boolean;
   }>
 > {
-  return prisma.rEPriceChange.findMany({
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
+  return db.rEPriceChange.findMany({
     where: { userId },
-    orderBy: { detectedAt: 'desc' },
+    orderBy: { detectedAt: "desc" },
     take: limit,
     select: {
       id: true,

@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { emailService } from '@/lib/email-service';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { leadService } from '@/lib/dal/lead-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { emailService } from "@/lib/email-service";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Send email notifications for completed calls
@@ -21,67 +21,74 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const sessionCtx = getDalContextFromSession(session);
+    if (!sessionCtx) return apiErrors.unauthorized();
+    const db = getCrmDb(sessionCtx);
 
     const body = await request.json();
     const { callLogId, sendAll } = body;
 
-    console.log('📧 [Send Notifications] Starting email notification process...');
-    console.log('   User ID:', session.user.id);
-    console.log('   Call Log ID:', callLogId || 'All pending');
-    console.log('   Send All:', sendAll);
+    console.log(
+      "📧 [Send Notifications] Starting email notification process...",
+    );
+    console.log("   User ID:", session.user.id);
+    console.log("   Call Log ID:", callLogId || "All pending");
+    console.log("   Send All:", sendAll);
 
     let callLogs;
 
     if (callLogId) {
       // Send notification for a specific call
-      const callLog = await prisma.callLog.findUnique({
+      const callLog = await db.callLog.findUnique({
         where: { id: callLogId },
         include: {
           voiceAgent: {
-            include: { user: true }
-          }
-        }
+            include: { user: true },
+          },
+        },
       });
 
       if (!callLog) {
-        return apiErrors.notFound('Call log not found');
+        return apiErrors.notFound("Call log not found");
       }
 
       // Verify ownership
       if (callLog.userId !== session.user.id) {
-        return apiErrors.forbidden('Unauthorized');
+        return apiErrors.forbidden("Unauthorized");
       }
 
       callLogs = [callLog];
     } else {
       // Send notifications for all pending calls
-      callLogs = await prisma.callLog.findMany({
+      callLogs = await db.callLog.findMany({
         where: {
           userId: session.user.id,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           emailSent: sendAll ? undefined : false, // If sendAll, ignore emailSent flag
           voiceAgent: {
             sendRecordingEmail: true,
-            recordingEmailAddress: { not: null }
-          }
+            recordingEmailAddress: { not: null },
+          },
         },
         include: {
           voiceAgent: {
-            include: { user: true }
-          }
+            include: { user: true },
+          },
         },
-        orderBy: { createdAt: 'desc' },
-        take: sendAll ? 100 : 50 // Limit to prevent overwhelming
+        orderBy: { createdAt: "desc" },
+        take: sendAll ? 100 : 50, // Limit to prevent overwhelming
       });
     }
 
-    console.log(`📋 [Send Notifications] Found ${callLogs.length} calls to process`);
+    console.log(
+      `📋 [Send Notifications] Found ${callLogs.length} calls to process`,
+    );
 
     const results = {
       success: 0,
       failed: 0,
       skipped: 0,
-      errors: [] as string[]
+      errors: [] as string[],
     };
 
     for (const callLog of callLogs) {
@@ -89,15 +96,23 @@ export async function POST(request: NextRequest) {
         const voiceAgent = callLog.voiceAgent;
 
         // Skip if agent settings don't allow emails
-        if (!voiceAgent || !voiceAgent.sendRecordingEmail || !voiceAgent.recordingEmailAddress) {
-          console.log(`⏭️  [Send Notifications] Skipping call ${callLog.id} - email not configured`);
+        if (
+          !voiceAgent ||
+          !voiceAgent.sendRecordingEmail ||
+          !voiceAgent.recordingEmailAddress
+        ) {
+          console.log(
+            `⏭️  [Send Notifications] Skipping call ${callLog.id} - email not configured`,
+          );
           results.skipped++;
           continue;
         }
 
         // Skip if no conversation data or transcript
         if (!callLog.transcription && !callLog.conversationData) {
-          console.log(`⏭️  [Send Notifications] Skipping call ${callLog.id} - no transcript/conversation data`);
+          console.log(
+            `⏭️  [Send Notifications] Skipping call ${callLog.id} - no transcript/conversation data`,
+          );
           results.skipped++;
           continue;
         }
@@ -105,45 +120,53 @@ export async function POST(request: NextRequest) {
         console.log(`📧 [Send Notifications] Processing call ${callLog.id}...`);
 
         // Extract data from call log
-        let aiSummary = '';
-        let callReason = '';
+        let aiSummary = "";
+        let callReason = "";
         try {
-          const convData = JSON.parse(callLog.conversationData || '{}');
-          aiSummary = convData.analysis?.summary || convData.summary || '';
+          const convData = JSON.parse(callLog.conversationData || "{}");
+          aiSummary = convData.analysis?.summary || convData.summary || "";
 
           if (convData.analysis?.call_purpose) {
             callReason = convData.analysis.call_purpose;
           } else if (convData.metadata?.purpose) {
             callReason = convData.metadata.purpose;
           } else if (aiSummary) {
-            const firstSentence = aiSummary.split('.')[0];
+            const firstSentence = aiSummary.split(".")[0];
             if (firstSentence.length > 0 && firstSentence.length < 150) {
-              callReason = firstSentence + '.';
+              callReason = firstSentence + ".";
             }
           }
         } catch (e) {
-          console.log('⚠️  Could not parse conversation data for AI summary');
+          console.log("⚠️  Could not parse conversation data for AI summary");
         }
 
         // Try to find caller in Leads database
-        let callerName = callLog.fromNumber || 'Unknown';
+        let callerName = callLog.fromNumber || "Unknown";
         let callerEmail = undefined;
 
         try {
           const ctx = await resolveDalContext(voiceAgent.userId);
-          const cleanPhone = (callLog.fromNumber || '').replace(/[\s\-\+\(\)]/g, '');
-          const leads = await leadService.findMany(ctx, {
+          const agentDb = getCrmDb(ctx);
+          const cleanPhone = (callLog.fromNumber || "").replace(
+            /[\s\-\+\(\)]/g,
+            "",
+          );
+          const leads = await agentDb.lead.findMany({
             where: { phone: { contains: cleanPhone.slice(-10) } },
-            take: 1
+            take: 1,
           });
           const lead = leads[0];
 
           if (lead) {
-            callerName = lead.contactPerson || lead.businessName || callLog.fromNumber || 'Unknown';
+            callerName =
+              lead.contactPerson ||
+              lead.businessName ||
+              callLog.fromNumber ||
+              "Unknown";
             callerEmail = lead.email || undefined;
           }
         } catch (lookupError: any) {
-          console.log('⚠️  Could not lookup caller:', lookupError.message);
+          console.log("⚠️  Could not lookup caller:", lookupError.message);
         }
 
         // Format call duration
@@ -161,42 +184,47 @@ export async function POST(request: NextRequest) {
         await emailService.sendCallSummaryEmail({
           recipientEmail: voiceAgent.recordingEmailAddress!,
           callerName: callerName,
-          callerPhone: callLog.fromNumber || 'Unknown',
+          callerPhone: callLog.fromNumber || "Unknown",
           callerEmail: callerEmail,
           callReason: callReason || undefined,
-          agentName: voiceAgent.name || 'AI Agent',
+          agentName: voiceAgent.name || "AI Agent",
           callDuration: formattedDuration,
           callDate: callLog.createdAt || new Date(),
           transcript: callLog.transcription || undefined,
           summary: aiSummary || undefined,
           recordingUrl: recordingUrl,
-          userId: voiceAgent.userId
+          userId: voiceAgent.userId,
         });
 
         // Mark as email sent
-        await prisma.callLog.update({
+        await db.callLog.update({
           where: { id: callLog.id },
-          data: { emailSent: true, emailSentAt: new Date() }
+          data: { emailSent: true, emailSentAt: new Date() },
         });
 
-        console.log(`✅ [Send Notifications] Email sent for call ${callLog.id}`);
+        console.log(
+          `✅ [Send Notifications] Email sent for call ${callLog.id}`,
+        );
         results.success++;
       } catch (error: any) {
-        console.error(`❌ [Send Notifications] Failed to process call ${callLog.id}:`, error.message);
+        console.error(
+          `❌ [Send Notifications] Failed to process call ${callLog.id}:`,
+          error.message,
+        );
         results.failed++;
         results.errors.push(`Call ${callLog.id}: ${error.message}`);
       }
     }
 
-    console.log('📊 [Send Notifications] Results:', results);
+    console.log("📊 [Send Notifications] Results:", results);
 
     return NextResponse.json({
       success: true,
-      results
+      results,
     });
   } catch (error: any) {
-    console.error('❌ [Send Notifications] Error:', error);
-    return apiErrors.internal(error.message || 'Internal server error');
+    console.error("❌ [Send Notifications] Error:", error);
+    return apiErrors.internal(error.message || "Internal server error");
   }
 }
 
@@ -209,43 +237,46 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Count calls pending email notification
-    const pendingCount = await prisma.callLog.count({
+    const pendingCount = await db.callLog.count({
       where: {
         userId: session.user.id,
-        status: 'COMPLETED',
+        status: "COMPLETED",
         emailSent: false,
         voiceAgent: {
           sendRecordingEmail: true,
-          recordingEmailAddress: { not: null }
-        }
-      }
+          recordingEmailAddress: { not: null },
+        },
+      },
     });
 
     // Count total completed calls
-    const totalCompleted = await prisma.callLog.count({
+    const totalCompleted = await db.callLog.count({
       where: {
         userId: session.user.id,
-        status: 'COMPLETED'
-      }
+        status: "COMPLETED",
+      },
     });
 
     // Count emails sent
-    const emailsSent = await prisma.callLog.count({
+    const emailsSent = await db.callLog.count({
       where: {
         userId: session.user.id,
-        emailSent: true
-      }
+        emailSent: true,
+      },
     });
 
     return NextResponse.json({
       pendingCount,
       totalCompleted,
-      emailsSent
+      emailsSent,
     });
   } catch (error: any) {
-    console.error('❌ [Get Notifications Status] Error:', error);
-    return apiErrors.internal(error.message || 'Internal server error');
+    console.error("❌ [Get Notifications Status] Error:", error);
+    return apiErrors.internal(error.message || "Internal server error");
   }
 }

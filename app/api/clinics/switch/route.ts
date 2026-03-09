@@ -3,14 +3,15 @@
  * Set user's active clinic context
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST - Switch active clinic
 export async function POST(request: NextRequest) {
@@ -19,16 +20,19 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { clinicId } = body;
 
     if (!clinicId) {
-      return apiErrors.badRequest('Clinic ID is required');
+      return apiErrors.badRequest("Clinic ID is required");
     }
 
     // Verify user has access to this clinic
-    const userClinic = await prisma.userClinic.findFirst({
+    const userClinic = await db.userClinic.findFirst({
       where: {
         userId: session.user.id,
         clinicId,
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userClinic) {
-      return apiErrors.notFound('Clinic not found or access denied');
+      return apiErrors.notFound("Clinic not found or access denied");
     }
 
     // Set as primary clinic (or create session-based active clinic)
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error switching clinic:', error);
-    return apiErrors.internal('Failed to switch clinic', error.message);
+    console.error("Error switching clinic:", error);
+    return apiErrors.internal("Failed to switch clinic", error.message);
   }
 }

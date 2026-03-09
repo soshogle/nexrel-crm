@@ -1,28 +1,33 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET SUPPLIER BY ID
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
-    const supplier = await prisma.supplier.findFirst({
+    const supplier = await db.supplier.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -30,10 +35,10 @@ export async function GET(
       include: {
         items: {
           where: { isActive: true },
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
         },
         purchaseOrders: {
-          orderBy: { orderDate: 'desc' },
+          orderBy: { orderDate: "desc" },
           take: 10,
         },
         _count: {
@@ -46,13 +51,13 @@ export async function GET(
     });
 
     if (!supplier) {
-      return apiErrors.notFound('Supplier not found');
+      return apiErrors.notFound("Supplier not found");
     }
 
     return NextResponse.json(supplier);
   } catch (error) {
-    console.error('❌ Supplier fetch error:', error);
-    return apiErrors.internal('Failed to fetch supplier');
+    console.error("❌ Supplier fetch error:", error);
+    return apiErrors.internal("Failed to fetch supplier");
   }
 }
 
@@ -61,18 +66,23 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
 
     // Verify supplier exists
-    const existing = await prisma.supplier.findFirst({
+    const existing = await db.supplier.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -80,10 +90,10 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return apiErrors.notFound('Supplier not found');
+      return apiErrors.notFound("Supplier not found");
     }
 
-    const updatedSupplier = await prisma.supplier.update({
+    const updatedSupplier = await db.supplier.update({
       where: { id: params.id },
       data: body,
     });
@@ -92,8 +102,8 @@ export async function PATCH(
 
     return NextResponse.json(updatedSupplier);
   } catch (error) {
-    console.error('❌ Supplier update error:', error);
-    return apiErrors.internal('Failed to update supplier');
+    console.error("❌ Supplier update error:", error);
+    return apiErrors.internal("Failed to update supplier");
   }
 }
 
@@ -102,16 +112,21 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     // Verify supplier exists
-    const supplier = await prisma.supplier.findFirst({
+    const supplier = await db.supplier.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -123,7 +138,7 @@ export async function DELETE(
             purchaseOrders: {
               where: {
                 status: {
-                  in: ['DRAFT', 'SENT', 'CONFIRMED'],
+                  in: ["DRAFT", "SENT", "CONFIRMED"],
                 },
               },
             },
@@ -133,16 +148,18 @@ export async function DELETE(
     });
 
     if (!supplier) {
-      return apiErrors.notFound('Supplier not found');
+      return apiErrors.notFound("Supplier not found");
     }
 
     // Check if supplier has active purchase orders
     if (supplier._count.purchaseOrders > 0) {
-      return apiErrors.badRequest('Cannot delete supplier with active purchase orders');
+      return apiErrors.badRequest(
+        "Cannot delete supplier with active purchase orders",
+      );
     }
 
     // Soft delete by marking as inactive
-    await prisma.supplier.update({
+    await db.supplier.update({
       where: { id: params.id },
       data: { isActive: false },
     });
@@ -151,7 +168,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Supplier delete error:', error);
-    return apiErrors.internal('Failed to delete supplier');
+    console.error("❌ Supplier delete error:", error);
+    return apiErrors.internal("Failed to delete supplier");
   }
 }

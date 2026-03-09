@@ -1,14 +1,13 @@
-
 /**
  * Permissions & Access Control System
- * 
+ *
  * Team member permissions are stored in TeamMember.permissions (JSON field)
  * rather than the UserPermission table, because TeamMembers are not User
  * accounts and the UserPermission FK references User.id.
  */
 
-import { prisma } from '@/lib/db';
-import { PageResource } from '@prisma/client';
+import { getMetaDb } from "@/lib/db/meta-db";
+import { PageResource } from "@prisma/client";
 
 export interface PermissionEntry {
   resource: PageResource;
@@ -17,15 +16,18 @@ export interface PermissionEntry {
   canDelete: boolean;
 }
 
-export const ROLE_PRESETS: Record<string, {
-  name: string;
-  description: string;
-  permissions: PermissionEntry[];
-}> = {
+export const ROLE_PRESETS: Record<
+  string,
+  {
+    name: string;
+    description: string;
+    permissions: PermissionEntry[];
+  }
+> = {
   ADMIN: {
-    name: 'Admin',
-    description: 'Full access to all features',
-    permissions: Object.values(PageResource).map(resource => ({
+    name: "Admin",
+    description: "Full access to all features",
+    permissions: Object.values(PageResource).map((resource) => ({
       resource,
       canRead: true,
       canWrite: true,
@@ -33,19 +35,20 @@ export const ROLE_PRESETS: Record<string, {
     })),
   },
   MANAGER: {
-    name: 'Manager',
-    description: 'Read/Write access to most features, no billing',
-    permissions: Object.values(PageResource).map(resource => ({
+    name: "Manager",
+    description: "Read/Write access to most features, no billing",
+    permissions: Object.values(PageResource).map((resource) => ({
       resource,
       canRead: true,
-      canWrite: resource !== PageResource.BILLING && resource !== PageResource.SETTINGS,
+      canWrite:
+        resource !== PageResource.BILLING && resource !== PageResource.SETTINGS,
       canDelete: false,
     })),
   },
   AGENT: {
-    name: 'Agent',
-    description: 'Read/Write for leads, contacts, deals, messages',
-    permissions: Object.values(PageResource).map(resource => {
+    name: "Agent",
+    description: "Read/Write for leads, contacts, deals, messages",
+    permissions: Object.values(PageResource).map((resource) => {
       const agentResources: PageResource[] = [
         PageResource.DASHBOARD,
         PageResource.LEADS,
@@ -64,11 +67,12 @@ export const ROLE_PRESETS: Record<string, {
     }),
   },
   VIEWER: {
-    name: 'Viewer',
-    description: 'Read-only access to most features',
-    permissions: Object.values(PageResource).map(resource => ({
+    name: "Viewer",
+    description: "Read-only access to most features",
+    permissions: Object.values(PageResource).map((resource) => ({
       resource,
-      canRead: resource !== PageResource.BILLING && resource !== PageResource.SETTINGS,
+      canRead:
+        resource !== PageResource.BILLING && resource !== PageResource.SETTINGS,
       canWrite: false,
       canDelete: false,
     })),
@@ -78,8 +82,7 @@ export const ROLE_PRESETS: Record<string, {
 function parsePermissions(raw: unknown): PermissionEntry[] {
   if (!raw || !Array.isArray(raw)) return [];
   return raw.filter(
-    (p): p is PermissionEntry =>
-      p && typeof p === 'object' && 'resource' in p
+    (p): p is PermissionEntry => p && typeof p === "object" && "resource" in p,
   );
 }
 
@@ -89,26 +92,30 @@ function parsePermissions(raw: unknown): PermissionEntry[] {
 export async function hasPermission(
   teamMemberId: string,
   resource: PageResource,
-  action: 'READ' | 'WRITE' | 'DELETE'
+  action: "READ" | "WRITE" | "DELETE",
 ): Promise<boolean> {
   try {
-    const member = await prisma.teamMember.findUnique({
+    const member = await getMetaDb().teamMember.findUnique({
       where: { id: teamMemberId },
       select: { permissions: true },
     });
 
     const entries = parsePermissions(member?.permissions);
-    const entry = entries.find(p => p.resource === resource);
+    const entry = entries.find((p) => p.resource === resource);
     if (!entry) return false;
 
     switch (action) {
-      case 'READ':  return entry.canRead;
-      case 'WRITE': return entry.canWrite;
-      case 'DELETE': return entry.canDelete;
-      default: return false;
+      case "READ":
+        return entry.canRead;
+      case "WRITE":
+        return entry.canWrite;
+      case "DELETE":
+        return entry.canDelete;
+      default:
+        return false;
     }
   } catch (error) {
-    console.error('Error checking permission:', error);
+    console.error("Error checking permission:", error);
     return false;
   }
 }
@@ -116,16 +123,18 @@ export async function hasPermission(
 /**
  * Get all permissions for a team member
  */
-export async function getUserPermissions(teamMemberId: string): Promise<PermissionEntry[]> {
+export async function getUserPermissions(
+  teamMemberId: string,
+): Promise<PermissionEntry[]> {
   try {
-    const member = await prisma.teamMember.findUnique({
+    const member = await getMetaDb().teamMember.findUnique({
       where: { id: teamMemberId },
       select: { permissions: true },
     });
 
     return parsePermissions(member?.permissions);
   } catch (error) {
-    console.error('Error fetching user permissions:', error);
+    console.error("Error fetching user permissions:", error);
     return [];
   }
 }
@@ -136,14 +145,14 @@ export async function getUserPermissions(teamMemberId: string): Promise<Permissi
 export async function applyRolePreset(
   teamMemberId: string,
   roleName: string,
-  _grantedBy: string
+  _grantedBy: string,
 ) {
   const preset = ROLE_PRESETS[roleName];
   if (!preset) {
     throw new Error(`Invalid role preset: ${roleName}`);
   }
 
-  await prisma.teamMember.update({
+  await getMetaDb().teamMember.update({
     where: { id: teamMemberId },
     data: { permissions: preset.permissions as any },
   });
@@ -162,10 +171,10 @@ export async function grantPermission(
     canWrite?: boolean;
     canDelete?: boolean;
   },
-  _grantedBy: string
+  _grantedBy: string,
 ) {
   const current = await getUserPermissions(teamMemberId);
-  const idx = current.findIndex(p => p.resource === resource);
+  const idx = current.findIndex((p) => p.resource === resource);
 
   const updated: PermissionEntry = {
     resource,
@@ -180,7 +189,7 @@ export async function grantPermission(
     current.push(updated);
   }
 
-  await prisma.teamMember.update({
+  await getMetaDb().teamMember.update({
     where: { id: teamMemberId },
     data: { permissions: current as any },
   });
@@ -192,7 +201,7 @@ export async function grantPermission(
  * Revoke all permissions for a team member
  */
 export async function revokeAllPermissions(teamMemberId: string) {
-  await prisma.teamMember.update({
+  await getMetaDb().teamMember.update({
     where: { id: teamMemberId },
     data: { permissions: [] },
   });
@@ -203,7 +212,7 @@ export async function revokeAllPermissions(teamMemberId: string) {
  */
 export async function hasValidAdminSession(userId: string): Promise<boolean> {
   try {
-    const session = await prisma.adminSession.findFirst({
+    const session = await getMetaDb().adminSession.findFirst({
       where: {
         userId,
         isActive: true,
@@ -212,13 +221,13 @@ export async function hasValidAdminSession(userId: string): Promise<boolean> {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     return !!session;
   } catch (error) {
-    console.error('Error checking admin session:', error);
+    console.error("Error checking admin session:", error);
     return false;
   }
 }
@@ -229,12 +238,12 @@ export async function hasValidAdminSession(userId: string): Promise<boolean> {
 export async function createAdminSession(
   userId: string,
   ipAddress?: string,
-  userAgent?: string
+  userAgent?: string,
 ): Promise<string> {
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
   const sessionToken = crypto.randomUUID();
 
-  await prisma.adminSession.create({
+  await getMetaDb().adminSession.create({
     data: {
       userId,
       sessionToken,
@@ -251,7 +260,7 @@ export async function createAdminSession(
  * Invalidate admin session
  */
 export async function invalidateAdminSession(sessionToken: string) {
-  await prisma.adminSession.update({
+  await getMetaDb().adminSession.update({
     where: { sessionToken },
     data: { isActive: false },
   });
@@ -263,7 +272,7 @@ export async function invalidateAdminSession(sessionToken: string) {
 export async function updateAdminSessionActivity(sessionToken: string) {
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  await prisma.adminSession.update({
+  await getMetaDb().adminSession.update({
     where: { sessionToken },
     data: {
       lastActivity: new Date(),

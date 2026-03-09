@@ -1,117 +1,120 @@
-
 /**
  * Admin Feature Toggle API
  * Update feature toggles for a specific user
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Check admin authentication
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Unauthorized - Admin access required');
+    if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Unauthorized - Admin access required");
     }
 
     const body = await req.json();
     const { features } = body; // Array of { feature: string, enabled: boolean }
 
     if (!Array.isArray(features)) {
-      return apiErrors.badRequest('Features must be an array');
+      return apiErrors.badRequest("Features must be an array");
     }
 
     // Get user to verify existence
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: params.id },
       select: { email: true },
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Update feature toggles (upsert for each feature)
-    const updatePromises = features.map((item: { feature: string; enabled: boolean }) =>
-      prisma.userFeatureToggle.upsert({
-        where: {
-          userId_feature: {
+    const updatePromises = features.map(
+      (item: { feature: string; enabled: boolean }) =>
+        getMetaDb().userFeatureToggle.upsert({
+          where: {
+            userId_feature: {
+              userId: params.id,
+              feature: item.feature,
+            },
+          },
+          create: {
             userId: params.id,
             feature: item.feature,
+            enabled: item.enabled,
           },
-        },
-        create: {
-          userId: params.id,
-          feature: item.feature,
-          enabled: item.enabled,
-        },
-        update: {
-          enabled: item.enabled,
-        },
-      })
+          update: {
+            enabled: item.enabled,
+          },
+        }),
     );
 
     await Promise.all(updatePromises);
 
     // Get updated feature toggles
-    const featureToggles = await prisma.userFeatureToggle.findMany({
+    const featureToggles = await getMetaDb().userFeatureToggle.findMany({
       where: { userId: params.id },
     });
 
     // Log admin action
-    await prisma.adminAction.create({
+    await getMetaDb().adminAction.create({
       data: {
         adminId: session.user.id,
-        adminEmail: session.user.email || '',
+        adminEmail: session.user.email || "",
         targetUserId: params.id,
         targetUserEmail: user.email,
-        action: 'UPDATE_FEATURES',
+        action: "UPDATE_FEATURES",
         details: { features },
-        ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-        userAgent: req.headers.get('user-agent'),
+        ipAddress:
+          req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip"),
+        userAgent: req.headers.get("user-agent"),
       },
     });
 
     return NextResponse.json({
       featureToggles,
-      message: 'Feature toggles updated successfully',
+      message: "Feature toggles updated successfully",
     });
   } catch (error: any) {
-    console.error('❌ Error updating feature toggles:', error);
-    return apiErrors.internal('Failed to update feature toggles', error.message);
+    console.error("❌ Error updating feature toggles:", error);
+    return apiErrors.internal(
+      "Failed to update feature toggles",
+      error.message,
+    );
   }
 }
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Check admin authentication
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Unauthorized - Admin access required');
+    if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Unauthorized - Admin access required");
     }
 
-    const featureToggles = await prisma.userFeatureToggle.findMany({
+    const featureToggles = await getMetaDb().userFeatureToggle.findMany({
       where: { userId: params.id },
-      orderBy: { feature: 'asc' },
+      orderBy: { feature: "asc" },
     });
 
     return NextResponse.json({ featureToggles });
   } catch (error: any) {
-    console.error('❌ Error fetching feature toggles:', error);
-    return apiErrors.internal('Failed to fetch feature toggles', error.message);
+    console.error("❌ Error fetching feature toggles:", error);
+    return apiErrors.internal("Failed to fetch feature toggles", error.message);
   }
 }

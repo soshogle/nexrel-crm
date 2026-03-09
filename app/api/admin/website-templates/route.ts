@@ -3,12 +3,12 @@
  * Get and manage website templates
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { websiteTemplateImporter } from '@/lib/website-builder/template-importer';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { websiteTemplateImporter } from "@/lib/website-builder/template-importer";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,14 +18,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') as 'SERVICE' | 'PRODUCT' | null;
+    const type = searchParams.get("type") as "SERVICE" | "PRODUCT" | null;
 
-    const templates = await prisma.websiteTemplate.findMany({
+    const templates = await getMetaDb().websiteTemplate.findMany({
       where: type ? { type } : undefined,
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
       select: {
         id: true,
         name: true,
@@ -45,8 +42,8 @@ export async function GET(request: NextRequest) {
       templates,
     });
   } catch (error: any) {
-    console.error('Error fetching templates:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch templates');
+    console.error("Error fetching templates:", error);
+    return apiErrors.internal(error.message || "Failed to fetch templates");
   }
 }
 
@@ -60,8 +57,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, templateId } = body;
 
-    if (action === 'set_default' && templateId) {
-      const template = await websiteTemplateImporter.setDefaultTemplate(templateId);
+    if (action === "set_default" && templateId) {
+      const template =
+        await websiteTemplateImporter.setDefaultTemplate(templateId);
       return NextResponse.json({
         success: true,
         template: {
@@ -72,9 +70,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return apiErrors.badRequest('Invalid action');
+    return apiErrors.badRequest("Invalid action");
   } catch (error: any) {
-    console.error('Error updating template:', error);
-    return apiErrors.internal(error.message || 'Failed to update template');
+    console.error("Error updating template:", error);
+    return apiErrors.internal(error.message || "Failed to update template");
   }
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { generateAutoResponse } from '@/lib/reviews/review-intelligence-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -11,6 +12,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { reviewId, config } = await request.json();
 
@@ -18,7 +23,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('reviewId is required');
     }
 
-    const review = await prisma.review.findFirst({
+    const review = await getCrmDb(ctx).review.findFirst({
       where: { id: reviewId, userId: session.user.id },
     });
 
@@ -26,7 +31,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.notFound('Review not found');
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: { name: true, legalEntityName: true },
     });
@@ -50,7 +55,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    await prisma.review.update({
+    await getCrmDb(ctx).review.update({
       where: { id: reviewId },
       data: {
         aiResponseDraft: responseDraft,

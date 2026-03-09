@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { getCrmDb } from '@/lib/dal/db';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getCrmDb } from "@/lib/dal/db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,14 +18,17 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if user is an agency admin
-    if (session.user.role !== 'AGENCY_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Forbidden: Admin access required');
+    if (
+      session.user.role !== "AGENCY_ADMIN" &&
+      session.user.role !== "SUPER_ADMIN"
+    ) {
+      return apiErrors.forbidden("Forbidden: Admin access required");
     }
 
     const agencyId = session.user.agencyId;
 
     // Get agency information
-    const agency = await prisma.agency.findUnique({
+    const agency = await getMetaDb().agency.findUnique({
       where: { id: agencyId || undefined },
       select: {
         id: true,
@@ -45,18 +47,18 @@ export async function GET(req: NextRequest) {
     });
 
     // Get total sub-accounts
-    const totalSubAccounts = await prisma.user.count({
+    const totalSubAccounts = await getMetaDb().user.count({
       where: {
         agencyId,
-        role: 'USER',
+        role: "USER",
       },
     });
 
     // Get active sub-accounts (had activity in last 30 days)
-    const activeSubAccounts = await prisma.user.count({
+    const activeSubAccounts = await getMetaDb().user.count({
       where: {
         agencyId,
-        role: 'USER',
+        role: "USER",
         OR: [
           {
             leads: {
@@ -99,7 +101,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const totalRevenue = allDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+    const totalRevenue = allDeals.reduce(
+      (sum, deal) => sum + (deal.value || 0),
+      0,
+    );
 
     // Get total leads across all sub-accounts
     const totalLeads = await db.lead.count({
@@ -116,11 +121,12 @@ export async function GET(req: NextRequest) {
         user: {
           agencyId,
         },
-        status: 'CONVERTED',
+        status: "CONVERTED",
       },
     });
 
-    const overallConversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+    const overallConversionRate =
+      totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
     // Get total campaigns
     const totalCampaigns = await db.campaign.count({
@@ -141,7 +147,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Get total appointments
-    const totalAppointments = await prisma.bookingAppointment.count({
+    const totalAppointments = await db.bookingAppointment.count({
       where: {
         user: {
           agencyId,
@@ -154,7 +160,7 @@ export async function GET(req: NextRequest) {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyLeads = await db.lead.groupBy({
-      by: ['createdAt'],
+      by: ["createdAt"],
       where: {
         user: {
           agencyId,
@@ -183,7 +189,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching admin overview:', error);
-    return apiErrors.internal('Failed to fetch admin overview');
+    console.error("Error fetching admin overview:", error);
+    return apiErrors.internal("Failed to fetch admin overview");
   }
 }

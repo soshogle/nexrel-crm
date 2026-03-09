@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Disconnect Gmail account
@@ -18,27 +19,30 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     // Delete the Gmail connection
-    const result = await prisma.channelConnection.deleteMany({
+    const result = await getCrmDb(ctx).channelConnection.deleteMany({
       where: {
         userId: session.user.id,
-        channelType: 'EMAIL',
-        providerType: 'GMAIL',
+        channelType: "EMAIL",
+        providerType: "GMAIL",
       },
     });
 
     if (result.count === 0) {
-      return apiErrors.notFound('No Gmail connection found');
+      return apiErrors.notFound("No Gmail connection found");
     }
 
     console.log(`✅ Gmail disconnected for user: ${session.user.id}`);
 
     return NextResponse.json({
       success: true,
-      message: 'Gmail disconnected successfully',
+      message: "Gmail disconnected successfully",
     });
   } catch (error: any) {
-    console.error('Error disconnecting Gmail:', error);
-    return apiErrors.internal(error.message || 'Failed to disconnect Gmail');
+    console.error("Error disconnecting Gmail:", error);
+    return apiErrors.internal(error.message || "Failed to disconnect Gmail");
   }
 }

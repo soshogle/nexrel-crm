@@ -3,14 +3,14 @@
  * Returns connection status, last sync times, error counts
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,15 +19,15 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
     });
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
-    const connections = await prisma.channelConnection.findMany({
+    const connections = await getMetaDb().channelConnection.findMany({
       where: { userId: user.id },
       select: {
         id: true,
@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
         errorMessage: true,
         syncEnabled: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     const stats = {
       total: connections.length,
-      connected: connections.filter((c) => c.status === 'CONNECTED').length,
-      errors: connections.filter((c) => c.status === 'ERROR').length,
+      connected: connections.filter((c) => c.status === "CONNECTED").length,
+      errors: connections.filter((c) => c.status === "ERROR").length,
       syncEnabled: connections.filter((c) => c.syncEnabled).length,
     };
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error: any) {
-    console.error('Sync health error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch sync health');
+    console.error("Sync health error:", error);
+    return apiErrors.internal(error.message || "Failed to fetch sync health");
   }
 }

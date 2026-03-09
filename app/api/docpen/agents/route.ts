@@ -1,55 +1,56 @@
 /**
  * Docpen Voice Agents API
- * 
+ *
  * GET - List all Docpen voice agents for the user
  * PATCH - Update agent settings
  * DELETE - Delete an agent
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
-import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsKeyManager } from "@/lib/elevenlabs-key-manager";
+import { docpenAgentProvisioning } from "@/lib/docpen/agent-provisioning";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 // ElevenLabs supported languages
 const SUPPORTED_LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'it', name: 'Italian' },
-  { code: 'pt', name: 'Portuguese' },
-  { code: 'pl', name: 'Polish' },
-  { code: 'hi', name: 'Hindi' },
-  { code: 'ar', name: 'Arabic' },
-  { code: 'zh', name: 'Chinese' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'ko', name: 'Korean' },
-  { code: 'nl', name: 'Dutch' },
-  { code: 'ru', name: 'Russian' },
-  { code: 'tr', name: 'Turkish' },
-  { code: 'sv', name: 'Swedish' },
-  { code: 'id', name: 'Indonesian' },
-  { code: 'fil', name: 'Filipino' },
-  { code: 'uk', name: 'Ukrainian' },
-  { code: 'el', name: 'Greek' },
-  { code: 'cs', name: 'Czech' },
-  { code: 'fi', name: 'Finnish' },
-  { code: 'ro', name: 'Romanian' },
-  { code: 'da', name: 'Danish' },
-  { code: 'bg', name: 'Bulgarian' },
-  { code: 'ms', name: 'Malay' },
-  { code: 'sk', name: 'Slovak' },
-  { code: 'hr', name: 'Croatian' },
-  { code: 'ta', name: 'Tamil' },
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "pl", name: "Polish" },
+  { code: "hi", name: "Hindi" },
+  { code: "ar", name: "Arabic" },
+  { code: "zh", name: "Chinese" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "nl", name: "Dutch" },
+  { code: "ru", name: "Russian" },
+  { code: "tr", name: "Turkish" },
+  { code: "sv", name: "Swedish" },
+  { code: "id", name: "Indonesian" },
+  { code: "fil", name: "Filipino" },
+  { code: "uk", name: "Ukrainian" },
+  { code: "el", name: "Greek" },
+  { code: "cs", name: "Czech" },
+  { code: "fi", name: "Finnish" },
+  { code: "ro", name: "Romanian" },
+  { code: "da", name: "Danish" },
+  { code: "bg", name: "Bulgarian" },
+  { code: "ms", name: "Malay" },
+  { code: "sk", name: "Slovak" },
+  { code: "hr", name: "Croatian" },
+  { code: "ta", name: "Tamil" },
 ];
 
 // GET - List all Docpen voice agents
@@ -59,8 +60,11 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const agents = await prisma.docpenVoiceAgent.findMany({
+    const agents = await db.docpenVoiceAgent.findMany({
       where: {
         userId: session.user.id,
       },
@@ -73,30 +77,36 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { isActive: 'desc' },
-        { lastUsedAt: 'desc' },
-        { createdAt: 'desc' },
+        { isActive: "desc" },
+        { lastUsedAt: "desc" },
+        { createdAt: "desc" },
       ],
     });
 
     // Automatically update all agents in the background (non-blocking)
     // This ensures agents created before API migrations get updated automatically
-    agents.forEach(agent => {
+    agents.forEach((agent) => {
       if (agent.isActive) {
-        docpenAgentProvisioning.updateAgentFunctions(agent.elevenLabsAgentId, session.user.id)
-          .then(success => {
+        docpenAgentProvisioning
+          .updateAgentFunctions(agent.elevenLabsAgentId, session.user.id)
+          .then((success) => {
             if (success) {
-              console.log(`✅ [Docpen] Auto-updated agent ${agent.elevenLabsAgentId} functions`);
+              console.log(
+                `✅ [Docpen] Auto-updated agent ${agent.elevenLabsAgentId} functions`,
+              );
             }
           })
-          .catch(err => {
-            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+          .catch((err) => {
+            console.warn(
+              `⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`,
+              err.message,
+            );
           });
       }
     });
 
     // Map agents with additional info
-    const agentsWithDetails = agents.map(agent => ({
+    const agentsWithDetails = agents.map((agent) => ({
       id: agent.id,
       profession: agent.profession,
       customProfession: agent.customProfession,
@@ -123,8 +133,8 @@ export async function GET(request: NextRequest) {
       languages: SUPPORTED_LANGUAGES,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Agents] Error fetching agents:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch agents');
+    console.error("❌ [Docpen Agents] Error fetching agents:", error);
+    return apiErrors.internal(error.message || "Failed to fetch agents");
   }
 }
 
@@ -135,16 +145,28 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
-    const { agentId, language, voiceId, voiceName, voiceGender, stability, similarityBoost, isActive } = body;
+    const {
+      agentId,
+      language,
+      voiceId,
+      voiceName,
+      voiceGender,
+      stability,
+      similarityBoost,
+      isActive,
+    } = body;
 
     if (!agentId) {
-      return apiErrors.badRequest('Agent ID required');
+      return apiErrors.badRequest("Agent ID required");
     }
 
     // Verify ownership
-    const agent = await prisma.docpenVoiceAgent.findFirst({
+    const agent = await db.docpenVoiceAgent.findFirst({
       where: {
         id: agentId,
         userId: session.user.id,
@@ -152,7 +174,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     // Build update data
@@ -160,19 +182,22 @@ export async function PATCH(request: NextRequest) {
 
     if (language !== undefined) {
       updateData.language = language;
-      const lang = SUPPORTED_LANGUAGES.find(l => l.code === language);
+      const lang = SUPPORTED_LANGUAGES.find((l) => l.code === language);
       updateData.languageName = lang?.name || language;
     }
     if (voiceId !== undefined) updateData.voiceId = voiceId;
     if (voiceName !== undefined) updateData.voiceName = voiceName;
     if (voiceGender !== undefined) updateData.voiceGender = voiceGender;
     if (stability !== undefined) updateData.stability = stability;
-    if (similarityBoost !== undefined) updateData.similarityBoost = similarityBoost;
+    if (similarityBoost !== undefined)
+      updateData.similarityBoost = similarityBoost;
     if (isActive !== undefined) updateData.isActive = isActive;
 
     // Update ElevenLabs agent if voice/language settings changed
     if (language || voiceId || stability || similarityBoost) {
-      const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
+      const apiKey = await elevenLabsKeyManager.getActiveApiKey(
+        session.user.id,
+      );
       if (apiKey) {
         const elevenlabsUpdate: any = {
           conversation_config: {},
@@ -196,28 +221,31 @@ export async function PATCH(request: NextRequest) {
           const response = await fetch(
             `${ELEVENLABS_BASE_URL}/convai/agents/${agent.elevenLabsAgentId}`,
             {
-              method: 'PATCH',
+              method: "PATCH",
               headers: {
-                'xi-api-key': apiKey,
-                'Content-Type': 'application/json',
+                "xi-api-key": apiKey,
+                "Content-Type": "application/json",
               },
               body: JSON.stringify(elevenlabsUpdate),
-            }
+            },
           );
 
           if (!response.ok) {
-            console.warn('⚠️ Failed to update ElevenLabs agent:', await response.text());
+            console.warn(
+              "⚠️ Failed to update ElevenLabs agent:",
+              await response.text(),
+            );
           } else {
-            console.log('✅ ElevenLabs agent updated');
+            console.log("✅ ElevenLabs agent updated");
           }
         } catch (e) {
-          console.error('⚠️ Error updating ElevenLabs:', e);
+          console.error("⚠️ Error updating ElevenLabs:", e);
         }
       }
     }
 
     // Update local database
-    const updatedAgent = await prisma.docpenVoiceAgent.update({
+    const updatedAgent = await db.docpenVoiceAgent.update({
       where: { id: agentId },
       data: updateData,
     });
@@ -227,8 +255,8 @@ export async function PATCH(request: NextRequest) {
       agent: updatedAgent,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Agents] Error updating agent:', error);
-    return apiErrors.internal(error.message || 'Failed to update agent');
+    console.error("❌ [Docpen Agents] Error updating agent:", error);
+    return apiErrors.internal(error.message || "Failed to update agent");
   }
 }
 
@@ -239,16 +267,19 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get('agentId');
+    const agentId = searchParams.get("agentId");
 
     if (!agentId) {
-      return apiErrors.badRequest('Agent ID required');
+      return apiErrors.badRequest("Agent ID required");
     }
 
     // Verify ownership
-    const agent = await prisma.docpenVoiceAgent.findFirst({
+    const agent = await db.docpenVoiceAgent.findFirst({
       where: {
         id: agentId,
         userId: session.user.id,
@@ -256,7 +287,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     // Delete from ElevenLabs
@@ -266,24 +297,24 @@ export async function DELETE(request: NextRequest) {
         await fetch(
           `${ELEVENLABS_BASE_URL}/convai/agents/${agent.elevenLabsAgentId}`,
           {
-            method: 'DELETE',
-            headers: { 'xi-api-key': apiKey },
-          }
+            method: "DELETE",
+            headers: { "xi-api-key": apiKey },
+          },
         );
-        console.log('✅ Deleted from ElevenLabs');
+        console.log("✅ Deleted from ElevenLabs");
       } catch (e) {
-        console.error('⚠️ Error deleting from ElevenLabs:', e);
+        console.error("⚠️ Error deleting from ElevenLabs:", e);
       }
     }
 
     // Delete from database
-    await prisma.docpenVoiceAgent.delete({
+    await db.docpenVoiceAgent.delete({
       where: { id: agentId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('❌ [Docpen Agents] Error deleting agent:', error);
-    return apiErrors.internal(error.message || 'Failed to delete agent');
+    console.error("❌ [Docpen Agents] Error deleting agent:", error);
+    return apiErrors.internal(error.message || "Failed to delete agent");
   }
 }

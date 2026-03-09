@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REDNCSource } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
@@ -27,13 +32,13 @@ export async function GET(request: NextRequest) {
 
     if (phone) {
       const normalizedPhone = phone.replace(/[^\d+]/g, '');
-      const entry = await prisma.rEDNCEntry.findFirst({
+      const entry = await getCrmDb(ctx).rEDNCEntry.findFirst({
         where: { phoneNumber: normalizedPhone, country },
       });
       return NextResponse.json({ exists: !!entry, entry: entry || null });
     }
 
-    const data = await prisma.rEDNCEntry.findMany({
+    const data = await getCrmDb(ctx).rEDNCEntry.findMany({
       where: { country },
       orderBy: { addedAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 500),
@@ -51,6 +56,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
@@ -69,7 +78,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('phoneNumber is required');
     }
 
-    const entry = await prisma.rEDNCEntry.upsert({
+    const entry = await getCrmDb(ctx).rEDNCEntry.upsert({
       where: { phoneNumber },
       update: {
         country,
@@ -98,6 +107,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
@@ -110,7 +123,7 @@ export async function PUT(request: NextRequest) {
     if (!id) {
       return apiErrors.badRequest('id is required');
     }
-    const entry = await prisma.rEDNCEntry.update({
+    const entry = await getCrmDb(ctx).rEDNCEntry.update({
       where: { id },
       data: {
         reason: body.reason !== undefined ? String(body.reason || '') || null : undefined,
@@ -131,6 +144,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
@@ -145,9 +162,9 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('id or phoneNumber is required');
     }
     if (id) {
-      await prisma.rEDNCEntry.delete({ where: { id } });
+      await getCrmDb(ctx).rEDNCEntry.delete({ where: { id } });
     } else {
-      await prisma.rEDNCEntry.delete({ where: { phoneNumber: phone } });
+      await getCrmDb(ctx).rEDNCEntry.delete({ where: { phoneNumber: phone } });
     }
     return NextResponse.json({ success: true });
   } catch (error) {

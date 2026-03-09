@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { leadService } from "@/lib/dal";
+import { getCrmDb } from "@/lib/dal";
 import { resolveDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
 import { apiErrors } from "@/lib/api-error";
@@ -36,17 +36,19 @@ export async function POST(request: Request) {
     if (leadOwnerId) {
       try {
         const ctx = await resolveDalContext(leadOwnerId);
-        const lead = await leadService.create(ctx, {
-          businessName: companyName || fullName,
-          contactPerson: fullName,
-          email,
-          phone: phone || null,
-          website: websiteUrl || null,
-          businessCategory: industry || undefined,
-          source: "soshogle_demo",
-          tags: ["demo", "landing-page"],
-          contactType: normalizeContactType("CUSTOMER"),
-        } as any);
+        const lead = await getCrmDb(ctx).lead.create({
+          data: {
+            businessName: companyName || fullName,
+            contactPerson: fullName,
+            email,
+            phone: phone || null,
+            website: websiteUrl || null,
+            businessCategory: industry || undefined,
+            source: "soshogle_demo",
+            tags: ["demo", "landing-page"],
+            contactType: normalizeContactType("CUSTOMER"),
+          } as any,
+        });
         leadId = lead.id;
       } catch (dbError) {
         console.error("Failed to store demo lead:", dbError);

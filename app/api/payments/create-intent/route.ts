@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { createPaymentIntent } from "@/lib/payments/stripe-service";
 import { createPayment as createSquarePayment } from "@/lib/payments/square-service";
 import { createOrder as createPayPalOrder } from "@/lib/payments/paypal-service";
@@ -35,17 +36,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound("User not found");
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+    const userId = session.user.id;
 
     const rawBody = await request.json().catch(() => null);
     if (!rawBody || typeof rawBody !== "object") {
@@ -122,10 +119,10 @@ export async function POST(request: NextRequest) {
     let providerPaymentId: string;
 
     // Get provider settings
-    const providerSettings = await prisma.paymentProviderSettings.findUnique({
+    const providerSettings = await db.paymentProviderSettings.findUnique({
       where: {
         userId_provider: {
-          userId: user.id,
+          userId,
           provider,
         },
       },
@@ -140,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Create payment based on provider
     if (provider === "STRIPE") {
-      paymentIntent = await createPaymentIntent(user.id, {
+      paymentIntent = await createPaymentIntent(userId, {
         amount,
         currency,
         customerEmail,
@@ -155,7 +152,7 @@ export async function POST(request: NextRequest) {
       });
       providerPaymentId = paymentIntent.id;
     } else if (provider === "PAYPAL") {
-      paymentIntent = await createPayPalOrder(user.id, {
+      paymentIntent = await createPayPalOrder(userId, {
         amount,
         currency,
         description,
@@ -167,9 +164,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment record in database
-    const payment = await prisma.payment.create({
+    const payment = await db.payment.create({
       data: {
-        userId: user.id,
+        userId,
         providerId: providerSettings.id,
         provider,
         providerPaymentId,
@@ -189,7 +186,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful payment creation
     await AuditLogger.logPayment(
-      user.id,
+      userId,
       payment.id,
       request,
       {
@@ -213,14 +210,11 @@ export async function POST(request: NextRequest) {
 
     // Log failed payment attempt
     const session = await getServerSession(authOptions);
-    if (session?.user?.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-      });
-
-      if (user) {
+    if (session?.user?.id) {
+      const ctx = getDalContextFromSession(session);
+      if (ctx) {
         await AuditLogger.logPayment(
-          user.id,
+          session.user.id,
           "unknown",
           request,
           { error: error.message },

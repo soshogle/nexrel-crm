@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -13,12 +14,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const propertyId = searchParams.get('propertyId');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const netSheets = await prisma.rESellerNetSheet.findMany({
+    const netSheets = await getCrmDb(ctx).rESellerNetSheet.findMany({
       where: {
         userId: session.user.id,
         ...(propertyId && { propertyId }),
@@ -41,6 +46,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -67,7 +76,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Address and sale price are required');
     }
 
-    const netSheet = await prisma.rESellerNetSheet.create({
+    const netSheet = await getCrmDb(ctx).rESellerNetSheet.create({
       data: {
         userId: session.user.id,
         propertyId: propertyId || null,
@@ -104,6 +113,10 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -112,7 +125,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.badRequest('Net sheet ID required');
     }
 
-    const existing = await prisma.rESellerNetSheet.findFirst({
+    const existing = await getCrmDb(ctx).rESellerNetSheet.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -120,7 +133,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.notFound('Net sheet not found');
     }
 
-    const netSheet = await prisma.rESellerNetSheet.update({
+    const netSheet = await getCrmDb(ctx).rESellerNetSheet.update({
       where: { id },
       data: {
         ...(updateData.salePrice !== undefined && { salePrice: parseFloat(updateData.salePrice) }),
@@ -143,6 +156,10 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -151,7 +168,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Net sheet ID required');
     }
 
-    const existing = await prisma.rESellerNetSheet.findFirst({
+    const existing = await getCrmDb(ctx).rESellerNetSheet.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -159,7 +176,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('Net sheet not found');
     }
 
-    await prisma.rESellerNetSheet.delete({ where: { id } });
+    await getCrmDb(ctx).rESellerNetSheet.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

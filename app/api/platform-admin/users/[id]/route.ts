@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import bcrypt from "bcryptjs";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET /api/platform-admin/users/[id]
@@ -11,7 +11,7 @@ import { apiErrors } from '@/lib/api-error';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,11 +21,11 @@ export async function GET(
     }
 
     // Verify SUPER_ADMIN access
-    if (session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Super Admin access required');
+    if (session.user.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Super Admin access required");
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: params.id },
       select: {
         id: true,
@@ -42,18 +42,18 @@ export async function GET(
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Don't allow editing other SUPER_ADMINs
-    if (user.role === 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Cannot edit Super Admin accounts');
+    if (user.role === "SUPER_ADMIN") {
+      return apiErrors.forbidden("Cannot edit Super Admin accounts");
     }
 
     return NextResponse.json({ user });
   } catch (error: any) {
-    console.error('Error fetching user:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch user');
+    console.error("Error fetching user:", error);
+    return apiErrors.internal(error.message || "Failed to fetch user");
   }
 }
 
@@ -63,7 +63,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -73,35 +73,35 @@ export async function PATCH(
     }
 
     // Verify SUPER_ADMIN access
-    if (session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Super Admin access required');
+    if (session.user.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Super Admin access required");
     }
 
     const body = await request.json();
     const { email, password, name } = body;
 
     // Get the user
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getMetaDb().user.findUnique({
       where: { id: params.id },
     });
 
     if (!existingUser) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Don't allow editing other SUPER_ADMINs
-    if (existingUser.role === 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Cannot edit Super Admin accounts');
+    if (existingUser.role === "SUPER_ADMIN") {
+      return apiErrors.forbidden("Cannot edit Super Admin accounts");
     }
 
     // Check if new email is already taken (if email is being changed)
     if (email && email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
+      const emailExists = await getMetaDb().user.findUnique({
         where: { email },
       });
 
       if (emailExists) {
-        return apiErrors.badRequest('Email already in use');
+        return apiErrors.badRequest("Email already in use");
       }
     }
 
@@ -123,7 +123,7 @@ export async function PATCH(
     }
 
     // Update the user
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await getMetaDb().user.update({
       where: { id: params.id },
       data: updateData,
       select: {
@@ -137,19 +137,19 @@ export async function PATCH(
     });
 
     console.log(`✅ Super Admin updated user ${params.id}:`, {
-      email: email ? 'changed' : 'unchanged',
-      password: password ? 'changed' : 'unchanged',
-      name: name ? 'changed' : 'unchanged',
+      email: email ? "changed" : "unchanged",
+      password: password ? "changed" : "unchanged",
+      name: name ? "changed" : "unchanged",
     });
 
     return NextResponse.json({
       success: true,
       user: updatedUser,
-      message: 'User updated successfully',
+      message: "User updated successfully",
     });
   } catch (error: any) {
-    console.error('Error updating user:', error);
-    return apiErrors.internal(error.message || 'Failed to update user');
+    console.error("Error updating user:", error);
+    return apiErrors.internal(error.message || "Failed to update user");
   }
 }
 
@@ -159,7 +159,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -168,28 +168,28 @@ export async function DELETE(
       return apiErrors.unauthorized();
     }
 
-    if (session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Super Admin access required');
+    if (session.user.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Super Admin access required");
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getMetaDb().user.findUnique({
       where: { id: params.id },
       select: { id: true, role: true, deletedAt: true },
     });
 
     if (!existingUser) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
-    if (existingUser.role === 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Cannot delete Super Admin accounts');
+    if (existingUser.role === "SUPER_ADMIN") {
+      return apiErrors.forbidden("Cannot delete Super Admin accounts");
     }
 
     if (existingUser.deletedAt) {
-      return apiErrors.badRequest('User is already deleted');
+      return apiErrors.badRequest("User is already deleted");
     }
 
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: params.id },
       data: { deletedAt: new Date() },
     });
@@ -198,13 +198,13 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'User deleted successfully',
+      message: "User deleted successfully",
     });
   } catch (error: any) {
-    console.error('Error deleting user:', error);
-    return apiErrors.internal(error.message || 'Failed to delete user');
+    console.error("Error deleting user:", error);
+    return apiErrors.internal(error.message || "Failed to delete user");
   }
 }
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";

@@ -7,8 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { soshoglePay } from '@/lib/payments';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -21,13 +22,17 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
       return NextResponse.json({ success: true, loyaltyPoints: [] });
     }
 
-    const loyaltyPoints = await prisma.soshogleLoyaltyPoints.findMany({
+    const loyaltyPoints = await getCrmDb(ctx).soshogleLoyaltyPoints.findMany({
       where: { customerId: customer.id },
       include: { program: true },
     });
@@ -43,6 +48,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 

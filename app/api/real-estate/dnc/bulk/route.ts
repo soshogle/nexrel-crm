@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REDNCSource } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ data: [], message: 'RE feature initializing...' });
@@ -25,6 +30,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -46,14 +55,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'remove') {
-      const result = await prisma.rEDNCEntry.deleteMany({
+      const result = await getCrmDb(ctx).rEDNCEntry.deleteMany({
         where: { phoneNumber: { in: phoneNumbers } },
       });
       return NextResponse.json({ success: true, removed: result.count });
     }
 
     const operations = phoneNumbers.map((phoneNumber: string) =>
-      prisma.rEDNCEntry.upsert({
+      getCrmDb(ctx).rEDNCEntry.upsert({
         where: { phoneNumber },
         update: {
           country,
@@ -69,7 +78,7 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    const created = await prisma.$transaction(operations);
+    const created = await getCrmDb(ctx).$transaction(operations);
     return NextResponse.json({ success: true, added: created.length });
   } catch (error) {
     console.error('DNC bulk POST error:', error);
@@ -82,6 +91,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -94,6 +107,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });

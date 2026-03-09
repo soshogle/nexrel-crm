@@ -1,54 +1,55 @@
 export const dynamic = "force-dynamic";
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { getDalContextFromSession } from '@/lib/context/industry-context'
-import { leadService } from '@/lib/dal/lead-service'
-import { messageService } from '@/lib/dal/message-service'
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
+import { messageService } from "@/lib/dal/message-service";
+import { apiErrors } from "@/lib/api-error";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return apiErrors.unauthorized()
+      return apiErrors.unauthorized();
     }
 
-    const { leadId } = await request.json()
+    const { leadId } = await request.json();
 
     if (!leadId) {
-      return apiErrors.badRequest('Lead ID is required')
+      return apiErrors.badRequest("Lead ID is required");
     }
 
-    const ctx = getDalContextFromSession(session)
+    const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return apiErrors.unauthorized()
+      return apiErrors.unauthorized();
     }
-    const lead = await leadService.findUnique(ctx, leadId)
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
-      return apiErrors.notFound('Lead not found')
+      return apiErrors.notFound("Lead not found");
     }
 
     // Get user's language preference
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: { language: true },
     });
-    const userLanguage = user?.language || 'en';
-    
+    const userLanguage = user?.language || "en";
+
     // Language instructions for AI responses
     const languageInstructions: Record<string, string> = {
-      'en': 'CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.',
-      'fr': 'CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.',
-      'es': 'CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.',
-      'zh': '关键：您必须仅用中文生成消息。每个词都必须是中文。',
+      en: "CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.",
+      fr: "CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.",
+      es: "CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.",
+      zh: "关键：您必须仅用中文生成消息。每个词都必须是中文。",
     };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    const languageInstruction =
+      languageInstructions[userLanguage] || languageInstructions["en"];
 
     // Prepare the prompt for AI message generation
     const prompt = `${languageInstruction}
@@ -56,11 +57,11 @@ export async function POST(request: NextRequest) {
 Generate a personalized outreach message for a business lead with the following information:
 
 Business Name: ${lead.businessName}
-Contact Person: ${lead.contactPerson || 'Not specified'}
-Business Category: ${lead.businessCategory || 'Not specified'}
-Location: ${lead.city ? `${lead.city}, ${lead.state || ''}` : 'Not specified'}
-Rating: ${lead.rating ? `${lead.rating}/5 stars` : 'Not specified'}
-Website: ${lead.website || 'Not specified'}
+Contact Person: ${lead.contactPerson || "Not specified"}
+Business Category: ${lead.businessCategory || "Not specified"}
+Location: ${lead.city ? `${lead.city}, ${lead.state || ""}` : "Not specified"}
+Rating: ${lead.rating ? `${lead.rating}/5 stars` : "Not specified"}
+Website: ${lead.website || "Not specified"}
 
 Create a professional, personalized cold outreach message that:
 1. Addresses the business directly (use business name)
@@ -70,102 +71,108 @@ Create a professional, personalized cold outreach message that:
 5. Is concise but engaging
 6. Sounds natural and not overly salesy
 
-The message should be suitable for email outreach and be around 150-200 words.`
+The message should be suitable for email outreach and be around 150-200 words.`;
 
     const messages = [
       {
         role: "user",
-        content: prompt
-      }
-    ]
+        content: prompt,
+      },
+    ];
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return apiErrors.internal('OPENAI_API_KEY not configured');
+      return apiErrors.internal("OPENAI_API_KEY not configured");
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: messages,
         stream: true,
         max_tokens: 500,
         temperature: 0.7,
       }),
-    })
+    });
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      throw new Error(`API error: ${response.status}`);
     }
 
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = response.body?.getReader()
+        const reader = response.body?.getReader();
         if (!reader) {
-          controller.error(new Error('No response body'))
-          return
+          controller.error(new Error("No response body"));
+          return;
         }
 
-        const decoder = new TextDecoder()
-        const encoder = new TextEncoder()
-        let buffer = ''
-        let partialRead = ''
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let buffer = "";
+        let partialRead = "";
 
         try {
           while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
+            const { done, value } = await reader.read();
+            if (done) break;
 
-            partialRead += decoder.decode(value, { stream: true })
-            let lines = partialRead.split('\n')
-            partialRead = lines.pop() || ''
+            partialRead += decoder.decode(value, { stream: true });
+            let lines = partialRead.split("\n");
+            partialRead = lines.pop() || "";
 
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6)
-                if (data === '[DONE]') {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") {
                   // Save the generated message to database
                   try {
                     const message = await messageService.create(ctx, {
                       leadId,
                       content: buffer.trim(),
-                      messageType: 'ai_generated',
+                      messageType: "ai_generated",
                       isUsed: false,
-                    })
+                    });
 
                     const finalData = JSON.stringify({
-                      status: 'completed',
-                      message
-                    })
-                    controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
+                      status: "completed",
+                      message,
+                    });
+                    controller.enqueue(
+                      encoder.encode(`data: ${finalData}\n\n`),
+                    );
                   } catch (dbError) {
-                    console.error('Database error:', dbError)
+                    console.error("Database error:", dbError);
                     const errorData = JSON.stringify({
-                      status: 'error',
-                      message: 'Failed to save message'
-                    })
-                    controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+                      status: "error",
+                      message: "Failed to save message",
+                    });
+                    controller.enqueue(
+                      encoder.encode(`data: ${errorData}\n\n`),
+                    );
                   }
-                  controller.close()
-                  return
+                  controller.close();
+                  return;
                 }
 
                 try {
-                  const parsed = JSON.parse(data)
-                  const content = parsed.choices?.[0]?.delta?.content || ''
-                  buffer += content
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content || "";
+                  buffer += content;
 
                   // Send progress update
                   const progressData = JSON.stringify({
-                    status: 'generating',
-                    progress: buffer.length
-                  })
-                  controller.enqueue(encoder.encode(`data: ${progressData}\n\n`))
+                    status: "generating",
+                    progress: buffer.length,
+                  });
+                  controller.enqueue(
+                    encoder.encode(`data: ${progressData}\n\n`),
+                  );
                 } catch (e) {
                   // Skip invalid JSON
                 }
@@ -173,27 +180,26 @@ The message should be suitable for email outreach and be around 150-200 words.`
             }
           }
         } catch (error) {
-          console.error('Stream error:', error)
+          console.error("Stream error:", error);
           const errorData = JSON.stringify({
-            status: 'error',
-            message: 'Generation failed'
-          })
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
-          controller.close()
+            status: "error",
+            message: "Generation failed",
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+          controller.close();
         }
       },
-    })
+    });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
-    })
-
+    });
   } catch (error) {
-    console.error('Generate message error:', error)
-    return apiErrors.internal('Failed to generate message')
+    console.error("Generate message error:", error);
+    return apiErrors.internal("Failed to generate message");
   }
 }

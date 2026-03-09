@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { getMetaDb } from '@/lib/db/meta-db';
-import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,36 +18,39 @@ export async function POST(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     const { industry } = await req.json();
 
     if (!industry) {
-      return apiErrors.badRequest('Industry is required');
+      return apiErrors.badRequest("Industry is required");
     }
 
     // Validate industry enum value
     const validIndustries = [
-      'ACCOUNTING',
-      'RESTAURANT',
-      'SPORTS_CLUB',
-      'CONSTRUCTION',
-      'LAW',
-      'MEDICAL',
-      'DENTIST',
-      'MEDICAL_SPA',
-      'OPTOMETRIST',
-      'HEALTH_CLINIC',
-      'REAL_ESTATE',
-      'HOSPITAL',
-      'TECHNOLOGY',
-      'ORTHODONTIST',
+      "ACCOUNTING",
+      "RESTAURANT",
+      "SPORTS_CLUB",
+      "CONSTRUCTION",
+      "LAW",
+      "MEDICAL",
+      "DENTIST",
+      "MEDICAL_SPA",
+      "OPTOMETRIST",
+      "HEALTH_CLINIC",
+      "REAL_ESTATE",
+      "HOSPITAL",
+      "TECHNOLOGY",
+      "ORTHODONTIST",
     ];
 
     if (!validIndustries.includes(industry)) {
-      return apiErrors.badRequest('Invalid industry value');
+      return apiErrors.badRequest("Invalid industry value");
     }
 
-    // Update user's industry in main DB
-    const updatedUser = await prisma.user.update({
+    // Update user's industry in tenant CRM DB (where user mirror exists)
+    const updatedUser = await getCrmDb(ctx).user.update({
       where: { id: session.user.id },
       data: { industry },
       select: {
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
       user: updatedUser,
     });
   } catch (error) {
-    console.error('Error saving industry:', error);
-    return apiErrors.internal('Failed to save industry');
+    console.error("Error saving industry:", error);
+    return apiErrors.internal("Failed to save industry");
   }
 }

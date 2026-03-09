@@ -1,48 +1,51 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // PUT /api/clubos/parent/family/[id] - Update family member
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { firstName, lastName, dateOfBirth, gender } = body;
 
     // Get household for the user
-    const household = await prisma.clubOSHousehold.findUnique({
+    const household = await db.clubOSHousehold.findUnique({
       where: { userId: session.user.id },
     });
 
     if (!household) {
-      return apiErrors.notFound('Household not found');
+      return apiErrors.notFound("Household not found");
     }
 
     // Verify member belongs to household
-    const member = await prisma.clubOSMember.findUnique({
+    const member = await db.clubOSMember.findUnique({
       where: { id: params.id },
     });
 
     if (!member || member.householdId !== household.id) {
-      return apiErrors.forbidden('Member not found or unauthorized');
+      return apiErrors.forbidden("Member not found or unauthorized");
     }
 
     // Update member
-    const updatedMember = await prisma.clubOSMember.update({
+    const updatedMember = await db.clubOSMember.update({
       where: { id: params.id },
       data: {
         firstName,
@@ -70,33 +73,38 @@ export async function PUT(
 
     return NextResponse.json({ member: updatedMember });
   } catch (error: any) {
-    console.error('Error updating family member:', error);
-    return apiErrors.internal(error.message || 'Failed to update family member');
+    console.error("Error updating family member:", error);
+    return apiErrors.internal(
+      error.message || "Failed to update family member",
+    );
   }
 }
 
 // DELETE /api/clubos/parent/family/[id] - Delete family member
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get household for the user
-    const household = await prisma.clubOSHousehold.findUnique({
+    const household = await db.clubOSHousehold.findUnique({
       where: { userId: session.user.id },
     });
 
     if (!household) {
-      return apiErrors.notFound('Household not found');
+      return apiErrors.notFound("Household not found");
     }
 
     // Verify member belongs to household
-    const member = await prisma.clubOSMember.findUnique({
+    const member = await db.clubOSMember.findUnique({
       where: { id: params.id },
       include: {
         registrations: true,
@@ -104,26 +112,30 @@ export async function DELETE(
     });
 
     if (!member || member.householdId !== household.id) {
-      return apiErrors.forbidden('Member not found or unauthorized');
+      return apiErrors.forbidden("Member not found or unauthorized");
     }
 
     // Check if member has active registrations
     const hasActiveRegistrations = member.registrations.some((reg) =>
-      ['ACTIVE', 'APPROVED'].includes(reg.status)
+      ["ACTIVE", "APPROVED"].includes(reg.status),
     );
 
     if (hasActiveRegistrations) {
-      return apiErrors.badRequest('Cannot delete member with active registrations');
+      return apiErrors.badRequest(
+        "Cannot delete member with active registrations",
+      );
     }
 
     // Delete member
-    await prisma.clubOSMember.delete({
+    await db.clubOSMember.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error deleting family member:', error);
-    return apiErrors.internal(error.message || 'Failed to delete family member');
+    console.error("Error deleting family member:", error);
+    return apiErrors.internal(
+      error.message || "Failed to delete family member",
+    );
   }
 }

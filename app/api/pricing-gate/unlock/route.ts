@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
 import { leadService } from "@/lib/dal/lead-service";
 import { emailService } from "@/lib/email-service";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     if (leadOwnerId) {
       try {
         const ctx = await resolveDalContext(leadOwnerId);
+        getCrmDb(ctx);
         await leadService.create(ctx, {
           businessName: "Pricing Gate",
           contactPerson: email,
@@ -33,7 +35,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const notifyEmail = process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
+    const notifyEmail =
+      process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
     await emailService.sendEmail({
       to: notifyEmail,
       subject: "Pricing Unlocked Lead",

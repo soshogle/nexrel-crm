@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { InstagramService } from "@/lib/messaging-sync/instagram-service";
-import { prisma } from "@/lib/db";
+import { findConnectedChannelByProviderAccount } from "@/lib/dal/webhook-channel-lookup";
 import crypto from "crypto";
 import { apiErrors } from "@/lib/api-error";
 
@@ -76,12 +76,9 @@ export async function POST(req: NextRequest) {
       const instagramAccountId = entry.id;
 
       // Find channel connection for this Instagram account
-      const channelConnection = await prisma.channelConnection.findFirst({
-        where: {
-          channelType: "INSTAGRAM",
-          providerAccountId: instagramAccountId,
-          status: "CONNECTED",
-        },
+      const channelConnection = await findConnectedChannelByProviderAccount({
+        channelType: "INSTAGRAM",
+        providerAccountId: instagramAccountId,
       });
 
       if (!channelConnection) {

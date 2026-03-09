@@ -1,19 +1,17 @@
-
 /**
  * Twilio SMS Webhook Handler
  * Receives incoming SMS messages from Twilio
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { TwilioService } from '@/lib/messaging-sync/twilio-service';
-import { prisma } from '@/lib/db';
-import twilio from 'twilio';
-import { decrypt } from '@/lib/encryption';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { TwilioService } from "@/lib/messaging-sync/twilio-service";
+import { findConnectedChannelByIdentifier } from "@/lib/dal/webhook-channel-lookup";
+import twilio from "twilio";
+import { decrypt } from "@/lib/encryption";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,17 +29,14 @@ export async function POST(req: NextRequest) {
     const toNumber = webhookData.To;
 
     // Find the channel connection for this Twilio number
-    const channelConnection = await prisma.channelConnection.findFirst({
-      where: {
-        channelType: 'SMS',
-        channelIdentifier: toNumber,
-        status: 'CONNECTED',
-      },
+    const channelConnection = await findConnectedChannelByIdentifier({
+      channelType: "SMS",
+      channelIdentifier: toNumber,
     });
 
     if (!channelConnection) {
-      console.error('No channel connection found for Twilio number:', toNumber);
-      return apiErrors.notFound('Channel connection not found');
+      console.error("No channel connection found for Twilio number:", toNumber);
+      return apiErrors.notFound("Channel connection not found");
     }
 
     // Get and decrypt Twilio credentials from provider data
@@ -51,8 +46,10 @@ export async function POST(req: NextRequest) {
     const rawAuthToken = providerData?.authToken;
 
     if (!rawAccountSid || !rawAuthToken) {
-      console.error('[twilio-webhook] Missing Twilio credentials in channel connection');
-      return apiErrors.badRequest('Invalid channel configuration');
+      console.error(
+        "[twilio-webhook] Missing Twilio credentials in channel connection",
+      );
+      return apiErrors.badRequest("Invalid channel configuration");
     }
 
     let accountSid: string;
@@ -61,23 +58,25 @@ export async function POST(req: NextRequest) {
       accountSid = decrypt(rawAccountSid);
       authToken = decrypt(rawAuthToken);
     } catch {
-      console.error('[twilio-webhook] Failed to decrypt Twilio credentials — check ENCRYPTION_SECRET');
-      return apiErrors.internal('Credential decryption failed');
+      console.error(
+        "[twilio-webhook] Failed to decrypt Twilio credentials — check ENCRYPTION_SECRET",
+      );
+      return apiErrors.internal("Credential decryption failed");
     }
 
     // Validate webhook signature for security
-    const twilioSignature = req.headers.get('x-twilio-signature') || '';
+    const twilioSignature = req.headers.get("x-twilio-signature") || "";
     const url = req.url;
     const valid = twilio.validateRequest(
       authToken,
       twilioSignature,
       url,
-      webhookData
+      webhookData,
     );
 
-    if (!valid && process.env.NODE_ENV === 'production') {
-      console.error('Invalid Twilio webhook signature');
-      return apiErrors.unauthorized('Invalid signature');
+    if (!valid && process.env.NODE_ENV === "production") {
+      console.error("Invalid Twilio webhook signature");
+      return apiErrors.unauthorized("Invalid signature");
     }
 
     // Process the incoming message
@@ -85,7 +84,7 @@ export async function POST(req: NextRequest) {
     await twilioService.processIncomingMessage(
       webhookData,
       channelConnection.id,
-      channelConnection.userId
+      channelConnection.userId,
     );
 
     // Respond to Twilio with TwiML (empty response acknowledges receipt)
@@ -94,12 +93,12 @@ export async function POST(req: NextRequest) {
       {
         status: 200,
         headers: {
-          'Content-Type': 'text/xml',
+          "Content-Type": "text/xml",
         },
-      }
+      },
     );
   } catch (error: any) {
-    console.error('Error processing Twilio webhook:', error);
-    return apiErrors.internal('Internal server error', error.message);
+    console.error("Error processing Twilio webhook:", error);
+    return apiErrors.internal("Internal server error", error.message);
   }
 }

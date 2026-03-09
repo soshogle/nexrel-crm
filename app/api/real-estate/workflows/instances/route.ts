@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-import { logger } from '@/lib/logger';
-import { WorkflowInstancesQuerySchema } from '@/lib/api-validation';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { logger } from "@/lib/logger";
+import { WorkflowInstancesQuerySchema } from "@/lib/api-validation";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/real-estate/workflows/instances - List workflow instances for user
 export async function GET(request: NextRequest) {
@@ -17,16 +18,27 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    if (ctx.industry !== "REAL_ESTATE") {
+      return apiErrors.forbidden(
+        "This feature is only available for real estate agencies",
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const queryResult = WorkflowInstancesQuerySchema.safeParse({
-      status: searchParams.get('status') ?? undefined,
-      leadId: searchParams.get('leadId') ?? undefined,
-      dealId: searchParams.get('dealId') ?? undefined,
-      limit: searchParams.get('limit') ?? undefined,
-      cursor: searchParams.get('cursor') ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      leadId: searchParams.get("leadId") ?? undefined,
+      dealId: searchParams.get("dealId") ?? undefined,
+      limit: searchParams.get("limit") ?? undefined,
+      cursor: searchParams.get("cursor") ?? undefined,
     });
     if (!queryResult.success) {
-      return apiErrors.validationError('Invalid query parameters', queryResult.error.flatten());
+      return apiErrors.validationError(
+        "Invalid query parameters",
+        queryResult.error.flatten(),
+      );
     }
     const { status, leadId, dealId, limit, cursor } = queryResult.data;
 
@@ -46,16 +58,16 @@ export async function GET(request: NextRequest) {
       where.dealId = dealId;
     }
 
-    const instances = await prisma.rEWorkflowInstance.findMany({
+    const instances = await getCrmDb(ctx).rEWorkflowInstance.findMany({
       where,
       take: limit + 1, // Fetch one extra to check if there's a next page
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      orderBy: { startedAt: 'desc' },
+      orderBy: { startedAt: "desc" },
       include: {
         template: {
           include: {
             tasks: {
-              orderBy: { displayOrder: 'asc' },
+              orderBy: { displayOrder: "asc" },
               select: {
                 id: true,
                 name: true,
@@ -91,7 +103,7 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          orderBy: { startedAt: 'asc' },
+          orderBy: { startedAt: "asc" },
         },
       },
     });
@@ -106,7 +118,10 @@ export async function GET(request: NextRequest) {
       hasMore: !!nextCursor,
     });
   } catch (error) {
-    logger.error('Error fetching workflow instances', { component: 'workflow-instances', error: String(error) });
-    return apiErrors.internal('Failed to fetch workflow instances');
+    logger.error("Error fetching workflow instances", {
+      component: "workflow-instances",
+      error: String(error),
+    });
+    return apiErrors.internal("Failed to fetch workflow instances");
   }
 }

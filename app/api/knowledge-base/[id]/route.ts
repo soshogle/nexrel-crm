@@ -1,54 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // DELETE /api/knowledge-base/[id] - Delete a knowledge base file
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const fileId = params.id;
 
-    console.log('🗑️  Deleting knowledge base file:', fileId);
+    console.log("🗑️  Deleting knowledge base file:", fileId);
 
     // Verify the file belongs to this user before deleting
-    const file = await prisma.knowledgeBaseFile.findUnique({
+    const file = await db.knowledgeBaseFile.findUnique({
       where: { id: fileId },
     });
 
     if (!file) {
-      return apiErrors.notFound('File not found');
+      return apiErrors.notFound("File not found");
     }
 
     if (file.userId !== session.user.id) {
-      return apiErrors.forbidden('Unauthorized to delete this file');
+      return apiErrors.forbidden("Unauthorized to delete this file");
     }
 
     // Delete the file
-    await prisma.knowledgeBaseFile.delete({
+    await db.knowledgeBaseFile.delete({
       where: { id: fileId },
     });
 
-    console.log('✅ Knowledge base file deleted:', fileId);
+    console.log("✅ Knowledge base file deleted:", fileId);
 
     return NextResponse.json({
       success: true,
-      message: 'File deleted successfully',
+      message: "File deleted successfully",
     });
   } catch (error: any) {
-    console.error('❌ Error deleting knowledge base file:', error);
-    return apiErrors.internal(error.message || 'Failed to delete file');
+    console.error("❌ Error deleting knowledge base file:", error);
+    return apiErrors.internal(error.message || "Failed to delete file");
   }
 }

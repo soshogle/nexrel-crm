@@ -1,38 +1,43 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * ADJUST INVENTORY STOCK
  * Manually adjust stock levels with reason tracking
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { type, quantity, reason, notes, staffName } = body;
 
     // Validate required fields
     if (!type || !quantity || !reason) {
-      return apiErrors.badRequest('Type, quantity, and reason are required');
+      return apiErrors.badRequest("Type, quantity, and reason are required");
     }
 
     // Get current item
-    const item = await prisma.inventoryItem.findFirst({
+    const item = await db.inventoryItem.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -40,7 +45,7 @@ export async function POST(
     });
 
     if (!item) {
-      return apiErrors.notFound('Item not found');
+      return apiErrors.notFound("Item not found");
     }
 
     const currentStock = Number(item.currentStock);
@@ -48,7 +53,7 @@ export async function POST(
 
     // Calculate new stock
     let newStock = currentStock;
-    if (type === 'MANUAL_ADD') {
+    if (type === "MANUAL_ADD") {
       newStock = currentStock + quantityChange;
     } else {
       newStock = currentStock - quantityChange;
@@ -56,11 +61,11 @@ export async function POST(
 
     // Prevent negative stock
     if (newStock < 0) {
-      return apiErrors.badRequest('Cannot reduce stock below zero');
+      return apiErrors.badRequest("Cannot reduce stock below zero");
     }
 
     // Update item stock
-    const updatedItem = await prisma.inventoryItem.update({
+    const updatedItem = await db.inventoryItem.update({
       where: { id: params.id },
       data: {
         currentStock: newStock,
@@ -68,12 +73,13 @@ export async function POST(
     });
 
     // Create adjustment record
-    await prisma.inventoryAdjustment.create({
+    await db.inventoryAdjustment.create({
       data: {
         userId: session.user.id,
         inventoryItemId: params.id,
         type,
-        quantityChange: type === 'MANUAL_ADD' ? quantityChange : -quantityChange,
+        quantityChange:
+          type === "MANUAL_ADD" ? quantityChange : -quantityChange,
         previousStock: currentStock,
         newStock,
         reason,
@@ -85,29 +91,31 @@ export async function POST(
     // Check for low stock alerts
     if (newStock <= Number(item.minimumStock)) {
       // Check if alert already exists
-      const existingAlert = await prisma.stockAlert.findFirst({
+      const existingAlert = await db.stockAlert.findFirst({
         where: {
           userId: session.user.id,
           inventoryItemId: params.id,
-          alertType: newStock <= 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK',
+          alertType: newStock <= 0 ? "OUT_OF_STOCK" : "LOW_STOCK",
           isResolved: false,
         },
       });
 
       if (!existingAlert) {
-        await prisma.stockAlert.create({
+        await db.stockAlert.create({
           data: {
             userId: session.user.id,
             inventoryItemId: params.id,
-            alertType: newStock <= 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK',
-            message: `${item.name} is ${newStock <= 0 ? 'out of stock' : 'low on stock'} (${newStock} ${item.unit})`,
-            severity: newStock <= 0 ? 'CRITICAL' : 'HIGH',
+            alertType: newStock <= 0 ? "OUT_OF_STOCK" : "LOW_STOCK",
+            message: `${item.name} is ${newStock <= 0 ? "out of stock" : "low on stock"} (${newStock} ${item.unit})`,
+            severity: newStock <= 0 ? "CRITICAL" : "HIGH",
           },
         });
       }
     }
 
-    console.log(`✅ Stock adjusted: ${item.name} from ${currentStock} to ${newStock}`);
+    console.log(
+      `✅ Stock adjusted: ${item.name} from ${currentStock} to ${newStock}`,
+    );
 
     return NextResponse.json({
       success: true,
@@ -116,7 +124,7 @@ export async function POST(
       newStock,
     });
   } catch (error) {
-    console.error('❌ Stock adjustment error:', error);
-    return apiErrors.internal('Failed to adjust stock');
+    console.error("❌ Stock adjustment error:", error);
+    return apiErrors.internal("Failed to adjust stock");
   }
 }

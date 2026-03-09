@@ -3,16 +3,17 @@
  * POST: Import phone to ElevenLabs and link to the professional agent
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { ProfessionalAIEmployeeType } from '@prisma/client';
-import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { ProfessionalAIEmployeeType } from "@prisma/client";
+import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await request.json().catch(() => ({}));
     const { employeeType, phoneNumber } = body as {
@@ -28,51 +34,57 @@ export async function POST(request: NextRequest) {
     };
 
     if (!employeeType || !phoneNumber) {
-      return apiErrors.badRequest('employeeType and phoneNumber are required');
+      return apiErrors.badRequest("employeeType and phoneNumber are required");
     }
 
-    const agent = await prisma.professionalAIEmployeeAgent.findUnique({
+    const agent = await db.professionalAIEmployeeAgent.findUnique({
       where: {
         userId_employeeType: { userId: session.user.id, employeeType },
       },
     });
 
     if (!agent) {
-      return apiErrors.notFound('Professional AI agent not provisioned. Please provision this agent first.');
+      return apiErrors.notFound(
+        "Professional AI agent not provisioned. Please provision this agent first.",
+      );
     }
 
     if (!agent.elevenLabsAgentId) {
-      return apiErrors.badRequest('Agent is not fully configured for voice calls.');
+      return apiErrors.badRequest(
+        "Agent is not fully configured for voice calls.",
+      );
     }
 
-    const formattedPhone = phoneNumber.trim().startsWith('+')
+    const formattedPhone = phoneNumber.trim().startsWith("+")
       ? phoneNumber.trim()
-      : phoneNumber.replace(/\D/g, '').length === 10
-        ? '+1' + phoneNumber.replace(/\D/g, '')
-        : '+' + phoneNumber.replace(/\D/g, '');
+      : phoneNumber.replace(/\D/g, "").length === 10
+        ? "+1" + phoneNumber.replace(/\D/g, "")
+        : "+" + phoneNumber.replace(/\D/g, "");
 
     const importResult = await elevenLabsProvisioning.importPhoneNumber(
       formattedPhone,
       agent.elevenLabsAgentId,
-      session.user.id
+      session.user.id,
     );
 
     if (!importResult.success) {
-      return apiErrors.internal(importResult.error || 'Failed to assign phone to agent');
+      return apiErrors.internal(
+        importResult.error || "Failed to assign phone to agent",
+      );
     }
 
-    await prisma.professionalAIEmployeeAgent.update({
+    await db.professionalAIEmployeeAgent.update({
       where: { userId_employeeType: { userId: session.user.id, employeeType } },
       data: { twilioPhoneNumber: formattedPhone, updatedAt: new Date() },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Phone number assigned to agent',
+      message: "Phone number assigned to agent",
       twilioPhoneNumber: formattedPhone,
     });
   } catch (error: any) {
-    console.error('Professional assign-phone error:', error);
-    return apiErrors.internal(error.message || 'Failed to assign phone');
+    console.error("Professional assign-phone error:", error);
+    return apiErrors.internal(error.message || "Failed to assign phone");
   }
 }

@@ -1,13 +1,13 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { syncGeneralInventoryToProduct } from "@/lib/general-inventory/product-sync";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/general-inventory/adjustments - Create stock adjustment
 export async function POST(request: NextRequest) {
@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -32,11 +35,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!itemId || !type || quantity === undefined) {
-      return apiErrors.badRequest('Item ID, type, and quantity are required');
+      return apiErrors.badRequest("Item ID, type, and quantity are required");
     }
 
     // Get current item
-    const item = await prisma.generalInventoryItem.findFirst({
+    const item = await db.generalInventoryItem.findFirst({
       where: {
         id: itemId,
         userId: session.user.id,
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!item) {
-      return apiErrors.notFound('Item not found');
+      return apiErrors.notFound("Item not found");
     }
 
     const quantityBefore = item.quantity;
@@ -52,12 +55,12 @@ export async function POST(request: NextRequest) {
 
     // Check for negative stock
     if (quantityAfter < 0) {
-      return apiErrors.badRequest('Insufficient stock for this adjustment');
+      return apiErrors.badRequest("Insufficient stock for this adjustment");
     }
 
     // Create adjustment and update item in a transaction
-    const [adjustment, updatedItem] = await prisma.$transaction([
-      prisma.generalInventoryAdjustment.create({
+    const [adjustment, updatedItem] = await db.$transaction([
+      db.generalInventoryAdjustment.create({
         data: {
           userId: session.user.id,
           itemId,
@@ -80,12 +83,12 @@ export async function POST(request: NextRequest) {
           toLocation: true,
         },
       }),
-      prisma.generalInventoryItem.update({
+      db.generalInventoryItem.update({
         where: { id: itemId },
         data: {
           quantity: quantityAfter,
           // Update location if it's a transfer
-          ...(type === 'TRANSFER' && toLocationId
+          ...(type === "TRANSFER" && toLocationId
             ? { locationId: toLocationId }
             : {}),
         },
@@ -97,42 +100,45 @@ export async function POST(request: NextRequest) {
       session.user.id,
       item.sku,
       quantityAfter,
-      quantityBefore
+      quantityBefore,
     ).catch((err) => {
-      console.error('Failed to sync inventory to products:', err);
+      console.error("Failed to sync inventory to products:", err);
     });
 
     // Trigger external sync if autoSync is enabled
     try {
-      const syncSettings = await prisma.ecommerceSyncSettings.findUnique({
+      const syncSettings = await db.ecommerceSyncSettings.findUnique({
         where: { userId: session.user.id },
       });
 
       if (syncSettings && syncSettings.autoSync && syncSettings.syncInventory) {
         // Trigger async sync (fire and forget - don't wait)
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/general-inventory/ecommerce-sync/push`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': request.headers.get('cookie') || '',
+        fetch(
+          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/general-inventory/ecommerce-sync/push`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: request.headers.get("cookie") || "",
+            },
+            body: JSON.stringify({
+              itemId,
+              action: "update_inventory",
+            }),
           },
-          body: JSON.stringify({
-            itemId,
-            action: 'update_inventory',
-          }),
-        }).catch((err) => {
-          console.error('Failed to sync with external platform:', err);
+        ).catch((err) => {
+          console.error("Failed to sync with external platform:", err);
           // Don't fail the request if sync fails
         });
       }
     } catch (syncError) {
-      console.error('Error checking sync settings:', syncError);
+      console.error("Error checking sync settings:", syncError);
       // Don't fail the request if sync check fails
     }
 
     return NextResponse.json({ success: true, adjustment, item: updatedItem });
   } catch (error: any) {
-    console.error('Error creating adjustment:', error);
+    console.error("Error creating adjustment:", error);
     return apiErrors.internal(error.message);
   }
 }
@@ -144,10 +150,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const itemId = searchParams.get('itemId');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const itemId = searchParams.get("itemId");
+    const limit = parseInt(searchParams.get("limit") || "50");
 
     const where: any = {
       userId: session.user.id,
@@ -157,20 +166,20 @@ export async function GET(request: NextRequest) {
       where.itemId = itemId;
     }
 
-    const adjustments = await prisma.generalInventoryAdjustment.findMany({
+    const adjustments = await db.generalInventoryAdjustment.findMany({
       where,
       include: {
         item: true,
         fromLocation: true,
         toLocation: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
     });
 
     return NextResponse.json({ success: true, adjustments });
   } catch (error: any) {
-    console.error('Error fetching adjustments:', error);
+    console.error("Error fetching adjustments:", error);
     return apiErrors.internal(error.message);
   }
 }

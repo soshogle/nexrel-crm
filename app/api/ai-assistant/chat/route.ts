@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getMetaDb } from "@/lib/db/meta-db";
 import { getCrmDb } from "@/lib/dal";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import {
@@ -10,11 +10,10 @@ import {
   getNavigationUrlForAction,
 } from "@/lib/ai-assistant-functions";
 import { aiBrainService } from "@/lib/ai-brain-service";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +22,7 @@ export async function POST(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { email: session.user.email },
       select: {
         id: true,
@@ -70,16 +69,17 @@ export async function POST(req: NextRequest) {
     const db = getCrmDb(ctx);
 
     // Get user's language preference (default to 'en' if not set)
-    const userLanguage = user.language || 'en';
-    
+    const userLanguage = user.language || "en";
+
     // Language instructions for AI responses
     const languageInstructions: Record<string, string> = {
-      'en': 'CRITICAL: You MUST respond ONLY in English. Every single word, sentence, and response must be in English. Never use any other language.',
-      'fr': 'CRITIQUE : Vous DEVEZ répondre UNIQUEMENT en français. Chaque mot, phrase et réponse doit être en français. N\'utilisez jamais une autre langue.',
-      'es': 'CRÍTICO: DEBES responder SOLO en español. Cada palabra, frase y respuesta debe estar en español. Nunca uses otro idioma.',
-      'zh': '关键：您必须仅用中文回复。每个词、句子和回复都必须是中文。永远不要使用其他语言。',
+      en: "CRITICAL: You MUST respond ONLY in English. Every single word, sentence, and response must be in English. Never use any other language.",
+      fr: "CRITIQUE : Vous DEVEZ répondre UNIQUEMENT en français. Chaque mot, phrase et réponse doit être en français. N'utilisez jamais une autre langue.",
+      es: "CRÍTICO: DEBES responder SOLO en español. Cada palabra, frase y respuesta debe estar en español. Nunca uses otro idioma.",
+      zh: "关键：您必须仅用中文回复。每个词、句子和回复都必须是中文。永远不要使用其他语言。",
     };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    const languageInstruction =
+      languageInstructions[userLanguage] || languageInstructions["en"];
 
     // Check if the request contains a file (FormData) or is JSON
     const contentType = req.headers.get("content-type") || "";
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       uploadedFile = formData.get("file") as File | null;
       message = (formData.get("message") as string) || "";
       const historyString = formData.get("conversationHistory") as string;
-      
+
       try {
         conversationHistory = historyString ? JSON.parse(historyString) : [];
       } catch (e) {
@@ -114,23 +114,28 @@ export async function POST(req: NextRequest) {
       if (uploadedFile) {
         try {
           // Import contacts directly using the shared function
-          const { importContactsFromCSV } = await import('@/lib/contacts-import');
-          const importResult = await importContactsFromCSV(uploadedFile, user.id);
+          const { importContactsFromCSV } = await import(
+            "@/lib/contacts-import"
+          );
+          const importResult = await importContactsFromCSV(
+            uploadedFile,
+            user.id,
+          );
 
           // Generate a detailed response
           let responseMessage = `✅ **Contact Import Completed!**\n\n`;
           responseMessage += `📊 **Summary:**\n`;
           responseMessage += `- Successfully imported: **${importResult.success}** contacts\n`;
-          
+
           if (importResult.failed > 0) {
             responseMessage += `- Failed to import: **${importResult.failed}** contacts\n\n`;
-            
+
             if (importResult.errors && importResult.errors.length > 0) {
               responseMessage += `⚠️ **Errors:**\n`;
               importResult.errors.slice(0, 5).forEach((error: string) => {
                 responseMessage += `- ${error}\n`;
               });
-              
+
               if (importResult.errors.length > 5) {
                 responseMessage += `\n... and ${importResult.errors.length - 5} more errors\n`;
               }
@@ -140,8 +145,8 @@ export async function POST(req: NextRequest) {
           if (importResult.contacts && importResult.contacts.length > 0) {
             responseMessage += `\n📋 **Sample Imported Contacts:**\n`;
             importResult.contacts.slice(0, 3).forEach((contact: any) => {
-              responseMessage += `- **${contact.businessName}** - ${contact.contactPerson || 'No contact'}\n`;
-              responseMessage += `  ${contact.email || 'No email'} | ${contact.phone || 'No phone'}\n`;
+              responseMessage += `- **${contact.businessName}** - ${contact.contactPerson || "No contact"}\n`;
+              responseMessage += `  ${contact.email || "No email"} | ${contact.phone || "No phone"}\n`;
             });
           }
 
@@ -207,7 +212,9 @@ export async function POST(req: NextRequest) {
         db.deal.count({ where: { userId: user.id } }).catch(() => 0),
         db.campaign.count({ where: { userId: user.id } }).catch(() => 0),
         db.voiceAgent.count({ where: { userId: user.id } }).catch(() => 0),
-        db.bookingAppointment.count({ where: { userId: user.id } }).catch(() => 0),
+        db.bookingAppointment
+          .count({ where: { userId: user.id } })
+          .catch(() => 0),
         db.workflow.count({ where: { userId: user.id } }).catch(() => 0),
         db.message.count({ where: { userId: user.id } }).catch(() => 0),
         db.emailCampaign.count({ where: { userId: user.id } }).catch(() => 0),
@@ -235,9 +242,35 @@ export async function POST(req: NextRequest) {
     let recentActivity = "";
     try {
       const [recentLeads, recentDeals, recentCampaigns] = await Promise.all([
-        db.lead.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, select: { businessName: true, contactPerson: true, status: true, createdAt: true } }).catch(() => []),
-        db.deal.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, include: { stage: true } }).catch(() => []),
-        db.campaign.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, select: { name: true, status: true, createdAt: true } }).catch(() => []),
+        db.lead
+          .findMany({
+            where: { userId: user.id },
+            take: 3,
+            orderBy: { createdAt: "desc" },
+            select: {
+              businessName: true,
+              contactPerson: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+          .catch(() => []),
+        db.deal
+          .findMany({
+            where: { userId: user.id },
+            take: 3,
+            orderBy: { createdAt: "desc" },
+            include: { stage: true },
+          })
+          .catch(() => []),
+        db.campaign
+          .findMany({
+            where: { userId: user.id },
+            take: 3,
+            orderBy: { createdAt: "desc" },
+            select: { name: true, status: true, createdAt: true },
+          })
+          .catch(() => []),
       ]);
 
       if (recentLeads.length > 0) {
@@ -263,9 +296,12 @@ export async function POST(req: NextRequest) {
       const combined = [...realtimePatterns, ...insights];
       const top = combined.slice(0, 5);
       if (top.length > 0) {
-        brainInsightsSummary = top.map((i) =>
-          `- [${i.priority.toUpperCase()}] ${i.title}: ${i.description}${i.suggestedActions?.length ? ` (Suggested: ${i.suggestedActions[0]})` : ''}`
-        ).join('\n');
+        brainInsightsSummary = top
+          .map(
+            (i) =>
+              `- [${i.priority.toUpperCase()}] ${i.title}: ${i.description}${i.suggestedActions?.length ? ` (Suggested: ${i.suggestedActions[0]})` : ""}`,
+          )
+          .join("\n");
       }
     } catch (error) {
       console.error("Error fetching AI Brain insights:", error);
@@ -275,63 +311,63 @@ export async function POST(req: NextRequest) {
 
 You are Soshogle AI, a proactive AI assistant that DOES THINGS for users rather than just explaining how. Your core principle: Always offer to execute tasks for users, not just give instructions.
 
-${userLanguage === 'fr' ? 'Vous êtes Soshogle AI, un assistant IA proactif qui FAIT des choses pour les utilisateurs plutôt que d\'expliquer comment faire. Votre principe fondamental : Proposez toujours d\'exécuter des tâches pour les utilisateurs, pas seulement de donner des instructions.' : ''}
-${userLanguage === 'es' ? 'Eres Soshogle AI, un asistente de IA proactivo que HACE cosas para los usuarios en lugar de solo explicar cómo hacerlas. Tu principio fundamental: Siempre ofrece ejecutar tareas para los usuarios, no solo dar instrucciones.' : ''}
-${userLanguage === 'zh' ? '您是 Soshogle AI，一个主动的 AI 助手，为用户执行操作，而不仅仅是解释如何操作。您的核心原则：始终主动为用户执行任务，而不仅仅是提供说明。' : ''}
+${userLanguage === "fr" ? "Vous êtes Soshogle AI, un assistant IA proactif qui FAIT des choses pour les utilisateurs plutôt que d'expliquer comment faire. Votre principe fondamental : Proposez toujours d'exécuter des tâches pour les utilisateurs, pas seulement de donner des instructions." : ""}
+${userLanguage === "es" ? "Eres Soshogle AI, un asistente de IA proactivo que HACE cosas para los usuarios en lugar de solo explicar cómo hacerlas. Tu principio fundamental: Siempre ofrece ejecutar tareas para los usuarios, no solo dar instrucciones." : ""}
+${userLanguage === "zh" ? "您是 Soshogle AI，一个主动的 AI 助手，为用户执行操作，而不仅仅是解释如何操作。您的核心原则：始终主动为用户执行任务，而不仅仅是提供说明。" : ""}
 
 Current User Profile:
 - User ID: ${user.id}
 - Email: ${user.email}
 - Role: ${user.role}
-- Company Name: ${user.name || 'Not set'}
-- Company Phone: ${user.phone || 'Not set'}
-- Company Website: ${user.website || 'Not set'}
+- Company Name: ${user.name || "Not set"}
+- Company Phone: ${user.phone || "Not set"}
+- Company Website: ${user.website || "Not set"}
 
 Business Profile & Configuration:
-${user.businessCategory ? `- Business Category: ${user.businessCategory}` : ''}
-${user.industryNiche ? `- Industry Niche: ${user.industryNiche}` : ''}
-${user.operatingLocation ? `- Location: ${user.operatingLocation}` : ''}
-${user.businessLanguage ? `- Business Language: ${user.businessLanguage}` : ''}
-${user.timezone ? `- Timezone: ${user.timezone}` : ''}
-${user.currency ? `- Currency: ${user.currency}` : ''}
-${user.teamSize ? `- Team Size: ${user.teamSize}` : ''}
-${user.productsServices ? `- Products/Services: ${user.productsServices}` : ''}
-${user.targetAudience ? `- Target Audience: ${user.targetAudience}` : ''}
-${user.businessDescription ? `- Business Description: ${user.businessDescription}` : ''}
+${user.businessCategory ? `- Business Category: ${user.businessCategory}` : ""}
+${user.industryNiche ? `- Industry Niche: ${user.industryNiche}` : ""}
+${user.operatingLocation ? `- Location: ${user.operatingLocation}` : ""}
+${user.businessLanguage ? `- Business Language: ${user.businessLanguage}` : ""}
+${user.timezone ? `- Timezone: ${user.timezone}` : ""}
+${user.currency ? `- Currency: ${user.currency}` : ""}
+${user.teamSize ? `- Team Size: ${user.teamSize}` : ""}
+${user.productsServices ? `- Products/Services: ${user.productsServices}` : ""}
+${user.targetAudience ? `- Target Audience: ${user.targetAudience}` : ""}
+${user.businessDescription ? `- Business Description: ${user.businessDescription}` : ""}
 
 Sales Configuration:
-${user.averageDealValue ? `- Average Deal Value: ${user.currency || '$'}${user.averageDealValue}` : ''}
-${user.salesCycleLength ? `- Sales Cycle: ${user.salesCycleLength}` : ''}
-${user.preferredContactMethod ? `- Preferred Contact Method: ${user.preferredContactMethod}` : ''}
-${user.leadSources ? `- Lead Sources: ${user.leadSources}` : ''}
+${user.averageDealValue ? `- Average Deal Value: ${user.currency || "$"}${user.averageDealValue}` : ""}
+${user.salesCycleLength ? `- Sales Cycle: ${user.salesCycleLength}` : ""}
+${user.preferredContactMethod ? `- Preferred Contact Method: ${user.preferredContactMethod}` : ""}
+${user.leadSources ? `- Lead Sources: ${user.leadSources}` : ""}
 
 Communication Setup:
-${user.emailProvider ? `- Email Provider: ${user.emailProvider}${user.emailProviderConfigured ? ' ✓ Configured' : ' ⚠️ Not Configured'}` : '- Email Provider: Not configured'}
-${user.smsProvider ? `- SMS Provider: ${user.smsProvider}${user.smsProviderConfigured ? ' ✓ Configured' : ' ⚠️ Not Configured'}` : '- SMS Provider: Not configured'}
-${user.paymentProvider ? `- Payment Provider: ${user.paymentProvider}${user.paymentProviderConfigured ? ' ✓ Configured' : ' ⚠️ Not Configured'}` : '- Payment Provider: Not configured'}
+${user.emailProvider ? `- Email Provider: ${user.emailProvider}${user.emailProviderConfigured ? " ✓ Configured" : " ⚠️ Not Configured"}` : "- Email Provider: Not configured"}
+${user.smsProvider ? `- SMS Provider: ${user.smsProvider}${user.smsProviderConfigured ? " ✓ Configured" : " ⚠️ Not Configured"}` : "- SMS Provider: Not configured"}
+${user.paymentProvider ? `- Payment Provider: ${user.paymentProvider}${user.paymentProviderConfigured ? " ✓ Configured" : " ⚠️ Not Configured"}` : "- Payment Provider: Not configured"}
 
 Marketing Preferences:
-${user.campaignTone ? `- Campaign Tone: ${user.campaignTone}` : ''}
-${user.primaryMarketingChannel ? `- Primary Channel: ${user.primaryMarketingChannel}` : ''}
-${user.monthlyMarketingBudget ? `- Marketing Budget: ${user.monthlyMarketingBudget}` : ''}
+${user.campaignTone ? `- Campaign Tone: ${user.campaignTone}` : ""}
+${user.primaryMarketingChannel ? `- Primary Channel: ${user.primaryMarketingChannel}` : ""}
+${user.monthlyMarketingBudget ? `- Marketing Budget: ${user.monthlyMarketingBudget}` : ""}
 
 Additional Context:
-${user.websiteTraffic ? `- Website Traffic: ${user.websiteTraffic}` : ''}
-${user.currentCRM ? `- Previous CRM: ${user.currentCRM}` : ''}
+${user.websiteTraffic ? `- Website Traffic: ${user.websiteTraffic}` : ""}
+${user.currentCRM ? `- Previous CRM: ${user.currentCRM}` : ""}
 
 Current Date & Time:
 ${(() => {
   try {
-    const userTimezone = user.timezone || 'America/New_York'; // Default to EST if not set
+    const userTimezone = user.timezone || "America/New_York"; // Default to EST if not set
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-US', {
+    const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: userTimezone,
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
     const dateStr = formatter.format(now);
@@ -339,16 +375,16 @@ ${(() => {
   } catch (e) {
     // Fallback to UTC if timezone is invalid
     const now = new Date();
-    return `- Current Date & Time: ${now.toLocaleString('en-US', { timeZone: 'UTC' })} UTC`;
+    return `- Current Date & Time: ${now.toLocaleString("en-US", { timeZone: "UTC" })} UTC`;
   }
 })()}
 
-${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT (CRITICAL):** A workflow draft is already open (ID: ${context.activeWorkflowDraftId}). The user was just navigated to the workflow builder. You MUST use add_workflow_task for EACH step/task they describe - do NOT use create_workflow. Parse their description and call add_workflow_task multiple times (once per step). Example: "create workflow that sends email, waits 2 days, then calls" → call add_workflow_task(name="Send email", taskType="EMAIL"), then add_workflow_task(name="2 day delay", taskType="DELAY"), then add_workflow_task(name="Call contact", taskType="VOICE_CALL"). Use workflowId: "${context.activeWorkflowDraftId}" for every add_workflow_task call.\n` : ''}
-${context?.screenContext ? `\n**WHAT THE USER SEES ON SCREEN:** ${context.screenContext}\nUse this to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.\n` : ''}
-${context?.currentPath ? `\n**CURRENT PAGE:** ${context.currentPath}\n` : ''}
-${context?.activeWebsiteId ? `\n**USER IS EDITING WEBSITE:** websiteId="${context.activeWebsiteId}" - Use for modify_website, get_website_structure, update_hero, add_section, update_section_content, add_cta, reorder_section, delete_section, list_website_media, add_website_image. When they say "change the hero" or "update the about section", use update_hero or modify_website with websiteId: "${context.activeWebsiteId}".\n` : ''}
-${context?.activeLeadId ? `\n**USER IS VIEWING CONTACT:** leadId="${context.activeLeadId}" - Use for add_note, create_deal, add_lead_tag, update_lead_status, list_notes, or contact-specific actions.\n` : ''}
-${context?.activeDealId ? `\n**USER IS VIEWING DEAL:** dealId="${context.activeDealId}" - Use for add_note, update_deal_stage, list_notes, assign_deal_to_lead, or deal-specific actions.\n` : ''}
+${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT (CRITICAL):** A workflow draft is already open (ID: ${context.activeWorkflowDraftId}). The user was just navigated to the workflow builder. You MUST use add_workflow_task for EACH step/task they describe - do NOT use create_workflow. Parse their description and call add_workflow_task multiple times (once per step). Example: "create workflow that sends email, waits 2 days, then calls" → call add_workflow_task(name="Send email", taskType="EMAIL"), then add_workflow_task(name="2 day delay", taskType="DELAY"), then add_workflow_task(name="Call contact", taskType="VOICE_CALL"). Use workflowId: "${context.activeWorkflowDraftId}" for every add_workflow_task call.\n` : ""}
+${context?.screenContext ? `\n**WHAT THE USER SEES ON SCREEN:** ${context.screenContext}\nUse this to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.\n` : ""}
+${context?.currentPath ? `\n**CURRENT PAGE:** ${context.currentPath}\n` : ""}
+${context?.activeWebsiteId ? `\n**USER IS EDITING WEBSITE:** websiteId="${context.activeWebsiteId}" - Use for modify_website, get_website_structure, update_hero, add_section, update_section_content, add_cta, reorder_section, delete_section, list_website_media, add_website_image. When they say "change the hero" or "update the about section", use update_hero or modify_website with websiteId: "${context.activeWebsiteId}".\n` : ""}
+${context?.activeLeadId ? `\n**USER IS VIEWING CONTACT:** leadId="${context.activeLeadId}" - Use for add_note, create_deal, add_lead_tag, update_lead_status, list_notes, or contact-specific actions.\n` : ""}
+${context?.activeDealId ? `\n**USER IS VIEWING DEAL:** dealId="${context.activeDealId}" - Use for add_note, update_deal_stage, list_notes, assign_deal_to_lead, or deal-specific actions.\n` : ""}
 
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
@@ -361,8 +397,12 @@ Current CRM Statistics:
 - Workflows: ${userStats.workflows}
 - Messages: ${userStats.messages}${recentActivity}
 
-${brainInsightsSummary ? `AI Brain Insights (proactively mention relevant ones when appropriate):
-${brainInsightsSummary}` : ''}
+${
+  brainInsightsSummary
+    ? `AI Brain Insights (proactively mention relevant ones when appropriate):
+${brainInsightsSummary}`
+    : ""
+}
 
 ADVANCED CAPABILITIES (use these proactively):
 - Financial: get_payment_analytics, get_revenue_breakdown, check_cash_flow, list_fraud_alerts
@@ -901,7 +941,9 @@ CRITICAL RULES
 
 Remember: You're not just a chatbot - you're an AI assistant with REAL powers to execute actions, diagnose problems, fix configurations, and create records in the CRM. You have the same capabilities as a senior support engineer. Act like it! USE THE FUNCTIONS!`;
 
-    const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+    const { getConfidentialityGuard } = await import(
+      "@/lib/ai-confidentiality-guard"
+    );
     const systemContextWithGuard = systemContext + getConfidentialityGuard();
 
     // Prepare conversation for AI
@@ -925,11 +967,22 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error("OPENAI_API_KEY not configured");
-      return apiErrors.internal("AI service not configured. Please contact support.");
+      return apiErrors.internal(
+        "AI service not configured. Please contact support.",
+      );
     }
 
-    console.log("Calling OpenAI API with", conversationMessages.length, "messages and", functions.length, "functions");
-    console.log("Available functions:", functions.map((f: any) => f.function?.name || f.name).join(", "));
+    console.log(
+      "Calling OpenAI API with",
+      conversationMessages.length,
+      "messages and",
+      functions.length,
+      "functions",
+    );
+    console.log(
+      "Available functions:",
+      functions.map((f: any) => f.function?.name || f.name).join(", "),
+    );
 
     let aiData;
     let finalReply = "";
@@ -937,32 +990,39 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     let actionResult: any = null;
 
     try {
-      const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+      const aiResponse = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: conversationMessages,
+            tools: functions,
+            tool_choice: "auto", // Let the model decide when to use functions
+            temperature: 0.7,
+            max_tokens: 1200,
+          }),
         },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: conversationMessages,
-          tools: functions,
-          tool_choice: "auto", // Let the model decide when to use functions
-          temperature: 0.7,
-          max_tokens: 1200,
-        }),
-      });
+      );
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
         console.error("AI service error:", aiResponse.status, errorText);
-        return apiErrors.internal("Failed to get AI response. Please try again.");
+        return apiErrors.internal(
+          "Failed to get AI response. Please try again.",
+        );
       }
 
       aiData = await aiResponse.json();
     } catch (jsonError: any) {
       console.error("Error parsing AI response JSON:", jsonError);
-      return apiErrors.internal("Invalid response from AI service. Please try again.");
+      return apiErrors.internal(
+        "Invalid response from AI service. Please try again.",
+      );
     }
 
     const assistantMessage = aiData.choices?.[0]?.message;
@@ -975,7 +1035,15 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     console.log("  - Content length:", content?.length || 0);
     console.log("  - Content preview:", content?.substring(0, 200) || "None");
     if (toolCalls.length > 0) {
-      console.log("  - Tool calls:", toolCalls.map((tc: any) => `${tc.function?.name}(${tc.function?.arguments?.substring(0, 50)}...)`).join(", "));
+      console.log(
+        "  - Tool calls:",
+        toolCalls
+          .map(
+            (tc: any) =>
+              `${tc.function?.name}(${tc.function?.arguments?.substring(0, 50)}...)`,
+          )
+          .join(", "),
+      );
     }
     console.log("═══════════════════════════════════════════════════════");
 
@@ -986,9 +1054,14 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     let currentToolCalls = toolCalls;
     let currentContent = content;
 
-    while (currentToolCalls.length > 0 && agentIteration < MAX_AGENT_ITERATIONS) {
+    while (
+      currentToolCalls.length > 0 &&
+      agentIteration < MAX_AGENT_ITERATIONS
+    ) {
       agentIteration++;
-      console.log(`🔧 [Chat] Agent iteration ${agentIteration}/${MAX_AGENT_ITERATIONS}, executing ${currentToolCalls.length} function call(s)`);
+      console.log(
+        `🔧 [Chat] Agent iteration ${agentIteration}/${MAX_AGENT_ITERATIONS}, executing ${currentToolCalls.length} function call(s)`,
+      );
 
       // Add assistant message with tool_calls to conversation
       currentMessages.push({
@@ -1007,7 +1080,10 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         try {
           functionArgs = JSON.parse(toolCall.function.arguments || "{}");
         } catch (parseError) {
-          console.error(`❌ [Chat] Failed to parse function arguments for ${functionName}:`, toolCall.function.arguments);
+          console.error(
+            `❌ [Chat] Failed to parse function arguments for ${functionName}:`,
+            toolCall.function.arguments,
+          );
           functionArgs = {};
         }
 
@@ -1018,8 +1094,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
         // Handle special navigate_to function separately
         if (functionName === "navigate_to") {
-          const { canUserNavigateToPath } = await import("@/lib/navigation-paths");
-          const canNavigate = canUserNavigateToPath(functionArgs.path, user.role);
+          const { canUserNavigateToPath } = await import(
+            "@/lib/navigation-paths"
+          );
+          const canNavigate = canUserNavigateToPath(
+            functionArgs.path,
+            user.role,
+          );
           navigationUrl = canNavigate ? functionArgs.path : null;
           toolResults.push({
             tool_call_id: toolCall.id,
@@ -1027,7 +1108,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             name: functionName,
             content: JSON.stringify({
               success: canNavigate,
-              message: canNavigate ? "Navigation set" : "You don't have permission to access that page. Admin access is required for settings and admin sections.",
+              message: canNavigate
+                ? "Navigation set"
+                : "You don't have permission to access that page. Admin access is required for settings and admin sections.",
             }),
           });
           continue;
@@ -1044,9 +1127,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           const requestUrl = new URL(req.url);
           const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
           const actionsUrl = `${baseUrl}/api/ai-assistant/actions`;
-          
+
           console.log(`🌐 [Chat] Calling actions endpoint:`, actionsUrl);
-          
+
           const actionResponse = await fetch(actionsUrl, {
             method: "POST",
             headers: {
@@ -1058,45 +1141,97 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               parameters: {
                 ...functionArgs,
                 ...(action === "get_statistics" && { chartIntent: message }),
-                ...(action === "add_workflow_task" && context?.activeWorkflowDraftId && !functionArgs?.workflowId && { workflowId: context.activeWorkflowDraftId }),
-                ...((action === "modify_website" || action === "get_website_structure" || action === "update_hero" || action === "add_section" || action === "update_section_content" || action === "add_cta" || action === "reorder_section" || action === "delete_section" || action === "list_website_media" || action === "add_website_image" || action === "make_it_look_like" || action === "suggest_hero_variants" || action === "check_website_accessibility") && context?.activeWebsiteId && !functionArgs?.websiteId && { websiteId: context.activeWebsiteId }),
-                ...((action === "add_lead_tag" || action === "update_lead_status" || action === "list_notes") && context?.activeLeadId && !functionArgs?.leadId && !functionArgs?.contactName && { leadId: context.activeLeadId }),
-                ...((action === "list_notes" || action === "assign_deal_to_lead") && context?.activeDealId && !functionArgs?.dealId && !functionArgs?.dealTitle && { dealId: context.activeDealId }),
+                ...(action === "add_workflow_task" &&
+                  context?.activeWorkflowDraftId &&
+                  !functionArgs?.workflowId && {
+                    workflowId: context.activeWorkflowDraftId,
+                  }),
+                ...((action === "modify_website" ||
+                  action === "get_website_structure" ||
+                  action === "update_hero" ||
+                  action === "add_section" ||
+                  action === "update_section_content" ||
+                  action === "add_cta" ||
+                  action === "reorder_section" ||
+                  action === "delete_section" ||
+                  action === "list_website_media" ||
+                  action === "add_website_image" ||
+                  action === "make_it_look_like" ||
+                  action === "suggest_hero_variants" ||
+                  action === "check_website_accessibility") &&
+                  context?.activeWebsiteId &&
+                  !functionArgs?.websiteId && {
+                    websiteId: context.activeWebsiteId,
+                  }),
+                ...((action === "add_lead_tag" ||
+                  action === "update_lead_status" ||
+                  action === "list_notes") &&
+                  context?.activeLeadId &&
+                  !functionArgs?.leadId &&
+                  !functionArgs?.contactName && {
+                    leadId: context.activeLeadId,
+                  }),
+                ...((action === "list_notes" ||
+                  action === "assign_deal_to_lead") &&
+                  context?.activeDealId &&
+                  !functionArgs?.dealId &&
+                  !functionArgs?.dealTitle && { dealId: context.activeDealId }),
               },
               userId: user.id,
             }),
           });
 
-          console.log(`📡 [Chat] Action endpoint response status:`, actionResponse.status);
-          
+          console.log(
+            `📡 [Chat] Action endpoint response status:`,
+            actionResponse.status,
+          );
+
           if (actionResponse.ok) {
-            const { data: actionResponseData, error: parseErr } = await import("@/lib/api-error-utils").then(
-              (m) => m.safeParseJsonResponse<{ success?: boolean; action?: string; result?: any }>(actionResponse)
+            const { data: actionResponseData, error: parseErr } = await import(
+              "@/lib/api-error-utils"
+            ).then((m) =>
+              m.safeParseJsonResponse<{
+                success?: boolean;
+                action?: string;
+                result?: any;
+              }>(actionResponse),
             );
             if (parseErr || !actionResponseData) {
               throw new Error(parseErr || "Invalid response from server");
             }
-            console.log("═══════════════════════════════════════════════════════");
+            console.log(
+              "═══════════════════════════════════════════════════════",
+            );
             console.log(`✅ [Chat] Action ${action} executed successfully`);
             console.log(`📋 [Chat] Action response structure:`, {
               hasSuccess: !!actionResponseData.success,
               hasAction: !!actionResponseData.action,
               hasResult: !!actionResponseData.result,
-              resultKeys: actionResponseData.result ? Object.keys(actionResponseData.result) : [],
-              fullResponse: JSON.stringify(actionResponseData, null, 2)
+              resultKeys: actionResponseData.result
+                ? Object.keys(actionResponseData.result)
+                : [],
+              fullResponse: JSON.stringify(actionResponseData, null, 2),
             });
-            console.log("═══════════════════════════════════════════════════════");
-            
+            console.log(
+              "═══════════════════════════════════════════════════════",
+            );
+
             lastActionResult = actionResponseData;
 
             // Get navigation URL for this action
-            const computedNavUrl = getNavigationUrlForAction(action, actionResponseData);
+            const computedNavUrl = getNavigationUrlForAction(
+              action,
+              actionResponseData,
+            );
             console.log(`🧭 [Chat] Computed navigation URL:`, computedNavUrl);
             if (!navigationUrl && computedNavUrl) {
               navigationUrl = computedNavUrl;
               console.log(`🧭 [Chat] Navigation URL set to:`, navigationUrl);
             } else if (!computedNavUrl) {
-              console.warn(`⚠️ [Chat] No navigation URL computed for action:`, action);
+              console.warn(
+                `⚠️ [Chat] No navigation URL computed for action:`,
+                action,
+              );
             }
 
             // Format result for OpenAI
@@ -1107,16 +1242,22 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               content: JSON.stringify({
                 success: true,
                 result: actionResponseData.result,
-                message: actionResponseData.result?.message || "Action completed successfully",
+                message:
+                  actionResponseData.result?.message ||
+                  "Action completed successfully",
               }),
             });
           } else {
-            const { safeParseJsonResponse, getUserFriendlyError } = await import("@/lib/api-error-utils");
-            const { data: errorData } = await safeParseJsonResponse<{ error?: string; details?: string }>(
-              actionResponse,
-              "Something went wrong. Please try again."
-            );
-            const userMessage = errorData?.error || errorData?.details || "Something went wrong. Please try again.";
+            const { safeParseJsonResponse, getUserFriendlyError } =
+              await import("@/lib/api-error-utils");
+            const { data: errorData } = await safeParseJsonResponse<{
+              error?: string;
+              details?: string;
+            }>(actionResponse, "Something went wrong. Please try again.");
+            const userMessage =
+              errorData?.error ||
+              errorData?.details ||
+              "Something went wrong. Please try again.";
             console.error(`❌ [Chat] Action ${action} failed:`, userMessage);
             toolResults.push({
               tool_call_id: toolCall.id,
@@ -1130,8 +1271,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           }
         } catch (error: any) {
           console.error(`❌ [Chat] Error executing action ${action}:`, error);
-          const { getUserFriendlyError } = await import("@/lib/api-error-utils");
-          const userMessage = getUserFriendlyError(error, "Something went wrong. Please try again.");
+          const { getUserFriendlyError } = await import(
+            "@/lib/api-error-utils"
+          );
+          const userMessage = getUserFriendlyError(
+            error,
+            "Something went wrong. Please try again.",
+          );
           toolResults.push({
             tool_call_id: toolCall.id,
             role: "tool",
@@ -1150,27 +1296,36 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       // Make follow-up call to OpenAI - AI may request more actions (agent loop)
       console.log("🔄 [Chat] Making follow-up call with function results");
 
-      const followUpResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+      const followUpResponse = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: currentMessages,
+            tools: functions,
+            tool_choice: "auto",
+            temperature: 0.7,
+            max_tokens: 1200,
+          }),
         },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: currentMessages,
-          tools: functions,
-          tool_choice: "auto",
-          temperature: 0.7,
-          max_tokens: 1200,
-        }),
-      });
+      );
 
       if (!followUpResponse.ok) {
         const errorText = await followUpResponse.text();
-        console.error("Follow-up AI service error:", followUpResponse.status, errorText);
+        console.error(
+          "Follow-up AI service error:",
+          followUpResponse.status,
+          errorText,
+        );
         actionResult = lastActionResult;
-        finalReply = actionResult?.result?.message || "I executed the action but had trouble generating a response. Please check if it completed successfully.";
+        finalReply =
+          actionResult?.result?.message ||
+          "I executed the action but had trouble generating a response. Please check if it completed successfully.";
         break;
       }
 
@@ -1183,7 +1338,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         currentToolCalls = nextToolCalls;
         currentContent = nextContent;
         actionResult = lastActionResult;
-        console.log(`🔄 [Chat] AI requested ${nextToolCalls.length} more action(s) - continuing agent loop`);
+        console.log(
+          `🔄 [Chat] AI requested ${nextToolCalls.length} more action(s) - continuing agent loop`,
+        );
       } else {
         finalReply = nextContent || "Action completed successfully!";
         actionResult = lastActionResult;
@@ -1193,13 +1350,18 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     }
 
     if (currentToolCalls.length > 0 && agentIteration >= MAX_AGENT_ITERATIONS) {
-      console.log("⚠️ [Chat] Agent loop hit max iterations - returning current state");
-      if (!finalReply) finalReply = "I've completed several steps. Is there anything else you'd like me to do?";
+      console.log(
+        "⚠️ [Chat] Agent loop hit max iterations - returning current state",
+      );
+      if (!finalReply)
+        finalReply =
+          "I've completed several steps. Is there anything else you'd like me to do?";
     }
 
     if (currentToolCalls.length === 0 && agentIteration === 0) {
       // No function calls in initial response - use content as reply
-      finalReply = content || "I'm here to help! Could you please rephrase your question?";
+      finalReply =
+        content || "I'm here to help! Could you please rephrase your question?";
     }
 
     // Format final reply based on action results if needed
@@ -1208,66 +1370,93 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       action: actionResult?.action,
       hasResult: !!actionResult?.result,
     });
-    
+
     // Get or update navigation URL for the action
     if (!navigationUrl) {
-      navigationUrl = getNavigationUrlForAction(actionResult?.action, actionResult?.result);
+      navigationUrl = getNavigationUrlForAction(
+        actionResult?.action,
+        actionResult?.result,
+      );
     }
     console.log("🧭 [Chat] Initial Navigation URL:", navigationUrl);
-    
+
     // Extract suggestions and workflow details from action result if available
     const suggestions = actionResult?.result?.suggestions;
     const workflowDetails = actionResult?.result?.workflowDetails;
-    
+
     if (actionResult && actionResult.result) {
       // Format specific action results for better user experience
       const result = actionResult.result;
-      
+
       // For create_workflow, ensure navigation and include suggestions
       if (actionResult.action === "create_workflow") {
         console.log("📋 [Chat] Formatting create_workflow response");
         const workflowId = result?.workflow?.id;
-        const workflowName = result?.workflow?.name || 'Workflow';
-        
+        const workflowName = result?.workflow?.name || "Workflow";
+
         // Ensure navigation URL is set to workflows page
         if (!navigationUrl) {
-          navigationUrl = workflowId ? `/dashboard/workflows?id=${workflowId}` : "/dashboard/workflows";
-          console.log("🧭 [Chat] Set navigation URL for create_workflow:", navigationUrl);
+          navigationUrl = workflowId
+            ? `/dashboard/workflows?id=${workflowId}`
+            : "/dashboard/workflows";
+          console.log(
+            "🧭 [Chat] Set navigation URL for create_workflow:",
+            navigationUrl,
+          );
         }
-        
+
         // Enhance reply with workflow details if available
         if (workflowDetails && workflowDetails.actions) {
           const actionsSummary = workflowDetails.actions
             .map((a: any, i: number) => `${i + 1}. ${a.summary || a.type}`)
-            .join('\n');
-          if (!finalReply.includes('actions') && !finalReply.includes('steps')) {
+            .join("\n");
+          if (
+            !finalReply.includes("actions") &&
+            !finalReply.includes("steps")
+          ) {
             finalReply += `\n\n📋 Workflow Steps:\n${actionsSummary}`;
           }
         }
       }
-      
+
       // For create_lead, ensure we have good formatting and navigation
       if (actionResult.action === "create_lead") {
         console.log("📝 [Chat] Formatting create_lead response");
         const leadId = result?.lead?.id;
-        const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
-        const leadEmail = result?.lead?.email || 'No email';
-        const leadPhone = result?.lead?.phone || 'No phone';
-        
-        console.log("📝 [Chat] Lead details:", { leadId, leadName, leadEmail, leadPhone });
-        
+        const leadName =
+          result?.lead?.contactPerson ||
+          result?.lead?.businessName ||
+          "Contact";
+        const leadEmail = result?.lead?.email || "No email";
+        const leadPhone = result?.lead?.phone || "No phone";
+
+        console.log("📝 [Chat] Lead details:", {
+          leadId,
+          leadName,
+          leadEmail,
+          leadPhone,
+        });
+
         // Enhance the reply if it doesn't already mention the contact details
-        if (!finalReply.includes(leadName) && !finalReply.includes('Contact created')) {
+        if (
+          !finalReply.includes(leadName) &&
+          !finalReply.includes("Contact created")
+        ) {
           finalReply = `✓ Contact created successfully!\n\nContact Details:\n• Name: ${leadName}`;
-          if (leadEmail !== 'No email') finalReply += `\n• Email: ${leadEmail}`;
-          if (leadPhone !== 'No phone') finalReply += `\n• Phone: ${leadPhone}`;
+          if (leadEmail !== "No email") finalReply += `\n• Email: ${leadEmail}`;
+          if (leadPhone !== "No phone") finalReply += `\n• Phone: ${leadPhone}`;
           finalReply += `\n\nTaking you to your Contacts page...`;
         }
-        
+
         // Ensure navigation URL is set
         if (!navigationUrl) {
-          navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
-          console.log("🧭 [Chat] Set navigation URL for create_lead:", navigationUrl);
+          navigationUrl = leadId
+            ? `/dashboard/contacts?id=${leadId}`
+            : "/dashboard/contacts";
+          console.log(
+            "🧭 [Chat] Set navigation URL for create_lead:",
+            navigationUrl,
+          );
         }
       }
     } else {
@@ -1276,43 +1465,58 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
     // Check if get_statistics was called and trigger visualization
     let shouldTriggerVisualization = false;
-    if (actionResult?.action === "get_statistics" && actionResult?.result?.statistics) {
+    if (
+      actionResult?.action === "get_statistics" &&
+      actionResult?.result?.statistics
+    ) {
       shouldTriggerVisualization = true;
-      console.log("📊 [Chat] get_statistics called - will trigger visualization");
+      console.log(
+        "📊 [Chat] get_statistics called - will trigger visualization",
+      );
       // Auto-navigate to AI Brain page for visualizations
       if (!navigationUrl) {
         navigationUrl = "/dashboard/business-ai?mode=voice";
-        console.log("🧭 [Chat] Auto-navigating to AI Brain page for visualizations");
+        console.log(
+          "🧭 [Chat] Auto-navigating to AI Brain page for visualizations",
+        );
       }
     }
-    
+
     // Final logging before response
     console.log("═══════════════════════════════════════════════════════");
     console.log("📤 [Chat] FINAL RESPONSE:");
     console.log("  - Navigation URL:", navigationUrl || "NULL (NOT SET)");
-    console.log("  - Action result:", actionResult ? "Present" : "NULL (NOT SET)");
+    console.log(
+      "  - Action result:",
+      actionResult ? "Present" : "NULL (NOT SET)",
+    );
     console.log("  - Trigger visualization:", shouldTriggerVisualization);
     if (actionResult) {
       console.log("  - Action result action:", actionResult.action);
       console.log("  - Action result has result:", !!actionResult.result);
       if (actionResult.result) {
-        console.log("  - Action result keys:", Object.keys(actionResult.result));
+        console.log(
+          "  - Action result keys:",
+          Object.keys(actionResult.result),
+        );
       }
     }
     console.log("  - Final reply:", finalReply.substring(0, 200));
     console.log("═══════════════════════════════════════════════════════");
-    
+
     const responsePayload = {
       reply: finalReply,
       action: actionResult,
       navigateTo: navigationUrl,
       timestamp: new Date().toISOString(),
-      ...(actionResult?.action === "draft_email" && actionResult?.result?.emailDraft && {
-        emailDraft: actionResult.result.emailDraft,
-      }),
-      ...(actionResult?.action === "draft_sms" && actionResult?.result?.smsDraft && {
-        smsDraft: actionResult.result.smsDraft,
-      }),
+      ...(actionResult?.action === "draft_email" &&
+        actionResult?.result?.emailDraft && {
+          emailDraft: actionResult.result.emailDraft,
+        }),
+      ...(actionResult?.action === "draft_sms" &&
+        actionResult?.result?.smsDraft && {
+          smsDraft: actionResult.result.smsDraft,
+        }),
       ...(shouldTriggerVisualization && {
         triggerVisualization: true,
         statistics: actionResult.result.statistics,
@@ -1327,18 +1531,21 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         workflowDetails,
       }),
     };
-    
-    console.log("📦 [Chat] Response payload:", JSON.stringify(responsePayload, null, 2));
-    
+
+    console.log(
+      "📦 [Chat] Response payload:",
+      JSON.stringify(responsePayload, null, 2),
+    );
+
     return NextResponse.json(responsePayload);
   } catch (error: any) {
     console.error("Error in AI assistant chat:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to process your message. Please try again.",
-        details: error.message || "Unknown error"
+        details: error.message || "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

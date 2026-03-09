@@ -1,14 +1,14 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/communications/settings - Get all notification settings
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,22 +16,25 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get all notification settings for the user
-    let settings = await prisma.clubOSNotificationSetting.findMany({
+    let settings = await db.clubOSNotificationSetting.findMany({
       where: { userId: session.user.id },
-      orderBy: { notificationType: 'asc' },
+      orderBy: { notificationType: "asc" },
     });
 
     // If no settings exist, initialize default settings
     if (settings.length === 0) {
-      settings = await initializeDefaultSettings(session.user.id);
+      settings = await initializeDefaultSettings(db, session.user.id);
     }
 
     return NextResponse.json({ settings });
   } catch (error: any) {
-    console.error('Error fetching notification settings:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch settings');
+    console.error("Error fetching notification settings:", error);
+    return apiErrors.internal(error.message || "Failed to fetch settings");
   }
 }
 
@@ -42,25 +45,31 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const settings = await initializeDefaultSettings(session.user.id);
+    const settings = await initializeDefaultSettings(db, session.user.id);
 
     return NextResponse.json({ settings });
   } catch (error: any) {
-    console.error('Error initializing notification settings:', error);
-    return apiErrors.internal(error.message || 'Failed to initialize settings');
+    console.error("Error initializing notification settings:", error);
+    return apiErrors.internal(error.message || "Failed to initialize settings");
   }
 }
 
 // Helper function to initialize default settings
-async function initializeDefaultSettings(userId: string) {
+async function initializeDefaultSettings(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+) {
   const defaultSettings = [
     {
-      notificationType: 'REGISTRATION_CONFIRMATION',
+      notificationType: "REGISTRATION_CONFIRMATION",
       enabled: true,
       sendEmail: true,
       sendSMS: true,
-      emailSubject: 'Registration Confirmed - {programName}',
+      emailSubject: "Registration Confirmed - {programName}",
       emailBody: `Hi {parentName},
 
 Thank you for registering {childName} for {programName}!
@@ -78,14 +87,15 @@ If you have any questions, please don't hesitate to contact us.
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Registration confirmed for {childName} in {programName}. Balance due: {balanceDue}. Thank you!',
+      smsTemplate:
+        "Registration confirmed for {childName} in {programName}. Balance due: {balanceDue}. Thank you!",
     },
     {
-      notificationType: 'PAYMENT_CONFIRMATION',
+      notificationType: "PAYMENT_CONFIRMATION",
       enabled: true,
       sendEmail: true,
       sendSMS: true,
-      emailSubject: 'Payment Received - {programName}',
+      emailSubject: "Payment Received - {programName}",
       emailBody: `Hi {parentName},
 
 We have received your payment for {childName}'s registration.
@@ -105,14 +115,15 @@ Thank you for your payment!
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Payment of {amount} received for {childName}. Receipt: {receiptUrl}. Thank you!',
+      smsTemplate:
+        "Payment of {amount} received for {childName}. Receipt: {receiptUrl}. Thank you!",
     },
     {
-      notificationType: 'SCHEDULE_UPDATE',
+      notificationType: "SCHEDULE_UPDATE",
       enabled: false,
       sendEmail: true,
       sendSMS: false,
-      emailSubject: 'Schedule Update - {eventTitle}',
+      emailSubject: "Schedule Update - {eventTitle}",
       emailBody: `Hi {parentName},
 
 We wanted to let you know about a schedule update for your child's upcoming event.
@@ -129,15 +140,16 @@ Please make note of this update.
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Schedule update: {eventTitle} on {eventDate} at {eventTime}. Venue: {venueName}.',
+      smsTemplate:
+        "Schedule update: {eventTitle} on {eventDate} at {eventTime}. Venue: {venueName}.",
     },
     {
-      notificationType: 'SCHEDULE_REMINDER',
+      notificationType: "SCHEDULE_REMINDER",
       enabled: true,
       sendEmail: true,
       sendSMS: true,
       reminderHoursBefore: 24,
-      emailSubject: 'Reminder: {eventTitle} Tomorrow',
+      emailSubject: "Reminder: {eventTitle} Tomorrow",
       emailBody: `Hi {parentName},
 
 This is a friendly reminder about tomorrow's event.
@@ -156,15 +168,16 @@ See you there!
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Reminder: {eventTitle} tomorrow at {eventTime}. Venue: {venueName}. See you there!',
+      smsTemplate:
+        "Reminder: {eventTitle} tomorrow at {eventTime}. Venue: {venueName}. See you there!",
     },
     {
-      notificationType: 'BALANCE_REMINDER',
+      notificationType: "BALANCE_REMINDER",
       enabled: true,
       sendEmail: true,
       sendSMS: false,
       reminderDaysInterval: 7,
-      emailSubject: 'Payment Reminder - Balance Due',
+      emailSubject: "Payment Reminder - Balance Due",
       emailBody: `Hi {parentName},
 
 This is a friendly reminder that you have an outstanding balance for {childName}'s registration.
@@ -184,14 +197,15 @@ Thank you!
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Payment reminder: Balance of {balanceDue} due for {childName} in {programName}. Please pay soon.',
+      smsTemplate:
+        "Payment reminder: Balance of {balanceDue} due for {childName} in {programName}. Please pay soon.",
     },
     {
-      notificationType: 'REGISTRATION_APPROVED',
+      notificationType: "REGISTRATION_APPROVED",
       enabled: true,
       sendEmail: true,
       sendSMS: true,
-      emailSubject: 'Registration Approved - {programName}',
+      emailSubject: "Registration Approved - {programName}",
       emailBody: `Hi {parentName},
 
 Great news! {childName}'s registration for {programName} has been approved!
@@ -208,14 +222,15 @@ Welcome to the team!
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Registration approved! {childName} is now in {programName}. Welcome to the team!',
+      smsTemplate:
+        "Registration approved! {childName} is now in {programName}. Welcome to the team!",
     },
     {
-      notificationType: 'REGISTRATION_WAITLIST',
+      notificationType: "REGISTRATION_WAITLIST",
       enabled: true,
       sendEmail: true,
       sendSMS: false,
-      emailSubject: 'Added to Waitlist - {programName}',
+      emailSubject: "Added to Waitlist - {programName}",
       emailBody: `Hi {parentName},
 
 Thank you for your interest in registering {childName} for {programName}.
@@ -230,14 +245,15 @@ Thank you for your patience!
 
 Best regards,
 {businessName}`,
-      smsTemplate: 'Added to waitlist for {programName}. Position: {waitlistPosition}. We\'ll notify you if a spot opens!',
+      smsTemplate:
+        "Added to waitlist for {programName}. Position: {waitlistPosition}. We'll notify you if a spot opens!",
     },
     {
-      notificationType: 'TEAM_ASSIGNMENT',
+      notificationType: "TEAM_ASSIGNMENT",
       enabled: true,
       sendEmail: true,
       sendSMS: true,
-      emailSubject: 'Team Assignment - {teamName}',
+      emailSubject: "Team Assignment - {teamName}",
       emailBody: `Hi {parentName},
 
 {childName} has been assigned to a team!
@@ -254,14 +270,15 @@ The season starts on {seasonStartDate}. We look forward to a great season!
 
 Best regards,
 {businessName}`,
-      smsTemplate: '{childName} assigned to {teamName}! Jersey #{jerseyNumber}. Practice: {practiceDay} at {practiceTime}.',
+      smsTemplate:
+        "{childName} assigned to {teamName}! Jersey #{jerseyNumber}. Practice: {practiceDay} at {practiceTime}.",
     },
   ];
 
   const settings = [];
   for (const setting of defaultSettings) {
     const { notificationType, ...settingData } = setting;
-    const created = await prisma.clubOSNotificationSetting.upsert({
+    const created = await db.clubOSNotificationSetting.upsert({
       where: {
         userId_notificationType: {
           userId,

@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { executeREEmployee } from '@/lib/ai-employees/run-re-employee';
 import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 import type { REAIEmployeeType } from '@prisma/client';
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ data: [], message: 'RE feature initializing...' });
@@ -23,7 +28,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const employeeType = searchParams.get('employeeType');
     const limit = Math.min(Number(searchParams.get('limit') || 20), 100);
-    const executions = await prisma.rEAIEmployeeExecution.findMany({
+    const executions = await getCrmDb(ctx).rEAIEmployeeExecution.findMany({
       where: {
         userId: session.user.id,
         ...(employeeType ? { employeeType: employeeType as any } : {}),
@@ -43,6 +48,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -70,6 +79,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -85,6 +98,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });

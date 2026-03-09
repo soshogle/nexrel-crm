@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REFSBOSource } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ data: [], message: 'RE feature initializing...' });
@@ -25,6 +30,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -70,9 +79,9 @@ export async function POST(request: NextRequest) {
       throw new Error('address and city are required');
     }
 
-    const existing = await prisma.rEFSBOListing.findUnique({ where: { sourceUrl: data.sourceUrl } });
+    const existing = await getCrmDb(ctx).rEFSBOListing.findUnique({ where: { sourceUrl: data.sourceUrl } });
     if (existing) {
-      return prisma.rEFSBOListing.update({
+      return getCrmDb(ctx).rEFSBOListing.update({
         where: { sourceUrl: data.sourceUrl },
         data: {
           ...data,
@@ -80,7 +89,7 @@ export async function POST(request: NextRequest) {
         },
       });
     }
-    return prisma.rEFSBOListing.create({ data });
+    return getCrmDb(ctx).rEFSBOListing.create({ data });
   };
 
   try {
@@ -161,6 +170,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -173,6 +186,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });

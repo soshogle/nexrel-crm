@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Get calendar connection status
@@ -18,10 +19,13 @@ export async function GET() {
       return apiErrors.unauthorized();
     }
 
-    const connection = await prisma.calendarConnection.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
+    const connection = await getCrmDb(ctx).calendarConnection.findFirst({
       where: {
         userId: session.user.id,
-        provider: 'GOOGLE',
+        provider: "GOOGLE",
       },
       select: {
         id: true,
@@ -39,7 +43,9 @@ export async function GET() {
       connection: connection || null,
     });
   } catch (error: any) {
-    console.error('Error checking calendar status:', error);
-    return apiErrors.internal(error.message || 'Failed to check calendar status');
+    console.error("Error checking calendar status:", error);
+    return apiErrors.internal(
+      error.message || "Failed to check calendar status",
+    );
   }
 }

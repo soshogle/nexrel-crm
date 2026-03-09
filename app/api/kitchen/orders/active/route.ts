@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET ACTIVE KITCHEN ORDERS
  * List all orders currently in the kitchen
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,15 +19,20 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const stationId = searchParams.get('stationId');
+    const stationId = searchParams.get("stationId");
 
     // Get active kitchen items
     const where: any = {
       userId: session.user.id,
       status: {
-        in: ['PENDING', 'PREPARING', 'READY'],
+        in: ["PENDING", "PREPARING", "READY"],
       },
     };
 
@@ -35,7 +40,7 @@ export async function GET(req: NextRequest) {
       where.stationId = stationId;
     }
 
-    const kitchenItems = await prisma.kitchenOrderItem.findMany({
+    const kitchenItems = await db.kitchenOrderItem.findMany({
       where,
       include: {
         posOrder: {
@@ -65,10 +70,7 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: [
-        { priority: 'desc' },
-        { receivedAt: 'asc' },
-      ],
+      orderBy: [{ priority: "desc" }, { receivedAt: "asc" }],
     });
 
     // Group by order
@@ -90,9 +92,9 @@ export async function GET(req: NextRequest) {
       order.items.push(item);
       order.totalItems++;
 
-      if (item.status === 'PENDING') order.pendingItems++;
-      if (item.status === 'PREPARING') order.preparingItems++;
-      if (item.status === 'READY') order.readyItems++;
+      if (item.status === "PENDING") order.pendingItems++;
+      if (item.status === "PREPARING") order.preparingItems++;
+      if (item.status === "READY") order.readyItems++;
     });
 
     const orders = Array.from(ordersMap.values());
@@ -103,7 +105,7 @@ export async function GET(req: NextRequest) {
       totalItems: kitchenItems.length,
     });
   } catch (error) {
-    console.error('❌ Active orders fetch error:', error);
-    return apiErrors.internal('Failed to fetch active orders');
+    console.error("❌ Active orders fetch error:", error);
+    return apiErrors.internal("Failed to fetch active orders");
   }
 }

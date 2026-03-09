@@ -4,27 +4,39 @@
  * Auth: Bearer token (extension) or session (Nexrel)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 async function getUserId(request: NextRequest): Promise<string | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-  if (token && token.startsWith('ehr_')) {
-    const apiKeys = await prisma.apiKey.findMany({
-      where: { service: 'ehr_bridge', keyName: 'extension_token', isActive: true },
+  if (token && token.startsWith("ehr_")) {
+    const apiKeys = await getMetaDb().apiKey.findMany({
+      where: {
+        service: "ehr_bridge",
+        keyName: "extension_token",
+        isActive: true,
+      },
     });
     for (const key of apiKeys) {
       try {
-        const parsed = JSON.parse(key.keyValue) as { token: string; expiresAt: string };
-        if (parsed.token === token && new Date(parsed.expiresAt) >= new Date()) {
+        const parsed = JSON.parse(key.keyValue) as {
+          token: string;
+          expiresAt: string;
+        };
+        if (
+          parsed.token === token &&
+          new Date(parsed.expiresAt) >= new Date()
+        ) {
           return key.userId;
         }
       } catch {
@@ -45,32 +57,38 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date');
+    const date = searchParams.get("date");
     const dateStr = date || new Date().toISOString().slice(0, 10);
 
-    const snapshot = await prisma.ehrScheduleSnapshot.findFirst({
+    const ctx = await resolveDalContext(userId);
+    const db = getCrmDb(ctx);
+
+    const snapshot = await db.ehrScheduleSnapshot.findFirst({
       where: {
         userId,
         captureDate: {
-          gte: new Date(dateStr + 'T00:00:00'),
+          gte: new Date(dateStr + "T00:00:00"),
           lt: new Date(new Date(dateStr).getTime() + 86400000),
         },
       },
-      orderBy: { snapshotAt: 'desc' },
+      orderBy: { snapshotAt: "desc" },
     });
 
     if (!snapshot) {
-      const anyRecent = await prisma.ehrScheduleSnapshot.findFirst({
+      const anyRecent = await db.ehrScheduleSnapshot.findFirst({
         where: { userId },
-        orderBy: { snapshotAt: 'desc' },
+        orderBy: { snapshotAt: "desc" },
       });
       if (anyRecent) {
-        const av = anyRecent.availability as { date?: string; slots?: string[] };
+        const av = anyRecent.availability as {
+          date?: string;
+          slots?: string[];
+        };
         if (av?.date === dateStr && Array.isArray(av?.slots)) {
           return NextResponse.json({
             date: dateStr,
             slots: av.slots,
-            source: 'screenshot',
+            source: "screenshot",
             capturedAt: anyRecent.snapshotAt.toISOString(),
           });
         }
@@ -78,20 +96,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         date: dateStr,
         slots: [],
-        message: 'No schedule captured for this date. Open EHR schedule tab and click "Capture Schedule" in extension.',
+        message:
+          'No schedule captured for this date. Open EHR schedule tab and click "Capture Schedule" in extension.',
       });
     }
 
-    const av = snapshot.availability as { slots?: string[]; booked?: { time: string; patient: string }[] };
+    const av = snapshot.availability as {
+      slots?: string[];
+      booked?: { time: string; patient: string }[];
+    };
     return NextResponse.json({
       date: dateStr,
       slots: av?.slots || [],
       bookedCount: av?.booked?.length || 0,
-      source: 'screenshot',
+      source: "screenshot",
       capturedAt: snapshot.snapshotAt.toISOString(),
     });
   } catch (error) {
-    console.error('[EHR Bridge] Availability failed:', error);
-    return apiErrors.internal('Failed to get availability');
+    console.error("[EHR Bridge] Availability failed:", error);
+    return apiErrors.internal("Failed to get availability");
   }
 }

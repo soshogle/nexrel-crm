@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REDiagnosticStatus } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -14,12 +15,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as REDiagnosticStatus | null;
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const diagnostics = await prisma.rEStaleDiagnostic.findMany({
+    const diagnostics = await getCrmDb(ctx).rEStaleDiagnostic.findMany({
       where: {
         userId: session.user.id,
         ...(status && { status }),
@@ -57,6 +62,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const {
@@ -78,7 +87,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Address and daysOnMarket are required');
     }
 
-    const diagnostic = await prisma.rEStaleDiagnostic.create({
+    const diagnostic = await getCrmDb(ctx).rEStaleDiagnostic.create({
       data: {
         userId: session.user.id,
         propertyId: propertyId || null,
@@ -113,6 +122,10 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { id, status, agentNotes, ...rest } = body;
@@ -121,7 +134,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.badRequest('Diagnostic ID required');
     }
 
-    const existing = await prisma.rEStaleDiagnostic.findFirst({
+    const existing = await getCrmDb(ctx).rEStaleDiagnostic.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -129,7 +142,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.notFound('Diagnostic not found');
     }
 
-    const diagnostic = await prisma.rEStaleDiagnostic.update({
+    const diagnostic = await getCrmDb(ctx).rEStaleDiagnostic.update({
       where: { id },
       data: {
         ...(status && { status: status as REDiagnosticStatus }),
@@ -152,6 +165,10 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -160,7 +177,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Diagnostic ID required');
     }
 
-    const existing = await prisma.rEStaleDiagnostic.findFirst({
+    const existing = await getCrmDb(ctx).rEStaleDiagnostic.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -168,7 +185,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('Diagnostic not found');
     }
 
-    await prisma.rEStaleDiagnostic.delete({ where: { id } });
+    await getCrmDb(ctx).rEStaleDiagnostic.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

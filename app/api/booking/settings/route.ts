@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/booking/settings - Get user's booking settings
 export async function GET(request: NextRequest) {
@@ -14,27 +15,30 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get or create booking settings
-    let settings = await prisma.bookingSettings.findUnique({
+    let settings = await db.bookingSettings.findUnique({
       where: { userId: session.user.id },
     });
 
     // Create default settings if none exist
     if (!settings) {
-      settings = await prisma.bookingSettings.create({
+      settings = await db.bookingSettings.create({
         data: {
           userId: session.user.id,
-          businessName: session.user.name || 'My Business',
+          businessName: session.user.name || "My Business",
           bookingUrl: `${session.user.id}`,
           availabilitySchedule: {
-            monday: { enabled: true, start: '09:00', end: '17:00' },
-            tuesday: { enabled: true, start: '09:00', end: '17:00' },
-            wednesday: { enabled: true, start: '09:00', end: '17:00' },
-            thursday: { enabled: true, start: '09:00', end: '17:00' },
-            friday: { enabled: true, start: '09:00', end: '17:00' },
-            saturday: { enabled: false, start: '09:00', end: '17:00' },
-            sunday: { enabled: false, start: '09:00', end: '17:00' },
+            monday: { enabled: true, start: "09:00", end: "17:00" },
+            tuesday: { enabled: true, start: "09:00", end: "17:00" },
+            wednesday: { enabled: true, start: "09:00", end: "17:00" },
+            thursday: { enabled: true, start: "09:00", end: "17:00" },
+            friday: { enabled: true, start: "09:00", end: "17:00" },
+            saturday: { enabled: false, start: "09:00", end: "17:00" },
+            sunday: { enabled: false, start: "09:00", end: "17:00" },
           },
           slotDuration: 30,
           bufferTime: 15,
@@ -46,8 +50,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error: any) {
-    console.error('Error fetching booking settings:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch booking settings');
+    console.error("Error fetching booking settings:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch booking settings",
+    );
   }
 }
 
@@ -58,6 +64,8 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -74,7 +82,7 @@ export async function PUT(request: NextRequest) {
       brandColor,
     } = body;
 
-    const settings = await prisma.bookingSettings.upsert({
+    const settings = await getCrmDb(ctx).bookingSettings.upsert({
       where: { userId: session.user.id },
       update: {
         businessName,
@@ -91,7 +99,7 @@ export async function PUT(request: NextRequest) {
       },
       create: {
         userId: session.user.id,
-        businessName: businessName || session.user.name || 'My Business',
+        businessName: businessName || session.user.name || "My Business",
         businessDescription,
         bookingUrl: `${session.user.id}`,
         availabilitySchedule,
@@ -108,7 +116,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error: any) {
-    console.error('Error updating booking settings:', error);
-    return apiErrors.internal(error.message || 'Failed to update booking settings');
+    console.error("Error updating booking settings:", error);
+    return apiErrors.internal(
+      error.message || "Failed to update booking settings",
+    );
   }
 }

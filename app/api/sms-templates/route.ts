@@ -2,74 +2,65 @@
  * SMS Templates API
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get('category');
+    const category = searchParams.get("category");
     const pagination = parsePagination(req);
 
-    const where: any = { userId: user.id, ...(category && { category }) };
+    const where: any = { userId: ctx.userId, ...(category && { category }) };
 
-    const templates = await prisma.sMSTemplate.findMany({
+    const templates = await db.sMSTemplate.findMany({
       where,
       take: pagination.take,
       skip: pagination.skip,
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
-    const total = await prisma.sMSTemplate.count({ where });
-    return paginatedResponse(templates, total, pagination, 'templates');
+    const total = await db.sMSTemplate.count({ where });
+    return paginatedResponse(templates, total, pagination, "templates");
   } catch (error: any) {
-    console.error('Error fetching SMS templates:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch templates');
+    console.error("Error fetching SMS templates:", error);
+    return apiErrors.internal(error.message || "Failed to fetch templates");
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { name, message, variables, category, isDefault } = body;
 
     if (!name || !message) {
-      return apiErrors.badRequest('name and message are required');
+      return apiErrors.badRequest("name and message are required");
     }
 
-    const template = await prisma.sMSTemplate.create({
+    const template = await db.sMSTemplate.create({
       data: {
-        userId: user.id,
+        userId: ctx.userId,
         name,
         message,
         variables: variables ?? null,
@@ -80,41 +71,36 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, template });
   } catch (error: any) {
-    console.error('Error creating SMS template:', error);
-    return apiErrors.internal(error.message || 'Failed to create template');
+    console.error("Error creating SMS template:", error);
+    return apiErrors.internal(error.message || "Failed to create template");
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { id, name, message, variables, category, isDefault } = body;
 
     if (!id) {
-      return apiErrors.badRequest('Template ID required');
+      return apiErrors.badRequest("Template ID required");
     }
 
-    const existing = await prisma.sMSTemplate.findFirst({
-      where: { id, userId: user.id },
+    const existing = await db.sMSTemplate.findFirst({
+      where: { id, userId: ctx.userId },
     });
     if (!existing) {
-      return apiErrors.notFound('Template not found');
+      return apiErrors.notFound("Template not found");
     }
 
-    const template = await prisma.sMSTemplate.update({
+    const template = await db.sMSTemplate.update({
       where: { id },
       data: {
         ...(name && { name }),
@@ -127,44 +113,39 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, template });
   } catch (error: any) {
-    console.error('Error updating SMS template:', error);
-    return apiErrors.internal(error.message || 'Failed to update template');
+    console.error("Error updating SMS template:", error);
+    return apiErrors.internal(error.message || "Failed to update template");
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
     if (!id) {
-      return apiErrors.badRequest('Template ID required');
+      return apiErrors.badRequest("Template ID required");
     }
 
-    const existing = await prisma.sMSTemplate.findFirst({
-      where: { id, userId: user.id },
+    const existing = await db.sMSTemplate.findFirst({
+      where: { id, userId: ctx.userId },
     });
     if (!existing) {
-      return apiErrors.notFound('Template not found');
+      return apiErrors.notFound("Template not found");
     }
 
-    await prisma.sMSTemplate.delete({ where: { id } });
+    await db.sMSTemplate.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error deleting SMS template:', error);
-    return apiErrors.internal(error.message || 'Failed to delete template');
+    console.error("Error deleting SMS template:", error);
+    return apiErrors.internal(error.message || "Failed to delete template");
   }
 }

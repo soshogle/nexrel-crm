@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getMetaDb } from "@/lib/db/meta-db";
 import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
 // GET user profile
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const user = await getMetaDb().user.findUnique({
+      where: { id: session.user.id },
       select: {
         id: true,
         name: true,
@@ -50,12 +50,23 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
     const body = await req.json();
-    const { name, companyName, image, phone, address, website, businessDescription, industry, timezone, country } = body;
+    const {
+      name,
+      companyName,
+      image,
+      phone,
+      address,
+      website,
+      businessDescription,
+      industry,
+      timezone,
+      country,
+    } = body;
 
     // Build update object with only provided fields
     const updateData: any = {};
@@ -65,7 +76,8 @@ export async function PATCH(req: NextRequest) {
     if (phone !== undefined) updateData.phone = phone || null;
     if (address !== undefined) updateData.address = address || null;
     if (website !== undefined) updateData.website = website || null;
-    if (businessDescription !== undefined) updateData.businessDescription = businessDescription || null;
+    if (businessDescription !== undefined)
+      updateData.businessDescription = businessDescription || null;
     if (industry !== undefined) updateData.industry = industry || null;
     if (timezone !== undefined) updateData.timezone = timezone;
     if (country !== undefined) updateData.country = country;
@@ -74,8 +86,8 @@ export async function PATCH(req: NextRequest) {
       return apiErrors.badRequest("No fields to update");
     }
 
-    const user = await prisma.user.update({
-      where: { email: session.user.email },
+    const user = await getMetaDb().user.update({
+      where: { id: session.user.id },
       data: updateData,
       select: {
         id: true,

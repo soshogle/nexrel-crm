@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { randomBytes } from 'crypto';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { randomBytes } from "crypto";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/platform-admin/impersonate - Start impersonating a user
 export async function POST(request: NextRequest) {
@@ -17,43 +17,49 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is SUPER_ADMIN
-    const superAdmin = await prisma.user.findUnique({
+    const superAdmin = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
 
-    if (superAdmin?.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Forbidden: SUPER_ADMIN access required');
+    if (superAdmin?.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Forbidden: SUPER_ADMIN access required");
     }
 
     const body = await request.json();
     const { targetUserId } = body;
 
     if (!targetUserId) {
-      return apiErrors.badRequest('Target user ID required');
+      return apiErrors.badRequest("Target user ID required");
     }
 
     // Verify target user exists and is not deleted
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await getMetaDb().user.findUnique({
       where: { id: targetUserId },
-      select: { id: true, name: true, email: true, role: true, deletedAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        deletedAt: true,
+      },
     });
 
     if (!targetUser) {
-      return apiErrors.notFound('Target user not found');
+      return apiErrors.notFound("Target user not found");
     }
 
     if (targetUser.deletedAt) {
-      return apiErrors.forbidden('Cannot impersonate a deleted user');
+      return apiErrors.forbidden("Cannot impersonate a deleted user");
     }
 
     // Prevent impersonating another super admin
-    if (targetUser.role === 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Cannot impersonate another SUPER_ADMIN');
+    if (targetUser.role === "SUPER_ADMIN") {
+      return apiErrors.forbidden("Cannot impersonate another SUPER_ADMIN");
     }
 
     // Check if there's an active impersonation session for this target user
-    const activeSession = await prisma.superAdminSession.findFirst({
+    const activeSession = await getMetaDb().superAdminSession.findFirst({
       where: {
         superAdminId: session.user.id,
         impersonatedUserId: targetUserId,
@@ -72,17 +78,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new impersonation session
-    const sessionToken = randomBytes(32).toString('hex');
-    const ipAddress = request.ip || request.headers.get('x-forwarded-for') || undefined;
-    const userAgent = request.headers.get('user-agent') || undefined;
+    const sessionToken = randomBytes(32).toString("hex");
+    const ipAddress =
+      request.ip || request.headers.get("x-forwarded-for") || undefined;
+    const userAgent = request.headers.get("user-agent") || undefined;
 
-    console.log('📝 Creating impersonation session:', {
+    console.log("📝 Creating impersonation session:", {
       superAdminId: session.user.id,
       impersonatedUserId: targetUserId,
       targetUserName: targetUser.name,
     });
 
-    const impersonationSession = await prisma.superAdminSession.create({
+    const impersonationSession = await getMetaDb().superAdminSession.create({
       data: {
         superAdminId: session.user.id,
         impersonatedUserId: targetUserId,
@@ -93,7 +100,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('✅ Impersonation session created successfully:', {
+    console.log("✅ Impersonation session created successfully:", {
       id: impersonationSession.id,
       sessionToken: impersonationSession.sessionToken,
       superAdminId: impersonationSession.superAdminId,
@@ -102,13 +109,13 @@ export async function POST(request: NextRequest) {
       startedAt: impersonationSession.startedAt.toISOString(),
       lastActivity: impersonationSession.lastActivity.toISOString(),
     });
-    
+
     // Verify the session was actually created by querying it back
-    const verifySession = await prisma.superAdminSession.findUnique({
+    const verifySession = await getMetaDb().superAdminSession.findUnique({
       where: { id: impersonationSession.id },
     });
-    
-    console.log('🔍 Verification query result:', {
+
+    console.log("🔍 Verification query result:", {
       found: !!verifySession,
       isActive: verifySession?.isActive,
       lastActivity: verifySession?.lastActivity?.toISOString(),
@@ -120,38 +127,40 @@ export async function POST(request: NextRequest) {
       impersonatedUser: targetUser,
     });
   } catch (error: any) {
-    console.error('Error starting impersonation:', error);
-    return apiErrors.internal(error.message || 'Failed to start impersonation');
+    console.error("Error starting impersonation:", error);
+    return apiErrors.internal(error.message || "Failed to start impersonation");
   }
 }
 
 // DELETE /api/platform-admin/impersonate - End impersonation session
 export async function DELETE(request: NextRequest) {
   try {
-    console.log('📡 DELETE /api/platform-admin/impersonate called');
-    
+    console.log("📡 DELETE /api/platform-admin/impersonate called");
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      console.error('❌ No session found');
+      console.error("❌ No session found");
       return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
-    const sessionToken = searchParams.get('sessionToken');
+    const sessionToken = searchParams.get("sessionToken");
 
-    console.log('🔍 Session token:', sessionToken);
+    console.log("🔍 Session token:", sessionToken);
 
     if (!sessionToken) {
-      console.error('❌ No session token provided');
-      return apiErrors.badRequest('Session token required');
+      console.error("❌ No session token provided");
+      return apiErrors.badRequest("Session token required");
     }
 
     // Find and end the impersonation session
-    const impersonationSession = await prisma.superAdminSession.findUnique({
-      where: { sessionToken },
-    });
+    const impersonationSession = await getMetaDb().superAdminSession.findUnique(
+      {
+        where: { sessionToken },
+      },
+    );
 
-    console.log('🔍 Impersonation session found:', {
+    console.log("🔍 Impersonation session found:", {
       found: !!impersonationSession,
       isActive: impersonationSession?.isActive,
       superAdminId: impersonationSession?.superAdminId,
@@ -159,29 +168,30 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!impersonationSession) {
-      console.error('❌ Session not found in database');
-      return apiErrors.notFound('Session not found');
+      console.error("❌ Session not found in database");
+      return apiErrors.notFound("Session not found");
     }
 
     // Verify the session belongs to the current super admin
     // If impersonating, use superAdminId, otherwise use the regular id
-    const actualSuperAdminId = (session.user as any).superAdminId || session.user.id;
-    
-    console.log('🔍 Verifying ownership:', {
+    const actualSuperAdminId =
+      (session.user as any).superAdminId || session.user.id;
+
+    console.log("🔍 Verifying ownership:", {
       impersonationSessionSuperAdminId: impersonationSession.superAdminId,
       actualSuperAdminId,
       sessionUserId: session.user.id,
       sessionSuperAdminId: (session.user as any).superAdminId,
     });
-    
+
     if (impersonationSession.superAdminId !== actualSuperAdminId) {
-      console.error('❌ Session does not belong to current super admin');
-      return apiErrors.forbidden('Forbidden: Not your session');
+      console.error("❌ Session does not belong to current super admin");
+      return apiErrors.forbidden("Forbidden: Not your session");
     }
 
     // End the session
-    console.log('💾 Marking session as inactive');
-    await prisma.superAdminSession.update({
+    console.log("💾 Marking session as inactive");
+    await getMetaDb().superAdminSession.update({
       where: { sessionToken },
       data: {
         isActive: false,
@@ -189,11 +199,11 @@ export async function DELETE(request: NextRequest) {
       },
     });
 
-    console.log('✅ Successfully ended impersonation session');
+    console.log("✅ Successfully ended impersonation session");
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('❌ Error ending impersonation:', error);
-    return apiErrors.internal(error.message || 'Failed to end impersonation');
+    console.error("❌ Error ending impersonation:", error);
+    return apiErrors.internal(error.message || "Failed to end impersonation");
   }
 }
 
@@ -206,24 +216,26 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const sessionToken = searchParams.get('sessionToken');
+    const sessionToken = searchParams.get("sessionToken");
 
     if (!sessionToken) {
       return NextResponse.json(
         { isActive: false, impersonatedUser: null },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     // Find the impersonation session
-    const impersonationSession = await prisma.superAdminSession.findUnique({
-      where: { sessionToken },
-      include: {
-        impersonatedUser: {
-          select: { id: true, name: true, email: true, role: true },
+    const impersonationSession = await getMetaDb().superAdminSession.findUnique(
+      {
+        where: { sessionToken },
+        include: {
+          impersonatedUser: {
+            select: { id: true, name: true, email: true, role: true },
+          },
         },
       },
-    });
+    );
 
     if (
       !impersonationSession ||
@@ -232,12 +244,12 @@ export async function GET(request: NextRequest) {
     ) {
       return NextResponse.json(
         { isActive: false, impersonatedUser: null },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     // Update last activity
-    await prisma.superAdminSession.update({
+    await getMetaDb().superAdminSession.update({
       where: { sessionToken },
       data: { lastActivity: new Date() },
     });
@@ -248,7 +260,7 @@ export async function GET(request: NextRequest) {
       startedAt: impersonationSession.startedAt,
     });
   } catch (error: any) {
-    console.error('Error checking impersonation session:', error);
-    return apiErrors.internal(error.message || 'Failed to check session');
+    console.error("Error checking impersonation session:", error);
+    return apiErrors.internal(error.message || "Failed to check session");
   }
 }

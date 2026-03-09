@@ -1,21 +1,25 @@
 /**
  * AI Docpen - Active Assistant API
- * 
+ *
  * Endpoints:
  * - POST: Process assistant queries (patient history, drug lookup, etc.)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { processAssistantQuery, containsWakeWord, extractQueryAfterWakeWord } from '@/lib/docpen/assistant-service';
-import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import {
+  processAssistantQuery,
+  containsWakeWord,
+  extractQueryAfterWakeWord,
+} from "@/lib/docpen/assistant-service";
+import { sanitizeForLogging, createAuditLogEntry } from "@/lib/docpen/security";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,18 +27,21 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
       sessionId,
-      queryType = 'medical_lookup',
+      queryType = "medical_lookup",
       queryText,
-      triggerMethod = 'text',
+      triggerMethod = "text",
       timestamp,
     } = body;
 
     if (!queryText) {
-      return apiErrors.badRequest('Query text is required');
+      return apiErrors.badRequest("Query text is required");
     }
 
     // Extract actual query if wake word is present
@@ -45,31 +52,36 @@ export async function POST(request: NextRequest) {
       const extracted = extractQueryAfterWakeWord(queryText);
       if (extracted) {
         processedQueryText = extracted;
-        detectedTrigger = 'wake_word';
+        detectedTrigger = "wake_word";
       }
     }
 
     // Validate query type
-    const validQueryTypes = ['patient_history', 'drug_interaction', 'medical_lookup', 'feedback'];
+    const validQueryTypes = [
+      "patient_history",
+      "drug_interaction",
+      "medical_lookup",
+      "feedback",
+    ];
     if (!validQueryTypes.includes(queryType)) {
-      return apiErrors.badRequest('Invalid query type');
+      return apiErrors.badRequest("Invalid query type");
     }
 
     // Get session context if provided
     let docpenSession = null;
-    let currentTranscript = '';
+    let currentTranscript = "";
     let leadId: string | undefined;
     let profession: any;
 
     if (sessionId) {
-      docpenSession = await prisma.docpenSession.findFirst({
+      docpenSession = await db.docpenSession.findFirst({
         where: {
           id: sessionId,
           userId: session.user.id,
         },
         include: {
           transcriptions: {
-            orderBy: { startTime: 'asc' },
+            orderBy: { startTime: "asc" },
           },
         },
       });
@@ -78,8 +90,11 @@ export async function POST(request: NextRequest) {
         leadId = docpenSession.leadId || undefined;
         profession = docpenSession.profession;
         currentTranscript = docpenSession.transcriptions
-          .map((t: { speakerLabel: string | null; content: string }) => `[${t.speakerLabel}]: ${t.content}`)
-          .join('\n');
+          .map(
+            (t: { speakerLabel: string | null; content: string }) =>
+              `[${t.speakerLabel}]: ${t.content}`,
+          )
+          .join("\n");
       }
     }
 
@@ -95,13 +110,13 @@ export async function POST(request: NextRequest) {
         leadId,
         profession,
         userId: session.user.id,
-      }
+      },
     );
 
     // Save query to database if session exists
     let savedQuery = null;
     if (sessionId && docpenSession) {
-      savedQuery = await prisma.docpenAssistantQuery.create({
+      savedQuery = await db.docpenAssistantQuery.create({
         data: {
           sessionId,
           queryType,
@@ -109,14 +124,25 @@ export async function POST(request: NextRequest) {
           responseText: response.responseText,
           triggerMethod: detectedTrigger,
           timestamp: timestamp || null,
-          sourcesCited: response.sources ? JSON.parse(JSON.stringify(response.sources)) : null,
+          sourcesCited: response.sources
+            ? JSON.parse(JSON.stringify(response.sources))
+            : null,
         },
       });
 
       // Log audit entry
-      console.log('[Docpen Audit]', sanitizeForLogging(
-        createAuditLogEntry('create', 'session', savedQuery.id, session.user.id, request)
-      ));
+      console.log(
+        "[Docpen Audit]",
+        sanitizeForLogging(
+          createAuditLogEntry(
+            "create",
+            "session",
+            savedQuery.id,
+            session.user.id,
+            request,
+          ),
+        ),
+      );
     }
 
     return NextResponse.json({
@@ -126,7 +152,7 @@ export async function POST(request: NextRequest) {
       queryId: savedQuery?.id,
     });
   } catch (error) {
-    console.error('[Docpen Assistant] Error:', error);
-    return apiErrors.internal('Failed to process query');
+    console.error("[Docpen Assistant] Error:", error);
+    return apiErrors.internal("Failed to process query");
   }
 }

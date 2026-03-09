@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Save or update Meta App credentials
@@ -18,31 +19,37 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
     const { appId, appSecret } = body;
 
     if (!appId || !appSecret) {
-      return apiErrors.badRequest('App ID and App Secret are required');
+      return apiErrors.badRequest("App ID and App Secret are required");
     }
 
     // Validate App ID format (numeric)
     if (!/^\d+$/.test(appId)) {
-      return apiErrors.badRequest('Invalid App ID format. It should be a numeric value.');
+      return apiErrors.badRequest(
+        "Invalid App ID format. It should be a numeric value.",
+      );
     }
 
-    console.log('💾 Saving Meta credentials for user:', session.user.id);
+    console.log("💾 Saving Meta credentials for user:", session.user.id);
 
     // Check for existing settings
-    const existingSettings = await prisma.socialMediaSettings.findFirst({
+    const existingSettings = await db.socialMediaSettings.findFirst({
       where: {
         userId: session.user.id,
-        platform: 'META',
+        platform: "META",
       },
     });
 
     if (existingSettings) {
       // Update
-      await prisma.socialMediaSettings.update({
+      await db.socialMediaSettings.update({
         where: { id: existingSettings.id },
         data: {
           appId,
@@ -52,25 +59,26 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Create
-      await prisma.socialMediaSettings.create({
+      await db.socialMediaSettings.create({
         data: {
           userId: session.user.id,
-          platform: 'META',
+          platform: "META",
           appId,
           appSecret,
         },
       });
     }
 
-    console.log('✅ Meta credentials saved successfully');
+    console.log("✅ Meta credentials saved successfully");
 
     return NextResponse.json({
       success: true,
-      message: 'Credentials saved successfully. You can now connect your Meta account.',
+      message:
+        "Credentials saved successfully. You can now connect your Meta account.",
     });
   } catch (error: any) {
-    console.error('❌ Save Meta credentials error:', error);
-    return apiErrors.internal(error.message || 'Failed to save credentials');
+    console.error("❌ Save Meta credentials error:", error);
+    return apiErrors.internal(error.message || "Failed to save credentials");
   }
 }
 
@@ -85,10 +93,14 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const settings = await prisma.socialMediaSettings.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
+    const settings = await db.socialMediaSettings.findFirst({
       where: {
         userId: session.user.id,
-        platform: 'META',
+        platform: "META",
       },
     });
 
@@ -108,7 +120,7 @@ export async function GET(request: NextRequest) {
         : null,
     });
   } catch (error: any) {
-    console.error('❌ Get Meta credentials error:', error);
-    return apiErrors.internal(error.message || 'Failed to get credentials');
+    console.error("❌ Get Meta credentials error:", error);
+    return apiErrors.internal(error.message || "Failed to get credentials");
   }
 }

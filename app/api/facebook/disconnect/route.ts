@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Disconnects Facebook Messenger
@@ -18,23 +19,29 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     // Delete Facebook connection
-    await prisma.channelConnection.deleteMany({
+    await getCrmDb(ctx).channelConnection.deleteMany({
       where: {
         userId: session.user.id,
-        channelType: 'FACEBOOK_MESSENGER',
-        providerType: 'FACEBOOK',
+        channelType: "FACEBOOK_MESSENGER",
+        providerType: "FACEBOOK",
       },
     });
 
-    console.log('📤 Facebook Messenger disconnected for user:', session.user.id);
+    console.log(
+      "📤 Facebook Messenger disconnected for user:",
+      session.user.id,
+    );
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Facebook Messenger disconnected successfully' 
+    return NextResponse.json({
+      success: true,
+      message: "Facebook Messenger disconnected successfully",
     });
   } catch (error: any) {
-    console.error('Error disconnecting Facebook:', error);
-    return apiErrors.internal(error.message || 'Failed to disconnect Facebook');
+    console.error("Error disconnecting Facebook:", error);
+    return apiErrors.internal(error.message || "Failed to disconnect Facebook");
   }
 }

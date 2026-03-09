@@ -1,16 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET SUPPLIERS
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,16 +18,21 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const isActive = searchParams.get('isActive');
+    const isActive = searchParams.get("isActive");
 
     const where: any = { userId: session.user.id };
     if (isActive !== null) {
-      where.isActive = isActive === 'true';
+      where.isActive = isActive === "true";
     }
 
-    const suppliers = await prisma.supplier.findMany({
+    const suppliers = await db.supplier.findMany({
       where,
       include: {
         _count: {
@@ -38,14 +43,14 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
 
     return NextResponse.json(suppliers);
   } catch (error) {
-    console.error('❌ Suppliers fetch error:', error);
-    return apiErrors.internal('Failed to fetch suppliers');
+    console.error("❌ Suppliers fetch error:", error);
+    return apiErrors.internal("Failed to fetch suppliers");
   }
 }
 
@@ -58,6 +63,11 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const {
@@ -74,10 +84,10 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return apiErrors.badRequest('Supplier name is required');
+      return apiErrors.badRequest("Supplier name is required");
     }
 
-    const supplier = await prisma.supplier.create({
+    const supplier = await db.supplier.create({
       data: {
         userId: session.user.id,
         name,
@@ -96,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(supplier, { status: 201 });
   } catch (error) {
-    console.error('❌ Supplier creation error:', error);
-    return apiErrors.internal('Failed to create supplier');
+    console.error("❌ Supplier creation error:", error);
+    return apiErrors.internal("Failed to create supplier");
   }
 }

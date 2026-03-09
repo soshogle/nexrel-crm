@@ -1,38 +1,32 @@
-
 /**
  * Calendar Connections API
  * Manage user calendar connections across multiple providers
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
-    const connections = await prisma.calendarConnection.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
+    const connections = await getCrmDb(ctx).calendarConnection.findMany({
+      where: { userId: ctx.userId },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         provider: true,
@@ -52,8 +46,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ connections });
   } catch (error) {
-    console.error('Error fetching calendar connections:', error);
-    return apiErrors.internal('Failed to fetch calendar connections');
+    console.error("Error fetching calendar connections:", error);
+    return apiErrors.internal("Failed to fetch calendar connections");
   }
 }
 
@@ -61,17 +55,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -88,19 +77,19 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!provider) {
-      return apiErrors.badRequest('Provider is required');
+      return apiErrors.badRequest("Provider is required");
     }
 
     // Create or update connection
-    const connection = await prisma.calendarConnection.upsert({
+    const connection = await getCrmDb(ctx).calendarConnection.upsert({
       where: {
         userId_provider: {
-          userId: user.id,
+          userId: ctx.userId,
           provider,
         },
       },
       create: {
-        userId: user.id,
+        userId: ctx.userId,
         provider,
         providerAccountId,
         accessToken,
@@ -112,7 +101,7 @@ export async function POST(request: NextRequest) {
         apiKey,
         settings: settings || {},
         syncEnabled: true,
-        syncStatus: 'PENDING',
+        syncStatus: "PENDING",
       },
       update: {
         providerAccountId,
@@ -129,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ connection });
   } catch (error) {
-    console.error('Error creating calendar connection:', error);
-    return apiErrors.internal('Failed to create calendar connection');
+    console.error("Error creating calendar connection:", error);
+    return apiErrors.internal("Failed to create calendar connection");
   }
 }

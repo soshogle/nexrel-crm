@@ -1,24 +1,28 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * CLOSE SHIFT (CLOCK OUT)
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -27,15 +31,15 @@ export async function POST(
 
     // Validate required fields
     if (endingCash === undefined) {
-      return apiErrors.badRequest('Ending cash is required');
+      return apiErrors.badRequest("Ending cash is required");
     }
 
     // Get shift
-    const shift = await prisma.shift.findFirst({
+    const shift = await getCrmDb(ctx).shift.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
       include: {
         staff: true,
@@ -43,14 +47,14 @@ export async function POST(
     });
 
     if (!shift) {
-      return apiErrors.notFound('Active shift not found');
+      return apiErrors.notFound("Active shift not found");
     }
 
     // Calculate sales during shift
-    const orders = await prisma.pOSOrder.findMany({
+    const orders = await getCrmDb(ctx).pOSOrder.findMany({
       where: {
         staffId: shift.staffId,
-        paymentStatus: 'PAID',
+        paymentStatus: "PAID",
         createdAt: {
           gte: shift.clockIn,
           lte: new Date(),
@@ -66,7 +70,7 @@ export async function POST(
 
     // Calculate expected cash (starting cash + cash sales)
     const cashSales = orders
-      .filter((order) => order.paymentMethod === 'CASH')
+      .filter((order) => order.paymentMethod === "CASH")
       .reduce((sum, order) => {
         return sum + parseFloat(order.total.toString());
       }, 0);
@@ -75,11 +79,11 @@ export async function POST(
     const cashDifference = parseFloat(endingCash.toString()) - expectedCash;
 
     // Close shift
-    const closedShift = await prisma.shift.update({
+    const closedShift = await getCrmDb(ctx).shift.update({
       where: { id: params.id },
       data: {
         clockOut: new Date(),
-        status: 'CLOSED',
+        status: "CLOSED",
         endingCash,
         expectedCash,
         cashDifference,
@@ -113,7 +117,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('❌ Shift close error:', error);
-    return apiErrors.internal('Failed to close shift');
+    console.error("❌ Shift close error:", error);
+    return apiErrors.internal("Failed to close shift");
   }
 }

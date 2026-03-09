@@ -2,9 +2,18 @@
  * Odontogram import utilities - shared by import API, X-ray AI, and voice
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
 
-export type ToothCondition = 'healthy' | 'caries' | 'crown' | 'filling' | 'missing' | 'extraction' | 'implant' | 'root_canal';
+export type ToothCondition =
+  | "healthy"
+  | "caries"
+  | "crown"
+  | "filling"
+  | "missing"
+  | "extraction"
+  | "implant"
+  | "root_canal";
 
 export interface ToothInfo {
   condition?: ToothCondition;
@@ -17,54 +26,63 @@ export interface ToothInfo {
 export type ToothData = Record<string, ToothInfo>;
 
 export function validateToothData(m: unknown): m is ToothData {
-  if (!m || typeof m !== 'object') return false;
+  if (!m || typeof m !== "object") return false;
   for (const [tooth, data] of Object.entries(m)) {
     const toothNum = parseInt(tooth, 10);
     if (isNaN(toothNum) || toothNum < 1 || toothNum > 32) return false;
-    if (data && typeof data === 'object') {
+    if (data && typeof data === "object") {
       const d = data as Record<string, unknown>;
-      if (d.condition && typeof d.condition !== 'string') return false;
-      if (d.treatment && typeof d.treatment !== 'string') return false;
-      if (d.completed !== undefined && typeof d.completed !== 'boolean') return false;
+      if (d.condition && typeof d.condition !== "string") return false;
+      if (d.treatment && typeof d.treatment !== "string") return false;
+      if (d.completed !== undefined && typeof d.completed !== "boolean")
+        return false;
     }
   }
   return true;
 }
 
-export async function findLeadForImport(userId: string, body: {
-  leadId?: string;
-  patientId?: string;
-  patientName?: string;
-  patientEmail?: string;
-}) {
+export async function findLeadForImport(
+  userId: string,
+  body: {
+    leadId?: string;
+    patientId?: string;
+    patientName?: string;
+    patientEmail?: string;
+  },
+) {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const { leadId, patientId, patientName, patientEmail } = body;
 
   if (leadId) {
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+    const lead = await db.lead.findFirst({ where: { id: leadId, userId } });
     if (lead) return lead;
   }
   if (patientId) {
-    const lead = await prisma.lead.findFirst({ where: { id: patientId, userId } });
+    const lead = await db.lead.findFirst({ where: { id: patientId, userId } });
     if (lead) return lead;
   }
   if (patientName?.trim()) {
     const name = patientName.trim();
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: {
         userId,
         OR: [
-          { contactPerson: { equals: name, mode: 'insensitive' } },
-          { businessName: { equals: name, mode: 'insensitive' } },
-          { contactPerson: { contains: name, mode: 'insensitive' } },
-          { businessName: { contains: name, mode: 'insensitive' } },
+          { contactPerson: { equals: name, mode: "insensitive" } },
+          { businessName: { equals: name, mode: "insensitive" } },
+          { contactPerson: { contains: name, mode: "insensitive" } },
+          { businessName: { contains: name, mode: "insensitive" } },
         ],
       },
     });
     if (lead) return lead;
   }
   if (patientEmail?.trim()) {
-    const lead = await prisma.lead.findFirst({
-      where: { userId, email: { equals: patientEmail.trim(), mode: 'insensitive' } },
+    const lead = await db.lead.findFirst({
+      where: {
+        userId,
+        email: { equals: patientEmail.trim(), mode: "insensitive" },
+      },
     });
     if (lead) return lead;
   }
@@ -80,13 +98,15 @@ export async function upsertOdontogram(params: {
   chartedBy?: string;
 }) {
   const { leadId, userId, toothData, notes, clinicId, chartedBy } = params;
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
 
   const where: any = { leadId, userId };
   if (clinicId) where.clinicId = clinicId;
 
-  const existing = await prisma.dentalOdontogram.findFirst({
+  const existing = await db.dentalOdontogram.findFirst({
     where,
-    orderBy: { chartDate: 'desc' },
+    orderBy: { chartDate: "desc" },
   });
 
   const baseData = {
@@ -97,7 +117,7 @@ export async function upsertOdontogram(params: {
   };
 
   if (existing) {
-    return prisma.dentalOdontogram.update({
+    return db.dentalOdontogram.update({
       where: { id: existing.id },
       data: baseData,
     });
@@ -106,28 +126,30 @@ export async function upsertOdontogram(params: {
   // Resolve clinicId when creating - required by schema
   let resolvedClinicId = clinicId;
   if (!resolvedClinicId) {
-    const membership = await prisma.userClinic.findFirst({
+    const membership = await db.userClinic.findFirst({
       where: { userId, isPrimary: true },
       select: { clinicId: true },
     });
     resolvedClinicId = membership?.clinicId ?? undefined;
   }
   if (!resolvedClinicId) {
-    const anyMembership = await prisma.userClinic.findFirst({
+    const anyMembership = await db.userClinic.findFirst({
       where: { userId },
       select: { clinicId: true },
     });
     resolvedClinicId = anyMembership?.clinicId ?? undefined;
   }
   if (!resolvedClinicId) {
-    const fallback = await prisma.clinic.findFirst({ select: { id: true } });
+    const fallback = await db.clinic.findFirst({ select: { id: true } });
     resolvedClinicId = fallback?.id;
   }
   if (!resolvedClinicId) {
-    throw new Error('clinicId is required for odontogram creation and could not be resolved from user membership or default clinic');
+    throw new Error(
+      "clinicId is required for odontogram creation and could not be resolved from user membership or default clinic",
+    );
   }
 
-  return prisma.dentalOdontogram.create({
+  return db.dentalOdontogram.create({
     data: {
       leadId,
       userId,

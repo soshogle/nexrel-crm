@@ -1,8 +1,7 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * Parent Signup API
@@ -10,8 +9,8 @@ import { apiErrors } from '@/lib/api-error';
  * Creates both a User account and a ClubOSHousehold
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,41 +32,61 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!email || !password || !name || !clubCode) {
-      return apiErrors.badRequest('Missing required fields: email, password, name, clubCode');
+      return apiErrors.badRequest(
+        "Missing required fields: email, password, name, clubCode",
+      );
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getMetaDb().user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      return apiErrors.conflict('Email already registered. Please sign in instead.');
+      return apiErrors.conflict(
+        "Email already registered. Please sign in instead.",
+      );
     }
 
     // Find the club owner by club code or subdomain
     let clubOwner;
-    
+
     // Check if clubCode is actually a subdomain identifier
-    if (clubCode.startsWith('subdomain-')) {
-      const subdomain = clubCode.replace('subdomain-', '');
-      clubOwner = await prisma.user.findUnique({
+    if (clubCode.startsWith("subdomain-")) {
+      const subdomain = clubCode.replace("subdomain-", "");
+      clubOwner = await getMetaDb().user.findUnique({
         where: { subdomain },
-        select: { id: true, name: true, email: true, industry: true, subdomain: true, clubCode: true },
-      });
-      
-      if (!clubOwner) {
-        return apiErrors.notFound('Invalid subdomain. Club not found.');
-      }
-    } else {
-      // Traditional club code lookup
-      clubOwner = await prisma.user.findUnique({
-        where: { clubCode },
-        select: { id: true, name: true, email: true, industry: true, subdomain: true, clubCode: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          industry: true,
+          subdomain: true,
+          clubCode: true,
+        },
       });
 
       if (!clubOwner) {
-        return apiErrors.notFound('Invalid club code. Please check with your club administrator.');
+        return apiErrors.notFound("Invalid subdomain. Club not found.");
+      }
+    } else {
+      // Traditional club code lookup
+      clubOwner = await getMetaDb().user.findUnique({
+        where: { clubCode },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          industry: true,
+          subdomain: true,
+          clubCode: true,
+        },
+      });
+
+      if (!clubOwner) {
+        return apiErrors.notFound(
+          "Invalid club code. Please check with your club administrator.",
+        );
       }
     }
 
@@ -75,14 +94,14 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user with PARENT role
-    const user = await prisma.user.create({
+    const user = await getMetaDb().user.create({
       data: {
         email,
         password: hashedPassword,
         name,
         phone,
-        country: country || 'CA',
-        role: 'PARENT',
+        country: country || "CA",
+        role: "PARENT",
         parentRole: true,
         onboardingCompleted: true,
       },
@@ -91,42 +110,48 @@ export async function POST(request: NextRequest) {
     // Create household linked to club owner with instant access
     // Store the actual club code (or create one if coming via subdomain)
     const storedClubCode = clubOwner.clubCode || clubCode;
-    
-    const household = await prisma.clubOSHousehold.create({
+
+    const household = await getMetaDb().clubOSHousehold.create({
       data: {
         userId: user.id,
         clubOwnerId: clubOwner.id,
         clubCode: storedClubCode,
         primaryContactName: name,
         primaryContactEmail: email,
-        primaryContactPhone: phone || '',
+        primaryContactPhone: phone || "",
         address,
         city,
         state,
         zipCode,
         emergencyContact,
         emergencyPhone,
-        status: 'ACTIVE', // Instant access - no approval needed
+        status: "ACTIVE", // Instant access - no approval needed
         verifiedAt: new Date(), // Mark as verified immediately
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Account created successfully! You can now browse programs and register your children. Payment will be required at the time of registration.',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+    return NextResponse.json(
+      {
+        success: true,
+        message:
+          "Account created successfully! You can now browse programs and register your children. Payment will be required at the time of registration.",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        household: {
+          id: household.id,
+          status: household.status,
+          clubOwnerName: clubOwner.name,
+        },
       },
-      household: {
-        id: household.id,
-        status: household.status,
-        clubOwnerName: clubOwner.name,
-      },
-    }, { status: 201 });
+      { status: 201 },
+    );
   } catch (error: any) {
-    console.error('Parent signup error:', error);
-    return apiErrors.internal(error.message || 'Failed to create parent account');
+    console.error("Parent signup error:", error);
+    return apiErrors.internal(
+      error.message || "Failed to create parent account",
+    );
   }
 }

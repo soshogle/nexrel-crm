@@ -3,19 +3,23 @@
  * Get order tracking information for customers
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; orderId: string } }
+  { params }: { params: { id: string; orderId: string } },
 ) {
   try {
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email'); // Customer email for verification
+    const email = searchParams.get("email"); // Customer email for verification
+    const resolved = await resolveWebsiteDb(params.id);
+    if (!resolved) {
+      return apiErrors.notFound("Website not found");
+    }
 
-    const order = await prisma.order.findUnique({
+    const order = await resolved.db.order.findUnique({
       where: { id: params.orderId },
       include: {
         items: {
@@ -27,7 +31,7 @@ export async function GET(
     });
 
     if (!order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Verify customer email if provided
@@ -36,9 +40,8 @@ export async function GET(
     }
 
     // Get website order link
-    const websiteOrder = await prisma.websiteOrder.findFirst({
+    await resolved.db.websiteOrder.findFirst({
       where: { orderId: params.orderId },
-      select: { websiteId: true },
     });
 
     const trackingInfo = {
@@ -66,7 +69,7 @@ export async function GET(
       tracking: trackingInfo,
     });
   } catch (error: any) {
-    console.error('Error fetching order tracking:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch tracking');
+    console.error("Error fetching order tracking:", error);
+    return apiErrors.internal(error.message || "Failed to fetch tracking");
   }
 }

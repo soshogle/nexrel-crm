@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -13,11 +14,15 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const userId = session.user.id;
     const [properties, fsbo, cmaReports, staleDiagnostics, priceChanges] = await Promise.all([
       // Only show broker's own listings (not bulk MLS imports) or listings with real date data
-      prisma.rEProperty.findMany({
+      getCrmDb(ctx).rEProperty.findMany({
         where: {
           userId,
           OR: [
@@ -38,7 +43,7 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: 'desc' },
         take: 10,
       }),
-      prisma.rEFSBOListing.findMany({
+      getCrmDb(ctx).rEFSBOListing.findMany({
         where: { assignedUserId: userId },
         select: {
           id: true,
@@ -50,7 +55,7 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: 'desc' },
         take: 8,
       }),
-      prisma.rECMAReport.findMany({
+      getCrmDb(ctx).rECMAReport.findMany({
         where: { userId },
         select: {
           id: true,
@@ -61,7 +66,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 8,
       }),
-      prisma.rEStaleDiagnostic.findMany({
+      getCrmDb(ctx).rEStaleDiagnostic.findMany({
         where: { userId },
         select: {
           id: true,
@@ -73,7 +78,7 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: 'desc' },
         take: 8,
       }),
-      prisma.rEPriceChange.findMany({
+      getCrmDb(ctx).rEPriceChange.findMany({
         where: { userId },
         select: {
           id: true,
@@ -167,6 +172,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   return NextResponse.json(
     { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
     { status: 405 }
@@ -178,6 +187,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   return NextResponse.json(
     { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
     { status: 405 }
@@ -189,6 +202,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   return NextResponse.json(
     { code: 'METHOD_NOT_ALLOWED', error: 'Activity is read-only', message: 'Activity is read-only' },
     { status: 405 }

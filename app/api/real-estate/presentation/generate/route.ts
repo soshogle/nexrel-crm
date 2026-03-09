@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 import { getMarketContext, marketBulletPoints } from '@/lib/real-estate/market-data';
 
@@ -188,6 +189,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { presentationType, propertyData, areaResearch, agentInfo } = body;
@@ -215,7 +220,7 @@ export async function POST(request: NextRequest) {
       ? `Market Analysis - ${propertyData.address}`
       : `Listing Presentation - ${propertyData.address}`;
 
-    const dbRecord = await prisma.rEListingPresentation.create({
+    const dbRecord = await getCrmDb(ctx).rEListingPresentation.create({
       data: {
         userId: session.user.id,
         address: propertyData.address,
@@ -249,8 +254,12 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
-    const presentations = await prisma.rEListingPresentation.findMany({
+    const presentations = await getCrmDb(ctx).rEListingPresentation.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -269,6 +278,10 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -276,14 +289,14 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Presentation ID required');
     }
 
-    const existing = await prisma.rEListingPresentation.findFirst({
+    const existing = await getCrmDb(ctx).rEListingPresentation.findFirst({
       where: { id, userId: session.user.id },
     });
     if (!existing) {
       return apiErrors.notFound();
     }
 
-    await prisma.rEListingPresentation.delete({ where: { id } });
+    await getCrmDb(ctx).rEListingPresentation.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Presentation delete error:', error);

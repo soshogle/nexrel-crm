@@ -1,18 +1,18 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import bcrypt from "bcryptjs";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET STAFF
  * List all staff members
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,16 +20,20 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(req.url);
-    const isActive = searchParams.get('isActive');
+    const isActive = searchParams.get("isActive");
 
     const where: any = { userId: session.user.id };
     if (isActive !== null) {
-      where.isActive = isActive === 'true';
+      where.isActive = isActive === "true";
     }
 
-    const staff = await prisma.staff.findMany({
+    const staff = await getCrmDb(ctx).staff.findMany({
       where,
       include: {
         user: {
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     // Remove PIN from response
@@ -57,8 +61,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
-    console.error('❌ Staff fetch error:', error);
-    return apiErrors.internal('Failed to fetch staff');
+    console.error("❌ Staff fetch error:", error);
+    return apiErrors.internal("Failed to fetch staff");
   }
 }
 
@@ -69,6 +73,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -84,33 +92,33 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!employeeId || !pin) {
-      return apiErrors.badRequest('Employee ID and PIN are required');
+      return apiErrors.badRequest("Employee ID and PIN are required");
     }
 
     // Validate PIN (must be 4 digits)
     if (!/^\d{4}$/.test(pin)) {
-      return apiErrors.badRequest('PIN must be 4 digits');
+      return apiErrors.badRequest("PIN must be 4 digits");
     }
 
     // Check if employee ID already exists
-    const existing = await prisma.staff.findUnique({
+    const existing = await getCrmDb(ctx).staff.findUnique({
       where: { employeeId },
     });
 
     if (existing) {
-      return apiErrors.badRequest('Employee ID already exists');
+      return apiErrors.badRequest("Employee ID already exists");
     }
 
     // Hash PIN
     const hashedPin = await bcrypt.hash(pin, 10);
 
     // Create staff
-    const staff = await prisma.staff.create({
+    const staff = await getCrmDb(ctx).staff.create({
       data: {
         userId: session.user.id,
         employeeId,
         pin: hashedPin,
-        role: role || 'CASHIER',
+        role: role || "CASHIER",
         canVoidOrders,
         canGiveDiscounts,
         canAccessReports,
@@ -131,7 +139,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(sanitizedStaff, { status: 201 });
   } catch (error) {
-    console.error('❌ Staff creation error:', error);
-    return apiErrors.internal('Failed to create staff');
+    console.error("❌ Staff creation error:", error);
+    return apiErrors.internal("Failed to create staff");
   }
 }

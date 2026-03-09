@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { emailService } from "@/lib/email-service";
-import { prisma } from "@/lib/db";
-import { apiErrors } from '@/lib/api-error';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,7 +19,8 @@ export async function POST(request: Request) {
     let recordingUrl = "";
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID;
     if (leadOwnerId) {
-      const callLog = await prisma.callLog.findFirst({
+      const ctx = await resolveDalContext(leadOwnerId);
+      const callLog = await getCrmDb(ctx).callLog.findFirst({
         where: { leadId, userId: leadOwnerId },
         orderBy: { createdAt: "desc" },
         select: { transcript: true, recordingUrl: true },

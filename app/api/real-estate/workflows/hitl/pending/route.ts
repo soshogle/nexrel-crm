@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { RE_AGENT_NAMES } from '@/lib/real-estate/workflow-templates';
 import { REAIEmployeeType } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
@@ -20,10 +21,14 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     let notifications: any[] = [];
     try {
-      const notificationsPromise = prisma.rEHITLNotification.findMany({
+      const notificationsPromise = getCrmDb(ctx).rEHITLNotification.findMany({
         where: {
           userId: session.user.id,
           isActioned: false,
@@ -43,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     let awaitingApproval: any[] = [];
     try {
-      const executionsPromise = prisma.rETaskExecution.findMany({
+      const executionsPromise = getCrmDb(ctx).rETaskExecution.findMany({
         where: {
           instance: { userId: session.user.id },
           status: 'AWAITING_HITL',

@@ -1,14 +1,13 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/user/subdomain - Get current user's subdomain
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: {
         subdomain: true,
@@ -27,17 +26,17 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Generate suggested subdomain if none exists
     let suggestedSubdomain = null;
     if (!user.subdomain) {
       // Create subdomain from business name or email
-      const baseName = user.name || user.email.split('@')[0];
+      const baseName = user.name || user.email.split("@")[0];
       suggestedSubdomain = baseName
         .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
+        .replace(/[^a-z0-9]/g, "")
         .slice(0, 20);
     }
 
@@ -49,8 +48,8 @@ export async function GET(request: NextRequest) {
         : null,
     });
   } catch (error: any) {
-    console.error('Error fetching subdomain:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch subdomain');
+    console.error("Error fetching subdomain:", error);
+    return apiErrors.internal(error.message || "Failed to fetch subdomain");
   }
 }
 
@@ -66,52 +65,56 @@ export async function POST(request: NextRequest) {
     const { subdomain } = body;
 
     if (!subdomain) {
-      return apiErrors.badRequest('Subdomain is required');
+      return apiErrors.badRequest("Subdomain is required");
     }
 
     // Validate subdomain format
     const subdomainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
     if (!subdomainRegex.test(subdomain)) {
-      return apiErrors.badRequest('Invalid subdomain format. Use only lowercase letters, numbers, and hyphens.',);
+      return apiErrors.badRequest(
+        "Invalid subdomain format. Use only lowercase letters, numbers, and hyphens.",
+      );
     }
 
     // Check for reserved subdomains
     const reserved = [
-      'www',
-      'app',
-      'api',
-      'admin',
-      'cdn',
-      'static',
-      'mail',
-      'email',
-      'smtp',
-      'ftp',
-      'blog',
-      'shop',
-      'store',
-      'support',
-      'help',
-      'docs',
-      'status',
-      'dashboard',
+      "www",
+      "app",
+      "api",
+      "admin",
+      "cdn",
+      "static",
+      "mail",
+      "email",
+      "smtp",
+      "ftp",
+      "blog",
+      "shop",
+      "store",
+      "support",
+      "help",
+      "docs",
+      "status",
+      "dashboard",
     ];
     if (reserved.includes(subdomain.toLowerCase())) {
-      return apiErrors.badRequest('This subdomain is reserved and cannot be used');
+      return apiErrors.badRequest(
+        "This subdomain is reserved and cannot be used",
+      );
     }
 
     // Check if subdomain is already taken
-    const existing = await prisma.user.findUnique({
+    const existing = await getMetaDb().user.findUnique({
       where: { subdomain },
       select: { id: true },
     });
 
     if (existing && existing.id !== session.user.id) {
-      return apiErrors.conflict('This subdomain is already taken');
+      return apiErrors.conflict("This subdomain is already taken");
     }
 
     // Update user's subdomain
-    const user = await prisma.user.update({
+    const user = await getMetaDb().user.update({
       where: { id: session.user.id },
       data: { subdomain },
       select: {
@@ -127,8 +130,8 @@ export async function POST(request: NextRequest) {
       message: `Subdomain set to: ${user.subdomain}.soshogle.com`,
     });
   } catch (error: any) {
-    console.error('Error setting subdomain:', error);
-    return apiErrors.internal(error.message || 'Failed to set subdomain');
+    console.error("Error setting subdomain:", error);
+    return apiErrors.internal(error.message || "Failed to set subdomain");
   }
 }
 
@@ -140,17 +143,17 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: session.user.id },
       data: { subdomain: null },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Subdomain removed successfully',
+      message: "Subdomain removed successfully",
     });
   } catch (error: any) {
-    console.error('Error removing subdomain:', error);
-    return apiErrors.internal(error.message || 'Failed to remove subdomain');
+    console.error("Error removing subdomain:", error);
+    return apiErrors.internal(error.message || "Failed to remove subdomain");
   }
 }

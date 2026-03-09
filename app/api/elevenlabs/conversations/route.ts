@@ -1,13 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { ElevenLabsService } from "@/lib/elevenlabs";
+import { getCrmDb } from "@/lib/dal";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { ElevenLabsService } from '@/lib/elevenlabs';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const maxDuration = 60; // Allow up to 60s for ElevenLabs API + DB queries
 
 /**
@@ -20,10 +21,15 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get('agent_id');
-    const pageSize = searchParams.get('page_size') ? parseInt(searchParams.get('page_size')!) : 50;
+    const agentId = searchParams.get("agent_id");
+    const pageSize = searchParams.get("page_size")
+      ? parseInt(searchParams.get("page_size")!)
+      : 50;
 
     console.log(`📞 [ElevenLabs Conversations] Request details:`, {
       userId: session.user.id,
@@ -31,8 +37,8 @@ export async function GET(request: NextRequest) {
       userName: session.user.name,
       userRole: session.user.role,
       isImpersonating: session.user.isImpersonating || false,
-      superAdminId: session.user.superAdminId || 'none',
-      requestedAgentId: agentId || 'all',
+      superAdminId: session.user.superAdminId || "none",
+      requestedAgentId: agentId || "all",
       pageSize,
     });
 
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
       (async () => {
         // Get user's voice agents to map agent IDs to names
         // NOTE: session.user.id is the IMPERSONATED user's ID when impersonating
-        const voiceAgents = await prisma.voiceAgent.findMany({
+        const voiceAgents = await db.voiceAgent.findMany({
           where: { userId: session.user.id },
           select: {
             id: true,
@@ -57,31 +63,44 @@ export async function GET(request: NextRequest) {
         });
 
         // Include CRM Voice Assistant and AI employee agents
-        const userRecord = await prisma.user.findUnique({
+        const userRecord = await getMetaDb().user.findUnique({
           where: { id: session.user.id },
           select: { name: true, crmVoiceAgentId: true },
         });
         const crmAgentId = userRecord?.crmVoiceAgentId;
         if (crmAgentId) {
           voiceAgents.push({
-            id: 'crm-assistant',
-            name: `${userRecord?.name || 'Your Business'} CRM Assistant`,
+            id: "crm-assistant",
+            name: `${userRecord?.name || "Your Business"} CRM Assistant`,
             elevenLabsAgentId: crmAgentId,
           } as any);
         }
         const [reAgents, profAgents, industryAgents] = await Promise.all([
-          (prisma as any).rEAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
-          (prisma as any).professionalAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
-          (prisma as any).industryAIEmployeeAgent.findMany({ where: { userId: session.user.id }, select: { name: true, elevenLabsAgentId: true } }),
+          (db as any).rEAIEmployeeAgent.findMany({
+            where: { userId: session.user.id },
+            select: { name: true, elevenLabsAgentId: true },
+          }),
+          (db as any).professionalAIEmployeeAgent.findMany({
+            where: { userId: session.user.id },
+            select: { name: true, elevenLabsAgentId: true },
+          }),
+          (db as any).industryAIEmployeeAgent.findMany({
+            where: { userId: session.user.id },
+            select: { name: true, elevenLabsAgentId: true },
+          }),
         ]);
         [...reAgents, ...profAgents, ...industryAgents].forEach((a: any) => {
           if (a.elevenLabsAgentId) {
-            voiceAgents.push({ id: a.id, name: a.name, elevenLabsAgentId: a.elevenLabsAgentId } as any);
+            voiceAgents.push({
+              id: a.id,
+              name: a.name,
+              elevenLabsAgentId: a.elevenLabsAgentId,
+            } as any);
           }
         });
 
         // Also get CallLog entries for this user (in case they have calls but no voice agents)
-        const callLogs = await prisma.callLog.findMany({
+        const callLogs = await db.callLog.findMany({
           where: {
             userId: session.user.id,
             elevenLabsConversationId: { not: null },
@@ -103,54 +122,79 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 100,
         });
         return { voiceAgents, callLogs };
       })(),
     ]);
 
-    console.log(`📞 [ElevenLabs Conversations] Fetched ${response.conversations?.length || 0} conversations from ElevenLabs API`);
+    console.log(
+      `📞 [ElevenLabs Conversations] Fetched ${response.conversations?.length || 0} conversations from ElevenLabs API`,
+    );
 
     // Create map of agent IDs to names
     const agentMap = new Map(
-      voiceAgents.map(agent => [agent.elevenLabsAgentId, agent.name])
+      voiceAgents.map((agent) => [agent.elevenLabsAgentId, agent.name]),
     );
 
     // Create set of user's agent IDs for filtering
-    const userAgentIds = new Set(voiceAgents.map(agent => agent.elevenLabsAgentId).filter(Boolean));
+    const userAgentIds = new Set(
+      voiceAgents.map((agent) => agent.elevenLabsAgentId).filter(Boolean),
+    );
 
     // Create set of conversation IDs from CallLog
     const callLogConvIds = new Set(
       callLogs
-        .map(log => log.elevenLabsConversationId)
-        .filter((id): id is string => id !== null)
+        .map((log) => log.elevenLabsConversationId)
+        .filter((id): id is string => id !== null),
     );
 
-    console.log(`🔒 [Multi-Tenancy Filter] User ${session.user.id} has ${userAgentIds.size} voice agents`);
-    console.log(`📞 [CallLog] Found ${callLogConvIds.size} conversations in CallLog`);
+    console.log(
+      `🔒 [Multi-Tenancy Filter] User ${session.user.id} has ${userAgentIds.size} voice agents`,
+    );
+    console.log(
+      `📞 [CallLog] Found ${callLogConvIds.size} conversations in CallLog`,
+    );
 
     // 🔒 CRITICAL: Filter conversations to ONLY show those from user's agents OR in CallLog
-    const userConversations = (response.conversations || []).filter((conv: any) => {
-      const belongsToUser = userAgentIds.has(conv.agent_id) || callLogConvIds.has(conv.conversation_id);
-      if (!belongsToUser) {
-        console.log(`🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent or in CallLog`);
-      }
-      return belongsToUser;
-    });
+    const userConversations = (response.conversations || []).filter(
+      (conv: any) => {
+        const belongsToUser =
+          userAgentIds.has(conv.agent_id) ||
+          callLogConvIds.has(conv.conversation_id);
+        if (!belongsToUser) {
+          console.log(
+            `🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent or in CallLog`,
+          );
+        }
+        return belongsToUser;
+      },
+    );
 
-    console.log(`✅ [Multi-Tenancy Filter] Returning ${userConversations.length} of ${response.conversations?.length || 0} conversations`);
+    console.log(
+      `✅ [Multi-Tenancy Filter] Returning ${userConversations.length} of ${response.conversations?.length || 0} conversations`,
+    );
 
     // Enrich conversations with agent names and CallLog data
     const enrichedConversations = userConversations.map((conv: any) => {
-      const callLog = callLogs.find(log => log.elevenLabsConversationId === conv.conversation_id);
+      const callLog = callLogs.find(
+        (log) => log.elevenLabsConversationId === conv.conversation_id,
+      );
       return {
         ...conv,
-        agent_name: agentMap.get(conv.agent_id) || callLog?.voiceAgent?.name || 'Unknown Agent',
+        agent_name:
+          agentMap.get(conv.agent_id) ||
+          callLog?.voiceAgent?.name ||
+          "Unknown Agent",
         // Include CallLog data if available
         callLogId: callLog?.id,
-        fromNumber: callLog?.fromNumber || conv.metadata?.from_number || conv.metadata?.from,
-        toNumber: callLog?.toNumber || conv.metadata?.to_number || conv.metadata?.to,
+        fromNumber:
+          callLog?.fromNumber ||
+          conv.metadata?.from_number ||
+          conv.metadata?.from,
+        toNumber:
+          callLog?.toNumber || conv.metadata?.to_number || conv.metadata?.to,
         callLogDuration: callLog?.duration,
         callLogStatus: callLog?.status,
         callLogTranscription: callLog?.transcription,
@@ -165,7 +209,7 @@ export async function GET(request: NextRequest) {
       cursor: response.cursor || null,
     });
   } catch (error: any) {
-    console.error('❌ [ElevenLabs Conversations] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch conversations');
+    console.error("❌ [ElevenLabs Conversations] Error:", error);
+    return apiErrors.internal(error.message || "Failed to fetch conversations");
   }
 }

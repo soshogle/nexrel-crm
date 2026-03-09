@@ -1,39 +1,34 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/programs - Get all programs
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const programType = searchParams.get('programType');
+    const status = searchParams.get("status");
+    const programType = searchParams.get("programType");
 
-    const where: any = { userId: user.id };
+    const where: any = { userId: session.user.id };
     if (status) where.status = status;
     if (programType) where.programType = programType;
 
-    const programs = await prisma.clubOSProgram.findMany({
+    const programs = await db.clubOSProgram.findMany({
       where,
       include: {
         divisions: {
@@ -48,13 +43,13 @@ export async function GET(request: NextRequest) {
         },
         waivers: true,
       },
-      orderBy: { startDate: 'desc' },
+      orderBy: { startDate: "desc" },
     });
 
     return NextResponse.json({ success: true, programs });
   } catch (error) {
-    console.error('Error fetching programs:', error);
-    return apiErrors.internal('Failed to fetch programs');
+    console.error("Error fetching programs:", error);
+    return apiErrors.internal("Failed to fetch programs");
   }
 }
 
@@ -62,17 +57,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -95,22 +85,28 @@ export async function POST(request: NextRequest) {
       tags,
     } = body;
 
-    const program = await prisma.clubOSProgram.create({
+    const program = await db.clubOSProgram.create({
       data: {
-        userId: user.id,
+        userId: session.user.id,
         name,
         description,
         programType,
-        status: status || 'DRAFT',
+        status: status || "DRAFT",
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        registrationOpenDate: registrationOpenDate ? new Date(registrationOpenDate) : null,
-        registrationCloseDate: registrationCloseDate ? new Date(registrationCloseDate) : null,
+        registrationOpenDate: registrationOpenDate
+          ? new Date(registrationOpenDate)
+          : null,
+        registrationCloseDate: registrationCloseDate
+          ? new Date(registrationCloseDate)
+          : null,
         maxParticipants,
         baseFee,
         familyDiscount,
         earlyBirdDiscount,
-        earlyBirdDeadline: earlyBirdDeadline ? new Date(earlyBirdDeadline) : null,
+        earlyBirdDeadline: earlyBirdDeadline
+          ? new Date(earlyBirdDeadline)
+          : null,
         ageMin,
         ageMax,
         imageUrl,
@@ -123,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ program }, { status: 201 });
   } catch (error) {
-    console.error('Error creating program:', error);
-    return apiErrors.internal('Failed to create program');
+    console.error("Error creating program:", error);
+    return apiErrors.internal("Failed to create program");
   }
 }

@@ -1,26 +1,29 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/schedules/[id] - Get single schedule
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const schedule = await prisma.clubOSSchedule.findUnique({
+    const schedule = await db.clubOSSchedule.findUnique({
       where: { id: params.id },
       include: {
         venue: true,
@@ -70,7 +73,7 @@ export async function GET(
     });
 
     if (!schedule) {
-      return apiErrors.notFound('Schedule not found');
+      return apiErrors.notFound("Schedule not found");
     }
 
     if (schedule.userId !== session.user.id) {
@@ -79,21 +82,24 @@ export async function GET(
 
     return NextResponse.json(schedule);
   } catch (error) {
-    console.error('Error fetching schedule:', error);
-    return apiErrors.internal('Failed to fetch schedule');
+    console.error("Error fetching schedule:", error);
+    return apiErrors.internal("Failed to fetch schedule");
   }
 }
 
 // PUT /api/clubos/schedules/[id] - Update schedule
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -112,19 +118,19 @@ export async function PUT(
       notes,
     } = body;
 
-    const existing = await prisma.clubOSSchedule.findUnique({
+    const existing = await db.clubOSSchedule.findUnique({
       where: { id: params.id },
     });
 
     if (!existing) {
-      return apiErrors.notFound('Schedule not found');
+      return apiErrors.notFound("Schedule not found");
     }
 
     if (existing.userId !== session.user.id) {
       return apiErrors.forbidden();
     }
 
-    const schedule = await prisma.clubOSSchedule.update({
+    const schedule = await db.clubOSSchedule.update({
       where: { id: params.id },
       data: {
         eventType,
@@ -163,28 +169,31 @@ export async function PUT(
 
     return NextResponse.json(schedule);
   } catch (error) {
-    console.error('Error updating schedule:', error);
-    return apiErrors.internal('Failed to update schedule');
+    console.error("Error updating schedule:", error);
+    return apiErrors.internal("Failed to update schedule");
   }
 }
 
 // DELETE /api/clubos/schedules/[id] - Delete (cancel) schedule
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const existing = await prisma.clubOSSchedule.findUnique({
+    const existing = await db.clubOSSchedule.findUnique({
       where: { id: params.id },
     });
 
     if (!existing) {
-      return apiErrors.notFound('Schedule not found');
+      return apiErrors.notFound("Schedule not found");
     }
 
     if (existing.userId !== session.user.id) {
@@ -192,14 +201,14 @@ export async function DELETE(
     }
 
     // Soft delete by setting status to CANCELLED
-    await prisma.clubOSSchedule.update({
+    await db.clubOSSchedule.update({
       where: { id: params.id },
-      data: { status: 'CANCELLED' },
+      data: { status: "CANCELLED" },
     });
 
-    return NextResponse.json({ message: 'Schedule cancelled successfully' });
+    return NextResponse.json({ message: "Schedule cancelled successfully" });
   } catch (error) {
-    console.error('Error deleting schedule:', error);
-    return apiErrors.internal('Failed to delete schedule');
+    console.error("Error deleting schedule:", error);
+    return apiErrors.internal("Failed to delete schedule");
   }
 }

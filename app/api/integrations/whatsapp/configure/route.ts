@@ -1,13 +1,11 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,30 +19,29 @@ export async function POST(req: NextRequest) {
     const { accountSid, authToken, phoneNumber } = body;
 
     if (!accountSid || !authToken || !phoneNumber) {
-      return apiErrors.badRequest('All fields are required');
+      return apiErrors.badRequest("All fields are required");
     }
 
     // Save WhatsApp configuration
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: session.user.id },
       data: {
         whatsappConfig: JSON.stringify({
           accountSid,
           authToken,
-          phoneNumber
+          phoneNumber,
         }),
-        whatsappConfigured: true
-      }
+        whatsappConfigured: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'WhatsApp configured successfully'
+      message: "WhatsApp configured successfully",
     });
-
   } catch (error) {
-    console.error('WhatsApp configuration error:', error);
-    return apiErrors.internal('Failed to configure WhatsApp');
+    console.error("WhatsApp configuration error:", error);
+    return apiErrors.internal("Failed to configure WhatsApp");
   }
 }
 
@@ -56,17 +53,16 @@ export async function GET(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
-      select: { whatsappConfigured: true }
+      select: { whatsappConfigured: true },
     });
 
     return NextResponse.json({
-      configured: user?.whatsappConfigured || false
+      configured: user?.whatsappConfigured || false,
     });
-
   } catch (error) {
-    console.error('Get WhatsApp status error:', error);
-    return apiErrors.internal('Failed to get configuration status');
+    console.error("Get WhatsApp status error:", error);
+    return apiErrors.internal("Failed to get configuration status");
   }
 }

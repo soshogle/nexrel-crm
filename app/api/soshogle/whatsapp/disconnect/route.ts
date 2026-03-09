@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Disconnect WhatsApp Business account
@@ -17,22 +18,29 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     // Delete all WhatsApp connections for this user
-    await prisma.channelConnection.deleteMany({
+    await getCrmDb(ctx).channelConnection.deleteMany({
       where: {
         userId: session.user.id,
-        channelType: 'WHATSAPP',
+        channelType: "WHATSAPP",
       },
     });
 
-    console.log(`🗑️ WhatsApp Business disconnected for user ${session.user.id}`);
+    console.log(
+      `🗑️ WhatsApp Business disconnected for user ${session.user.id}`,
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'WhatsApp Business account disconnected successfully',
+      message: "WhatsApp Business account disconnected successfully",
     });
   } catch (error: any) {
-    console.error('WhatsApp disconnect error:', error);
-    return apiErrors.internal(error.message || 'Failed to disconnect WhatsApp Business');
+    console.error("WhatsApp disconnect error:", error);
+    return apiErrors.internal(
+      error.message || "Failed to disconnect WhatsApp Business",
+    );
   }
 }

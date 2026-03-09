@@ -1,29 +1,33 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import bcrypt from "bcryptjs";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET STAFF BY ID
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
-    const staff = await prisma.staff.findFirst({
+    const staff = await getCrmDb(ctx).staff.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -46,15 +50,15 @@ export async function GET(
     });
 
     if (!staff) {
-      return apiErrors.notFound('Staff not found');
+      return apiErrors.notFound("Staff not found");
     }
 
     const { pin, ...sanitizedStaff } = staff;
 
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
-    console.error('❌ Staff fetch error:', error);
-    return apiErrors.internal('Failed to fetch staff');
+    console.error("❌ Staff fetch error:", error);
+    return apiErrors.internal("Failed to fetch staff");
   }
 }
 
@@ -63,11 +67,15 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -82,7 +90,7 @@ export async function PATCH(
     } = body;
 
     // Verify staff exists and belongs to user
-    const existingStaff = await prisma.staff.findFirst({
+    const existingStaff = await getCrmDb(ctx).staff.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -90,7 +98,7 @@ export async function PATCH(
     });
 
     if (!existingStaff) {
-      return apiErrors.notFound('Staff not found');
+      return apiErrors.notFound("Staff not found");
     }
 
     // Build update data
@@ -98,18 +106,20 @@ export async function PATCH(
     if (role) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (canVoidOrders !== undefined) updateData.canVoidOrders = canVoidOrders;
-    if (canGiveDiscounts !== undefined) updateData.canGiveDiscounts = canGiveDiscounts;
-    if (canAccessReports !== undefined) updateData.canAccessReports = canAccessReports;
+    if (canGiveDiscounts !== undefined)
+      updateData.canGiveDiscounts = canGiveDiscounts;
+    if (canAccessReports !== undefined)
+      updateData.canAccessReports = canAccessReports;
 
     // Update PIN if provided
     if (pin) {
       if (!/^\d{4}$/.test(pin)) {
-        return apiErrors.badRequest('PIN must be 4 digits');
+        return apiErrors.badRequest("PIN must be 4 digits");
       }
       updateData.pin = await bcrypt.hash(pin, 10);
     }
 
-    const updatedStaff = await prisma.staff.update({
+    const updatedStaff = await getCrmDb(ctx).staff.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -128,8 +138,8 @@ export async function PATCH(
 
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
-    console.error('❌ Staff update error:', error);
-    return apiErrors.internal('Failed to update staff');
+    console.error("❌ Staff update error:", error);
+    return apiErrors.internal("Failed to update staff");
   }
 }
 
@@ -138,16 +148,20 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Verify staff exists and belongs to user
-    const staff = await prisma.staff.findFirst({
+    const staff = await getCrmDb(ctx).staff.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -155,11 +169,11 @@ export async function DELETE(
     });
 
     if (!staff) {
-      return apiErrors.notFound('Staff not found');
+      return apiErrors.notFound("Staff not found");
     }
 
     // Mark as inactive instead of deleting
-    await prisma.staff.update({
+    await getCrmDb(ctx).staff.update({
       where: { id: params.id },
       data: {
         isActive: false,
@@ -171,7 +185,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Staff delete error:', error);
-    return apiErrors.internal('Failed to deactivate staff');
+    console.error("❌ Staff delete error:", error);
+    return apiErrors.internal("Failed to deactivate staff");
   }
 }

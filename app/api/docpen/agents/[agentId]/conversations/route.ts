@@ -1,21 +1,22 @@
 /**
  * Docpen Agent Conversations API
- * 
+ *
  * GET - List conversations for an agent
  * POST - Sync conversations from ElevenLabs
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsKeyManager } from "@/lib/elevenlabs-key-manager";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 interface ElevenLabsConversation {
   conversation_id: string;
@@ -38,18 +39,21 @@ interface ElevenLabsConversation {
 // GET - List conversations for an agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: { agentId: string } }
+  { params }: { params: { agentId: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { agentId } = params;
 
     // Verify ownership
-    const agent = await prisma.docpenVoiceAgent.findFirst({
+    const agent = await db.docpenVoiceAgent.findFirst({
       where: {
         id: agentId,
         userId: session.user.id,
@@ -57,16 +61,16 @@ export async function GET(
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     // Get conversations from local database
-    const conversations = await prisma.docpenConversation.findMany({
+    const conversations = await db.docpenConversation.findMany({
       where: {
         agentId: agentId,
       },
       orderBy: {
-        startedAt: 'desc',
+        startedAt: "desc",
       },
       take: 100, // Limit to recent 100
     });
@@ -76,26 +80,29 @@ export async function GET(
       conversations,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Conversations] Error fetching:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch conversations');
+    console.error("❌ [Docpen Conversations] Error fetching:", error);
+    return apiErrors.internal(error.message || "Failed to fetch conversations");
   }
 }
 
 // POST - Sync conversations from ElevenLabs
 export async function POST(
   request: NextRequest,
-  { params }: { params: { agentId: string } }
+  { params }: { params: { agentId: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { agentId } = params;
 
     // Verify ownership
-    const agent = await prisma.docpenVoiceAgent.findFirst({
+    const agent = await db.docpenVoiceAgent.findFirst({
       where: {
         id: agentId,
         userId: session.user.id,
@@ -103,37 +110,42 @@ export async function POST(
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return apiErrors.badRequest('Soshogle Voice AI API key not configured');
+      return apiErrors.badRequest("Soshogle Voice AI API key not configured");
     }
 
-    console.log(`📥 [Docpen] Syncing conversations for agent: ${agent.elevenLabsAgentId}`);
+    console.log(
+      `📥 [Docpen] Syncing conversations for agent: ${agent.elevenLabsAgentId}`,
+    );
 
     // Fetch conversations from ElevenLabs
     const response = await fetch(
       `${ELEVENLABS_BASE_URL}/convai/conversations?agent_id=${agent.elevenLabsAgentId}`,
       {
-        headers: { 'xi-api-key': apiKey },
-      }
+        headers: { "xi-api-key": apiKey },
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs API error:', errorText);
+      console.error("ElevenLabs API error:", errorText);
       return NextResponse.json(
-        { error: 'Failed to fetch from Soshogle Voice AI', details: errorText },
-        { status: response.status }
+        { error: "Failed to fetch from Soshogle Voice AI", details: errorText },
+        { status: response.status },
       );
     }
 
     const data = await response.json();
-    const elevenLabsConversations: ElevenLabsConversation[] = data.conversations || [];
+    const elevenLabsConversations: ElevenLabsConversation[] =
+      data.conversations || [];
 
-    console.log(`📋 Found ${elevenLabsConversations.length} conversations from ElevenLabs`);
+    console.log(
+      `📋 Found ${elevenLabsConversations.length} conversations from ElevenLabs`,
+    );
 
     let synced = 0;
     let totalDuration = 0;
@@ -142,16 +154,17 @@ export async function POST(
     for (const conv of elevenLabsConversations) {
       try {
         // Check if already exists
-        const existing = await prisma.docpenConversation.findUnique({
+        const existing = await db.docpenConversation.findUnique({
           where: { elevenLabsConvId: conv.conversation_id },
         });
 
         if (existing) continue; // Skip if already synced
 
         // Calculate duration
-        const durationSec = conv.end_time_unix_secs && conv.start_time_unix_secs
-          ? conv.end_time_unix_secs - conv.start_time_unix_secs
-          : conv.analysis?.call_duration || 0;
+        const durationSec =
+          conv.end_time_unix_secs && conv.start_time_unix_secs
+            ? conv.end_time_unix_secs - conv.start_time_unix_secs
+            : conv.analysis?.call_duration || 0;
 
         totalDuration += durationSec;
 
@@ -161,7 +174,7 @@ export async function POST(
           : null;
 
         // Create conversation record
-        await prisma.docpenConversation.create({
+        await db.docpenConversation.create({
           data: {
             agentId: agentId,
             elevenLabsConvId: conv.conversation_id,
@@ -181,13 +194,16 @@ export async function POST(
 
         synced++;
       } catch (convError: any) {
-        console.error(`⚠️ Error syncing conversation ${conv.conversation_id}:`, convError);
+        console.error(
+          `⚠️ Error syncing conversation ${conv.conversation_id}:`,
+          convError,
+        );
       }
     }
 
     // Update agent stats
     if (synced > 0) {
-      await prisma.docpenVoiceAgent.update({
+      await db.docpenVoiceAgent.update({
         where: { id: agentId },
         data: {
           conversationCount: { increment: synced },
@@ -199,9 +215,9 @@ export async function POST(
     console.log(`✅ Synced ${synced} new conversations`);
 
     // Fetch updated list
-    const conversations = await prisma.docpenConversation.findMany({
+    const conversations = await db.docpenConversation.findMany({
       where: { agentId },
-      orderBy: { startedAt: 'desc' },
+      orderBy: { startedAt: "desc" },
       take: 100,
     });
 
@@ -212,7 +228,7 @@ export async function POST(
       conversations,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Conversations] Error syncing:', error);
-    return apiErrors.internal(error.message || 'Failed to sync conversations');
+    console.error("❌ [Docpen Conversations] Error syncing:", error);
+    return apiErrors.internal(error.message || "Failed to sync conversations");
   }
 }

@@ -16,12 +16,13 @@
  * features, coordinates, gallery images, etc.).
  */
 
-import { prisma } from '@/lib/db';
-import { scrapeCentrisDetail } from './centris-detail';
-import { scrapeRemaxDetail } from './remax-detail';
-import { enrichViaGoogleSearch } from './google-search';
-import { syncListingToWebsite } from '@/lib/website-builder/listings-service';
-import type { EnrichedData } from './types';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { scrapeCentrisDetail } from "./centris-detail";
+import { scrapeRemaxDetail } from "./remax-detail";
+import { enrichViaGoogleSearch } from "./google-search";
+import { syncListingToWebsite } from "@/lib/website-builder/listings-service";
+import type { EnrichedData } from "./types";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -32,9 +33,11 @@ function mergeEnriched(a: EnrichedData, b: EnrichedData): EnrichedData {
   for (const [key, value] of Object.entries(b)) {
     if (value == null) continue;
     const existing = (merged as any)[key];
-    if (existing == null ||
-      (typeof existing === 'string' && existing.length < 10) ||
-      (Array.isArray(existing) && existing.length === 0)) {
+    if (
+      existing == null ||
+      (typeof existing === "string" && existing.length < 10) ||
+      (Array.isArray(existing) && existing.length === 0)
+    ) {
       (merged as any)[key] = value;
     }
   }
@@ -56,18 +59,20 @@ interface EnrichResult {
  */
 export async function enrichCrmListings(
   userId: string,
-  opts: { limit?: number; delayMs?: number; verbose?: boolean } = {}
+  opts: { limit?: number; delayMs?: number; verbose?: boolean } = {},
 ): Promise<{ results: EnrichResult[]; enriched: number; failed: number }> {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const { limit = 30, delayMs = 2000, verbose = false } = opts;
 
-  const properties = await prisma.rEProperty.findMany({
+  const properties = await db.rEProperty.findMany({
     where: {
       userId,
-      listingStatus: 'ACTIVE',
+      listingStatus: "ACTIVE",
       mlsNumber: { not: null },
       OR: [
         { description: null },
-        { description: '' },
+        { description: "" },
         { yearBuilt: null },
         { sqft: null },
         { photos: { equals: null as any } },
@@ -76,11 +81,14 @@ export async function enrichCrmListings(
         { listPrice: 0 },
       ],
     },
-    orderBy: { updatedAt: 'asc' },
+    orderBy: { updatedAt: "asc" },
     take: limit,
   });
 
-  if (verbose) console.log(`[enrichCRM] Found ${properties.length} listings to enrich for user ${userId}`);
+  if (verbose)
+    console.log(
+      `[enrichCRM] Found ${properties.length} listings to enrich for user ${userId}`,
+    );
 
   const results: EnrichResult[] = [];
   let enriched = 0;
@@ -90,10 +98,13 @@ export async function enrichCrmListings(
     const prop = properties[i];
     if (!prop.mlsNumber) continue;
 
-    if (verbose) console.log(`[enrichCRM] [${i + 1}/${properties.length}] ${prop.mlsNumber}: ${prop.address}`);
+    if (verbose)
+      console.log(
+        `[enrichCRM] [${i + 1}/${properties.length}] ${prop.mlsNumber}: ${prop.address}`,
+      );
 
     let data: EnrichedData | null = null;
-    let source = 'none';
+    let source = "none";
 
     // Tier 1a: Centris direct scrape
     const centrisUrl = `https://www.centris.ca/en/properties~for-sale~${slugify(prop.city)}/${prop.mlsNumber}`;
@@ -101,7 +112,7 @@ export async function enrichCrmListings(
       const centrisData = await scrapeCentrisDetail(centrisUrl);
       if (centrisData) {
         data = centrisData;
-        source = 'centris';
+        source = "centris";
         if (verbose) console.log(`  [centris] Got data`);
       }
     } catch (e: any) {
@@ -116,7 +127,7 @@ export async function enrichCrmListings(
           const remaxData = await scrapeRemaxDetail(remaxUrl);
           if (remaxData) {
             data = data ? mergeEnriched(data, remaxData) : remaxData;
-            source = data === remaxData ? 'remax' : `${source}+remax`;
+            source = data === remaxData ? "remax" : `${source}+remax`;
             if (verbose) console.log(`  [remax] Got data`);
           }
         } catch (e: any) {
@@ -128,10 +139,14 @@ export async function enrichCrmListings(
     // Tier 2: Google search fallback
     if (!data?.description) {
       try {
-        const gResult = await enrichViaGoogleSearch(prop.mlsNumber, prop.city, prop.address);
+        const gResult = await enrichViaGoogleSearch(
+          prop.mlsNumber,
+          prop.city,
+          prop.address,
+        );
         if (gResult.data) {
           data = data ? mergeEnriched(data, gResult.data) : gResult.data;
-          source = source === 'none' ? 'google' : `${source}+google`;
+          source = source === "none" ? "google" : `${source}+google`;
           if (verbose) console.log(`  [google] Got data`);
         }
       } catch (e: any) {
@@ -144,10 +159,10 @@ export async function enrichCrmListings(
       results.push({
         mlsNumber: prop.mlsNumber,
         address: prop.address,
-        source: 'none',
+        source: "none",
         fieldsUpdated: [],
         syncedToWebsite: false,
-        error: 'No enrichment data found',
+        error: "No enrichment data found",
       });
       if (i < properties.length - 1) await sleep(delayMs);
       continue;
@@ -157,48 +172,57 @@ export async function enrichCrmListings(
     const fieldsUpdated: string[] = [];
     const updateData: Record<string, any> = {};
 
-    if (data.description && (!prop.description || prop.description.length < 30)) {
+    if (
+      data.description &&
+      (!prop.description || prop.description.length < 30)
+    ) {
       updateData.description = data.description;
-      fieldsUpdated.push('description');
+      fieldsUpdated.push("description");
     }
     if (data.yearBuilt && !prop.yearBuilt) {
       updateData.yearBuilt = data.yearBuilt;
-      fieldsUpdated.push('yearBuilt');
+      fieldsUpdated.push("yearBuilt");
     }
     if (data.area && !prop.sqft) {
-      const sqft = parseInt(String(data.area).replace(/[^0-9]/g, ''), 10);
+      const sqft = parseInt(String(data.area).replace(/[^0-9]/g, ""), 10);
       if (sqft > 0) {
         updateData.sqft = sqft;
-        fieldsUpdated.push('sqft');
+        fieldsUpdated.push("sqft");
       }
     }
     if (data.lotArea && !prop.lotSize) {
-      const lotSize = parseInt(String(data.lotArea).replace(/[^0-9]/g, ''), 10);
+      const lotSize = parseInt(String(data.lotArea).replace(/[^0-9]/g, ""), 10);
       if (lotSize > 0) {
         updateData.lotSize = lotSize;
-        fieldsUpdated.push('lotSize');
+        fieldsUpdated.push("lotSize");
       }
     }
     if (data.bedrooms && !prop.beds) {
       updateData.beds = data.bedrooms;
-      fieldsUpdated.push('beds');
+      fieldsUpdated.push("beds");
     }
     if (data.bathrooms && !prop.baths) {
       updateData.baths = data.bathrooms;
-      fieldsUpdated.push('baths');
+      fieldsUpdated.push("baths");
     }
-    if (data.listPrice && data.listPrice > 0 && (!prop.listPrice || prop.listPrice === 0)) {
+    if (
+      data.listPrice &&
+      data.listPrice > 0 &&
+      (!prop.listPrice || prop.listPrice === 0)
+    ) {
       updateData.listPrice = data.listPrice;
-      fieldsUpdated.push('listPrice');
+      fieldsUpdated.push("listPrice");
     }
-    if (data.galleryImages?.length &&
-      (!Array.isArray(prop.photos) || prop.photos.length === 0)) {
+    if (
+      data.galleryImages?.length &&
+      (!Array.isArray(prop.photos) || prop.photos.length === 0)
+    ) {
       updateData.photos = data.galleryImages;
-      fieldsUpdated.push('photos');
+      fieldsUpdated.push("photos");
     }
     if (data.virtualTourUrl && !prop.virtualTourUrl) {
       updateData.virtualTourUrl = data.virtualTourUrl;
-      fieldsUpdated.push('virtualTourUrl');
+      fieldsUpdated.push("virtualTourUrl");
     }
 
     const enrichedFeatures = [
@@ -206,22 +230,29 @@ export async function enrichCrmListings(
       ...(data.features?.proximity || []),
       ...(data.parking ? [`Parking: ${data.parking}`] : []),
     ];
-    if (enrichedFeatures.length > 0 && (!prop.features || prop.features.length === 0)) {
+    if (
+      enrichedFeatures.length > 0 &&
+      (!prop.features || prop.features.length === 0)
+    ) {
       updateData.features = enrichedFeatures;
-      fieldsUpdated.push('features');
+      fieldsUpdated.push("features");
     }
 
     // Days on market (for Market Insights stats)
-    if (data.daysOnMarket != null && data.daysOnMarket > 0 && (!prop.daysOnMarket || prop.daysOnMarket === 0)) {
+    if (
+      data.daysOnMarket != null &&
+      data.daysOnMarket > 0 &&
+      (!prop.daysOnMarket || prop.daysOnMarket === 0)
+    ) {
       updateData.daysOnMarket = data.daysOnMarket;
-      fieldsUpdated.push('daysOnMarket');
+      fieldsUpdated.push("daysOnMarket");
     }
     // Listing date (for DOM computation when daysOnMarket missing)
     if (data.listingDate && !prop.listingDate) {
       const parsed = new Date(data.listingDate);
       if (!isNaN(parsed.getTime())) {
         updateData.listingDate = parsed;
-        fieldsUpdated.push('listingDate');
+        fieldsUpdated.push("listingDate");
       }
     }
 
@@ -230,19 +261,19 @@ export async function enrichCrmListings(
       const lat = parseFloat(data.latitude);
       if (Number.isFinite(lat)) {
         updateData.latitude = lat;
-        fieldsUpdated.push('latitude');
+        fieldsUpdated.push("latitude");
       }
     }
     if (data.longitude && !prop.longitude) {
       const lng = parseFloat(data.longitude);
       if (Number.isFinite(lng)) {
         updateData.longitude = lng;
-        fieldsUpdated.push('longitude');
+        fieldsUpdated.push("longitude");
       }
     }
 
     if (fieldsUpdated.length > 0) {
-      await prisma.rEProperty.update({
+      await db.rEProperty.update({
         where: { id: prop.id },
         data: updateData,
       });
@@ -251,8 +282,10 @@ export async function enrichCrmListings(
     // Sync enriched listing to owner's website
     let syncedToWebsite = false;
     try {
-      const photos = Array.isArray(updateData.photos) ? updateData.photos as string[]
-        : Array.isArray(prop.photos) ? prop.photos as string[]
+      const photos = Array.isArray(updateData.photos)
+        ? (updateData.photos as string[])
+        : Array.isArray(prop.photos)
+          ? (prop.photos as string[])
           : data.galleryImages || [];
 
       const syncResult = await syncListingToWebsite(userId, {
@@ -262,12 +295,16 @@ export async function enrichCrmListings(
         zip: prop.zip,
         country: prop.country,
         beds: updateData.beds || prop.beds,
-        baths: updateData.baths ? Math.round(updateData.baths) : prop.baths ? Math.round(prop.baths) : null,
+        baths: updateData.baths
+          ? Math.round(updateData.baths)
+          : prop.baths
+            ? Math.round(prop.baths)
+            : null,
         sqft: updateData.sqft || prop.sqft,
         propertyType: prop.propertyType,
         listingStatus: prop.listingStatus,
         listPrice: updateData.listPrice || prop.listPrice,
-        listingType: 'sale',
+        listingType: "sale",
         mlsNumber: prop.mlsNumber,
         photos,
         description: updateData.description || prop.description,
@@ -276,9 +313,12 @@ export async function enrichCrmListings(
         lng: data.longitude ? parseFloat(data.longitude) : null,
         virtualTourUrl: updateData.virtualTourUrl || prop.virtualTourUrl,
         yearBuilt: updateData.yearBuilt || prop.yearBuilt,
-        lotSize: (updateData.lotSize || prop.lotSize) ? String(updateData.lotSize || prop.lotSize) : null,
+        lotSize:
+          updateData.lotSize || prop.lotSize
+            ? String(updateData.lotSize || prop.lotSize)
+            : null,
         rooms: data.rooms || null,
-        areaUnit: data.areaUnit || 'ft²',
+        areaUnit: data.areaUnit || "ft²",
         addendum: data.addendum || null,
         featuresJson: data.features || null,
         roomDetails: data.roomDetails || null,
@@ -299,7 +339,10 @@ export async function enrichCrmListings(
       syncedToWebsite,
     });
 
-    if (verbose) console.log(`  ✅ ${source} | Updated: ${fieldsUpdated.join(', ') || 'none'} | Website: ${syncedToWebsite}`);
+    if (verbose)
+      console.log(
+        `  ✅ ${source} | Updated: ${fieldsUpdated.join(", ") || "none"} | Website: ${syncedToWebsite}`,
+      );
     if (i < properties.length - 1) await sleep(delayMs);
   }
 
@@ -307,13 +350,19 @@ export async function enrichCrmListings(
 }
 
 function slugify(s: string): string {
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-function buildRemaxUrl(prop: { address: string; city: string; mlsNumber?: string | null }): string | null {
+function buildRemaxUrl(prop: {
+  address: string;
+  city: string;
+  mlsNumber?: string | null;
+}): string | null {
   if (!prop.mlsNumber) return null;
   const slug = slugify(`${prop.address}-${prop.city}-${prop.mlsNumber}`);
   return `https://www.remax-quebec.com/en/properties/house-for-sale/${slug}`;
@@ -325,25 +374,30 @@ function buildRemaxUrl(prop: { address: string; city: string; mlsNumber?: string
  */
 export async function resyncEnrichedToWebsite(
   userId: string,
-  opts: { limit?: number; verbose?: boolean } = {}
+  opts: { limit?: number; verbose?: boolean } = {},
 ): Promise<{ synced: number; failed: number }> {
+  const ctx = await resolveDalContext(userId);
+  const db = getCrmDb(ctx);
   const { limit = 200, verbose = false } = opts;
 
-  const properties = await prisma.rEProperty.findMany({
+  const properties = await db.rEProperty.findMany({
     where: {
       userId,
-      listingStatus: 'ACTIVE',
+      listingStatus: "ACTIVE",
       mlsNumber: { not: null },
       OR: [
         { photos: { not: { equals: null } } },
         { description: { not: null } },
       ],
     },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { updatedAt: "desc" },
     take: limit,
   });
 
-  if (verbose) console.log(`[resync] Found ${properties.length} enriched listings to re-sync`);
+  if (verbose)
+    console.log(
+      `[resync] Found ${properties.length} enriched listings to re-sync`,
+    );
 
   let synced = 0;
   let failed = 0;
@@ -351,7 +405,7 @@ export async function resyncEnrichedToWebsite(
   for (const prop of properties) {
     if (!prop.mlsNumber) continue;
 
-    const photos = Array.isArray(prop.photos) ? prop.photos as string[] : [];
+    const photos = Array.isArray(prop.photos) ? (prop.photos as string[]) : [];
     try {
       const result = await syncListingToWebsite(userId, {
         address: prop.address,
@@ -365,18 +419,18 @@ export async function resyncEnrichedToWebsite(
         propertyType: prop.propertyType,
         listingStatus: prop.listingStatus,
         listPrice: prop.listPrice,
-        listingType: 'sale',
+        listingType: "sale",
         mlsNumber: prop.mlsNumber,
         photos,
         description: prop.description,
-        features: prop.features as string[] | null ?? undefined,
+        features: (prop.features as string[] | null) ?? undefined,
         lat: prop.latitude,
         lng: prop.longitude,
         virtualTourUrl: prop.virtualTourUrl,
         yearBuilt: prop.yearBuilt,
         lotSize: prop.lotSize ? String(prop.lotSize) : null,
         rooms: null,
-        areaUnit: 'ft²',
+        areaUnit: "ft²",
         addendum: null,
         featuresJson: null,
         roomDetails: null,
@@ -388,7 +442,8 @@ export async function resyncEnrichedToWebsite(
         if (verbose) console.log(`  [resync] ✅ ${prop.mlsNumber}`);
       } else {
         failed++;
-        if (verbose) console.log(`  [resync] ❌ ${prop.mlsNumber}: ${result.error}`);
+        if (verbose)
+          console.log(`  [resync] ❌ ${prop.mlsNumber}: ${result.error}`);
       }
     } catch (e: any) {
       failed++;

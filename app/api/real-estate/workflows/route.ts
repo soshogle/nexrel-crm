@@ -3,15 +3,16 @@
  * List and create RE workflow templates
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { DEFAULT_WORKFLOW_TEMPLATES } from '@/lib/real-estate/workflow-templates';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { DEFAULT_WORKFLOW_TEMPLATES } from "@/lib/real-estate/workflow-templates";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - List all workflow templates for the user
 export async function GET(request: NextRequest) {
@@ -21,43 +22,43 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Check if user is in real estate industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true }
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    if (user?.industry !== 'REAL_ESTATE') {
-      return apiErrors.forbidden('This feature is only available for real estate agencies');
+    // Check if user is in real estate industry
+    if (ctx.industry !== "REAL_ESTATE") {
+      return apiErrors.forbidden(
+        "This feature is only available for real estate agencies",
+      );
     }
 
     // Get user's workflow templates
-    const templates = await prisma.rEWorkflowTemplate.findMany({
+    const templates = await getCrmDb(ctx).rEWorkflowTemplate.findMany({
       where: { userId: session.user.id },
       include: {
         tasks: {
-          orderBy: { displayOrder: 'asc' }
+          orderBy: { displayOrder: "asc" },
         },
         _count: {
-          select: { instances: true }
-        }
+          select: { instances: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({
       success: true,
       templates,
-      defaultTemplatesAvailable: DEFAULT_WORKFLOW_TEMPLATES.map(t => ({
+      defaultTemplatesAvailable: DEFAULT_WORKFLOW_TEMPLATES.map((t) => ({
         name: t.name,
         type: t.type,
         description: t.description,
-        taskCount: t.tasks.length
-      }))
+        taskCount: t.tasks.length,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching RE workflows:', error);
-    return apiErrors.internal('Failed to fetch workflows');
+    console.error("Error fetching RE workflows:", error);
+    return apiErrors.internal("Failed to fetch workflows");
   }
 }
 
@@ -69,14 +70,14 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    // Check if user is in real estate industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true }
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
 
-    if (user?.industry !== 'REAL_ESTATE') {
-      return apiErrors.forbidden('This feature is only available for real estate agencies');
+    // Check if user is in real estate industry
+    if (ctx.industry !== "REAL_ESTATE") {
+      return apiErrors.forbidden(
+        "This feature is only available for real estate agencies",
+      );
     }
 
     const body = await request.json();
@@ -84,13 +85,15 @@ export async function POST(request: NextRequest) {
 
     // If creating from a default template
     if (fromTemplate) {
-      const defaultTemplate = DEFAULT_WORKFLOW_TEMPLATES.find(t => t.type === fromTemplate);
+      const defaultTemplate = DEFAULT_WORKFLOW_TEMPLATES.find(
+        (t) => t.type === fromTemplate,
+      );
       if (!defaultTemplate) {
-        return apiErrors.badRequest('Invalid template type');
+        return apiErrors.badRequest("Invalid template type");
       }
 
       // Create workflow from default template
-      const workflow = await prisma.rEWorkflowTemplate.create({
+      const workflow = await getCrmDb(ctx).rEWorkflowTemplate.create({
         data: {
           userId: session.user.id,
           name: name || defaultTemplate.name,
@@ -111,76 +114,87 @@ export async function POST(request: NextRequest) {
               position: task.position as object,
               displayOrder: task.displayOrder,
               branchCondition: (task.branchCondition || undefined) as any,
-              actionConfig: task.actionConfig as object
-            }))
-          }
+              actionConfig: task.actionConfig as object,
+            })),
+          },
         },
         include: {
           tasks: {
-            orderBy: { displayOrder: 'asc' }
-          }
-        }
+            orderBy: { displayOrder: "asc" },
+          },
+        },
       });
 
       return NextResponse.json({
         success: true,
-        workflow
+        workflow,
       });
     }
 
     // Create custom workflow
     if (!name || !type) {
-      return apiErrors.badRequest('Name and type are required');
+      return apiErrors.badRequest("Name and type are required");
     }
 
-    const workflow = await prisma.rEWorkflowTemplate.create({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.create({
       data: {
         userId: session.user.id,
         name,
         type,
-        description: description || '',
+        description: description || "",
         isDefault: false,
         isActive: true,
-        tasks: tasks ? {
-          create: tasks.map((task: Record<string, unknown>, index: number) => {
-            const baseConfig = (task.actionConfig as object) || { actions: [] } as Record<string, unknown>;
-            const actionConfig = {
-              ...baseConfig,
-              assignedAgentId: task.assignedAgentId || null,
-              assignedAgentName: task.assignedAgentName || null,
-              agentColor: task.agentColor || '#6B7280',
-              assignedAIEmployeeId: task.assignedAIEmployeeId || null,
-            };
-            return {
-              name: task.name as string,
-              description: task.description as string || '',
-              taskType: task.taskType as string,
-              assignedAgentType: task.assignedAgentType as string || null,
-              delayValue: task.delayValue as number || 0,
-              delayUnit: task.delayUnit as string || 'MINUTES',
-              isHITL: task.isHITL as boolean || false,
-              isOptional: task.isOptional as boolean || false,
-              position: task.position as object || { angle: (index * 36) - 90, radius: 1 },
-              displayOrder: task.displayOrder as number || index + 1,
-              branchCondition: (task.branchCondition as object | undefined) ?? undefined,
-              actionConfig,
-            };
-          })
-        } : undefined
+        tasks: tasks
+          ? {
+              create: tasks.map(
+                (task: Record<string, unknown>, index: number) => {
+                  const baseConfig =
+                    (task.actionConfig as object) ||
+                    ({ actions: [] } as Record<string, unknown>);
+                  const actionConfig = {
+                    ...baseConfig,
+                    assignedAgentId: task.assignedAgentId || null,
+                    assignedAgentName: task.assignedAgentName || null,
+                    agentColor: task.agentColor || "#6B7280",
+                    assignedAIEmployeeId: task.assignedAIEmployeeId || null,
+                  };
+                  return {
+                    name: task.name as string,
+                    description: (task.description as string) || "",
+                    taskType: task.taskType as string,
+                    assignedAgentType:
+                      (task.assignedAgentType as string) || null,
+                    delayValue: (task.delayValue as number) || 0,
+                    delayUnit: (task.delayUnit as string) || "MINUTES",
+                    isHITL: (task.isHITL as boolean) || false,
+                    isOptional: (task.isOptional as boolean) || false,
+                    position: (task.position as object) || {
+                      angle: index * 36 - 90,
+                      radius: 1,
+                    },
+                    displayOrder: (task.displayOrder as number) || index + 1,
+                    branchCondition:
+                      (task.branchCondition as object | undefined) ?? undefined,
+                    actionConfig,
+                  };
+                },
+              ),
+            }
+          : undefined,
       },
       include: {
         tasks: {
-          orderBy: { displayOrder: 'asc' }
-        }
-      }
+          orderBy: { displayOrder: "asc" },
+        },
+      },
     });
 
     return NextResponse.json({
       success: true,
-      workflow
+      workflow,
     });
   } catch (error) {
-    console.error('Error creating RE workflow:', error);
-    return apiErrors.internal('Failed to create workflow');
+    console.error("Error creating RE workflow:", error);
+    return apiErrors.internal("Failed to create workflow");
   }
 }

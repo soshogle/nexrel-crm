@@ -4,13 +4,18 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -38,7 +43,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch shared Quebec stats (Centris PDFs) — global market data
-    const sharedStats = await prisma.rEMarketStats.findMany({
+    const sharedStats = await getCrmDb(ctx).rEMarketStats.findMany({
       where: {
         isShared: true,
         priceRange: null,
@@ -53,7 +58,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch user's own stored stats (compute_live, seed_sample, manual)
-    const userStoredStats = await prisma.rEMarketStats.findMany({
+    const userStoredStats = await getCrmDb(ctx).rEMarketStats.findMany({
       where: {
         userId: session.user.id,
         priceRange: null,
@@ -69,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate LIVE stats from actual REProperty + REFSBOListing + RERentalListing data
     const [properties, fsboListings, rentalListings, allProperties] = await Promise.all([
-      prisma.rEProperty.findMany({
+      getCrmDb(ctx).rEProperty.findMany({
         where: { userId: session.user.id, ...locationFilter },
         select: {
           listPrice: true, soldPrice: true, listingStatus: true,
@@ -79,7 +84,7 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.rEFSBOListing.findMany({
+      getCrmDb(ctx).rEFSBOListing.findMany({
         where: {
           assignedUserId: session.user.id,
           ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
@@ -93,7 +98,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
-      prisma.rERentalListing.findMany({
+      getCrmDb(ctx).rERentalListing.findMany({
         where: {
           userId: session.user.id,
           ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
@@ -107,7 +112,7 @@ export async function GET(request: NextRequest) {
         take: 500,
       }),
       // All user properties (for available locations)
-      prisma.rEProperty.findMany({
+      getCrmDb(ctx).rEProperty.findMany({
         where: { userId: session.user.id },
         select: { city: true, state: true },
         distinct: ['city', 'state'],
@@ -281,6 +286,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
 
@@ -294,7 +303,7 @@ export async function POST(request: NextRequest) {
       if (city) locationFilter.city = { contains: city, mode: 'insensitive' };
       if (state) locationFilter.state = { contains: state, mode: 'insensitive' };
 
-      const properties = await prisma.rEProperty.findMany({
+      const properties = await getCrmDb(ctx).rEProperty.findMany({
         where: { userId: session.user.id, ...locationFilter },
         select: { listPrice: true, soldPrice: true, listingStatus: true, daysOnMarket: true, sqft: true, createdAt: true, soldDate: true },
       });
@@ -309,7 +318,7 @@ export async function POST(request: NextRequest) {
       const soldPrices = sold.map((p) => p.soldPrice || p.listPrice).filter(Boolean) as number[];
       const allPrices = [...activePrices, ...soldPrices];
 
-      const stat = await prisma.rEMarketStats.create({
+      const stat = await getCrmDb(ctx).rEMarketStats.create({
         data: {
           userId: session.user.id,
           periodStart,
@@ -338,7 +347,7 @@ export async function POST(request: NextRequest) {
     // Bulk seed: generate sample market data (kept for backwards compatibility)
     if (body.action === 'seed_sample') {
       // Never allow mock market stats for real estate agents
-      const user = await prisma.user.findUnique({
+      const user = await getCrmDb(ctx).user.findUnique({
         where: { id: session.user.id },
         select: { industry: true },
       });
@@ -397,7 +406,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const created = await prisma.rEMarketStats.createMany({ data: records });
+      const created = await getCrmDb(ctx).rEMarketStats.createMany({ data: records });
       return NextResponse.json({ success: true, created: created.count, message: `Generated ${created.count} months of sample market data for ${region}` });
     }
 
@@ -414,7 +423,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('region, periodStart, periodEnd required');
     }
 
-    const stat = await prisma.rEMarketStats.create({
+    const stat = await getCrmDb(ctx).rEMarketStats.create({
       data: {
         userId: session.user.id,
         region: bodyRegion,

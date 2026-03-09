@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Disconnect Facebook Messenger account
@@ -17,22 +18,29 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+
     // Delete all Facebook connections for this user
-    await prisma.channelConnection.deleteMany({
+    await getCrmDb(ctx).channelConnection.deleteMany({
       where: {
         userId: session.user.id,
-        channelType: 'FACEBOOK_MESSENGER',
+        channelType: "FACEBOOK_MESSENGER",
       },
     });
 
-    console.log(`🗑️ Facebook Messenger disconnected for user ${session.user.id}`);
+    console.log(
+      `🗑️ Facebook Messenger disconnected for user ${session.user.id}`,
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'Facebook Messenger account disconnected successfully',
+      message: "Facebook Messenger account disconnected successfully",
     });
   } catch (error: any) {
-    console.error('Facebook disconnect error:', error);
-    return apiErrors.internal(error.message || 'Failed to disconnect Facebook Messenger');
+    console.error("Facebook disconnect error:", error);
+    return apiErrors.internal(
+      error.message || "Failed to disconnect Facebook Messenger",
+    );
   }
 }

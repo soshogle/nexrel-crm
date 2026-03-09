@@ -1,28 +1,33 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET STATION BY ID
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
-    const station = await prisma.kitchenStation.findFirst({
+    const station = await db.kitchenStation.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -37,13 +42,13 @@ export async function GET(
     });
 
     if (!station) {
-      return apiErrors.notFound('Station not found');
+      return apiErrors.notFound("Station not found");
     }
 
     return NextResponse.json(station);
   } catch (error) {
-    console.error('❌ Station fetch error:', error);
-    return apiErrors.internal('Failed to fetch station');
+    console.error("❌ Station fetch error:", error);
+    return apiErrors.internal("Failed to fetch station");
   }
 }
 
@@ -52,13 +57,18 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const {
@@ -72,7 +82,7 @@ export async function PATCH(
     } = body;
 
     // Verify station exists
-    const existing = await prisma.kitchenStation.findFirst({
+    const existing = await db.kitchenStation.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -80,7 +90,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return apiErrors.notFound('Station not found');
+      return apiErrors.notFound("Station not found");
     }
 
     // Build update data
@@ -91,9 +101,10 @@ export async function PATCH(
     if (isActive !== undefined) updateData.isActive = isActive;
     if (priority !== undefined) updateData.priority = priority;
     if (maxCapacity !== undefined) updateData.maxCapacity = maxCapacity;
-    if (defaultPrepTime !== undefined) updateData.defaultPrepTime = defaultPrepTime;
+    if (defaultPrepTime !== undefined)
+      updateData.defaultPrepTime = defaultPrepTime;
 
-    const updatedStation = await prisma.kitchenStation.update({
+    const updatedStation = await db.kitchenStation.update({
       where: { id: params.id },
       data: updateData,
     });
@@ -102,8 +113,8 @@ export async function PATCH(
 
     return NextResponse.json(updatedStation);
   } catch (error) {
-    console.error('❌ Station update error:', error);
-    return apiErrors.internal('Failed to update station');
+    console.error("❌ Station update error:", error);
+    return apiErrors.internal("Failed to update station");
   }
 }
 
@@ -112,16 +123,21 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     // Verify station exists
-    const station = await prisma.kitchenStation.findFirst({
+    const station = await db.kitchenStation.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -132,7 +148,7 @@ export async function DELETE(
             kitchenItems: {
               where: {
                 status: {
-                  in: ['PENDING', 'PREPARING'],
+                  in: ["PENDING", "PREPARING"],
                 },
               },
             },
@@ -142,16 +158,16 @@ export async function DELETE(
     });
 
     if (!station) {
-      return apiErrors.notFound('Station not found');
+      return apiErrors.notFound("Station not found");
     }
 
     // Check if station has active items
     if (station._count.kitchenItems > 0) {
-      return apiErrors.badRequest('Cannot delete station with active orders');
+      return apiErrors.badRequest("Cannot delete station with active orders");
     }
 
     // Mark as inactive instead of deleting
-    await prisma.kitchenStation.update({
+    await db.kitchenStation.update({
       where: { id: params.id },
       data: { isActive: false },
     });
@@ -160,7 +176,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Station delete error:', error);
-    return apiErrors.internal('Failed to deactivate station');
+    console.error("❌ Station delete error:", error);
+    return apiErrors.internal("Failed to deactivate station");
   }
 }

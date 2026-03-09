@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REReportType } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 import { getMarketContext } from '@/lib/real-estate/market-data';
@@ -30,9 +31,13 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Get user's language preference
-    const user = await prisma.user.findUnique({
+    const user = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: { language: true },
     });
@@ -210,7 +215,7 @@ IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : u
     }
 
     // Save the report to the database
-    const marketReport = await prisma.rEMarketReport.create({
+    const marketReport = await getCrmDb(ctx).rEMarketReport.create({
       data: {
         userId: session.user.id,
         type: reportType as REReportType,

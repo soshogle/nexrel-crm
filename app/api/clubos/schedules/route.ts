@@ -1,14 +1,14 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/schedules - List all schedules with filters
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,14 +16,17 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const venueId = searchParams.get('venueId');
-    const eventType = searchParams.get('eventType');
-    const status = searchParams.get('status');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const divisionId = searchParams.get('divisionId');
+    const venueId = searchParams.get("venueId");
+    const eventType = searchParams.get("eventType");
+    const status = searchParams.get("status");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const divisionId = searchParams.get("divisionId");
 
     const where: any = {
       userId: session.user.id,
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
       if (endDate) where.startTime.lte = new Date(endDate);
     }
 
-    const schedules = await prisma.clubOSSchedule.findMany({
+    const schedules = await db.clubOSSchedule.findMany({
       where,
       include: {
         venue: true,
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        startTime: 'asc',
+        startTime: "asc",
       },
     });
 
@@ -79,8 +82,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(filteredSchedules);
   } catch (error) {
-    console.error('Error fetching schedules:', error);
-    return apiErrors.internal('Failed to fetch schedules');
+    console.error("Error fetching schedules:", error);
+    return apiErrors.internal("Failed to fetch schedules");
   }
 }
 
@@ -91,6 +94,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -108,15 +114,17 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!eventType || !title || !startTime || !endTime) {
-      return apiErrors.badRequest('Missing required fields: eventType, title, startTime, endTime');
+      return apiErrors.badRequest(
+        "Missing required fields: eventType, title, startTime, endTime",
+      );
     }
 
     // Check for venue conflicts
     if (venueId) {
-      const conflictingEvents = await prisma.clubOSSchedule.findMany({
+      const conflictingEvents = await db.clubOSSchedule.findMany({
         where: {
           venueId,
-          status: { not: 'CANCELLED' },
+          status: { not: "CANCELLED" },
           OR: [
             {
               AND: [
@@ -137,7 +145,7 @@ export async function POST(request: NextRequest) {
       if (conflictingEvents.length > 0) {
         return NextResponse.json(
           {
-            error: 'Venue conflict detected',
+            error: "Venue conflict detected",
             conflicts: conflictingEvents.map((e) => ({
               id: e.id,
               title: e.title,
@@ -145,7 +153,7 @@ export async function POST(request: NextRequest) {
               endTime: e.endTime,
             })),
           },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
@@ -153,9 +161,9 @@ export async function POST(request: NextRequest) {
     // Check for team conflicts (team can't have two events at same time)
     const teamIds = [homeTeamId, awayTeamId, practiceTeamId].filter(Boolean);
     if (teamIds.length > 0) {
-      const teamConflicts = await prisma.clubOSSchedule.findMany({
+      const teamConflicts = await db.clubOSSchedule.findMany({
         where: {
-          status: { not: 'CANCELLED' },
+          status: { not: "CANCELLED" },
           OR: [
             { homeTeamId: { in: teamIds } },
             { awayTeamId: { in: teamIds } },
@@ -185,7 +193,7 @@ export async function POST(request: NextRequest) {
       if (teamConflicts.length > 0) {
         return NextResponse.json(
           {
-            error: 'Team scheduling conflict detected',
+            error: "Team scheduling conflict detected",
             conflicts: teamConflicts.map((e) => ({
               id: e.id,
               title: e.title,
@@ -193,12 +201,12 @@ export async function POST(request: NextRequest) {
               endTime: e.endTime,
             })),
           },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
 
-    const schedule = await prisma.clubOSSchedule.create({
+    const schedule = await db.clubOSSchedule.create({
       data: {
         userId: session.user.id,
         eventType,
@@ -211,7 +219,7 @@ export async function POST(request: NextRequest) {
         awayTeamId,
         practiceTeamId,
         notes,
-        status: 'SCHEDULED',
+        status: "SCHEDULED",
       },
       include: {
         venue: true,
@@ -235,7 +243,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(schedule, { status: 201 });
   } catch (error) {
-    console.error('Error creating schedule:', error);
-    return apiErrors.internal('Failed to create schedule');
+    console.error("Error creating schedule:", error);
+    return apiErrors.internal("Failed to create schedule");
   }
 }

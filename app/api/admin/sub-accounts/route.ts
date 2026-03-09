@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { getCrmDb } from '@/lib/dal/db';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { getCrmDb } from "@/lib/dal/db";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,15 +18,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if user is an agency admin
-    if (session.user.role !== 'AGENCY_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Forbidden: Admin access required');
+    if (
+      session.user.role !== "AGENCY_ADMIN" &&
+      session.user.role !== "SUPER_ADMIN"
+    ) {
+      return apiErrors.forbidden("Forbidden: Admin access required");
     }
 
     // Get all sub-accounts under this agency
-    const subAccounts = await prisma.user.findMany({
+    const subAccounts = await getMetaDb().user.findMany({
       where: {
         agencyId: session.user.agencyId || undefined,
-        role: 'USER',
+        role: "USER",
       },
       select: {
         id: true,
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -68,20 +70,24 @@ export async function GET(req: NextRequest) {
           },
         });
 
-        const totalRevenue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+        const totalRevenue = deals.reduce(
+          (sum, deal) => sum + (deal.value || 0),
+          0,
+        );
 
         const totalLeads = account._count.leads;
         const convertedLeads = await db.lead.count({
           where: {
             userId: account.id,
-            status: 'CONVERTED',
+            status: "CONVERTED",
           },
         });
 
-        const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+        const conversionRate =
+          totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
         // Get recent activity
-        const recentMessages = await prisma.conversationMessage.count({
+        const recentMessages = await db.conversationMessage.count({
           where: {
             userId: account.id,
             createdAt: {
@@ -108,12 +114,12 @@ export async function GET(req: NextRequest) {
             recentActivity: recentMessages,
           },
         };
-      })
+      }),
     );
 
     return NextResponse.json({ subAccounts: subAccountsWithMetrics });
   } catch (error) {
-    console.error('Error fetching sub-accounts:', error);
-    return apiErrors.internal('Failed to fetch sub-accounts');
+    console.error("Error fetching sub-accounts:", error);
+    return apiErrors.internal("Failed to fetch sub-accounts");
   }
 }

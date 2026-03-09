@@ -1,32 +1,27 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/households - Get household for current user
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
-    const household = await prisma.clubOSHousehold.findUnique({
-      where: { userId: user.id },
+    const household = await db.clubOSHousehold.findUnique({
+      where: { userId: session.user.id },
       include: {
         members: true,
         registrations: {
@@ -41,13 +36,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      households: household ? [household] : [] 
+    return NextResponse.json({
+      success: true,
+      households: household ? [household] : [],
     });
   } catch (error) {
-    console.error('Error fetching household:', error);
-    return apiErrors.internal('Failed to fetch household');
+    console.error("Error fetching household:", error);
+    return apiErrors.internal("Failed to fetch household");
   }
 }
 
@@ -55,17 +50,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -82,17 +72,17 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Check if household already exists
-    const existingHousehold = await prisma.clubOSHousehold.findUnique({
-      where: { userId: user.id },
+    const existingHousehold = await db.clubOSHousehold.findUnique({
+      where: { userId: session.user.id },
     });
 
     if (existingHousehold) {
-      return apiErrors.badRequest('Household already exists for this user');
+      return apiErrors.badRequest("Household already exists for this user");
     }
 
-    const household = await prisma.clubOSHousehold.create({
+    const household = await db.clubOSHousehold.create({
       data: {
-        userId: user.id,
+        userId: session.user.id,
         primaryContactName,
         primaryContactEmail,
         primaryContactPhone,
@@ -111,8 +101,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ household }, { status: 201 });
   } catch (error) {
-    console.error('Error creating household:', error);
-    return apiErrors.internal('Failed to create household');
+    console.error("Error creating household:", error);
+    return apiErrors.internal("Failed to create household");
   }
 }
 
@@ -120,17 +110,12 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -146,8 +131,8 @@ export async function PUT(request: NextRequest) {
       notes,
     } = body;
 
-    const household = await prisma.clubOSHousehold.update({
-      where: { userId: user.id },
+    const household = await db.clubOSHousehold.update({
+      where: { userId: session.user.id },
       data: {
         primaryContactName,
         primaryContactEmail,
@@ -167,7 +152,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ household });
   } catch (error) {
-    console.error('Error updating household:', error);
-    return apiErrors.internal('Failed to update household');
+    console.error("Error updating household:", error);
+    return apiErrors.internal("Failed to update household");
   }
 }

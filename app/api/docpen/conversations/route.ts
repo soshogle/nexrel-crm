@@ -1,20 +1,21 @@
 /**
  * API Route: Fetch Docpen Conversations from ElevenLabs
- * 
+ *
  * GET - Fetch conversations directly from ElevenLabs API (like voice agent history)
  * This bypasses the database and pulls fresh data from ElevenLabs
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { ElevenLabsService } from '@/lib/elevenlabs';
-import { prisma } from '@/lib/db';
-import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { ElevenLabsService } from "@/lib/elevenlabs";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsKeyManager } from "@/lib/elevenlabs-key-manager";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const maxDuration = 60; // ElevenLabs API can be slow; match elevenlabs/conversations
 
 /**
@@ -27,20 +28,25 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get('agent_id');
-    const pageSize = searchParams.get('page_size') ? parseInt(searchParams.get('page_size')!) : 50;
+    const agentId = searchParams.get("agent_id");
+    const pageSize = searchParams.get("page_size")
+      ? parseInt(searchParams.get("page_size")!)
+      : 50;
 
     console.log(`📞 [Docpen Conversations] Request details:`, {
       userId: session.user.id,
       userEmail: session.user.email,
-      requestedAgentId: agentId || 'all',
+      requestedAgentId: agentId || "all",
       pageSize,
     });
 
     // Get user's Docpen voice agents
-    const docpenAgents = await prisma.docpenVoiceAgent.findMany({
+    const docpenAgents = await db.docpenVoiceAgent.findMany({
       where: { userId: session.user.id },
       select: {
         id: true,
@@ -61,24 +67,26 @@ export async function GET(request: NextRequest) {
 
     // Create map of ElevenLabs agent IDs to local agent info
     const agentMap = new Map(
-      docpenAgents.map(agent => [
+      docpenAgents.map((agent) => [
         agent.elevenLabsAgentId,
         {
           id: agent.id,
           profession: agent.profession,
           customProfession: agent.customProfession,
         },
-      ])
+      ]),
     );
 
     // Create set of user's agent IDs for filtering
-    const userAgentIds = new Set(docpenAgents.map(agent => agent.elevenLabsAgentId));
+    const userAgentIds = new Set(
+      docpenAgents.map((agent) => agent.elevenLabsAgentId),
+    );
 
     console.log(`🔒 [Docpen] User has ${userAgentIds.size} Docpen agents`);
 
     // Get user's ElevenLabs API key (Docpen agents are created with user's key - must use same key to list conversations)
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
-    const effectiveKey = apiKey || process.env.ELEVENLABS_API_KEY || '';
+    const effectiveKey = apiKey || process.env.ELEVENLABS_API_KEY || "";
     if (!effectiveKey) {
       return NextResponse.json({
         success: true,
@@ -97,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     if (agentId) {
       // Fetch for specific agent
-      const agent = docpenAgents.find(a => a.id === agentId);
+      const agent = docpenAgents.find((a) => a.id === agentId);
       if (agent && agent.elevenLabsAgentId) {
         const response = await elevenLabsService.listConversations({
           agent_id: agent.elevenLabsAgentId,
@@ -115,26 +123,29 @@ export async function GET(request: NextRequest) {
           ? pageSize
           : Math.min(30, Math.ceil(pageSize / docpenAgents.length));
       const conversationPromises = docpenAgents
-        .filter(agent => agent.elevenLabsAgentId)
-        .map(agent =>
+        .filter((agent) => agent.elevenLabsAgentId)
+        .map((agent) =>
           elevenLabsService
             .listConversations({
               agent_id: agent.elevenLabsAgentId!,
               page_size: perAgentPageSize,
             })
-            .then(response => ({
+            .then((response) => ({
               conversations: response.conversations || [],
               hasMore: response.has_more || false,
               cursor: response.cursor || null,
             }))
-            .catch(error => {
-              console.error(`Error fetching conversations for agent ${agent.elevenLabsAgentId}:`, error);
+            .catch((error) => {
+              console.error(
+                `Error fetching conversations for agent ${agent.elevenLabsAgentId}:`,
+                error,
+              );
               return { conversations: [], hasMore: false, cursor: null };
-            })
+            }),
         );
 
       const results = await Promise.all(conversationPromises);
-      allConversations = results.flatMap(r => r.conversations);
+      allConversations = results.flatMap((r) => r.conversations);
       // Sort by start time (most recent first)
       allConversations.sort((a, b) => {
         const timeA = a.start_time_unix_secs || 0;
@@ -143,35 +154,45 @@ export async function GET(request: NextRequest) {
       });
       // Limit to pageSize
       allConversations = allConversations.slice(0, pageSize);
-      hasMore = results.some(r => r.hasMore);
+      hasMore = results.some((r) => r.hasMore);
     }
 
-    console.log(`📞 [Docpen] Fetched ${allConversations.length} conversations from ElevenLabs API`);
+    console.log(
+      `📞 [Docpen] Fetched ${allConversations.length} conversations from ElevenLabs API`,
+    );
 
     // 🔒 CRITICAL: Filter conversations to ONLY show those from user's agents
     const userConversations = allConversations.filter((conv: any) => {
       const belongsToUser = userAgentIds.has(conv.agent_id);
       if (!belongsToUser) {
-        console.log(`🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent`);
+        console.log(
+          `🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent`,
+        );
       }
       return belongsToUser;
     });
 
-    console.log(`✅ [Docpen] Returning ${userConversations.length} of ${allConversations.length} conversations`);
+    console.log(
+      `✅ [Docpen] Returning ${userConversations.length} of ${allConversations.length} conversations`,
+    );
 
     // Enrich conversations with agent info
     const enrichedConversations = userConversations.map((conv: any) => {
       const agentInfo = agentMap.get(conv.agent_id);
       const professionLabel =
         agentInfo?.customProfession ||
-        (agentInfo?.profession === 'CUSTOM' ? 'Custom' : agentInfo?.profession || 'Unknown');
+        (agentInfo?.profession === "CUSTOM"
+          ? "Custom"
+          : agentInfo?.profession || "Unknown");
 
       return {
         ...conv,
         agent_name: professionLabel,
         agent_id_local: agentInfo?.id,
         // Add audio URL if available
-        audio_url: conv.has_audio ? `/api/calls/audio/${conv.conversation_id}` : null,
+        audio_url: conv.has_audio
+          ? `/api/calls/audio/${conv.conversation_id}`
+          : null,
       };
     });
 
@@ -182,7 +203,7 @@ export async function GET(request: NextRequest) {
       cursor: cursor,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen Conversations] Error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch conversations');
+    console.error("❌ [Docpen Conversations] Error:", error);
+    return apiErrors.internal(error.message || "Failed to fetch conversations");
   }
 }

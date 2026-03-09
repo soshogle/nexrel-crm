@@ -1,13 +1,13 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { createPlatformClient } from "@/lib/ecommerce-platforms";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { createPlatformClient } from '@/lib/ecommerce-platforms';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - Get sync configuration
 export async function GET(request: NextRequest) {
@@ -16,29 +16,38 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get user's e-commerce sync settings
-    const settings = await prisma.ecommerceSyncSettings.findUnique({
+    const settings = await db.ecommerceSyncSettings.findUnique({
       where: { userId: session.user.id },
     });
 
     // Don't expose full credentials, only show if they're configured
-    const response = settings ? {
-      id: settings.id,
-      platform: settings.platform,
-      autoSync: settings.autoSync,
-      syncInventory: settings.syncInventory,
-      syncPrices: settings.syncPrices,
-      syncProducts: settings.syncProducts,
-      lastSyncAt: settings.lastSyncAt,
-      hasShopifyCredentials: !!(settings.shopifyDomain && settings.shopifyAccessToken),
-      hasWooCommerceCredentials: !!(settings.woocommerceUrl && settings.woocommerceConsumerKey),
-    } : null;
+    const response = settings
+      ? {
+          id: settings.id,
+          platform: settings.platform,
+          autoSync: settings.autoSync,
+          syncInventory: settings.syncInventory,
+          syncPrices: settings.syncPrices,
+          syncProducts: settings.syncProducts,
+          lastSyncAt: settings.lastSyncAt,
+          hasShopifyCredentials: !!(
+            settings.shopifyDomain && settings.shopifyAccessToken
+          ),
+          hasWooCommerceCredentials: !!(
+            settings.woocommerceUrl && settings.woocommerceConsumerKey
+          ),
+        }
+      : null;
 
     return NextResponse.json({ settings: response });
   } catch (error: any) {
-    console.error('Error fetching sync settings:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch sync settings');
+    console.error("Error fetching sync settings:", error);
+    return apiErrors.internal(error.message || "Failed to fetch sync settings");
   }
 }
 
@@ -49,6 +58,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -64,17 +76,26 @@ export async function POST(request: NextRequest) {
       woocommerceConsumerSecret,
     } = body;
 
-    if (!platform || !['shopify', 'woocommerce'].includes(platform)) {
-      return apiErrors.badRequest('Valid platform is required (shopify or woocommerce)');
+    if (!platform || !["shopify", "woocommerce"].includes(platform)) {
+      return apiErrors.badRequest(
+        "Valid platform is required (shopify or woocommerce)",
+      );
     }
 
     // Validate credentials based on platform
-    if (platform === 'shopify' && (!shopifyDomain || !shopifyAccessToken)) {
-      return apiErrors.badRequest('Shopify domain and access token are required');
+    if (platform === "shopify" && (!shopifyDomain || !shopifyAccessToken)) {
+      return apiErrors.badRequest(
+        "Shopify domain and access token are required",
+      );
     }
 
-    if (platform === 'woocommerce' && (!woocommerceUrl || !woocommerceConsumerKey || !woocommerceConsumerSecret)) {
-      return apiErrors.badRequest('WooCommerce URL, consumer key, and consumer secret are required');
+    if (
+      platform === "woocommerce" &&
+      (!woocommerceUrl || !woocommerceConsumerKey || !woocommerceConsumerSecret)
+    ) {
+      return apiErrors.badRequest(
+        "WooCommerce URL, consumer key, and consumer secret are required",
+      );
     }
 
     // Test the credentials before saving
@@ -88,21 +109,21 @@ export async function POST(request: NextRequest) {
       });
 
       // Try a simple API call to validate credentials
-      if (platform === 'shopify') {
-        await (client as any).request('/shop.json');
-      } else if (platform === 'woocommerce') {
-        await (client as any).request('/system_status');
+      if (platform === "shopify") {
+        await (client as any).request("/shop.json");
+      } else if (platform === "woocommerce") {
+        await (client as any).request("/system_status");
       }
     } catch (error: any) {
-      console.error('Credential validation failed:', error);
+      console.error("Credential validation failed:", error);
       return NextResponse.json(
         { error: `Invalid credentials: ${error.message}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Save or update settings
-    const settings = await prisma.ecommerceSyncSettings.upsert({
+    const settings = await db.ecommerceSyncSettings.upsert({
       where: { userId: session.user.id },
       update: {
         platform,
@@ -110,11 +131,13 @@ export async function POST(request: NextRequest) {
         syncInventory: syncInventory || false,
         syncPrices: syncPrices || false,
         syncProducts: syncProducts || false,
-        shopifyDomain: platform === 'shopify' ? shopifyDomain : null,
-        shopifyAccessToken: platform === 'shopify' ? shopifyAccessToken : null,
-        woocommerceUrl: platform === 'woocommerce' ? woocommerceUrl : null,
-        woocommerceConsumerKey: platform === 'woocommerce' ? woocommerceConsumerKey : null,
-        woocommerceConsumerSecret: platform === 'woocommerce' ? woocommerceConsumerSecret : null,
+        shopifyDomain: platform === "shopify" ? shopifyDomain : null,
+        shopifyAccessToken: platform === "shopify" ? shopifyAccessToken : null,
+        woocommerceUrl: platform === "woocommerce" ? woocommerceUrl : null,
+        woocommerceConsumerKey:
+          platform === "woocommerce" ? woocommerceConsumerKey : null,
+        woocommerceConsumerSecret:
+          platform === "woocommerce" ? woocommerceConsumerSecret : null,
       },
       create: {
         userId: session.user.id,
@@ -123,17 +146,19 @@ export async function POST(request: NextRequest) {
         syncInventory: syncInventory || false,
         syncPrices: syncPrices || false,
         syncProducts: syncProducts || false,
-        shopifyDomain: platform === 'shopify' ? shopifyDomain : null,
-        shopifyAccessToken: platform === 'shopify' ? shopifyAccessToken : null,
-        woocommerceUrl: platform === 'woocommerce' ? woocommerceUrl : null,
-        woocommerceConsumerKey: platform === 'woocommerce' ? woocommerceConsumerKey : null,
-        woocommerceConsumerSecret: platform === 'woocommerce' ? woocommerceConsumerSecret : null,
+        shopifyDomain: platform === "shopify" ? shopifyDomain : null,
+        shopifyAccessToken: platform === "shopify" ? shopifyAccessToken : null,
+        woocommerceUrl: platform === "woocommerce" ? woocommerceUrl : null,
+        woocommerceConsumerKey:
+          platform === "woocommerce" ? woocommerceConsumerKey : null,
+        woocommerceConsumerSecret:
+          platform === "woocommerce" ? woocommerceConsumerSecret : null,
       },
     });
 
     return NextResponse.json({ success: true, settings: { id: settings.id } });
   } catch (error: any) {
-    console.error('Error saving sync settings:', error);
-    return apiErrors.internal(error.message || 'Failed to save sync settings');
+    console.error("Error saving sync settings:", error);
+    return apiErrors.internal(error.message || "Failed to save sync settings");
   }
 }

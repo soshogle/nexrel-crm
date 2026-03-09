@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { WhatsAppService } from "@/lib/messaging-sync/whatsapp-service";
-import { prisma } from "@/lib/db";
+import { findConnectedChannelByProviderAccount } from "@/lib/dal/webhook-channel-lookup";
 import crypto from "crypto";
 import { apiErrors } from "@/lib/api-error";
 
@@ -78,12 +78,9 @@ export async function POST(req: NextRequest) {
         if (!phoneNumberId) continue;
 
         // Find channel connection for this WhatsApp number
-        const channelConnection = await prisma.channelConnection.findFirst({
-          where: {
-            channelType: "WHATSAPP",
-            providerAccountId: phoneNumberId,
-            status: "CONNECTED",
-          },
+        const channelConnection = await findConnectedChannelByProviderAccount({
+          channelType: "WHATSAPP",
+          providerAccountId: phoneNumberId,
         });
 
         if (!channelConnection) {

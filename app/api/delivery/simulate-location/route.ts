@@ -1,9 +1,9 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * SIMULATE DRIVER LOCATION
@@ -11,8 +11,8 @@ import { apiErrors } from '@/lib/api-error';
  * In production, this would be replaced by actual GPS data from driver's mobile app
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,19 +20,25 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-    const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+    const isOrthoDemo =
+      String(session.user.email || "")
+        .toLowerCase()
+        .trim() === "orthodontist@nexrel.com";
     if (!isOrthoDemo) {
-      return apiErrors.forbidden('Simulation endpoint is restricted');
+      return apiErrors.forbidden("Simulation endpoint is restricted");
     }
 
     const { deliveryOrderId, progress } = await req.json();
 
     if (!deliveryOrderId) {
-      return apiErrors.badRequest('Delivery order ID is required');
+      return apiErrors.badRequest("Delivery order ID is required");
     }
 
     // Get delivery order with coordinates
-    const delivery = await prisma.deliveryOrder.findFirst({
+    const delivery = await db.deliveryOrder.findFirst({
       where: {
         id: deliveryOrderId,
         userId: session.user.id,
@@ -40,16 +46,24 @@ export async function POST(req: NextRequest) {
     });
 
     if (!delivery) {
-      return apiErrors.notFound('Delivery order not found');
+      return apiErrors.notFound("Delivery order not found");
     }
 
-    if (!delivery.driverId || !delivery.pickupLat || !delivery.pickupLng || !delivery.deliveryLat || !delivery.deliveryLng) {
-      return apiErrors.badRequest('Delivery order must have driver and coordinates assigned');
+    if (
+      !delivery.driverId ||
+      !delivery.pickupLat ||
+      !delivery.pickupLng ||
+      !delivery.deliveryLat ||
+      !delivery.deliveryLng
+    ) {
+      return apiErrors.badRequest(
+        "Delivery order must have driver and coordinates assigned",
+      );
     }
 
     // Calculate simulated location based on progress (0-1)
     const progressValue = progress !== undefined ? progress : Math.random();
-    
+
     const pickupLat = parseFloat(delivery.pickupLat.toString());
     const pickupLng = parseFloat(delivery.pickupLng.toString());
     const deliveryLat = parseFloat(delivery.deliveryLat.toString());
@@ -60,13 +74,18 @@ export async function POST(req: NextRequest) {
     const currentLng = pickupLng + (deliveryLng - pickupLng) * progressValue;
 
     // Calculate heading (direction of travel)
-    const heading = calculateBearing(currentLat, currentLng, deliveryLat, deliveryLng);
+    const heading = calculateBearing(
+      currentLat,
+      currentLng,
+      deliveryLat,
+      deliveryLng,
+    );
 
     // Simulate speed (20-40 km/h)
     const speed = 25 + Math.random() * 15;
 
     // Record location
-    const location = await prisma.driverLocation.create({
+    const location = await db.driverLocation.create({
       data: {
         driverId: delivery.driverId,
         deliveryOrderId: delivery.id,
@@ -83,13 +102,15 @@ export async function POST(req: NextRequest) {
       currentLat,
       currentLng,
       deliveryLat,
-      deliveryLng
+      deliveryLng,
     );
     const minutesRemaining = Math.round((remainingDistance / speed) * 60);
-    const estimatedDeliveryTime = new Date(Date.now() + minutesRemaining * 60 * 1000);
+    const estimatedDeliveryTime = new Date(
+      Date.now() + minutesRemaining * 60 * 1000,
+    );
 
     // Update delivery order
-    await prisma.deliveryOrder.update({
+    await db.deliveryOrder.update({
       where: { id: deliveryOrderId },
       data: { estimatedDeliveryTime },
     });
@@ -107,8 +128,8 @@ export async function POST(req: NextRequest) {
       estimatedDeliveryTime,
     });
   } catch (error) {
-    console.error('❌ Simulate location error:', error);
-    return apiErrors.internal('Failed to simulate location');
+    console.error("❌ Simulate location error:", error);
+    return apiErrors.internal("Failed to simulate location");
   }
 }
 
@@ -116,22 +137,22 @@ function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  
+
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
       Math.cos(toRad(lat2)) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
-  
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
-  
+
   return distance;
 }
 
@@ -139,7 +160,7 @@ function calculateBearing(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const dLon = toRad(lon2 - lon1);
   const y = Math.sin(dLon) * Math.cos(toRad(lat2));

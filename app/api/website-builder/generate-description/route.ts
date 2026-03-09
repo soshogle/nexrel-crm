@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import OpenAI from 'openai';
 import { apiErrors } from '@/lib/api-error';
 
@@ -20,6 +21,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { businessDescription, websiteName, templateType, services, products } = body;
@@ -29,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's business context
-    const user = await prisma.user.findUnique({
+    const user = await getCrmDb(ctx).user.findUnique({
       where: { id: session.user.id },
       select: {
         industry: true,

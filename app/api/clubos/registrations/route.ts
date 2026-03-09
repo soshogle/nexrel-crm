@@ -1,10 +1,10 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { clubOSCommunicationService } from "@/lib/clubos-communication-service";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * ClubOS Registration API
@@ -14,15 +14,15 @@ import { apiErrors } from '@/lib/api-error';
 
 // Helper: Calculate age at August 1st of current year
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function calculateAgeAtCutoff(dateOfBirth: Date): number {
   const cutoffDate = new Date(new Date().getFullYear(), 7, 1); // August 1
   const age = cutoffDate.getFullYear() - dateOfBirth.getFullYear();
   const monthDiff = cutoffDate.getMonth() - dateOfBirth.getMonth();
   const dayDiff = cutoffDate.getDate() - dateOfBirth.getDate();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
     return age - 1;
   }
@@ -31,11 +31,12 @@ function calculateAgeAtCutoff(dateOfBirth: Date): number {
 
 // Helper: Find appropriate division based on age and gender
 async function assignDivision(
+  db: ReturnType<typeof getCrmDb>,
   programId: string,
   age: number,
-  gender: string | null
+  gender: string | null,
 ) {
-  const divisions = await prisma.clubOSDivision.findMany({
+  const divisions = await db.clubOSDivision.findMany({
     where: {
       programId,
       ageMin: { lte: age },
@@ -49,7 +50,7 @@ async function assignDivision(
 
   // Try to match gender-specific division first
   const genderMatch = divisions.find(
-    (d) => d.gender === gender || d.gender === null
+    (d) => d.gender === gender || d.gender === null,
   );
 
   return genderMatch || divisions[0];
@@ -57,10 +58,11 @@ async function assignDivision(
 
 // Helper: Calculate total fee with family discount
 async function calculateTotalFee(
+  db: ReturnType<typeof getCrmDb>,
   programId: string,
-  householdId: string
+  householdId: string,
 ): Promise<number> {
-  const program = await prisma.clubOSProgram.findUnique({
+  const program = await db.clubOSProgram.findUnique({
     where: { id: programId },
     select: {
       baseFee: true,
@@ -70,7 +72,7 @@ async function calculateTotalFee(
     },
   });
 
-  if (!program) throw new Error('Program not found');
+  if (!program) throw new Error("Program not found");
 
   let totalFee = program.baseFee;
 
@@ -84,12 +86,12 @@ async function calculateTotalFee(
   }
 
   // Apply family discount if this is 2nd+ child
-  const existingRegistrations = await prisma.clubOSRegistration.count({
+  const existingRegistrations = await db.clubOSRegistration.count({
     where: {
       householdId,
       programId,
       status: {
-        in: ['PENDING', 'APPROVED', 'ACTIVE'],
+        in: ["PENDING", "APPROVED", "ACTIVE"],
       },
     },
   });
@@ -102,8 +104,11 @@ async function calculateTotalFee(
 }
 
 // Helper: Check program capacity and waitlist status
-async function checkCapacity(programId: string) {
-  const program = await prisma.clubOSProgram.findUnique({
+async function checkCapacity(
+  db: ReturnType<typeof getCrmDb>,
+  programId: string,
+) {
+  const program = await db.clubOSProgram.findUnique({
     where: { id: programId },
     select: {
       maxParticipants: true,
@@ -111,7 +116,7 @@ async function checkCapacity(programId: string) {
     },
   });
 
-  if (!program) throw new Error('Program not found');
+  if (!program) throw new Error("Program not found");
 
   if (!program.maxParticipants) {
     return { hasCapacity: true, needsWaitlist: false };
@@ -131,17 +136,22 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { householdId, memberId, programId, specialRequests } = body;
 
     // Validate required fields
     if (!householdId || !memberId || !programId) {
-      return apiErrors.badRequest('Missing required fields: householdId, memberId, programId');
+      return apiErrors.badRequest(
+        "Missing required fields: householdId, memberId, programId",
+      );
     }
 
     // Verify member exists and get their info
-    const member = await prisma.clubOSMember.findUnique({
+    const member = await db.clubOSMember.findUnique({
       where: { id: memberId },
       select: {
         id: true,
@@ -153,34 +163,34 @@ export async function POST(req: NextRequest) {
     });
 
     if (!member || !member.dateOfBirth) {
-      return apiErrors.badRequest('Member not found or missing date of birth');
+      return apiErrors.badRequest("Member not found or missing date of birth");
     }
 
     // Calculate age at August 1 cutoff
     const age = calculateAgeAtCutoff(member.dateOfBirth);
 
     // Find appropriate division
-    const division = await assignDivision(programId, age, member.gender);
+    const division = await assignDivision(db, programId, age, member.gender);
 
     if (!division) {
       return NextResponse.json(
         {
           error: `No division found for age ${age}. Please contact administrator.`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Calculate total fee with discounts
-    const totalAmount = await calculateTotalFee(programId, householdId);
+    const totalAmount = await calculateTotalFee(db, programId, householdId);
 
     // Check capacity
-    const { hasCapacity, needsWaitlist } = await checkCapacity(programId);
+    const { hasCapacity, needsWaitlist } = await checkCapacity(db, programId);
 
     // Create registration
-    const status = needsWaitlist ? 'WAITLIST' : 'PENDING';
+    const status = needsWaitlist ? "WAITLIST" : "PENDING";
 
-    const registration = await prisma.clubOSRegistration.create({
+    const registration = await db.clubOSRegistration.create({
       data: {
         householdId,
         memberId,
@@ -218,16 +228,16 @@ export async function POST(req: NextRequest) {
 
     // If waitlisted, create waitlist entry
     if (needsWaitlist) {
-      const waitlistPosition = await prisma.clubOSWaitlist.count({
+      const waitlistPosition = await db.clubOSWaitlist.count({
         where: {
           registration: {
             programId,
-            status: 'WAITLIST',
+            status: "WAITLIST",
           },
         },
       });
 
-      await prisma.clubOSWaitlist.create({
+      await db.clubOSWaitlist.create({
         data: {
           registrationId: registration.id,
           position: waitlistPosition + 1,
@@ -235,7 +245,7 @@ export async function POST(req: NextRequest) {
       });
     } else {
       // Increment participant count if not waitlisted
-      await prisma.clubOSProgram.update({
+      await db.clubOSProgram.update({
         where: { id: programId },
         data: {
           currentParticipants: { increment: 1 },
@@ -246,11 +256,11 @@ export async function POST(req: NextRequest) {
     // Send registration confirmation email/SMS
     try {
       // Get household and program details for notification
-      const household = await prisma.clubOSHousehold.findUnique({
+      const household = await db.clubOSHousehold.findUnique({
         where: { id: householdId },
       });
-      
-      const program = await prisma.clubOSProgram.findUnique({
+
+      const program = await db.clubOSProgram.findUnique({
         where: { id: programId },
       });
 
@@ -267,7 +277,10 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (notificationError) {
-      console.error('Failed to send registration confirmation:', notificationError);
+      console.error(
+        "Failed to send registration confirmation:",
+        notificationError,
+      );
       // Don't fail the registration if notification fails
     }
 
@@ -276,15 +289,16 @@ export async function POST(req: NextRequest) {
       registration,
       message: needsWaitlist
         ? `Registration added to waitlist. You are #${
-            (await prisma.clubOSWaitlist.count({
+            (await db.clubOSWaitlist.count({
               where: { registration: { programId } },
             })) + 1
           } in line.`
         : `Registration successful! ${member.firstName} has been registered for ${division.name}.`,
     });
   } catch (error: unknown) {
-    console.error('Registration creation error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error("Registration creation error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return apiErrors.internal(message);
   }
 }
@@ -299,11 +313,14 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const programId = searchParams.get('programId');
-    const status = searchParams.get('status');
-    const householdId = searchParams.get('householdId');
+    const programId = searchParams.get("programId");
+    const status = searchParams.get("status");
+    const householdId = searchParams.get("householdId");
 
     const where: {
       program: { userId: string };
@@ -320,7 +337,7 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status;
     if (householdId) where.householdId = householdId;
 
-    const registrations = await prisma.clubOSRegistration.findMany({
+    const registrations = await db.clubOSRegistration.findMany({
       where,
       include: {
         member: {
@@ -363,17 +380,17 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: {
-        registrationDate: 'desc',
+        registrationDate: "desc",
       },
     });
 
     // Get summary stats
     const stats = {
       total: registrations.length,
-      pending: registrations.filter((r) => r.status === 'PENDING').length,
-      approved: registrations.filter((r) => r.status === 'APPROVED').length,
-      waitlist: registrations.filter((r) => r.status === 'WAITLIST').length,
-      active: registrations.filter((r) => r.status === 'ACTIVE').length,
+      pending: registrations.filter((r) => r.status === "PENDING").length,
+      approved: registrations.filter((r) => r.status === "APPROVED").length,
+      waitlist: registrations.filter((r) => r.status === "WAITLIST").length,
+      active: registrations.filter((r) => r.status === "ACTIVE").length,
     };
 
     return NextResponse.json({
@@ -382,8 +399,9 @@ export async function GET(req: NextRequest) {
       stats,
     });
   } catch (error: unknown) {
-    console.error('Registrations fetch error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error("Registrations fetch error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return apiErrors.internal(message);
   }
 }

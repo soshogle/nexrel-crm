@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
@@ -13,12 +14,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const propertyId = searchParams.get('propertyId');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const cmaReports = await prisma.rECMAReport.findMany({
+    const cmaReports = await getCrmDb(ctx).rECMAReport.findMany({
       where: {
         userId: session.user.id,
         ...(propertyId && { propertyId }),
@@ -41,6 +46,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -93,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create CMA report - comparables stored as JSON
-    const cmaReport = await prisma.rECMAReport.create({
+    const cmaReport = await getCrmDb(ctx).rECMAReport.create({
       data: {
         userId: session.user.id,
         propertyId: propertyId || null,
@@ -127,6 +136,10 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -135,7 +148,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.badRequest('Report ID required');
     }
 
-    const existing = await prisma.rECMAReport.findFirst({
+    const existing = await getCrmDb(ctx).rECMAReport.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -143,7 +156,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.notFound('CMA report not found');
     }
 
-    const report = await prisma.rECMAReport.update({
+    const report = await getCrmDb(ctx).rECMAReport.update({
       where: { id },
       data: {
         ...(updateData.address && { address: updateData.address }),
@@ -171,6 +184,10 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -179,7 +196,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Report ID required');
     }
     
-    const existing = await prisma.rECMAReport.findFirst({
+    const existing = await getCrmDb(ctx).rECMAReport.findFirst({
       where: { id, userId: session.user.id },
     });
     
@@ -187,7 +204,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('CMA report not found');
     }
     
-    await prisma.rECMAReport.delete({ where: { id } });
+    await getCrmDb(ctx).rECMAReport.delete({ where: { id } });
     
     return NextResponse.json({ success: true });
   } catch (error) {

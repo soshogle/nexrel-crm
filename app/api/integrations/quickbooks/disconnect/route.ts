@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * POST /api/integrations/quickbooks/disconnect
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Clear QuickBooks config
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: session.user.id },
       data: {
         quickbooksConfig: null,
@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-
   } catch (error: any) {
-    console.error('QuickBooks disconnect error:', error);
-    return apiErrors.internal('Failed to disconnect QuickBooks', error.message);
+    console.error("QuickBooks disconnect error:", error);
+    return apiErrors.internal("Failed to disconnect QuickBooks", error.message);
   }
 }

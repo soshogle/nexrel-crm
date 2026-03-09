@@ -4,26 +4,37 @@
  * Requires: Authorization: Bearer <extension_token>
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { formatNoteForEHR } from '@/lib/docpen/ehr-export';
-import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { formatNoteForEHR } from "@/lib/docpen/ehr-export";
+import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from "@/lib/docpen/audit-log";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function verifyToken(request: NextRequest): Promise<{ userId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token || !token.startsWith('ehr_')) return null;
+async function verifyToken(
+  request: NextRequest,
+): Promise<{ userId: string } | null> {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token || !token.startsWith("ehr_")) return null;
 
-  const apiKeys = await prisma.apiKey.findMany({
-    where: { service: 'ehr_bridge', keyName: 'extension_token', isActive: true },
+  const apiKeys = await getMetaDb().apiKey.findMany({
+    where: {
+      service: "ehr_bridge",
+      keyName: "extension_token",
+      isActive: true,
+    },
   });
   for (const key of apiKeys) {
     try {
-      const parsed = JSON.parse(key.keyValue) as { token: string; expiresAt: string };
+      const parsed = JSON.parse(key.keyValue) as {
+        token: string;
+        expiresAt: string;
+      };
       if (parsed.token === token && new Date(parsed.expiresAt) >= new Date()) {
         return { userId: key.userId };
       }
@@ -36,17 +47,19 @@ async function verifyToken(request: NextRequest): Promise<{ userId: string } | n
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: Promise<{ sessionId: string }> },
 ) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return apiErrors.unauthorized('Invalid or expired token');
+      return apiErrors.unauthorized("Invalid or expired token");
     }
 
     const { sessionId } = await params;
+    const ctx = await resolveDalContext(auth.userId);
+    const db = getCrmDb(ctx);
 
-    const session: any = await (prisma as any).docpenSession.findFirst({
+    const session: any = await (db as any).docpenSession.findFirst({
       where: { id: sessionId, userId: auth.userId },
       include: {
         soapNotes: { where: { isCurrentVersion: true } },
@@ -55,16 +68,17 @@ export async function GET(
     });
 
     if (!session) {
-      return apiErrors.notFound('Session not found');
+      return apiErrors.notFound("Session not found");
     }
 
     const soapNote = session.soapNotes[0];
     if (!soapNote) {
-      return apiErrors.badRequest('No SOAP note found');
+      return apiErrors.badRequest("No SOAP note found");
     }
 
     const context = {
-      patientName: session.patientName || session.lead?.contactPerson || undefined,
+      patientName:
+        session.patientName || session.lead?.contactPerson || undefined,
       sessionDate: new Date(session.sessionDate).toLocaleDateString(),
       chiefComplaint: session.chiefComplaint || undefined,
       consultantName: session.consultantName || undefined,
@@ -81,7 +95,7 @@ export async function GET(
     const formattedText = formatNoteForEHR(noteData, context);
 
     await logDocpenAudit(sessionId, DOCPEN_AUDIT_EVENTS.EXPORTED, {
-      method: 'ehr_bridge_extension',
+      method: "ehr_bridge_extension",
     });
 
     return NextResponse.json({
@@ -91,7 +105,7 @@ export async function GET(
       sessionId: session.id,
     });
   } catch (error) {
-    console.error('[EHR Bridge] Export failed:', error);
-    return apiErrors.internal('Export failed');
+    console.error("[EHR Bridge] Export failed:", error);
+    return apiErrors.internal("Export failed");
   }
 }

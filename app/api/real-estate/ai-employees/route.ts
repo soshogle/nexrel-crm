@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { executeREEmployee } from '@/lib/ai-employees/run-re-employee';
 import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 import type { REAIEmployeeType } from '@prisma/client';
@@ -15,17 +16,21 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ data: [], message: 'RE feature initializing...' });
   }
   try {
     const [agents, recentExecutions] = await Promise.all([
-      prisma.rEAIEmployeeAgent.findMany({
+      getCrmDb(ctx).rEAIEmployeeAgent.findMany({
         where: { userId: session.user.id },
         orderBy: [{ callCount: 'desc' }, { updatedAt: 'desc' }],
       }),
-      prisma.rEAIEmployeeExecution.findMany({
+      getCrmDb(ctx).rEAIEmployeeExecution.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -43,6 +48,10 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -72,6 +81,10 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -82,14 +95,14 @@ export async function PUT(request: NextRequest) {
     if (!id) {
       return apiErrors.badRequest('id required');
     }
-    const existing = await prisma.rEAIEmployeeAgent.findFirst({
+    const existing = await getCrmDb(ctx).rEAIEmployeeAgent.findFirst({
       where: { id, userId: session.user.id },
       select: { id: true },
     });
     if (!existing) {
       return apiErrors.notFound('AI employee not found');
     }
-    const updated = await prisma.rEAIEmployeeAgent.update({
+    const updated = await getCrmDb(ctx).rEAIEmployeeAgent.update({
       where: { id },
       data: {
         ...(body.name !== undefined ? { name: String(body.name || '') } : {}),
@@ -109,6 +122,10 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return apiErrors.unauthorized();
   }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
   const isOrthoDemo = String(session.user.email || '').toLowerCase().trim() === 'orthodontist@nexrel.com';
   if (isOrthoDemo) {
     return NextResponse.json({ success: true, message: 'RE feature initializing...' });
@@ -119,14 +136,14 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return apiErrors.badRequest('id required');
     }
-    const existing = await prisma.rEAIEmployeeAgent.findFirst({
+    const existing = await getCrmDb(ctx).rEAIEmployeeAgent.findFirst({
       where: { id, userId: session.user.id },
       select: { id: true },
     });
     if (!existing) {
       return apiErrors.notFound('AI employee not found');
     }
-    await prisma.rEAIEmployeeAgent.delete({ where: { id } });
+    await getCrmDb(ctx).rEAIEmployeeAgent.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('RE AI employees DELETE error:', error);

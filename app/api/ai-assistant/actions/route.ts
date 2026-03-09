@@ -1,8 +1,7 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getMetaDb } from "@/lib/db/meta-db";
 
 import * as crm from "./handlers/crm";
 import * as voiceMessaging from "./handlers/voice-messaging";
@@ -10,10 +9,10 @@ import * as setupIntegrations from "./handlers/setup-integrations";
 import * as website from "./handlers/website";
 import * as tasksWorkflows from "./handlers/tasks-workflows";
 import * as analyticsReports from "./handlers/analytics-reports";
-import { apiErrors } from '@/lib/api-error';
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const AVAILABLE_ACTIONS = {
   // Setup & Configuration
@@ -33,7 +32,7 @@ const AVAILABLE_ACTIONS = {
   LIST_APPOINTMENTS: "list_appointments",
   UPDATE_APPOINTMENT: "update_appointment",
   CANCEL_APPOINTMENT: "cancel_appointment",
-  
+
   // Voice Agent Debugging & Management
   DEBUG_VOICE_AGENT: "debug_voice_agent",
   FIX_VOICE_AGENT: "fix_voice_agent",
@@ -43,7 +42,7 @@ const AVAILABLE_ACTIONS = {
   ASSIGN_PHONE_TO_VOICE_AGENT: "assign_phone_to_voice_agent",
   MAKE_OUTBOUND_CALL: "make_outbound_call",
   CALL_LEADS: "call_leads",
-  
+
   // CRM Operations
   CREATE_LEAD: "create_lead",
   UPDATE_LEAD: "update_lead",
@@ -94,11 +93,11 @@ const AVAILABLE_ACTIONS = {
   IMPORT_CONTACTS: "import_contacts",
   UPDATE_PROFILE: "update_profile",
   UPDATE_COMPANY_PROFILE: "update_company_profile",
-  
+
   // QuickBooks Operations
   CREATE_QUICKBOOKS_INVOICE: "create_quickbooks_invoice",
   SYNC_CONTACT_TO_QUICKBOOKS: "sync_contact_to_quickbooks",
-  
+
   // WhatsApp Operations
   SEND_WHATSAPP_MESSAGE: "send_whatsapp_message",
   GET_WHATSAPP_CONVERSATIONS: "get_whatsapp_conversations",
@@ -182,19 +181,24 @@ const ACTION_HANDLERS: Record<string, HandlerFn> = {
   [AVAILABLE_ACTIONS.SETUP_QUICKBOOKS]: setupIntegrations.setupQuickBooks,
   [AVAILABLE_ACTIONS.SETUP_WHATSAPP]: voiceMessaging.setupWhatsApp,
   [AVAILABLE_ACTIONS.UPDATE_PROFILE]: setupIntegrations.updateProfile,
-  [AVAILABLE_ACTIONS.UPDATE_COMPANY_PROFILE]: setupIntegrations.updateCompanyProfile,
-  [AVAILABLE_ACTIONS.CREATE_QUICKBOOKS_INVOICE]: setupIntegrations.createQuickBooksInvoice,
-  [AVAILABLE_ACTIONS.SYNC_CONTACT_TO_QUICKBOOKS]: setupIntegrations.syncContactToQuickBooks,
+  [AVAILABLE_ACTIONS.UPDATE_COMPANY_PROFILE]:
+    setupIntegrations.updateCompanyProfile,
+  [AVAILABLE_ACTIONS.CREATE_QUICKBOOKS_INVOICE]:
+    setupIntegrations.createQuickBooksInvoice,
+  [AVAILABLE_ACTIONS.SYNC_CONTACT_TO_QUICKBOOKS]:
+    setupIntegrations.syncContactToQuickBooks,
 
   // Voice & Messaging
-  [AVAILABLE_ACTIONS.PURCHASE_TWILIO_NUMBER]: voiceMessaging.purchaseTwilioNumber,
+  [AVAILABLE_ACTIONS.PURCHASE_TWILIO_NUMBER]:
+    voiceMessaging.purchaseTwilioNumber,
   [AVAILABLE_ACTIONS.CREATE_VOICE_AGENT]: voiceMessaging.createVoiceAgent,
   [AVAILABLE_ACTIONS.DEBUG_VOICE_AGENT]: voiceMessaging.debugVoiceAgent,
   [AVAILABLE_ACTIONS.FIX_VOICE_AGENT]: voiceMessaging.fixVoiceAgent,
   [AVAILABLE_ACTIONS.GET_VOICE_AGENT]: voiceMessaging.getVoiceAgent,
   [AVAILABLE_ACTIONS.LIST_VOICE_AGENTS]: voiceMessaging.listVoiceAgents,
   [AVAILABLE_ACTIONS.UPDATE_VOICE_AGENT]: voiceMessaging.updateVoiceAgent,
-  [AVAILABLE_ACTIONS.ASSIGN_PHONE_TO_VOICE_AGENT]: voiceMessaging.assignPhoneToVoiceAgent,
+  [AVAILABLE_ACTIONS.ASSIGN_PHONE_TO_VOICE_AGENT]:
+    voiceMessaging.assignPhoneToVoiceAgent,
   [AVAILABLE_ACTIONS.CONFIGURE_AUTO_REPLY]: voiceMessaging.configureAutoReply,
   [AVAILABLE_ACTIONS.MAKE_OUTBOUND_CALL]: voiceMessaging.makeOutboundCallAction,
   [AVAILABLE_ACTIONS.CALL_LEADS]: voiceMessaging.callLeadsAction,
@@ -207,7 +211,8 @@ const ACTION_HANDLERS: Record<string, HandlerFn> = {
   [AVAILABLE_ACTIONS.SMS_LEADS]: voiceMessaging.smsLeadsAction,
   [AVAILABLE_ACTIONS.EMAIL_LEADS]: voiceMessaging.emailLeadsAction,
   [AVAILABLE_ACTIONS.SEND_WHATSAPP_MESSAGE]: voiceMessaging.sendWhatsAppMessage,
-  [AVAILABLE_ACTIONS.GET_WHATSAPP_CONVERSATIONS]: voiceMessaging.getWhatsAppConversations,
+  [AVAILABLE_ACTIONS.GET_WHATSAPP_CONVERSATIONS]:
+    voiceMessaging.getWhatsAppConversations,
   [AVAILABLE_ACTIONS.SUMMARIZE_CALL]: voiceMessaging.summarizeCall,
   [AVAILABLE_ACTIONS.GET_SMART_REPLIES]: voiceMessaging.getSmartReplies,
 
@@ -279,37 +284,50 @@ const ACTION_HANDLERS: Record<string, HandlerFn> = {
   [AVAILABLE_ACTIONS.ADD_WEBSITE_IMAGE]: website.addWebsiteImage,
   [AVAILABLE_ACTIONS.MAKE_IT_LOOK_LIKE]: website.makeItLookLike,
   [AVAILABLE_ACTIONS.SUGGEST_HERO_VARIANTS]: website.suggestHeroVariants,
-  [AVAILABLE_ACTIONS.CHECK_WEBSITE_ACCESSIBILITY]: website.checkWebsiteAccessibility,
+  [AVAILABLE_ACTIONS.CHECK_WEBSITE_ACCESSIBILITY]:
+    website.checkWebsiteAccessibility,
 
   // Analytics, Reports, Financial, Inventory, Industry
   [AVAILABLE_ACTIONS.GET_STATISTICS]: analyticsReports.getStatistics,
   [AVAILABLE_ACTIONS.CREATE_REPORT]: analyticsReports.createReport,
   [AVAILABLE_ACTIONS.GET_RECENT_ACTIVITY]: analyticsReports.getRecentActivity,
   [AVAILABLE_ACTIONS.GET_CUSTOM_REPORT]: analyticsReports.getCustomReport,
-  [AVAILABLE_ACTIONS.CREATE_SCHEDULED_REPORT]: analyticsReports.createScheduledReport,
-  [AVAILABLE_ACTIONS.GET_FOLLOW_UP_PRIORITY]: analyticsReports.getFollowUpPriority,
-  [AVAILABLE_ACTIONS.GET_FOLLOW_UP_SUGGESTIONS]: analyticsReports.getFollowUpSuggestions,
+  [AVAILABLE_ACTIONS.CREATE_SCHEDULED_REPORT]:
+    analyticsReports.createScheduledReport,
+  [AVAILABLE_ACTIONS.GET_FOLLOW_UP_PRIORITY]:
+    analyticsReports.getFollowUpPriority,
+  [AVAILABLE_ACTIONS.GET_FOLLOW_UP_SUGGESTIONS]:
+    analyticsReports.getFollowUpSuggestions,
   [AVAILABLE_ACTIONS.GET_MEETING_PREP]: analyticsReports.getMeetingPrep,
   [AVAILABLE_ACTIONS.GET_DAILY_BRIEFING]: analyticsReports.getDailyBriefing,
-  [AVAILABLE_ACTIONS.GET_AUTO_ACTION_SUGGESTIONS]: analyticsReports.getAutoActionSuggestions,
+  [AVAILABLE_ACTIONS.GET_AUTO_ACTION_SUGGESTIONS]:
+    analyticsReports.getAutoActionSuggestions,
   [AVAILABLE_ACTIONS.LIST_EMAIL_TEMPLATES]: analyticsReports.listEmailTemplates,
   [AVAILABLE_ACTIONS.LIST_SMS_TEMPLATES]: analyticsReports.listSMSTemplates,
   [AVAILABLE_ACTIONS.CREATE_INVOICE]: analyticsReports.createInvoice,
-  [AVAILABLE_ACTIONS.LIST_OVERDUE_INVOICES]: analyticsReports.listOverdueInvoices,
-  [AVAILABLE_ACTIONS.UPDATE_INVOICE_STATUS]: analyticsReports.updateInvoiceStatus,
+  [AVAILABLE_ACTIONS.LIST_OVERDUE_INVOICES]:
+    analyticsReports.listOverdueInvoices,
+  [AVAILABLE_ACTIONS.UPDATE_INVOICE_STATUS]:
+    analyticsReports.updateInvoiceStatus,
   [AVAILABLE_ACTIONS.SEND_INVOICE]: analyticsReports.sendInvoice,
-  [AVAILABLE_ACTIONS.GET_PAYMENT_ANALYTICS]: analyticsReports.getPaymentAnalytics,
-  [AVAILABLE_ACTIONS.GET_REVENUE_BREAKDOWN]: analyticsReports.getRevenueBreakdown,
+  [AVAILABLE_ACTIONS.GET_PAYMENT_ANALYTICS]:
+    analyticsReports.getPaymentAnalytics,
+  [AVAILABLE_ACTIONS.GET_REVENUE_BREAKDOWN]:
+    analyticsReports.getRevenueBreakdown,
   [AVAILABLE_ACTIONS.LIST_FRAUD_ALERTS]: analyticsReports.listFraudAlerts,
   [AVAILABLE_ACTIONS.CHECK_CASH_FLOW]: analyticsReports.checkCashFlow,
   [AVAILABLE_ACTIONS.CHECK_STOCK_LEVELS]: analyticsReports.checkStockLevels,
   [AVAILABLE_ACTIONS.GET_BEST_SELLERS]: analyticsReports.getBestSellers,
   [AVAILABLE_ACTIONS.TRACK_ORDER]: analyticsReports.trackOrder,
   [AVAILABLE_ACTIONS.GET_LOW_STOCK_ALERTS]: analyticsReports.getLowStockAlerts,
-  [AVAILABLE_ACTIONS.GET_WEBSITE_ANALYTICS]: analyticsReports.getWebsiteAnalytics,
-  [AVAILABLE_ACTIONS.GET_VOICE_AI_ANALYTICS]: analyticsReports.getVoiceAIAnalytics,
-  [AVAILABLE_ACTIONS.GET_CONVERSATION_ANALYTICS]: analyticsReports.getConversationAnalytics,
-  [AVAILABLE_ACTIONS.GET_DELIVERY_ANALYTICS]: analyticsReports.getDeliveryAnalytics,
+  [AVAILABLE_ACTIONS.GET_WEBSITE_ANALYTICS]:
+    analyticsReports.getWebsiteAnalytics,
+  [AVAILABLE_ACTIONS.GET_VOICE_AI_ANALYTICS]:
+    analyticsReports.getVoiceAIAnalytics,
+  [AVAILABLE_ACTIONS.GET_CONVERSATION_ANALYTICS]:
+    analyticsReports.getConversationAnalytics,
+  [AVAILABLE_ACTIONS.GET_DELIVERY_ANALYTICS]:
+    analyticsReports.getDeliveryAnalytics,
   [AVAILABLE_ACTIONS.MANAGE_RESERVATIONS]: analyticsReports.manageReservations,
   [AVAILABLE_ACTIONS.MANAGE_TABLES]: analyticsReports.manageTables,
   [AVAILABLE_ACTIONS.GET_TEAM_PERFORMANCE]: analyticsReports.getTeamPerformance,
@@ -317,9 +335,11 @@ const ACTION_HANDLERS: Record<string, HandlerFn> = {
   [AVAILABLE_ACTIONS.CHECK_INTEGRATIONS]: analyticsReports.checkIntegrations,
   [AVAILABLE_ACTIONS.MANAGE_REVIEWS]: analyticsReports.manageReviews,
   [AVAILABLE_ACTIONS.GET_REFERRAL_STATS]: analyticsReports.getReferralStats,
-  [AVAILABLE_ACTIONS.GET_INDUSTRY_ANALYTICS]: analyticsReports.getIndustryAnalytics,
+  [AVAILABLE_ACTIONS.GET_INDUSTRY_ANALYTICS]:
+    analyticsReports.getIndustryAnalytics,
   [AVAILABLE_ACTIONS.GET_BUSINESS_SCORE]: analyticsReports.getBusinessScore,
-  [AVAILABLE_ACTIONS.GET_COST_OPTIMIZATION]: analyticsReports.getCostOptimization,
+  [AVAILABLE_ACTIONS.GET_COST_OPTIMIZATION]:
+    analyticsReports.getCostOptimization,
 };
 
 export async function POST(req: NextRequest) {
@@ -334,7 +354,7 @@ export async function POST(req: NextRequest) {
     // Support server-side calls (e.g. from voice agent) with userId in body - skip session check
     let user;
     if (bodyUserId) {
-      user = await prisma.user.findUnique({
+      user = await getMetaDb().user.findUnique({
         where: { id: bodyUserId },
         select: { id: true, language: true },
       } as any);
@@ -345,7 +365,7 @@ export async function POST(req: NextRequest) {
       if (!session?.user?.email) {
         return apiErrors.unauthorized();
       }
-      user = await prisma.user.findUnique({
+      user = await getMetaDb().user.findUnique({
         where: { email: session.user.email },
         select: { id: true, language: true },
       } as any);
@@ -358,7 +378,7 @@ export async function POST(req: NextRequest) {
     if (!handler) {
       return NextResponse.json(
         { error: `Unknown action: ${action}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -373,19 +393,23 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Error executing action:", error);
     const message = error?.message || "";
-    const userFriendly =
-      message.includes("not found") ? "We couldn't find what you're looking for."
-      : message.includes("required") ? "Some required information is missing."
-      : message.includes("permission") || message.includes("Unauthorized") ? "You don't have permission to do that."
-      : message.includes("JSON") || message.includes("parse") ? "We received an unexpected response. Please try again."
-      : message.length > 100 ? "Something went wrong. Please try again."
-      : message || "Something went wrong. Please try again.";
+    const userFriendly = message.includes("not found")
+      ? "We couldn't find what you're looking for."
+      : message.includes("required")
+        ? "Some required information is missing."
+        : message.includes("permission") || message.includes("Unauthorized")
+          ? "You don't have permission to do that."
+          : message.includes("JSON") || message.includes("parse")
+            ? "We received an unexpected response. Please try again."
+            : message.length > 100
+              ? "Something went wrong. Please try again."
+              : message || "Something went wrong. Please try again.";
     return NextResponse.json(
       {
         error: userFriendly,
         details: process.env.NODE_ENV === "development" ? message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

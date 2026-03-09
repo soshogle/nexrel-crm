@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * Parent Approvals API
  * GET - List all pending parent signups for club admin
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,15 +19,18 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'PENDING';
+    const status = searchParams.get("status") || "PENDING";
 
     // Get all households for this club owner
-    const households = await prisma.clubOSHousehold.findMany({
+    const households = await db.clubOSHousehold.findMany({
       where: {
         clubOwnerId: session.user.id,
-        ...(status !== 'ALL' && { status: status as any }),
+        ...(status !== "ALL" && { status: status as any }),
       },
       include: {
         user: {
@@ -54,21 +57,21 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     // Get summary statistics
     const stats = {
-      pending: await prisma.clubOSHousehold.count({
-        where: { clubOwnerId: session.user.id, status: 'PENDING' },
+      pending: await db.clubOSHousehold.count({
+        where: { clubOwnerId: session.user.id, status: "PENDING" },
       }),
-      active: await prisma.clubOSHousehold.count({
-        where: { clubOwnerId: session.user.id, status: 'ACTIVE' },
+      active: await db.clubOSHousehold.count({
+        where: { clubOwnerId: session.user.id, status: "ACTIVE" },
       }),
-      suspended: await prisma.clubOSHousehold.count({
-        where: { clubOwnerId: session.user.id, status: 'SUSPENDED' },
+      suspended: await db.clubOSHousehold.count({
+        where: { clubOwnerId: session.user.id, status: "SUSPENDED" },
       }),
-      total: await prisma.clubOSHousehold.count({
+      total: await db.clubOSHousehold.count({
         where: { clubOwnerId: session.user.id },
       }),
     };
@@ -78,7 +81,9 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error: any) {
-    console.error('Error fetching parent approvals:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch parent approvals');
+    console.error("Error fetching parent approvals:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch parent approvals",
+    );
   }
 }

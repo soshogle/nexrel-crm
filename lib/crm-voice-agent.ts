@@ -6,10 +6,13 @@
  * and industry DBs may have older schema (e.g. missing User.country).
  */
 
-import { prisma } from '@/lib/db';
-import { PLATFORM_SETTINGS_WITH_OVERRIDES } from '@/lib/elevenlabs-overrides';
-import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
-import { LANGUAGE_PROMPT_SECTION, getElevenLabsLanguageCode } from '@/lib/voice-languages';
+import { getMetaDb } from "@/lib/db/meta-db";
+import { PLATFORM_SETTINGS_WITH_OVERRIDES } from "@/lib/elevenlabs-overrides";
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from "@/lib/voice-time-context";
+import {
+  LANGUAGE_PROMPT_SECTION,
+  getElevenLabsLanguageCode,
+} from "@/lib/voice-languages";
 
 export interface CrmVoiceAgentConfig {
   userId: string;
@@ -21,9 +24,11 @@ export class CrmVoiceAgentService {
   /**
    * Get or create CRM voice agent for user
    */
-  async getOrCreateCrmVoiceAgent(userId: string): Promise<{ agentId: string; created: boolean }> {
+  async getOrCreateCrmVoiceAgent(
+    userId: string,
+  ): Promise<{ agentId: string; created: boolean }> {
     // User ops use main prisma (industry DB may have older schema)
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -35,7 +40,7 @@ export class CrmVoiceAgentService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // If agent exists, verify it's still valid and update functions if needed
@@ -46,31 +51,39 @@ export class CrmVoiceAgentService {
           `https://api.elevenlabs.io/v1/convai/agents/${user.crmVoiceAgentId}`,
           {
             headers: {
-              'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+              "xi-api-key": process.env.ELEVENLABS_API_KEY || "",
             },
-          }
+          },
         );
 
         if (verifyResponse.ok) {
           // Automatically update agent functions if needed (non-blocking)
-          this.updateAgentFunctions(user.crmVoiceAgentId, userId).catch((err) => {
-            console.warn(`⚠️ Failed to auto-update CRM agent functions (non-critical):`, err.message);
-          });
+          this.updateAgentFunctions(user.crmVoiceAgentId, userId).catch(
+            (err) => {
+              console.warn(
+                `⚠️ Failed to auto-update CRM agent functions (non-critical):`,
+                err.message,
+              );
+            },
+          );
           return { agentId: user.crmVoiceAgentId, created: false };
         }
       } catch (error) {
-        console.warn('CRM voice agent verification failed, creating new one:', error);
+        console.warn(
+          "CRM voice agent verification failed, creating new one:",
+          error,
+        );
       }
     }
 
     // Create new CRM voice agent
     const agentId = await this.createCrmVoiceAgent({
       userId: user.id,
-      language: user.language || 'en',
+      language: user.language || "en",
     });
 
     // Update user with agent ID (main prisma)
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: userId },
       data: { crmVoiceAgentId: agentId },
     });
@@ -81,8 +94,10 @@ export class CrmVoiceAgentService {
   /**
    * Create a new CRM voice agent
    */
-  private async createCrmVoiceAgent(config: CrmVoiceAgentConfig): Promise<string> {
-    const user = await prisma.user.findUnique({
+  private async createCrmVoiceAgent(
+    config: CrmVoiceAgentConfig,
+  ): Promise<string> {
+    const user = await getMetaDb().user.findUnique({
       where: { id: config.userId },
       select: {
         name: true,
@@ -94,11 +109,11 @@ export class CrmVoiceAgentService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
-    const businessName = user.name || 'Your Business';
-    const language = config.language || user.language || 'en';
+    const businessName = user.name || "Your Business";
+    const language = config.language || user.language || "en";
 
     // Build CRM-specific system prompt
     const systemPrompt = this.buildCrmSystemPrompt(user, language);
@@ -109,7 +124,7 @@ export class CrmVoiceAgentService {
     // Create agent directly via ElevenLabs API (CRM agents don't need VoiceAgent records)
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      throw new Error('Soshogle AI voice is not configured');
+      throw new Error("Soshogle AI voice is not configured");
     }
 
     const agentPayload = {
@@ -120,17 +135,17 @@ export class CrmVoiceAgentService {
             prompt: systemPrompt,
           },
           first_message: this.getGreetingMessage(language),
-          language: 'en', // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
+          language: "en", // API only accepts ISO codes. Multilingual via prompt + eleven_multilingual_v2 TTS.
         },
         asr: {
-          quality: 'high',
-          provider: 'elevenlabs',
+          quality: "high",
+          provider: "elevenlabs",
         },
         tts: {
-          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-          model_id: 'eleven_multilingual_v2', // Best accent quality for multilingual (matches landing page)
+          voice_id: config.voiceId || "EXAVITQu4vr4xnSDxMaL", // Default voice (Sarah)
+          model_id: "eleven_multilingual_v2", // Best accent quality for multilingual (matches landing page)
         },
-        turn: { mode: 'turn', turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
+        turn: { mode: "turn", turn_timeout: 30 }, // CRITICAL: unset defaults to 7s — causes premature disconnect
         conversation: {
           max_duration_seconds: 1800, // 30 min
           turn_timeout_seconds: 30,
@@ -141,11 +156,11 @@ export class CrmVoiceAgentService {
           enable_auth: false,
         },
         allowed_overrides: {
-          agent: ['prompt', 'language'],
+          agent: ["prompt", "language"],
         },
       },
-      tools: crmFunctions.map(func => ({
-        type: 'function',
+      tools: crmFunctions.map((func) => ({
+        type: "function",
         function: func,
       })),
     };
@@ -157,44 +172,56 @@ export class CrmVoiceAgentService {
       };
     }
 
-    console.log('🔄 Creating ElevenLabs agent with CRM functions...');
-    console.log('📋 Agent payload:', JSON.stringify({
-      name: agentPayload.name,
-      hasConversationConfig: !!agentPayload.conversation_config,
-      hasTools: !!agentPayload.tools && agentPayload.tools.length > 0,
-      toolCount: agentPayload.tools?.length || 0,
-    }, null, 2));
-    
-    const response = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
-      method: 'POST',
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
+    console.log("🔄 Creating ElevenLabs agent with CRM functions...");
+    console.log(
+      "📋 Agent payload:",
+      JSON.stringify(
+        {
+          name: agentPayload.name,
+          hasConversationConfig: !!agentPayload.conversation_config,
+          hasTools: !!agentPayload.tools && agentPayload.tools.length > 0,
+          toolCount: agentPayload.tools?.length || 0,
+        },
+        null,
+        2,
+      ),
+    );
+
+    const response = await fetch(
+      "https://api.elevenlabs.io/v1/convai/agents/create",
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(agentPayload),
       },
-      body: JSON.stringify(agentPayload),
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ ElevenLabs agent creation failed:', {
+      console.error("❌ ElevenLabs agent creation failed:", {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
       });
-      throw new Error(`Failed to create CRM voice agent (${response.status}): ${errorText}`);
+      throw new Error(
+        `Failed to create CRM voice agent (${response.status}): ${errorText}`,
+      );
     }
 
     const agentData = await response.json();
     const agentId = agentData.agent_id;
 
     if (!agentId) {
-      console.error('❌ No agent ID in response:', agentData);
-      throw new Error('Failed to create CRM voice agent: No agent ID returned');
+      console.error("❌ No agent ID in response:", agentData);
+      throw new Error("Failed to create CRM voice agent: No agent ID returned");
     }
 
-    console.log('✅ CRM voice agent created successfully:', agentId);
+    console.log("✅ CRM voice agent created successfully:", agentId);
 
-    console.log('📋 Agent details:', {
+    console.log("📋 Agent details:", {
       agentId,
       name: agentData.name,
       createdAt: agentData.created_at_unix_secs,
@@ -207,11 +234,13 @@ export class CrmVoiceAgentService {
    * Build CRM-specific system prompt
    */
   private buildCrmSystemPrompt(user: any, _language: string): string {
-    const { getConfidentialityGuard } = require('@/lib/ai-confidentiality-guard');
+    const {
+      getConfidentialityGuard,
+    } = require("@/lib/ai-confidentiality-guard");
 
     return `${LANGUAGE_PROMPT_SECTION}
 
-You are an AI assistant for ${user.name || 'the CRM'}. You help users manage their CRM through voice commands and provide real-time insights about their business data.
+You are an AI assistant for ${user.name || "the CRM"}. You help users manage their CRM through voice commands and provide real-time insights about their business data.
 
 Your role:
 - Query and report CRM statistics (revenue, leads, deals, contacts, campaigns)
@@ -303,12 +332,12 @@ ${getConfidentialityGuard()}`;
    */
   private getGreetingMessage(language: string): string {
     const greetings: Record<string, string> = {
-      'en': "I'm your business intelligence agent. How can I help you?",
-      'fr': "Je suis votre agent d'intelligence business. Comment puis-je vous aider?",
-      'es': 'Soy tu agente de inteligencia de negocio. ¿Cómo puedo ayudarte?',
-      'zh': '我是您的商业智能助手。有什么可以帮您的？',
+      en: "I'm your business intelligence agent. How can I help you?",
+      fr: "Je suis votre agent d'intelligence business. Comment puis-je vous aider?",
+      es: "Soy tu agente de inteligencia de negocio. ¿Cómo puedo ayudarte?",
+      zh: "我是您的商业智能助手。有什么可以帮您的？",
     };
-    return greetings[language] || greetings['en'];
+    return greetings[language] || greetings["en"];
   }
 
   /**
@@ -327,14 +356,17 @@ ${getConfidentialityGuard()}`;
       parts.push(`Contact Email: ${user.email}`);
     }
 
-    return parts.join('\n');
+    return parts.join("\n");
   }
 
   /**
    * Get function server URL for CRM voice agent functions
    */
   private getFunctionServerUrl(): string {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.nexrel.soshogle.com';
+    const baseUrl =
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://www.nexrel.soshogle.com";
     return `${baseUrl}/api/crm-voice-agent/functions`;
   }
 
@@ -343,644 +375,943 @@ ${getConfidentialityGuard()}`;
    */
   private buildCrmFunctions() {
     const serverUrl = this.getFunctionServerUrl();
-    
+
     return [
       {
-        name: 'get_statistics',
-        description: 'Get CRM statistics, graphs/charts, and "what if" scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, leads by source, OR "what if" scenarios. For "leads by source" or "how many leads from each source", pass chartIntent: "leads by source".',
+        name: "get_statistics",
+        description:
+          'Get CRM statistics, graphs/charts, and "what if" scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, leads by source, OR "what if" scenarios. For "leads by source" or "how many leads from each source", pass chartIntent: "leads by source".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             period: {
-              type: 'string',
-              description: 'Time period. Examples: "last_7_months", "last_year", "last_30_days", "today", "all_time"',
+              type: "string",
+              description:
+                'Time period. Examples: "last_7_months", "last_year", "last_30_days", "today", "all_time"',
             },
             compareWith: {
-              type: 'string',
-              description: 'Compare with previous period. Examples: "previous_year", "previous_period"',
+              type: "string",
+              description:
+                'Compare with previous period. Examples: "previous_year", "previous_period"',
             },
             chartIntent: {
-              type: 'string',
-              description: 'Specific chart to show. Use "leads by source" when user asks about lead sources, "revenue by month" for monthly revenue, "deals by stage" for pipeline breakdown.',
+              type: "string",
+              description:
+                'Specific chart to show. Use "leads by source" when user asks about lead sources, "revenue by month" for monthly revenue, "deals by stage" for pipeline breakdown.',
             },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'create_report',
-        description: 'Create and save a report to the Reports page. Use when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". The report will be saved and displayed on the Reports page.',
+        name: "create_report",
+        description:
+          'Create and save a report to the Reports page. Use when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". The report will be saved and displayed on the Reports page.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             title: {
-              type: 'string',
-              description: 'Report title (required). E.g. "Sales Report Q1", "Leads Overview"',
+              type: "string",
+              description:
+                'Report title (required). E.g. "Sales Report Q1", "Leads Overview"',
             },
             reportType: {
-              type: 'string',
-              description: 'Type of report',
-              enum: ['sales', 'leads', 'revenue', 'overview', 'custom'],
+              type: "string",
+              description: "Type of report",
+              enum: ["sales", "leads", "revenue", "overview", "custom"],
             },
             period: {
-              type: 'string',
-              description: 'Time period. Examples: "last_7_days", "last_month", "all_time"',
+              type: "string",
+              description:
+                'Time period. Examples: "last_7_days", "last_month", "all_time"',
             },
           },
-          required: ['title'],
+          required: ["title"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'create_lead',
-        description: 'Create a new contact/lead in the CRM. Use when user says "create a lead", "add a contact", "create contact [name]". Always call this function when user asks to create a lead - do not just acknowledge.',
+        name: "create_lead",
+        description:
+          'Create a new contact/lead in the CRM. Use when user says "create a lead", "add a contact", "create contact [name]". Always call this function when user asks to create a lead - do not just acknowledge.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             name: {
-              type: 'string',
-              description: 'Contact person\'s name (required)',
+              type: "string",
+              description: "Contact person's name (required)",
             },
             email: {
-              type: 'string',
-              description: 'Contact\'s email address (optional)',
+              type: "string",
+              description: "Contact's email address (optional)",
             },
             phone: {
-              type: 'string',
-              description: 'Contact\'s phone number (optional)',
+              type: "string",
+              description: "Contact's phone number (optional)",
             },
             company: {
-              type: 'string',
-              description: 'Company or business name (optional)',
+              type: "string",
+              description: "Company or business name (optional)",
             },
             status: {
-              type: 'string',
-              description: 'Lead status (optional, defaults to NEW)',
-              enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+              type: "string",
+              description: "Lead status (optional, defaults to NEW)",
+              enum: ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"],
             },
             source: {
-              type: 'string',
-              description: 'Lead source (optional, defaults to Voice AI when created via voice)',
+              type: "string",
+              description:
+                "Lead source (optional, defaults to Voice AI when created via voice)",
             },
           },
-          required: ['name'],
+          required: ["name"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'create_deal',
-        description: 'Create a new deal/opportunity in the sales pipeline',
+        name: "create_deal",
+        description: "Create a new deal/opportunity in the sales pipeline",
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             title: {
-              type: 'string',
-              description: 'Deal title (required)',
+              type: "string",
+              description: "Deal title (required)",
             },
             value: {
-              type: 'number',
-              description: 'Deal value in dollars (optional)',
+              type: "number",
+              description: "Deal value in dollars (optional)",
             },
             leadId: {
-              type: 'string',
-              description: 'Associated lead/contact ID (optional)',
+              type: "string",
+              description: "Associated lead/contact ID (optional)",
             },
           },
-          required: ['title'],
+          required: ["title"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'list_leads',
-        description: 'List contacts/leads. Use when user asks "how many leads", "website leads", "leads from my website", "show my contacts", or wants to see leads. Use period: "today" for leads created today. Use source: "website" for website leads (form, widget, voice), or specific source like "Website Form", "Embedded Widget", "Website Voice AI".',
+        name: "list_leads",
+        description:
+          'List contacts/leads. Use when user asks "how many leads", "website leads", "leads from my website", "show my contacts", or wants to see leads. Use period: "today" for leads created today. Use source: "website" for website leads (form, widget, voice), or specific source like "Website Form", "Embedded Widget", "Website Voice AI".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             status: {
-              type: 'string',
-              description: 'Filter by status (optional)',
-              enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+              type: "string",
+              description: "Filter by status (optional)",
+              enum: ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"],
             },
             source: {
-              type: 'string',
-              description: 'Filter by source. Use "website" for any website lead (form, widget, voice). Or specific: "Website Form", "Embedded Widget", "Website Voice AI", "Voice AI", "manual", "referral".',
+              type: "string",
+              description:
+                'Filter by source. Use "website" for any website lead (form, widget, voice). Or specific: "Website Form", "Embedded Widget", "Website Voice AI", "Voice AI", "manual", "referral".',
             },
             period: {
-              type: 'string',
-              description: 'Time filter: "today" for leads created today, "all" for all time',
-              enum: ['today', 'all'],
+              type: "string",
+              description:
+                'Time filter: "today" for leads created today, "all" for all time',
+              enum: ["today", "all"],
             },
             limit: {
-              type: 'number',
-              description: 'Maximum number of results (optional, default 10)',
+              type: "number",
+              description: "Maximum number of results (optional, default 10)",
             },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'list_deals',
-        description: 'List deals in the sales pipeline',
+        name: "list_deals",
+        description: "List deals in the sales pipeline",
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             limit: {
-              type: 'number',
-              description: 'Maximum number of results (optional, default 10)',
+              type: "number",
+              description: "Maximum number of results (optional, default 10)",
             },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'search_contacts',
-        description: 'Search for contacts by name, email, or company',
+        name: "search_contacts",
+        description: "Search for contacts by name, email, or company",
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             query: {
-              type: 'string',
-              description: 'Search query (required)',
+              type: "string",
+              description: "Search query (required)",
             },
           },
-          required: ['query'],
+          required: ["query"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'get_recent_activity',
-        description: 'Get recent CRM activity including recent leads, deals, and updates',
+        name: "get_recent_activity",
+        description:
+          "Get recent CRM activity including recent leads, deals, and updates",
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             limit: {
-              type: 'number',
-              description: 'Maximum number of results (optional, default 10)',
+              type: "number",
+              description: "Maximum number of results (optional, default 10)",
             },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'list_voice_agents',
-        description: 'List the user\'s voice AI agents/employees. Use when user asks which agents they have, or to confirm which agent to use before making calls.',
-        parameters: { type: 'object', properties: {} },
+        name: "list_voice_agents",
+        description:
+          "List the user's voice AI agents/employees. Use when user asks which agents they have, or to confirm which agent to use before making calls.",
+        parameters: { type: "object", properties: {} },
         server_url: serverUrl,
       },
       {
-        name: 'make_outbound_call',
-        description: 'Call a single contact with a specific purpose. Use when user says "call [contact] and [explain/discuss/tell them about] [purpose]". E.g. "call John and explain our new promo", "call contact Be about the discount". If user specifies an agent ("use Sarah"), pass voiceAgentName.',
+        name: "make_outbound_call",
+        description:
+          'Call a single contact with a specific purpose. Use when user says "call [contact] and [explain/discuss/tell them about] [purpose]". E.g. "call John and explain our new promo", "call contact Be about the discount". If user specifies an agent ("use Sarah"), pass voiceAgentName.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact to call (required)' },
-            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
-            purpose: { type: 'string', description: 'What to discuss - e.g. new promo, 10% discount (required)' },
-            notes: { type: 'string', description: 'Talking points or script for the call (optional)' },
-            voiceAgentName: { type: 'string', description: 'Which agent to use if user has a preference (optional)' },
-            immediate: { type: 'boolean', description: 'Call now (true) or schedule (false). Default true.' },
+            contactName: {
+              type: "string",
+              description: "Name of contact to call (required)",
+            },
+            phoneNumber: {
+              type: "string",
+              description: "Phone number (optional if contact exists)",
+            },
+            purpose: {
+              type: "string",
+              description:
+                "What to discuss - e.g. new promo, 10% discount (required)",
+            },
+            notes: {
+              type: "string",
+              description: "Talking points or script for the call (optional)",
+            },
+            voiceAgentName: {
+              type: "string",
+              description:
+                "Which agent to use if user has a preference (optional)",
+            },
+            immediate: {
+              type: "boolean",
+              description: "Call now (true) or schedule (false). Default true.",
+            },
           },
-          required: ['contactName', 'purpose'],
+          required: ["contactName", "purpose"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'call_leads',
-        description: 'Call multiple leads that match criteria. Use when user says "call all my leads from today", "call today\'s leads and give them 10% off product B", "call all new leads and explain the promo". System auto-selects best agent for the task unless user specifies one.',
+        name: "call_leads",
+        description:
+          'Call multiple leads that match criteria. Use when user says "call all my leads from today", "call today\'s leads and give them 10% off product B", "call all new leads and explain the promo". System auto-selects best agent for the task unless user specifies one.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            purpose: { type: 'string', description: 'What to tell them - e.g. 10% off product B, new promo (required)' },
-            notes: { type: 'string', description: 'Talking points (optional)' },
+            purpose: {
+              type: "string",
+              description:
+                "What to tell them - e.g. 10% off product B, new promo (required)",
+            },
+            notes: { type: "string", description: "Talking points (optional)" },
             period: {
-              type: 'string',
-              description: 'Which leads: "today" (created today), "yesterday", "last_7_days", "last_30_days"',
-              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+              type: "string",
+              description:
+                'Which leads: "today" (created today), "yesterday", "last_7_days", "last_30_days"',
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
             },
-            status: { type: 'string', description: 'Filter by lead status (optional)' },
-            limit: { type: 'number', description: 'Max leads to call (default 50)' },
-            voiceAgentName: { type: 'string', description: 'Which agent to use if user has a preference (optional)' },
+            status: {
+              type: "string",
+              description: "Filter by lead status (optional)",
+            },
+            limit: {
+              type: "number",
+              description: "Max leads to call (default 50)",
+            },
+            voiceAgentName: {
+              type: "string",
+              description:
+                "Which agent to use if user has a preference (optional)",
+            },
           },
-          required: ['purpose'],
+          required: ["purpose"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'draft_sms',
-        description: 'Draft an SMS to show the user before sending. ALWAYS use first when user asks to text a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
+        name: "draft_sms",
+        description:
+          'Draft an SMS to show the user before sending. ALWAYS use first when user asks to text a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact to text (required)' },
-            message: { type: 'string', description: 'SMS message content (required)' },
-            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
+            contactName: {
+              type: "string",
+              description: "Name of contact to text (required)",
+            },
+            message: {
+              type: "string",
+              description: "SMS message content (required)",
+            },
+            phoneNumber: {
+              type: "string",
+              description: "Phone number (optional if contact exists)",
+            },
           },
-          required: ['contactName', 'message'],
+          required: ["contactName", "message"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'send_sms',
-        description: 'Send SMS immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_sms first.',
+        name: "send_sms",
+        description:
+          'Send SMS immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_sms first.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact to text (required)' },
-            message: { type: 'string', description: 'SMS message content (required)' },
-            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
+            contactName: {
+              type: "string",
+              description: "Name of contact to text (required)",
+            },
+            message: {
+              type: "string",
+              description: "SMS message content (required)",
+            },
+            phoneNumber: {
+              type: "string",
+              description: "Phone number (optional if contact exists)",
+            },
           },
-          required: ['contactName', 'message'],
+          required: ["contactName", "message"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'schedule_sms',
-        description: 'Schedule SMS for later. Use when user says "schedule it", "send it tomorrow", "text them at 9am". Requires scheduledFor (ISO date).',
+        name: "schedule_sms",
+        description:
+          'Schedule SMS for later. Use when user says "schedule it", "send it tomorrow", "text them at 9am". Requires scheduledFor (ISO date).',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact (required)' },
-            message: { type: 'string', description: 'SMS message (required)' },
-            scheduledFor: { type: 'string', description: 'ISO date/time when to send' },
+            contactName: {
+              type: "string",
+              description: "Name of contact (required)",
+            },
+            message: { type: "string", description: "SMS message (required)" },
+            scheduledFor: {
+              type: "string",
+              description: "ISO date/time when to send",
+            },
           },
-          required: ['contactName', 'message', 'scheduledFor'],
+          required: ["contactName", "message", "scheduledFor"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'draft_email',
-        description: 'Draft an email to show the user before sending. ALWAYS use first when user asks to email a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
+        name: "draft_email",
+        description:
+          'Draft an email to show the user before sending. ALWAYS use first when user asks to email a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact to email (required)' },
-            subject: { type: 'string', description: 'Email subject (required)' },
-            body: { type: 'string', description: 'Email body content (required)' },
-            email: { type: 'string', description: 'Email address (optional if contact exists)' },
+            contactName: {
+              type: "string",
+              description: "Name of contact to email (required)",
+            },
+            subject: {
+              type: "string",
+              description: "Email subject (required)",
+            },
+            body: {
+              type: "string",
+              description: "Email body content (required)",
+            },
+            email: {
+              type: "string",
+              description: "Email address (optional if contact exists)",
+            },
           },
-          required: ['contactName', 'subject', 'body'],
+          required: ["contactName", "subject", "body"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'send_email',
-        description: 'Send email immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_email first.',
+        name: "send_email",
+        description:
+          'Send email immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_email first.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact to email (required)' },
-            subject: { type: 'string', description: 'Email subject (required)' },
-            body: { type: 'string', description: 'Email body content (required)' },
-            email: { type: 'string', description: 'Email address (optional if contact exists)' },
+            contactName: {
+              type: "string",
+              description: "Name of contact to email (required)",
+            },
+            subject: {
+              type: "string",
+              description: "Email subject (required)",
+            },
+            body: {
+              type: "string",
+              description: "Email body content (required)",
+            },
+            email: {
+              type: "string",
+              description: "Email address (optional if contact exists)",
+            },
           },
-          required: ['contactName', 'subject', 'body'],
+          required: ["contactName", "subject", "body"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'schedule_email',
-        description: 'Schedule email for later. Use when user says "schedule it", "send it tomorrow", "send at 9am". Requires scheduledFor (ISO date).',
+        name: "schedule_email",
+        description:
+          'Schedule email for later. Use when user says "schedule it", "send it tomorrow", "send at 9am". Requires scheduledFor (ISO date).',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Name of contact (required)' },
-            subject: { type: 'string', description: 'Email subject (required)' },
-            body: { type: 'string', description: 'Email body (required)' },
-            scheduledFor: { type: 'string', description: 'ISO date/time when to send' },
+            contactName: {
+              type: "string",
+              description: "Name of contact (required)",
+            },
+            subject: {
+              type: "string",
+              description: "Email subject (required)",
+            },
+            body: { type: "string", description: "Email body (required)" },
+            scheduledFor: {
+              type: "string",
+              description: "ISO date/time when to send",
+            },
           },
-          required: ['contactName', 'subject', 'body', 'scheduledFor'],
+          required: ["contactName", "subject", "body", "scheduledFor"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'sms_leads',
-        description: 'Send SMS to multiple leads by criteria. Use when user says "text all my leads from today", "SMS today\'s leads with [message]", "send SMS to all new leads". Use period: "today" for leads created today.',
+        name: "sms_leads",
+        description:
+          'Send SMS to multiple leads by criteria. Use when user says "text all my leads from today", "SMS today\'s leads with [message]", "send SMS to all new leads". Use period: "today" for leads created today.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            message: { type: 'string', description: 'SMS message content (required). Use {name} for personalization.' },
+            message: {
+              type: "string",
+              description:
+                "SMS message content (required). Use {name} for personalization.",
+            },
             period: {
-              type: 'string',
-              description: 'Which leads: today, yesterday, last_7_days, last_30_days',
-              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+              type: "string",
+              description:
+                "Which leads: today, yesterday, last_7_days, last_30_days",
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
             },
-            status: { type: 'string', description: 'Filter by lead status (optional)' },
-            limit: { type: 'number', description: 'Max leads (default 50)' },
+            status: {
+              type: "string",
+              description: "Filter by lead status (optional)",
+            },
+            limit: { type: "number", description: "Max leads (default 50)" },
           },
-          required: ['message'],
+          required: ["message"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'email_leads',
-        description: 'Send email to multiple leads by criteria. Use when user says "email all my leads from today", "send email to today\'s leads about [topic]", "email all new leads". Use period: "today" for leads created today.',
+        name: "email_leads",
+        description:
+          'Send email to multiple leads by criteria. Use when user says "email all my leads from today", "send email to today\'s leads about [topic]", "email all new leads". Use period: "today" for leads created today.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            subject: { type: 'string', description: 'Email subject (required)' },
-            message: { type: 'string', description: 'Email body content (required). Use {name} for personalization.' },
+            subject: {
+              type: "string",
+              description: "Email subject (required)",
+            },
+            message: {
+              type: "string",
+              description:
+                "Email body content (required). Use {name} for personalization.",
+            },
             period: {
-              type: 'string',
-              description: 'Which leads: today, yesterday, last_7_days, last_30_days',
-              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+              type: "string",
+              description:
+                "Which leads: today, yesterday, last_7_days, last_30_days",
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
             },
-            status: { type: 'string', description: 'Filter by lead status (optional)' },
-            limit: { type: 'number', description: 'Max leads (default 50)' },
+            status: {
+              type: "string",
+              description: "Filter by lead status (optional)",
+            },
+            limit: { type: "number", description: "Max leads (default 50)" },
           },
-          required: ['subject', 'message'],
+          required: ["subject", "message"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'add_workflow_task',
-        description: 'Add a task/step to the workflow the user is currently building. Use when user describes a step: "add send email", "add a step to call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.',
+        name: "add_workflow_task",
+        description:
+          'Add a task/step to the workflow the user is currently building. Use when user describes a step: "add send email", "add a step to call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            name: { type: 'string', description: 'Task name (required). E.g. "Send welcome email", "Call contact", "2 day delay"' },
+            name: {
+              type: "string",
+              description:
+                'Task name (required). E.g. "Send welcome email", "Call contact", "2 day delay"',
+            },
             taskType: {
-              type: 'string',
-              description: 'Task type - TRIGGER, EMAIL, SMS, VOICE_CALL, DELAY, or CUSTOM',
-              enum: ['TRIGGER', 'EMAIL', 'SMS', 'VOICE_CALL', 'DELAY', 'CREATE_TASK', 'CUSTOM'],
+              type: "string",
+              description:
+                "Task type - TRIGGER, EMAIL, SMS, VOICE_CALL, DELAY, or CUSTOM",
+              enum: [
+                "TRIGGER",
+                "EMAIL",
+                "SMS",
+                "VOICE_CALL",
+                "DELAY",
+                "CREATE_TASK",
+                "CUSTOM",
+              ],
             },
-            workflowId: { type: 'string', description: 'Workflow ID (optional - uses active draft if not provided)' },
+            workflowId: {
+              type: "string",
+              description:
+                "Workflow ID (optional - uses active draft if not provided)",
+            },
           },
-          required: ['name'],
+          required: ["name"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'create_task',
-        description: 'Create a CRM task. Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".',
+        name: "create_task",
+        description:
+          'Create a CRM task. Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            title: { type: 'string', description: 'Task title (required)' },
-            description: { type: 'string', description: 'Task description (optional)' },
-            dueDate: { type: 'string', description: 'Due date YYYY-MM-DD (optional)' },
-            priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH'], description: 'Priority (optional)' },
+            title: { type: "string", description: "Task title (required)" },
+            description: {
+              type: "string",
+              description: "Task description (optional)",
+            },
+            dueDate: {
+              type: "string",
+              description: "Due date YYYY-MM-DD (optional)",
+            },
+            priority: {
+              type: "string",
+              enum: ["LOW", "MEDIUM", "HIGH"],
+              description: "Priority (optional)",
+            },
           },
-          required: ['title'],
+          required: ["title"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'list_tasks',
-        description: 'List tasks. Use when user says "show my overdue tasks", "what\'s due today?", "my tasks".',
+        name: "list_tasks",
+        description:
+          'List tasks. Use when user says "show my overdue tasks", "what\'s due today?", "my tasks".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            overdue: { type: 'boolean', description: 'Show only overdue tasks (optional)' },
-            limit: { type: 'number', description: 'Max results (default 20)' },
-          },
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'complete_task',
-        description: 'Mark a task as done. Use when user says "mark X as done", "complete the task".',
-        parameters: {
-          type: 'object',
-          properties: {
-            taskId: { type: 'string', description: 'Task ID (optional)' },
-            taskTitle: { type: 'string', description: 'Task title to match (use if taskId not known)' },
-          },
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'create_ai_employee',
-        description: 'Create an AI Team employee. In this CRM, "employee" means AI assistant. Use when user says "create an employee", "add an employee", "add an AI employee", "create a sales assistant named Sarah". Requires profession (role) and customName. If missing, ask for role and name.',
-        parameters: {
-          type: 'object',
-          properties: {
-            profession: { type: 'string', description: 'Role e.g. Sales Assistant, Follow-up Specialist (required)' },
-            customName: { type: 'string', description: 'Display name e.g. Sarah, Alex (required)' },
-          },
-          required: ['profession', 'customName'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'list_ai_employees',
-        description: 'List AI Team employees. Use when user says "show my AI team", "list my employees", "who are my AI assistants?".',
-        parameters: { type: 'object', properties: {} },
-        server_url: serverUrl,
-      },
-      {
-        name: 'add_note',
-        description: 'Add a note to a contact or deal. Use when user says "add a note to John: interested in enterprise", "log note on Acme deal: sent proposal Tuesday".',
-        parameters: {
-          type: 'object',
-          properties: {
-            contactName: { type: 'string', description: 'Contact name (for contact notes)' },
-            dealTitle: { type: 'string', description: 'Deal title (for deal notes)' },
-            content: { type: 'string', description: 'Note content (required)' },
-          },
-          required: ['content'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'create_appointment',
-        description: 'Schedule an appointment or meeting. Use when user says "schedule meeting with John", "book appointment for Tuesday 2pm", "create appointment with Acme Corp".',
-        parameters: {
-          type: 'object',
-          properties: {
-            customerName: { type: 'string', description: 'Customer or attendee name (required)' },
-            customerEmail: { type: 'string', description: 'Customer email (required)' },
-            customerPhone: { type: 'string', description: 'Customer phone (optional)' },
-            date: { type: 'string', description: 'Appointment date YYYY-MM-DD (required)' },
-            time: { type: 'string', description: 'Appointment time HH:MM (required)' },
-            duration: { type: 'number', description: 'Duration in minutes (optional, default 30)' },
-          },
-          required: ['customerName', 'customerEmail', 'date', 'time'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'list_appointments',
-        description: 'List appointments. Use when user says "show my appointments", "what\'s on my calendar?", "list today\'s appointments".',
-        parameters: {
-          type: 'object',
-          properties: {
-            date: { type: 'string', description: 'Filter by date YYYY-MM-DD (optional)' },
-            limit: { type: 'number', description: 'Max results (default 20)' },
+            overdue: {
+              type: "boolean",
+              description: "Show only overdue tasks (optional)",
+            },
+            limit: { type: "number", description: "Max results (default 20)" },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'update_deal_stage',
-        description: 'Move a deal to a pipeline stage. Use when user says "move Acme deal to Negotiation", "mark Big Corp deal as won".',
+        name: "complete_task",
+        description:
+          'Mark a task as done. Use when user says "mark X as done", "complete the task".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            dealTitle: { type: 'string', description: 'Deal title (required)' },
-            stageName: { type: 'string', description: 'Target stage: Negotiation, Won, Lost, Proposal (required)' },
-          },
-          required: ['dealTitle', 'stageName'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'create_invoice',
-        description: 'Create an invoice. Use when user says "send invoice to John for $500", "create invoice for Acme deal".',
-        parameters: {
-          type: 'object',
-          properties: {
-            contactName: { type: 'string', description: 'Customer name (required)' },
-            amount: { type: 'number', description: 'Amount in dollars (required)' },
-            description: { type: 'string', description: 'Line item description (optional)' },
-          },
-          required: ['contactName', 'amount'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'list_overdue_invoices',
-        description: 'List unpaid/overdue invoices. Use when user says "show unpaid invoices", "what\'s overdue?".',
-        parameters: {
-          type: 'object',
-          properties: {
-            limit: { type: 'number', description: 'Max results (default 20)' },
+            taskId: { type: "string", description: "Task ID (optional)" },
+            taskTitle: {
+              type: "string",
+              description: "Task title to match (use if taskId not known)",
+            },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'get_daily_briefing',
-        description: 'Get daily summary. Use when user says "what do I need to focus on today?", "morning digest", "what should I prioritize?".',
-        parameters: { type: 'object', properties: {} },
-        server_url: serverUrl,
-      },
-      {
-        name: 'update_deal',
-        description: 'Update deal value or close date. Use when user says "update Acme deal to $15,000", "set close date to March 15".',
+        name: "create_ai_employee",
+        description:
+          'Create an AI Team employee. In this CRM, "employee" means AI assistant. Use when user says "create an employee", "add an employee", "add an AI employee", "create a sales assistant named Sarah". Requires profession (role) and customName. If missing, ask for role and name.',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            dealTitle: { type: 'string', description: 'Deal title (required)' },
-            value: { type: 'number', description: 'New value in dollars (optional)' },
-            expectedCloseDate: { type: 'string', description: 'Close date YYYY-MM-DD (optional)' },
+            profession: {
+              type: "string",
+              description:
+                "Role e.g. Sales Assistant, Follow-up Specialist (required)",
+            },
+            customName: {
+              type: "string",
+              description: "Display name e.g. Sarah, Alex (required)",
+            },
           },
-          required: ['dealTitle'],
+          required: ["profession", "customName"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'get_follow_up_suggestions',
-        description: 'Get who to contact next. Use when user says "who haven\'t I contacted in 2 weeks?", "who should I follow up with?".',
+        name: "list_ai_employees",
+        description:
+          'List AI Team employees. Use when user says "show my AI team", "list my employees", "who are my AI assistants?".',
+        parameters: { type: "object", properties: {} },
+        server_url: serverUrl,
+      },
+      {
+        name: "add_note",
+        description:
+          'Add a note to a contact or deal. Use when user says "add a note to John: interested in enterprise", "log note on Acme deal: sent proposal Tuesday".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            period: { type: 'string', enum: ['last_week', 'last_2_weeks', 'last_month'], description: 'Time period' },
-            limit: { type: 'number', description: 'Max suggestions (default 10)' },
+            contactName: {
+              type: "string",
+              description: "Contact name (for contact notes)",
+            },
+            dealTitle: {
+              type: "string",
+              description: "Deal title (for deal notes)",
+            },
+            content: { type: "string", description: "Note content (required)" },
+          },
+          required: ["content"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "create_appointment",
+        description:
+          'Schedule an appointment or meeting. Use when user says "schedule meeting with John", "book appointment for Tuesday 2pm", "create appointment with Acme Corp".',
+        parameters: {
+          type: "object",
+          properties: {
+            customerName: {
+              type: "string",
+              description: "Customer or attendee name (required)",
+            },
+            customerEmail: {
+              type: "string",
+              description: "Customer email (required)",
+            },
+            customerPhone: {
+              type: "string",
+              description: "Customer phone (optional)",
+            },
+            date: {
+              type: "string",
+              description: "Appointment date YYYY-MM-DD (required)",
+            },
+            time: {
+              type: "string",
+              description: "Appointment time HH:MM (required)",
+            },
+            duration: {
+              type: "number",
+              description: "Duration in minutes (optional, default 30)",
+            },
+          },
+          required: ["customerName", "customerEmail", "date", "time"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "list_appointments",
+        description:
+          'List appointments. Use when user says "show my appointments", "what\'s on my calendar?", "list today\'s appointments".',
+        parameters: {
+          type: "object",
+          properties: {
+            date: {
+              type: "string",
+              description: "Filter by date YYYY-MM-DD (optional)",
+            },
+            limit: { type: "number", description: "Max results (default 20)" },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'get_meeting_prep',
-        description: 'Pre-call briefing. Use when user says "what should I know before my call with John?", "prep me for my meeting with Acme".',
+        name: "update_deal_stage",
+        description:
+          'Move a deal to a pipeline stage. Use when user says "move Acme deal to Negotiation", "mark Big Corp deal as won".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            contactName: { type: 'string', description: 'Contact name (required)' },
+            dealTitle: { type: "string", description: "Deal title (required)" },
+            stageName: {
+              type: "string",
+              description:
+                "Target stage: Negotiation, Won, Lost, Proposal (required)",
+            },
           },
-          required: ['contactName'],
+          required: ["dealTitle", "stageName"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'create_bulk_tasks',
-        description: 'Create follow-up tasks for leads. Use when user says "create follow-up tasks for all leads from this week", "add tasks for today\'s leads".',
+        name: "create_invoice",
+        description:
+          'Create an invoice. Use when user says "send invoice to John for $500", "create invoice for Acme deal".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            taskTitle: { type: 'string', description: 'Task title, use {name} for contact name (required)' },
-            period: { type: 'string', enum: ['today', 'last_week', 'last_2_weeks'], description: 'Which leads' },
-            dueInDays: { type: 'number', description: 'Days from now for due date (default 1)' },
+            contactName: {
+              type: "string",
+              description: "Customer name (required)",
+            },
+            amount: {
+              type: "number",
+              description: "Amount in dollars (required)",
+            },
+            description: {
+              type: "string",
+              description: "Line item description (optional)",
+            },
           },
-          required: ['taskTitle'],
+          required: ["contactName", "amount"],
         },
         server_url: serverUrl,
       },
       {
-        name: 'clone_website',
-        description: 'Clone a website from an existing URL. Use when user says "clone my website from example.com", "clone example.com", "rebuild my site from a URL". Requires sourceUrl. Optional name for the new site.',
+        name: "list_overdue_invoices",
+        description:
+          'List unpaid/overdue invoices. Use when user says "show unpaid invoices", "what\'s overdue?".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            sourceUrl: { type: 'string', description: 'URL of website to clone (required). E.g. "example.com" or "https://example.com"' },
-            name: { type: 'string', description: 'Name for the new cloned website (optional)' },
-          },
-          required: ['sourceUrl'],
-        },
-        server_url: serverUrl,
-      },
-      {
-        name: 'create_website',
-        description: 'Create a new website from a template. Use when user says "create a new website", "build a website for my plumbing business", "make me a service website". Optional: name, templateType (SERVICE or PRODUCT), businessDescription, services, products.',
-        parameters: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Website name (optional, defaults to New Website)' },
-            templateType: { type: 'string', enum: ['SERVICE', 'PRODUCT'], description: 'SERVICE for service business, PRODUCT for store/ecommerce' },
-            businessDescription: { type: 'string', description: 'Brief business description (optional)' },
-            services: { type: 'string', description: 'Comma-separated services (optional)' },
-            products: { type: 'string', description: 'Comma-separated products (optional)' },
+            limit: { type: "number", description: "Max results (default 20)" },
           },
         },
         server_url: serverUrl,
       },
       {
-        name: 'list_websites',
-        description: 'List the user\'s websites. Use when user says "show my websites", "how many websites do I have", "list my sites".',
-        parameters: { type: 'object', properties: {} },
+        name: "get_daily_briefing",
+        description:
+          'Get daily summary. Use when user says "what do I need to focus on today?", "morning digest", "what should I prioritize?".',
+        parameters: { type: "object", properties: {} },
         server_url: serverUrl,
       },
       {
-        name: 'modify_website',
-        description: 'Modify website content via AI. Use when user says "change the hero text to Welcome", "update the about section", "add a pricing section". Requires websiteId (from active_website_id when editing) and message describing the change.',
+        name: "update_deal",
+        description:
+          'Update deal value or close date. Use when user says "update Acme deal to $15,000", "set close date to March 15".',
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
-            websiteId: { type: 'string', description: 'Website ID to modify (required). Use active_website_id from context when user is editing a site.' },
-            message: { type: 'string', description: 'Description of the change (required). E.g. "Change the hero title to Welcome to Acme"' },
+            dealTitle: { type: "string", description: "Deal title (required)" },
+            value: {
+              type: "number",
+              description: "New value in dollars (optional)",
+            },
+            expectedCloseDate: {
+              type: "string",
+              description: "Close date YYYY-MM-DD (optional)",
+            },
           },
-          required: ['websiteId', 'message'],
+          required: ["dealTitle"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "get_follow_up_suggestions",
+        description:
+          'Get who to contact next. Use when user says "who haven\'t I contacted in 2 weeks?", "who should I follow up with?".',
+        parameters: {
+          type: "object",
+          properties: {
+            period: {
+              type: "string",
+              enum: ["last_week", "last_2_weeks", "last_month"],
+              description: "Time period",
+            },
+            limit: {
+              type: "number",
+              description: "Max suggestions (default 10)",
+            },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "get_meeting_prep",
+        description:
+          'Pre-call briefing. Use when user says "what should I know before my call with John?", "prep me for my meeting with Acme".',
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: {
+              type: "string",
+              description: "Contact name (required)",
+            },
+          },
+          required: ["contactName"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "create_bulk_tasks",
+        description:
+          'Create follow-up tasks for leads. Use when user says "create follow-up tasks for all leads from this week", "add tasks for today\'s leads".',
+        parameters: {
+          type: "object",
+          properties: {
+            taskTitle: {
+              type: "string",
+              description: "Task title, use {name} for contact name (required)",
+            },
+            period: {
+              type: "string",
+              enum: ["today", "last_week", "last_2_weeks"],
+              description: "Which leads",
+            },
+            dueInDays: {
+              type: "number",
+              description: "Days from now for due date (default 1)",
+            },
+          },
+          required: ["taskTitle"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "clone_website",
+        description:
+          'Clone a website from an existing URL. Use when user says "clone my website from example.com", "clone example.com", "rebuild my site from a URL". Requires sourceUrl. Optional name for the new site.',
+        parameters: {
+          type: "object",
+          properties: {
+            sourceUrl: {
+              type: "string",
+              description:
+                'URL of website to clone (required). E.g. "example.com" or "https://example.com"',
+            },
+            name: {
+              type: "string",
+              description: "Name for the new cloned website (optional)",
+            },
+          },
+          required: ["sourceUrl"],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "create_website",
+        description:
+          'Create a new website from a template. Use when user says "create a new website", "build a website for my plumbing business", "make me a service website". Optional: name, templateType (SERVICE or PRODUCT), businessDescription, services, products.',
+        parameters: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Website name (optional, defaults to New Website)",
+            },
+            templateType: {
+              type: "string",
+              enum: ["SERVICE", "PRODUCT"],
+              description:
+                "SERVICE for service business, PRODUCT for store/ecommerce",
+            },
+            businessDescription: {
+              type: "string",
+              description: "Brief business description (optional)",
+            },
+            services: {
+              type: "string",
+              description: "Comma-separated services (optional)",
+            },
+            products: {
+              type: "string",
+              description: "Comma-separated products (optional)",
+            },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: "list_websites",
+        description:
+          'List the user\'s websites. Use when user says "show my websites", "how many websites do I have", "list my sites".',
+        parameters: { type: "object", properties: {} },
+        server_url: serverUrl,
+      },
+      {
+        name: "modify_website",
+        description:
+          'Modify website content via AI. Use when user says "change the hero text to Welcome", "update the about section", "add a pricing section". Requires websiteId (from active_website_id when editing) and message describing the change.',
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: {
+              type: "string",
+              description:
+                "Website ID to modify (required). Use active_website_id from context when user is editing a site.",
+            },
+            message: {
+              type: "string",
+              description:
+                'Description of the change (required). E.g. "Change the hero title to Welcome to Acme"',
+            },
+          },
+          required: ["websiteId", "message"],
         },
         server_url: serverUrl,
       },
     ];
   }
 
-
   /**
    * Update existing agent with latest function configurations
    * This ensures agents have CRM functions even if they were created before functions were added
    */
-  async updateAgentFunctions(agentId: string, userId: string): Promise<boolean> {
+  async updateAgentFunctions(
+    agentId: string,
+    userId: string,
+  ): Promise<boolean> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      console.error('❌ No API key available for updating agent functions');
+      console.error("❌ No API key available for updating agent functions");
       return false;
     }
 
     try {
-      const user = await prisma.user.findUnique({
+      const user = await getMetaDb().user.findUnique({
         where: { id: userId },
         select: { language: true },
       });
-      const language = getElevenLabsLanguageCode(user?.language || 'en');
+      const language = getElevenLabsLanguageCode(user?.language || "en");
 
       // Get current agent config from ElevenLabs
-      const getResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
-        headers: {
-          'xi-api-key': apiKey,
+      const getResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+        {
+          headers: {
+            "xi-api-key": apiKey,
+          },
         },
-      });
+      );
 
       if (!getResponse.ok) {
         throw new Error(`Failed to fetch agent: ${getResponse.statusText}`);
@@ -989,19 +1320,25 @@ ${getConfidentialityGuard()}`;
       const currentAgent = await getResponse.json();
       const crmFunctions = this.buildCrmFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
-      const fullUser = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, industry: true } });
+      const fullUser = await getMetaDb().user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { name: true, industry: true },
+      });
       const newPrompt = this.buildCrmSystemPrompt(fullUser, language);
 
       const currentTools = currentAgent.tools || [];
-      const needsUpdate = currentTools.length === 0 ||
+      const needsUpdate =
+        currentTools.length === 0 ||
         currentTools.some((tool: any) => {
           const func = tool.function;
           return !func?.server_url || func.server_url !== expectedServerUrl;
         }) ||
-        (currentAgent.conversation_config?.agent?.prompt?.prompt !== newPrompt);
+        currentAgent.conversation_config?.agent?.prompt?.prompt !== newPrompt;
 
       if (!needsUpdate) {
-        console.log(`✅ CRM agent ${agentId} already has correct function configurations`);
+        console.log(
+          `✅ CRM agent ${agentId} already has correct function configurations`,
+        );
         return true;
       }
 
@@ -1013,12 +1350,14 @@ ${getConfidentialityGuard()}`;
             ...currentAgent.conversation_config?.agent,
             prompt: { prompt: newPrompt },
             first_message: this.getGreetingMessage(language),
-            language: getElevenLabsLanguageCode(currentAgent.conversation_config?.agent?.language || language),
+            language: getElevenLabsLanguageCode(
+              currentAgent.conversation_config?.agent?.language || language,
+            ),
           },
           // TTS: use eleven_multilingual_v2 for accent-free multilingual (matches landing page)
           tts: {
             ...currentAgent.conversation_config?.tts,
-            model_id: 'eleven_multilingual_v2',
+            model_id: "eleven_multilingual_v2",
           },
           // Preserve conversation settings
           conversation: currentAgent.conversation_config?.conversation,
@@ -1031,29 +1370,38 @@ ${getConfidentialityGuard()}`;
           ...(currentAgent.platform_settings || {}),
           ...PLATFORM_SETTINGS_WITH_OVERRIDES,
         },
-        tools: crmFunctions.map(func => ({
-          type: 'function',
+        tools: crmFunctions.map((func) => ({
+          type: "function",
           function: func,
         })),
       };
 
-      console.log(`🔄 Updating CRM agent ${agentId} with ${crmFunctions.length} functions...`);
+      console.log(
+        `🔄 Updating CRM agent ${agentId} with ${crmFunctions.length} functions...`,
+      );
 
-      const updateResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
+      const updateResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatePayload),
         },
-        body: JSON.stringify(updatePayload),
-      });
+      );
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
-        throw new Error(`Failed to update agent: ${updateResponse.statusText} - ${errorText}`);
+        throw new Error(
+          `Failed to update agent: ${updateResponse.statusText} - ${errorText}`,
+        );
       }
 
-      console.log(`✅ Successfully updated CRM agent ${agentId} with functions`);
+      console.log(
+        `✅ Successfully updated CRM agent ${agentId} with functions`,
+      );
       return true;
     } catch (error: any) {
       console.error(`❌ Failed to update CRM agent functions:`, error);
@@ -1064,34 +1412,37 @@ ${getConfidentialityGuard()}`;
   /**
    * Update CRM voice agent configuration
    */
-  async updateCrmVoiceAgent(userId: string, updates: { voiceId?: string; language?: string }): Promise<void> {
-    const user = await prisma.user.findUnique({
+  async updateCrmVoiceAgent(
+    userId: string,
+    updates: { voiceId?: string; language?: string },
+  ): Promise<void> {
+    const user = await getMetaDb().user.findUnique({
       where: { id: userId },
       select: { crmVoiceAgentId: true },
     });
 
     if (!user?.crmVoiceAgentId) {
-      throw new Error('CRM voice agent not found');
+      throw new Error("CRM voice agent not found");
     }
 
     // Update agent in ElevenLabs using the updateAgent method
     // Note: This requires the agent to exist and be accessible
     try {
       // Get current agent config
-      const apiKey = process.env.ELEVENLABS_API_KEY || '';
+      const apiKey = process.env.ELEVENLABS_API_KEY || "";
       const response = await fetch(
         `https://api.elevenlabs.io/v1/convai/agents/${user.crmVoiceAgentId}`,
         {
           headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (response.ok) {
         const currentAgent = await response.json();
-        
+
         // Update with new voice if provided
         if (updates.voiceId) {
           const updatePayload = {
@@ -1102,26 +1453,29 @@ ${getConfidentialityGuard()}`;
             },
           };
 
-          await fetch(`https://api.elevenlabs.io/v1/convai/agents/${user.crmVoiceAgentId}`, {
-            method: 'PATCH',
-            headers: {
-              'xi-api-key': apiKey,
-              'Content-Type': 'application/json',
+          await fetch(
+            `https://api.elevenlabs.io/v1/convai/agents/${user.crmVoiceAgentId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "xi-api-key": apiKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                conversation_config: updatePayload,
+              }),
             },
-            body: JSON.stringify({
-              conversation_config: updatePayload,
-            }),
-          });
+          );
         }
       }
     } catch (error) {
-      console.error('Failed to update CRM voice agent:', error);
-      throw new Error('Failed to update voice agent configuration');
+      console.error("Failed to update CRM voice agent:", error);
+      throw new Error("Failed to update voice agent configuration");
     }
 
     // Update user language if changed (main prisma)
     if (updates.language) {
-      await prisma.user.update({
+      await getMetaDb().user.update({
         where: { id: userId },
         data: { language: updates.language },
       });

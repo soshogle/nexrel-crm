@@ -1,14 +1,15 @@
 export const dynamic = "force-dynamic";
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-import { executeREEmployee } from '@/lib/ai-employees/run-re-employee';
-import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
-import type { REAIEmployeeType } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
+import { executeREEmployee } from "@/lib/ai-employees/run-re-employee";
+import { shouldRunEmployee } from "@/lib/ai-employees/task-config-helper";
+import type { REAIEmployeeType } from "@prisma/client";
 
 // Main execution handler
 export async function POST(request: NextRequest) {
@@ -22,19 +23,22 @@ export async function POST(request: NextRequest) {
     const { employeeType } = body as { employeeType: REAIEmployeeType };
 
     if (!employeeType) {
-      return apiErrors.badRequest('Employee type required');
+      return apiErrors.badRequest("Employee type required");
     }
 
     const okToRun = await shouldRunEmployee(
       session.user.id,
-      're',
+      "re",
       null,
-      employeeType
+      employeeType,
     );
     if (!okToRun) {
       return NextResponse.json(
-        { error: 'All tasks are disabled for this employee. Enable at least one task in Manage Tasks.' },
-        { status: 400 }
+        {
+          error:
+            "All tasks are disabled for this employee. Enable at least one task in Manage Tasks.",
+        },
+        { status: 400 },
       );
     }
 
@@ -44,8 +48,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('AI Employee execution error:', error);
-    return apiErrors.internal('Execution failed');
+    console.error("AI Employee execution error:", error);
+    return apiErrors.internal("Execution failed");
   }
 }
 
@@ -58,21 +62,24 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const employeeType = searchParams.get('employeeType');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const employeeType = searchParams.get("employeeType");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const executions = await prisma.rEAIEmployeeExecution.findMany({
+    const executions = await db.rEAIEmployeeExecution.findMany({
       where: {
         userId: session.user.id,
-        ...(employeeType && { employeeType: employeeType as any })
+        ...(employeeType && { employeeType: employeeType as any }),
       },
-      orderBy: { createdAt: 'desc' },
-      take: limit
+      orderBy: { createdAt: "desc" },
+      take: limit,
     });
 
     return NextResponse.json({ executions });
   } catch (error) {
-    console.error('AI Employee history error:', error);
-    return apiErrors.internal('Failed to fetch history');
+    console.error("AI Employee history error:", error);
+    return apiErrors.internal("Failed to fetch history");
   }
 }

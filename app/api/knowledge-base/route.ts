@@ -1,58 +1,72 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/knowledge-base - Fetch all knowledge base files for the user
 // Optional query parameter: voiceAgentId - filter files for a specific voice agent
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const voiceAgentId = searchParams.get('voiceAgentId');
-    const unassigned = searchParams.get('unassigned'); // "true" to fetch only unassigned files (deprecated - files can now be shared)
+    const voiceAgentId = searchParams.get("voiceAgentId");
+    const unassigned = searchParams.get("unassigned"); // "true" to fetch only unassigned files (deprecated - files can now be shared)
 
-    console.log('📚 Fetching knowledge base files for user:', session.user.id, 'voiceAgentId:', voiceAgentId, 'unassigned:', unassigned);
+    console.log(
+      "📚 Fetching knowledge base files for user:",
+      session.user.id,
+      "voiceAgentId:",
+      voiceAgentId,
+      "unassigned:",
+      unassigned,
+    );
 
     let knowledgeBaseFiles;
 
     if (voiceAgentId) {
       // Fetch files associated with a specific agent via junction table
-      const agentFileAssociations = await prisma.voiceAgentKnowledgeBaseFile.findMany({
-        where: {
-          voiceAgentId: voiceAgentId,
-        },
-        include: {
-          knowledgeBaseFile: {
-            include: {
-              voiceAgents: {
-                select: {
-                  voiceAgentId: true,
+      const agentFileAssociations =
+        await db.voiceAgentKnowledgeBaseFile.findMany({
+          where: {
+            voiceAgentId: voiceAgentId,
+          },
+          include: {
+            knowledgeBaseFile: {
+              include: {
+                voiceAgents: {
+                  select: {
+                    voiceAgentId: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: {
-          addedAt: 'desc',
-        },
-      });
+          orderBy: {
+            addedAt: "desc",
+          },
+        });
 
       // Extract files and filter by userId for security
       knowledgeBaseFiles = agentFileAssociations
-        .map(assoc => assoc.knowledgeBaseFile)
-        .filter(file => file.userId === session.user.id)
-        .map(file => ({
+        .map((assoc) => assoc.knowledgeBaseFile)
+        .filter((file) => file.userId === session.user.id)
+        .map((file) => ({
           id: file.id,
           fileName: file.fileName,
           fileType: file.fileType,
@@ -60,21 +74,21 @@ export async function GET(request: NextRequest) {
           extractedText: file.extractedText,
           createdAt: file.createdAt,
           updatedAt: file.updatedAt,
-          associatedAgents: file.voiceAgents.map(va => va.voiceAgentId),
+          associatedAgents: file.voiceAgents.map((va) => va.voiceAgentId),
         }));
-    } else if (unassigned === 'true') {
+    } else if (unassigned === "true") {
       // Fetch files not associated with ANY agent (legacy support - though files can now be shared)
       // Get all file IDs that have associations
-      const associatedFileIds = await prisma.voiceAgentKnowledgeBaseFile.findMany({
+      const associatedFileIds = await db.voiceAgentKnowledgeBaseFile.findMany({
         select: {
           knowledgeBaseFileId: true,
         },
-        distinct: ['knowledgeBaseFileId'],
+        distinct: ["knowledgeBaseFileId"],
       });
 
-      const associatedIds = associatedFileIds.map(a => a.knowledgeBaseFileId);
+      const associatedIds = associatedFileIds.map((a) => a.knowledgeBaseFileId);
 
-      const unassignedFiles = await prisma.knowledgeBaseFile.findMany({
+      const unassignedFiles = await db.knowledgeBaseFile.findMany({
         where: {
           userId: session.user.id,
           id: {
@@ -82,7 +96,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         include: {
           voiceAgents: {
@@ -93,7 +107,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      knowledgeBaseFiles = unassignedFiles.map(file => ({
+      knowledgeBaseFiles = unassignedFiles.map((file) => ({
         id: file.id,
         fileName: file.fileName,
         fileType: file.fileType,
@@ -101,16 +115,16 @@ export async function GET(request: NextRequest) {
         extractedText: file.extractedText,
         createdAt: file.createdAt,
         updatedAt: file.updatedAt,
-        associatedAgents: file.voiceAgents.map(va => va.voiceAgentId),
+        associatedAgents: file.voiceAgents.map((va) => va.voiceAgentId),
       }));
     } else {
       // Fetch all user's files with their agent associations
-      const allFiles = await prisma.knowledgeBaseFile.findMany({
+      const allFiles = await db.knowledgeBaseFile.findMany({
         where: {
           userId: session.user.id,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         include: {
           voiceAgents: {
@@ -121,7 +135,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      knowledgeBaseFiles = allFiles.map(file => ({
+      knowledgeBaseFiles = allFiles.map((file) => ({
         id: file.id,
         fileName: file.fileName,
         fileType: file.fileType,
@@ -129,7 +143,7 @@ export async function GET(request: NextRequest) {
         extractedText: file.extractedText,
         createdAt: file.createdAt,
         updatedAt: file.updatedAt,
-        associatedAgents: file.voiceAgents.map(va => va.voiceAgentId),
+        associatedAgents: file.voiceAgents.map((va) => va.voiceAgentId),
       }));
     }
 
@@ -140,7 +154,9 @@ export async function GET(request: NextRequest) {
       knowledgeBase: knowledgeBaseFiles,
     });
   } catch (error: any) {
-    console.error('❌ Error fetching knowledge base files:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch knowledge base files',);
+    console.error("❌ Error fetching knowledge base files:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch knowledge base files",
+    );
   }
 }

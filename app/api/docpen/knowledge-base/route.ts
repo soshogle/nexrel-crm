@@ -1,18 +1,19 @@
 /**
  * Docpen Knowledge Base API
- * 
+ *
  * GET - List knowledge base files
  * DELETE - Delete a knowledge base file
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - List knowledge base files
 export async function GET(request: NextRequest) {
@@ -21,10 +22,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get('agentId');
-    const specialty = searchParams.get('specialty');
+    const agentId = searchParams.get("agentId");
+    const specialty = searchParams.get("specialty");
 
     const where: any = {
       userId: session.user.id,
@@ -36,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     if (agentId) {
       // Get files linked to a specific agent
-      const agentFiles = await prisma.docpenAgentKnowledgeBaseFile.findMany({
+      const agentFiles = await db.docpenAgentKnowledgeBaseFile.findMany({
         where: {
           agentId,
         },
@@ -45,7 +49,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      const files = agentFiles.map(af => ({
+      const files = agentFiles.map((af) => ({
         ...af.knowledgeBaseFile,
         linkedAt: af.addedAt,
       }));
@@ -57,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all files for the user
-    const files = await prisma.docpenKnowledgeBaseFile.findMany({
+    const files = await db.docpenKnowledgeBaseFile.findMany({
       where,
       include: {
         agents: {
@@ -68,7 +72,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -77,8 +81,8 @@ export async function GET(request: NextRequest) {
       files,
     });
   } catch (error: any) {
-    console.error('❌ [Docpen KB] Error fetching files:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch files');
+    console.error("❌ [Docpen KB] Error fetching files:", error);
+    return apiErrors.internal(error.message || "Failed to fetch files");
   }
 }
 
@@ -89,16 +93,19 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const fileId = searchParams.get('fileId');
+    const fileId = searchParams.get("fileId");
 
     if (!fileId) {
-      return apiErrors.badRequest('File ID required');
+      return apiErrors.badRequest("File ID required");
     }
 
     // Verify ownership
-    const file = await prisma.docpenKnowledgeBaseFile.findFirst({
+    const file = await db.docpenKnowledgeBaseFile.findFirst({
       where: {
         id: fileId,
         userId: session.user.id,
@@ -106,17 +113,17 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!file) {
-      return apiErrors.notFound('File not found');
+      return apiErrors.notFound("File not found");
     }
 
     // Delete file (cascade will remove agent links)
-    await prisma.docpenKnowledgeBaseFile.delete({
+    await db.docpenKnowledgeBaseFile.delete({
       where: { id: fileId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('❌ [Docpen KB] Error deleting file:', error);
-    return apiErrors.internal(error.message || 'Failed to delete file');
+    console.error("❌ [Docpen KB] Error deleting file:", error);
+    return apiErrors.internal(error.message || "Failed to delete file");
   }
 }

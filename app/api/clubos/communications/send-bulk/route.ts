@@ -1,16 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
-import { addDays, format } from 'date-fns';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { clubOSCommunicationService } from "@/lib/clubos-communication-service";
+import { addDays, format } from "date-fns";
+import { apiErrors } from "@/lib/api-error";
 
 // POST /api/clubos/communications/send-bulk - Send bulk notifications
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,32 +18,49 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { type } = body;
 
     if (!type) {
-      return apiErrors.badRequest('Missing notification type');
+      return apiErrors.badRequest("Missing notification type");
     }
 
     let sent = 0;
 
-    if (type === 'schedule_reminders') {
+    if (type === "schedule_reminders") {
       // Send reminders for tomorrow's events
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const startOfTomorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 0, 0, 0);
-      const endOfTomorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59);
+      const startOfTomorrow = new Date(
+        tomorrow.getFullYear(),
+        tomorrow.getMonth(),
+        tomorrow.getDate(),
+        0,
+        0,
+        0,
+      );
+      const endOfTomorrow = new Date(
+        tomorrow.getFullYear(),
+        tomorrow.getMonth(),
+        tomorrow.getDate(),
+        23,
+        59,
+        59,
+      );
 
       // Get all schedules for tomorrow
-      const schedules = await prisma.clubOSSchedule.findMany({
+      const schedules = await db.clubOSSchedule.findMany({
         where: {
           userId: session.user.id,
           startTime: {
             gte: startOfTomorrow,
             lte: endOfTomorrow,
           },
-          status: 'SCHEDULED',
+          status: "SCHEDULED",
         },
         include: {
           venue: true,
@@ -98,7 +115,10 @@ export async function POST(request: NextRequest) {
         // Collect households from all teams
         if (schedule.homeTeam) {
           schedule.homeTeam.members.forEach((tm) => {
-            if (tm.member.household && !householdsSent.has(tm.member.household.id)) {
+            if (
+              tm.member.household &&
+              !householdsSent.has(tm.member.household.id)
+            ) {
               households.push(tm.member.household);
               householdsSent.add(tm.member.household.id);
             }
@@ -106,7 +126,10 @@ export async function POST(request: NextRequest) {
         }
         if (schedule.awayTeam) {
           schedule.awayTeam.members.forEach((tm) => {
-            if (tm.member.household && !householdsSent.has(tm.member.household.id)) {
+            if (
+              tm.member.household &&
+              !householdsSent.has(tm.member.household.id)
+            ) {
               households.push(tm.member.household);
               householdsSent.add(tm.member.household.id);
             }
@@ -114,7 +137,10 @@ export async function POST(request: NextRequest) {
         }
         if (schedule.practiceTeam) {
           schedule.practiceTeam.members.forEach((tm) => {
-            if (tm.member.household && !householdsSent.has(tm.member.household.id)) {
+            if (
+              tm.member.household &&
+              !householdsSent.has(tm.member.household.id)
+            ) {
               households.push(tm.member.household);
               householdsSent.add(tm.member.household.id);
             }
@@ -128,22 +154,26 @@ export async function POST(request: NextRequest) {
               parentName: household.primaryContactName,
               parentEmail: household.primaryContactEmail,
               parentPhone: household.primaryContactPhone,
-              childName: '', // Not applicable for bulk reminders
+              childName: "", // Not applicable for bulk reminders
               eventTitle: schedule.title,
               eventType: schedule.eventType,
               startTime: new Date(schedule.startTime),
-              venueName: schedule.venue?.name || 'TBD',
+              venueName: schedule.venue?.name || "TBD",
               venueAddress: schedule.venue?.address || undefined,
             });
             sent++;
           } catch (error) {
-            console.error('Failed to send reminder to', household.primaryContactEmail, error);
+            console.error(
+              "Failed to send reminder to",
+              household.primaryContactEmail,
+              error,
+            );
           }
         }
       }
-    } else if (type === 'balance_reminders') {
+    } else if (type === "balance_reminders") {
       // Send reminders to families with outstanding balances
-      const registrations = await prisma.clubOSRegistration.findMany({
+      const registrations = await db.clubOSRegistration.findMany({
         where: {
           household: {
             userId: session.user.id,
@@ -152,7 +182,7 @@ export async function POST(request: NextRequest) {
             gt: 0,
           },
           status: {
-            in: ['APPROVED', 'ACTIVE'],
+            in: ["APPROVED", "ACTIVE"],
           },
         },
         include: {
@@ -180,21 +210,25 @@ export async function POST(request: NextRequest) {
             householdsSent.add(registration.household.id);
             sent++;
           } catch (error) {
-            console.error('Failed to send balance reminder to', registration.household.primaryContactEmail, error);
+            console.error(
+              "Failed to send balance reminder to",
+              registration.household.primaryContactEmail,
+              error,
+            );
           }
         }
       }
     } else {
-      return apiErrors.badRequest('Invalid notification type');
+      return apiErrors.badRequest("Invalid notification type");
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       sent,
       message: `Successfully sent ${sent} notification(s)`,
     });
   } catch (error: any) {
-    console.error('Error sending bulk notifications:', error);
-    return apiErrors.internal(error.message || 'Failed to send notifications');
+    console.error("Error sending bulk notifications:", error);
+    return apiErrors.internal(error.message || "Failed to send notifications");
   }
 }

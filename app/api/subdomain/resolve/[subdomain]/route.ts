@@ -1,26 +1,25 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/subdomain/resolve/[subdomain] - Resolve subdomain to userId (public)
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { subdomain: string } }
+  { params }: { params: { subdomain: string } },
 ) {
   try {
     const { subdomain } = params;
 
     if (!subdomain) {
-      return apiErrors.badRequest('Subdomain parameter is required');
+      return apiErrors.badRequest("Subdomain parameter is required");
     }
 
     // Look up user by subdomain
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { subdomain },
       select: {
         id: true,
@@ -35,7 +34,7 @@ export async function GET(
     });
 
     if (!user) {
-      return apiErrors.notFound('Business not found for this subdomain');
+      return apiErrors.notFound("Business not found for this subdomain");
     }
 
     return NextResponse.json({
@@ -48,7 +47,7 @@ export async function GET(
       logo: user.image,
     });
   } catch (error: any) {
-    console.error('Error resolving subdomain:', error);
-    return apiErrors.internal(error.message || 'Failed to resolve subdomain');
+    console.error("Error resolving subdomain:", error);
+    return apiErrors.internal(error.message || "Failed to resolve subdomain");
   }
 }

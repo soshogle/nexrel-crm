@@ -1,22 +1,23 @@
 /**
  * Docpen Knowledge Base Link API
- * 
+ *
  * POST - Link/unlink knowledge base files to agents
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
-import { VOICE_AGENT_PROMPTS } from '@/lib/docpen/voice-prompts';
-import type { DocpenProfessionType } from '@/lib/docpen/prompts';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { elevenLabsKeyManager } from "@/lib/elevenlabs-key-manager";
+import { VOICE_AGENT_PROMPTS } from "@/lib/docpen/voice-prompts";
+import type { DocpenProfessionType } from "@/lib/docpen/prompts";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
 // POST - Link or unlink files
 export async function POST(request: NextRequest) {
@@ -25,16 +26,19 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { agentId, fileId, action } = body; // action: 'link' or 'unlink'
 
     if (!agentId || !fileId || !action) {
-      return apiErrors.badRequest('agentId, fileId, and action required');
+      return apiErrors.badRequest("agentId, fileId, and action required");
     }
 
     // Verify agent ownership
-    const agent = await prisma.docpenVoiceAgent.findFirst({
+    const agent = await db.docpenVoiceAgent.findFirst({
       where: {
         id: agentId,
         userId: session.user.id,
@@ -42,11 +46,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!agent) {
-      return apiErrors.notFound('Agent not found');
+      return apiErrors.notFound("Agent not found");
     }
 
     // Verify file ownership
-    const file = await prisma.docpenKnowledgeBaseFile.findFirst({
+    const file = await db.docpenKnowledgeBaseFile.findFirst({
       where: {
         id: fileId,
         userId: session.user.id,
@@ -54,12 +58,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!file) {
-      return apiErrors.notFound('File not found');
+      return apiErrors.notFound("File not found");
     }
 
-    if (action === 'link') {
+    if (action === "link") {
       // Check if already linked
-      const existing = await prisma.docpenAgentKnowledgeBaseFile.findUnique({
+      const existing = await db.docpenAgentKnowledgeBaseFile.findUnique({
         where: {
           agentId_fileId: {
             agentId,
@@ -71,51 +75,56 @@ export async function POST(request: NextRequest) {
       if (existing) {
         return NextResponse.json({
           success: true,
-          message: 'File already linked',
+          message: "File already linked",
         });
       }
 
       // Create link
-      await prisma.docpenAgentKnowledgeBaseFile.create({
+      await db.docpenAgentKnowledgeBaseFile.create({
         data: {
           agentId,
           fileId,
         },
       });
 
-      console.log('✅ [Docpen KB] Linked file', fileId, 'to agent', agentId);
+      console.log("✅ [Docpen KB] Linked file", fileId, "to agent", agentId);
 
       // Update ElevenLabs agent prompt with knowledge base context
-      await updateAgentWithKnowledgeBase(session.user.id, agent);
+      await updateAgentWithKnowledgeBase(session.user.id, agent, db);
 
       return NextResponse.json({
         success: true,
-        message: 'File linked successfully',
+        message: "File linked successfully",
       });
-    } else if (action === 'unlink') {
+    } else if (action === "unlink") {
       // Remove link
-      await prisma.docpenAgentKnowledgeBaseFile.deleteMany({
+      await db.docpenAgentKnowledgeBaseFile.deleteMany({
         where: {
           agentId,
           fileId,
         },
       });
 
-      console.log('✅ [Docpen KB] Unlinked file', fileId, 'from agent', agentId);
+      console.log(
+        "✅ [Docpen KB] Unlinked file",
+        fileId,
+        "from agent",
+        agentId,
+      );
 
       // Update ElevenLabs agent prompt
-      await updateAgentWithKnowledgeBase(session.user.id, agent);
+      await updateAgentWithKnowledgeBase(session.user.id, agent, db);
 
       return NextResponse.json({
         success: true,
-        message: 'File unlinked successfully',
+        message: "File unlinked successfully",
       });
     }
 
-    return apiErrors.badRequest('Invalid action');
+    return apiErrors.badRequest("Invalid action");
   } catch (error: any) {
-    console.error('❌ [Docpen KB] Error linking/unlinking:', error);
-    return apiErrors.internal(error.message || 'Failed to link/unlink file');
+    console.error("❌ [Docpen KB] Error linking/unlinking:", error);
+    return apiErrors.internal(error.message || "Failed to link/unlink file");
   }
 }
 
@@ -127,30 +136,33 @@ async function updateAgentWithKnowledgeBase(
     elevenLabsAgentId: string;
     profession: string;
     customProfession: string | null;
-  }
+  },
+  db: ReturnType<typeof getCrmDb>,
 ) {
   const apiKey = await elevenLabsKeyManager.getActiveApiKey(userId);
   if (!apiKey) return;
 
   // Get all linked knowledge base files
-  const linkedFiles = await prisma.docpenAgentKnowledgeBaseFile.findMany({
+  const linkedFiles = await db.docpenAgentKnowledgeBaseFile.findMany({
     where: { agentId: agent.id },
     include: { knowledgeBaseFile: true },
   });
 
   // Build knowledge base context
   const kbContext = linkedFiles
-    .map(lf => {
+    .map((lf) => {
       const file = lf.knowledgeBaseFile;
-      return `--- ${file.fileName} ---\n${file.extractedText || 'No content'}\n`;
+      return `--- ${file.fileName} ---\n${file.extractedText || "No content"}\n`;
     })
-    .join('\n');
+    .join("\n");
 
   // Get base prompt for profession
-  const professionKey = agent.profession === 'CUSTOM' 
-    ? 'CUSTOM' 
-    : agent.profession as DocpenProfessionType;
-  const basePrompt = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
+  const professionKey =
+    agent.profession === "CUSTOM"
+      ? "CUSTOM"
+      : (agent.profession as DocpenProfessionType);
+  const basePrompt =
+    VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
 
   // Build enhanced prompt with knowledge base
   let enhancedPrompt = basePrompt;
@@ -172,10 +184,10 @@ When answering questions, reference this knowledge base when applicable and cite
     await fetch(
       `${ELEVENLABS_BASE_URL}/convai/agents/${agent.elevenLabsAgentId}`,
       {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           conversation_config: {
@@ -186,19 +198,19 @@ When answering questions, reference this knowledge base when applicable and cite
             },
           },
         }),
-      }
+      },
     );
 
     // Update local database
-    await prisma.docpenVoiceAgent.update({
+    await db.docpenVoiceAgent.update({
       where: { id: agent.id },
       data: {
         systemPrompt: enhancedPrompt,
       },
     });
 
-    console.log('✅ [Docpen KB] Updated agent prompt with knowledge base');
+    console.log("✅ [Docpen KB] Updated agent prompt with knowledge base");
   } catch (e) {
-    console.error('⚠️ Error updating ElevenLabs agent:', e);
+    console.error("⚠️ Error updating ElevenLabs agent:", e);
   }
 }

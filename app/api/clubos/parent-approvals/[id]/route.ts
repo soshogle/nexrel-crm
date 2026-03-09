@@ -1,37 +1,40 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * Parent Approval Action API
  * PUT - Approve/reject/suspend parent household
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { action, notes } = body; // action: "approve", "reject", "suspend", "activate"
 
     if (!action) {
-      return apiErrors.badRequest('Action is required');
+      return apiErrors.badRequest("Action is required");
     }
 
     // Get household and verify ownership
-    const household = await prisma.clubOSHousehold.findUnique({
+    const household = await db.clubOSHousehold.findUnique({
       where: { id: params.id },
       include: {
         user: {
@@ -45,42 +48,44 @@ export async function PUT(
     });
 
     if (!household) {
-      return apiErrors.notFound('Household not found');
+      return apiErrors.notFound("Household not found");
     }
 
     // Verify this household belongs to the logged-in club owner
     if (household.clubOwnerId !== session.user.id) {
-      return apiErrors.forbidden('Unauthorized');
+      return apiErrors.forbidden("Unauthorized");
     }
 
     // Determine new status based on action
-    let newStatus: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' = 'ACTIVE';
+    let newStatus: "ACTIVE" | "SUSPENDED" | "INACTIVE" = "ACTIVE";
     let verifiedAt: Date | null = household.verifiedAt;
 
     switch (action) {
-      case 'approve':
-        newStatus = 'ACTIVE';
+      case "approve":
+        newStatus = "ACTIVE";
         verifiedAt = new Date();
         break;
-      case 'reject':
-        newStatus = 'INACTIVE';
+      case "reject":
+        newStatus = "INACTIVE";
         verifiedAt = null;
         break;
-      case 'suspend':
-        newStatus = 'SUSPENDED';
+      case "suspend":
+        newStatus = "SUSPENDED";
         break;
-      case 'activate':
-        newStatus = 'ACTIVE';
+      case "activate":
+        newStatus = "ACTIVE";
         if (!verifiedAt) {
           verifiedAt = new Date();
         }
         break;
       default:
-        return apiErrors.badRequest('Invalid action. Use: approve, reject, suspend, or activate');
+        return apiErrors.badRequest(
+          "Invalid action. Use: approve, reject, suspend, or activate",
+        );
     }
 
     // Update household status
-    const updatedHousehold = await prisma.clubOSHousehold.update({
+    const updatedHousehold = await db.clubOSHousehold.update({
       where: { id: params.id },
       data: {
         status: newStatus,
@@ -104,7 +109,9 @@ export async function PUT(
       household: updatedHousehold,
     });
   } catch (error: any) {
-    console.error('Error updating parent approval:', error);
-    return apiErrors.internal(error.message || 'Failed to update parent approval');
+    console.error("Error updating parent approval:", error);
+    return apiErrors.internal(
+      error.message || "Failed to update parent approval",
+    );
   }
 }

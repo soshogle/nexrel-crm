@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REAIEmployeeType } from '@prisma/client';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { apiErrors } from '@/lib/api-error';
@@ -21,6 +22,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json().catch(() => ({}));
     const { employeeType, phoneNumber } = body as {
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('employeeType and phoneNumber are required');
     }
 
-    const agent = await prisma.rEAIEmployeeAgent.findUnique({
+    const agent = await getCrmDb(ctx).rEAIEmployeeAgent.findUnique({
       where: {
         userId_employeeType: { userId: session.user.id, employeeType },
       },
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.internal(importResult.error || 'Failed to assign phone to agent');
     }
 
-    await prisma.rEAIEmployeeAgent.update({
+    await getCrmDb(ctx).rEAIEmployeeAgent.update({
       where: { userId_employeeType: { userId: session.user.id, employeeType } },
       data: { twilioPhoneNumber: formattedPhone, updatedAt: new Date() },
     });

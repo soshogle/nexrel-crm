@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { Industry } from "@prisma/client";
 import { getIndustryAIEmployeeModule } from "@/lib/industry-ai-employees/registry";
 import { attachToolsToElevenLabsAgent } from "@/lib/ai-employee-tools";
@@ -92,13 +93,18 @@ async function createElevenLabsAgent(
   return { agentId };
 }
 
-async function getExistingAgents(userId: string, industry: Industry) {
-  return prisma.industryAIEmployeeAgent.findMany({
+async function getExistingAgents(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  industry: Industry,
+) {
+  return db.industryAIEmployeeAgent.findMany({
     where: { userId, industry },
   });
 }
 
 async function provisionEmployee(
+  db: ReturnType<typeof getCrmDb>,
   userId: string,
   industry: Industry,
   employeeType: string,
@@ -130,7 +136,7 @@ async function provisionEmployee(
       voiceId: promptConfig.voiceId,
     });
 
-    const record = await prisma.industryAIEmployeeAgent.upsert({
+    const record = await db.industryAIEmployeeAgent.upsert({
       where: {
         userId_industry_employeeType: {
           userId,
@@ -178,6 +184,10 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const { searchParams } = new URL(request.url);
     const industry = searchParams.get("industry") as Industry | null;
 
@@ -193,7 +203,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const agents = await getExistingAgents(session.user.id, industry);
+    const agents = await getExistingAgents(db, session.user.id, industry);
 
     // Trigger auto-provision/fix in background (fixes existing agents' LLM + tools)
     provisionAIEmployeesForUser(session.user.id);
@@ -227,6 +237,10 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
+
     const body = await request.json().catch(() => ({}));
     const { industry, employeeTypes, forceRefresh } = body as {
       industry?: Industry;
@@ -246,12 +260,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { industry: true },
-    });
-
-    if (user?.industry !== industry) {
+    if (ctx.industry !== industry) {
       return apiErrors.forbidden("Industry does not match your account");
     }
 
@@ -267,7 +276,11 @@ export async function POST(request: NextRequest) {
         ? employeeTypes
         : module.employeeTypes;
 
-    const existingAgents = await getExistingAgents(session.user.id, industry);
+    const existingAgents = await getExistingAgents(
+      db,
+      session.user.id,
+      industry,
+    );
     const existingTypes = new Set(existingAgents.map((a) => a.employeeType));
 
     const typesToCreate = forceRefresh
@@ -275,7 +288,7 @@ export async function POST(request: NextRequest) {
       : typesToProvision.filter((t) => !existingTypes.has(t));
 
     if (typesToCreate.length === 0) {
-      const agents = await getExistingAgents(session.user.id, industry);
+      const agents = await getExistingAgents(db, session.user.id, industry);
       return NextResponse.json({
         success: true,
         message: "All industry AI Employees are already provisioned",
@@ -300,6 +313,7 @@ export async function POST(request: NextRequest) {
 
     for (const type of typesToCreate) {
       const result = await provisionEmployee(
+        db,
         session.user.id,
         industry,
         type,
@@ -313,7 +327,11 @@ export async function POST(request: NextRequest) {
     const failCount = results.filter((r) => !r.success).length;
     const firstError = results.find((r) => !r.success)?.error;
 
-    const updatedAgents = await getExistingAgents(session.user.id, industry);
+    const updatedAgents = await getExistingAgents(
+      db,
+      session.user.id,
+      industry,
+    );
 
     return NextResponse.json({
       success: failCount === 0,

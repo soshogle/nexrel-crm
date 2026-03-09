@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * POST /api/platform-admin/impersonate/end-all
@@ -10,51 +10,58 @@ import { apiErrors } from '@/lib/api-error';
  * Used as a fallback when sessionToken is not available
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📡 POST /api/platform-admin/impersonate/end-all called');
-    
+    console.log("📡 POST /api/platform-admin/impersonate/end-all called");
+
     // Get the current session
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
-      console.error('❌ No session found');
+      console.error("❌ No session found");
       return apiErrors.unauthorized();
     }
 
     // If impersonating, use superAdminId, otherwise use the regular id
-    const actualSuperAdminId = (session.user as any).superAdminId || session.user.id;
-    
-    console.log('👤 Ending sessions for super admin:', {
+    const actualSuperAdminId =
+      (session.user as any).superAdminId || session.user.id;
+
+    console.log("👤 Ending sessions for super admin:", {
       actualSuperAdminId,
       sessionUserId: session.user.id,
       isImpersonating: (session.user as any).isImpersonating,
     });
-    
+
     // End ALL active impersonation sessions for this super admin
-    const result = await prisma.superAdminSession.updateMany({
+    const result = await getMetaDb().superAdminSession.updateMany({
       where: {
         superAdminId: actualSuperAdminId,
-        isActive: true
+        isActive: true,
       },
       data: {
         isActive: false,
-        endedAt: new Date()
-      }
+        endedAt: new Date(),
+      },
     });
-    
-    console.log(`✅ Ended ${result.count} active impersonation session(s) for super admin:`, actualSuperAdminId);
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    console.log(
+      `✅ Ended ${result.count} active impersonation session(s) for super admin:`,
+      actualSuperAdminId,
+    );
+
+    return NextResponse.json({
+      success: true,
       message: `Ended ${result.count} impersonation session(s)`,
-      count: result.count 
+      count: result.count,
     });
   } catch (error: any) {
-    console.error('❌ Error ending all impersonation sessions:', error);
-    return apiErrors.internal('Failed to end impersonation sessions', error.message);
+    console.error("❌ Error ending all impersonation sessions:", error);
+    return apiErrors.internal(
+      "Failed to end impersonation sessions",
+      error.message,
+    );
   }
 }

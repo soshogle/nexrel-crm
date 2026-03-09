@@ -4,18 +4,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { apiErrors } from '@/lib/api-error';
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
     const { slug } = await params;
 
     // Public endpoint: only return platform/landing page posts (userId null)
-    const post = await prisma.blogPost.findFirst({
+    const post = await getMetaDb().blogPost.findFirst({
       where: { slug, userId: null },
     });
 

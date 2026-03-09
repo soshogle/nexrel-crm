@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - Get alert settings
 export async function GET(request: NextRequest) {
@@ -15,23 +15,26 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    let settings = await prisma.lowStockAlertSettings.findUnique({
+    let settings = await db.lowStockAlertSettings.findUnique({
       where: { userId: session.user.id },
     });
 
     // Create default settings if they don't exist
     if (!settings) {
-      settings = await prisma.lowStockAlertSettings.create({
+      settings = await db.lowStockAlertSettings.create({
         data: {
           userId: session.user.id,
           enabled: true,
           checkDaily: true,
-          alertTime: '09:00',
+          alertTime: "09:00",
           sendEmail: true,
-          emailAddresses: session.user.email || '',
+          emailAddresses: session.user.email || "",
           sendSMS: false,
-          smsNumbers: '',
+          smsNumbers: "",
           alertOnLowStock: true,
           alertOnOutOfStock: true,
           alertOnCritical: true,
@@ -41,8 +44,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error: any) {
-    console.error('Error fetching alert settings:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch settings');
+    console.error("Error fetching alert settings:", error);
+    return apiErrors.internal(error.message || "Failed to fetch settings");
   }
 }
 
@@ -53,6 +56,9 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -68,7 +74,7 @@ export async function PUT(request: NextRequest) {
       alertOnCritical,
     } = body;
 
-    const settings = await prisma.lowStockAlertSettings.upsert({
+    const settings = await db.lowStockAlertSettings.upsert({
       where: { userId: session.user.id },
       update: {
         enabled,
@@ -99,7 +105,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, settings });
   } catch (error: any) {
-    console.error('Error updating alert settings:', error);
-    return apiErrors.internal(error.message || 'Failed to update settings');
+    console.error("Error updating alert settings:", error);
+    return apiErrors.internal(error.message || "Failed to update settings");
   }
 }

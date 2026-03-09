@@ -22,6 +22,13 @@ type Violation = {
   reason: string;
 };
 
+type AuditSummary = {
+  totalFilesScanned: number;
+  totalViolations: number;
+  byReason: Record<string, number>;
+  violations: Violation[];
+};
+
 function isExcluded(relPath: string): boolean {
   return EXCLUDE_DIRS.some(
     (prefix) => relPath === prefix || relPath.startsWith(`${prefix}/`),
@@ -83,23 +90,50 @@ function scanFile(fileAbs: string): Violation[] {
 
 function main() {
   const strict = process.argv.includes("--strict");
+  const json = process.argv.includes("--json");
+  const maxArg = process.argv.find((a) => a.startsWith("--max-violations="));
+  const maxViolations = maxArg ? Number(maxArg.split("=")[1]) : null;
   const files = TARGET_DIRS.flatMap((dir) => walk(path.join(ROOT, dir)));
 
   const violations = files.flatMap((file) => scanFile(file));
+  const byReason: Record<string, number> = {};
+  for (const v of violations) {
+    byReason[v.reason] = (byReason[v.reason] || 0) + 1;
+  }
 
-  if (violations.length === 0) {
+  const summary: AuditSummary = {
+    totalFilesScanned: files.length,
+    totalViolations: violations.length,
+    byReason,
+    violations,
+  };
+
+  if (json) {
+    console.log(JSON.stringify(summary, null, 2));
+  }
+
+  if (!json && violations.length === 0) {
     console.log(
       "✅ DAL routing audit passed: no direct-prisma violations found.",
     );
     return;
   }
 
-  console.log(
-    `⚠️ DAL routing audit found ${violations.length} potential issue(s):\n`,
-  );
-  for (const v of violations) {
-    console.log(`- ${v.file}`);
-    console.log(`  ${v.reason}`);
+  if (!json) {
+    console.log(
+      `⚠️ DAL routing audit found ${violations.length} potential issue(s):\n`,
+    );
+    for (const v of violations) {
+      console.log(`- ${v.file}`);
+      console.log(`  ${v.reason}`);
+    }
+  }
+
+  if (maxViolations !== null && violations.length > maxViolations) {
+    console.error(
+      `❌ DAL routing audit exceeded max violations (${violations.length} > ${maxViolations})`,
+    );
+    process.exit(1);
   }
 
   if (strict) {

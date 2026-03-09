@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { FacebookService } from "@/lib/messaging-sync/facebook-service";
-import { prisma } from "@/lib/db";
+import { findConnectedChannelByProviderAccount } from "@/lib/dal/webhook-channel-lookup";
 import crypto from "crypto";
 import { apiErrors } from "@/lib/api-error";
 
@@ -84,12 +84,9 @@ export async function POST(req: NextRequest) {
       const pageId = entry.id;
 
       // Find channel connection for this page
-      const channelConnection = await prisma.channelConnection.findFirst({
-        where: {
-          channelType: "FACEBOOK_MESSENGER",
-          providerAccountId: pageId,
-          status: "CONNECTED",
-        },
+      const channelConnection = await findConnectedChannelByProviderAccount({
+        channelType: "FACEBOOK_MESSENGER",
+        providerAccountId: pageId,
       });
 
       if (!channelConnection) {

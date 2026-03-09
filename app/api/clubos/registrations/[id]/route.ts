@@ -1,9 +1,9 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * ClubOS Registration Detail API
@@ -15,20 +15,23 @@ import { apiErrors } from '@/lib/api-error';
  * Get single registration details
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const registration = await prisma.clubOSRegistration.findUnique({
+    const registration = await db.clubOSRegistration.findUnique({
       where: { id: params.id },
       include: {
         member: true,
@@ -40,7 +43,7 @@ export async function GET(
     });
 
     if (!registration) {
-      return apiErrors.notFound('Registration not found');
+      return apiErrors.notFound("Registration not found");
     }
 
     return NextResponse.json({
@@ -48,8 +51,9 @@ export async function GET(
       registration,
     });
   } catch (error: unknown) {
-    console.error('Registration fetch error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error("Registration fetch error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return apiErrors.internal(message);
   }
 }
@@ -60,37 +64,42 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { status, notes } = body;
 
     // Validate status
     const validStatuses = [
-      'PENDING',
-      'APPROVED',
-      'WAITLIST',
-      'ACTIVE',
-      'COMPLETED',
-      'CANCELLED',
-      'REFUNDED',
+      "PENDING",
+      "APPROVED",
+      "WAITLIST",
+      "ACTIVE",
+      "COMPLETED",
+      "CANCELLED",
+      "REFUNDED",
     ];
 
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
-        { status: 400 }
+        {
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        },
+        { status: 400 },
       );
     }
 
     // Get current registration
-    const currentRegistration = await prisma.clubOSRegistration.findUnique({
+    const currentRegistration = await db.clubOSRegistration.findUnique({
       where: { id: params.id },
       include: {
         program: true,
@@ -99,7 +108,7 @@ export async function PUT(
     });
 
     if (!currentRegistration) {
-      return apiErrors.notFound('Registration not found');
+      return apiErrors.notFound("Registration not found");
     }
 
     // Handle status transitions
@@ -107,18 +116,18 @@ export async function PUT(
 
     // If approving from pending/waitlist
     if (
-      status === 'APPROVED' &&
-      ['PENDING', 'WAITLIST'].includes(currentRegistration.status)
+      status === "APPROVED" &&
+      ["PENDING", "WAITLIST"].includes(currentRegistration.status)
     ) {
       // Check if we need to remove from waitlist
       if (currentRegistration.waitlistEntry) {
-        await prisma.clubOSWaitlist.delete({
+        await db.clubOSWaitlist.delete({
           where: { id: currentRegistration.waitlistEntry.id },
         });
       }
 
       // Increment participant count
-      await prisma.clubOSProgram.update({
+      await db.clubOSProgram.update({
         where: { id: currentRegistration.programId },
         data: {
           currentParticipants: { increment: 1 },
@@ -130,11 +139,11 @@ export async function PUT(
 
     // If cancelling an approved/active registration
     if (
-      status === 'CANCELLED' &&
-      ['APPROVED', 'ACTIVE'].includes(currentRegistration.status)
+      status === "CANCELLED" &&
+      ["APPROVED", "ACTIVE"].includes(currentRegistration.status)
     ) {
       // Decrement participant count
-      await prisma.clubOSProgram.update({
+      await db.clubOSProgram.update({
         where: { id: currentRegistration.programId },
         data: {
           currentParticipants: { decrement: 1 },
@@ -142,15 +151,15 @@ export async function PUT(
       });
 
       // Check if we should promote someone from waitlist
-      const nextWaitlist = await prisma.clubOSWaitlist.findFirst({
+      const nextWaitlist = await db.clubOSWaitlist.findFirst({
         where: {
           registration: {
             programId: currentRegistration.programId,
-            status: 'WAITLIST',
+            status: "WAITLIST",
           },
         },
         orderBy: {
-          position: 'asc',
+          position: "asc",
         },
         include: {
           registration: true,
@@ -159,7 +168,7 @@ export async function PUT(
 
       if (nextWaitlist) {
         // Notify them (would integrate with messaging system)
-        await prisma.clubOSWaitlist.update({
+        await db.clubOSWaitlist.update({
           where: { id: nextWaitlist.id },
           data: {
             notifiedDate: new Date(),
@@ -170,7 +179,7 @@ export async function PUT(
     }
 
     // Update registration
-    const updatedRegistration = await prisma.clubOSRegistration.update({
+    const updatedRegistration = await db.clubOSRegistration.update({
       where: { id: params.id },
       data: updates,
       include: {
@@ -200,8 +209,9 @@ export async function PUT(
       message: `Registration status updated to ${status}`,
     });
   } catch (error: unknown) {
-    console.error('Registration update error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error("Registration update error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return apiErrors.internal(message);
   }
 }
@@ -212,31 +222,34 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get registration to check if we need to decrement count
-    const registration = await prisma.clubOSRegistration.findUnique({
+    const registration = await db.clubOSRegistration.findUnique({
       where: { id: params.id },
     });
 
     if (!registration) {
-      return apiErrors.notFound('Registration not found');
+      return apiErrors.notFound("Registration not found");
     }
 
     // Delete registration (cascades to waitlist)
-    await prisma.clubOSRegistration.delete({
+    await db.clubOSRegistration.delete({
       where: { id: params.id },
     });
 
     // Decrement count if it was approved/active
-    if (['APPROVED', 'ACTIVE'].includes(registration.status)) {
-      await prisma.clubOSProgram.update({
+    if (["APPROVED", "ACTIVE"].includes(registration.status)) {
+      await db.clubOSProgram.update({
         where: { id: registration.programId },
         data: {
           currentParticipants: { decrement: 1 },
@@ -246,11 +259,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Registration deleted successfully',
+      message: "Registration deleted successfully",
     });
   } catch (error: unknown) {
-    console.error('Registration deletion error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error("Registration deletion error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return apiErrors.internal(message);
   }
 }

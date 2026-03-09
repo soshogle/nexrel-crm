@@ -1,14 +1,14 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/clubos/parent/schedules - Get family schedules
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,9 +16,12 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get household for the user
-    const household = await prisma.clubOSHousehold.findUnique({
+    const household = await db.clubOSHousehold.findUnique({
       where: { userId: session.user.id },
       include: {
         members: {
@@ -30,12 +33,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!household) {
-      return apiErrors.notFound('Household not found');
+      return apiErrors.notFound("Household not found");
     }
 
     // Get all teams for the family members
     const memberIds = household.members.map((m) => m.id);
-    const teamMemberships = await prisma.clubOSTeamMember.findMany({
+    const teamMemberships = await db.clubOSTeamMember.findMany({
       where: {
         memberId: { in: memberIds },
       },
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
     const teamIds = [...new Set(teamMemberships.map((tm) => tm.teamId))];
 
     // Get schedules where any of these teams are involved
-    const schedules = await prisma.clubOSSchedule.findMany({
+    const schedules = await db.clubOSSchedule.findMany({
       where: {
         userId: session.user.id,
         OR: [
@@ -79,12 +82,12 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
     });
 
     return NextResponse.json({ schedules });
   } catch (error: any) {
-    console.error('Error fetching parent schedules:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch schedules');
+    console.error("Error fetching parent schedules:", error);
+    return apiErrors.internal(error.message || "Failed to fetch schedules");
   }
 }

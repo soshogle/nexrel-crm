@@ -1,28 +1,32 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET ORDER BY ID
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
-    const order = await prisma.pOSOrder.findFirst({
+    const order = await getCrmDb(ctx).pOSOrder.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -41,13 +45,13 @@ export async function GET(
     });
 
     if (!order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error('❌ Order fetch error:', error);
-    return apiErrors.internal('Failed to fetch order');
+    console.error("❌ Order fetch error:", error);
+    return apiErrors.internal("Failed to fetch order");
   }
 }
 
@@ -56,11 +60,15 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -68,7 +76,7 @@ export async function PATCH(
     const { status, paymentStatus, paymentMethod, discount, tip, notes } = body;
 
     // Verify order exists and belongs to user
-    const existingOrder = await prisma.pOSOrder.findFirst({
+    const existingOrder = await getCrmDb(ctx).pOSOrder.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -76,7 +84,7 @@ export async function PATCH(
     });
 
     if (!existingOrder) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Build update data
@@ -100,18 +108,20 @@ export async function PATCH(
       const newTotal =
         parseFloat(existingOrder.subtotal.toString()) +
         parseFloat(existingOrder.tax.toString()) -
-        (discount !== undefined ? discount : parseFloat(existingOrder.discount.toString())) +
+        (discount !== undefined
+          ? discount
+          : parseFloat(existingOrder.discount.toString())) +
         tip;
       updateData.total = newTotal;
     }
     if (notes) updateData.notes = notes;
 
     // If payment is completed, set paidAt timestamp
-    if (paymentStatus === 'PAID' && !existingOrder.paidAt) {
+    if (paymentStatus === "PAID" && !existingOrder.paidAt) {
       updateData.paidAt = new Date();
     }
 
-    const updatedOrder = await prisma.pOSOrder.update({
+    const updatedOrder = await getCrmDb(ctx).pOSOrder.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -129,8 +139,8 @@ export async function PATCH(
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
-    console.error('❌ Order update error:', error);
-    return apiErrors.internal('Failed to update order');
+    console.error("❌ Order update error:", error);
+    return apiErrors.internal("Failed to update order");
   }
 }
 
@@ -139,16 +149,20 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Verify order exists and belongs to user
-    const order = await prisma.pOSOrder.findFirst({
+    const order = await getCrmDb(ctx).pOSOrder.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -156,20 +170,20 @@ export async function DELETE(
     });
 
     if (!order) {
-      return apiErrors.notFound('Order not found');
+      return apiErrors.notFound("Order not found");
     }
 
     // Mark as void instead of deleting
-    await prisma.pOSOrder.update({
+    await getCrmDb(ctx).pOSOrder.update({
       where: { id: params.id },
-      data: { status: 'VOID' },
+      data: { status: "VOID" },
     });
 
     console.log(`✅ Order voided: ${order.orderNumber}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Order void error:', error);
-    return apiErrors.internal('Failed to void order');
+    console.error("❌ Order void error:", error);
+    return apiErrors.internal("Failed to void order");
   }
 }

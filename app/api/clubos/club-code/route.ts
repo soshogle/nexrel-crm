@@ -1,9 +1,10 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * Club Code API
@@ -13,8 +14,8 @@ import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/club-code - Get current club code
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +23,11 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: {
         clubCode: true,
@@ -34,41 +38,41 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // If no club code, generate one
     if (!user.clubCode) {
       const clubCode = await generateUniqueClubCode(user.name || user.email);
-      
-      await prisma.user.update({
+
+      await getMetaDb().user.update({
         where: { id: session.user.id },
         data: { clubCode },
       });
 
       return NextResponse.json({
         clubCode,
-        signupUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/parent/signup?code=${clubCode}`,
+        signupUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/auth/parent/signup?code=${clubCode}`,
         pendingParentsCount: 0,
       });
     }
 
     // Get count of pending parents
-    const pendingCount = await prisma.clubOSHousehold.count({
+    const pendingCount = await db.clubOSHousehold.count({
       where: {
         clubOwnerId: session.user.id,
-        status: 'PENDING',
+        status: "PENDING",
       },
     });
 
     return NextResponse.json({
       clubCode: user.clubCode,
-      signupUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/parent/signup?code=${user.clubCode}`,
+      signupUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/auth/parent/signup?code=${user.clubCode}`,
       pendingParentsCount: pendingCount,
     });
   } catch (error: any) {
-    console.error('Error fetching club code:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch club code');
+    console.error("Error fetching club code:", error);
+    return apiErrors.internal(error.message || "Failed to fetch club code");
   }
 }
 
@@ -80,30 +84,30 @@ export async function POST(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
       select: { name: true, email: true },
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     // Generate new unique club code
     const clubCode = await generateUniqueClubCode(user.name || user.email);
 
-    await prisma.user.update({
+    await getMetaDb().user.update({
       where: { id: session.user.id },
       data: { clubCode },
     });
 
     return NextResponse.json({
       clubCode,
-      signupUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/parent/signup?code=${clubCode}`,
+      signupUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/auth/parent/signup?code=${clubCode}`,
     });
   } catch (error: any) {
-    console.error('Error generating club code:', error);
-    return apiErrors.internal(error.message || 'Failed to generate club code');
+    console.error("Error generating club code:", error);
+    return apiErrors.internal(error.message || "Failed to generate club code");
   }
 }
 
@@ -114,7 +118,7 @@ async function generateUniqueClubCode(identifier: string): Promise<string> {
   // Extract meaningful parts from name/email
   const cleanIdentifier = identifier
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
+    .replace(/[^A-Z0-9]/g, "")
     .substring(0, 8);
 
   // Add random numbers for uniqueness
@@ -124,7 +128,7 @@ async function generateUniqueClubCode(identifier: string): Promise<string> {
   // Ensure uniqueness
   let attempts = 0;
   while (attempts < 10) {
-    const existing = await prisma.user.findUnique({
+    const existing = await getMetaDb().user.findUnique({
       where: { clubCode },
     });
 

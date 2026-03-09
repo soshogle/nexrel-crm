@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { apiErrors } from '@/lib/api-error';
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,7 +13,10 @@ export async function POST() {
       return NextResponse.json({ success: true });
     }
 
-    await prisma.callLog.create({
+    const ctx = await resolveDalContext(leadOwnerId);
+    const db = getCrmDb(ctx);
+
+    await db.callLog.create({
       data: {
         userId: leadOwnerId,
         direction: "OUTBOUND",

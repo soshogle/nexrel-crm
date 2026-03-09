@@ -4,25 +4,36 @@
  * Requires: Authorization: Bearer <extension_token>
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import OpenAI from 'openai';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import OpenAI from "openai";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function verifyToken(request: NextRequest): Promise<{ userId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token || !token.startsWith('ehr_')) return null;
+async function verifyToken(
+  request: NextRequest,
+): Promise<{ userId: string } | null> {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token || !token.startsWith("ehr_")) return null;
 
-  const apiKeys = await prisma.apiKey.findMany({
-    where: { service: 'ehr_bridge', keyName: 'extension_token', isActive: true },
+  const apiKeys = await getMetaDb().apiKey.findMany({
+    where: {
+      service: "ehr_bridge",
+      keyName: "extension_token",
+      isActive: true,
+    },
   });
   for (const key of apiKeys) {
     try {
-      const parsed = JSON.parse(key.keyValue) as { token: string; expiresAt: string };
+      const parsed = JSON.parse(key.keyValue) as {
+        token: string;
+        expiresAt: string;
+      };
       if (parsed.token === token && new Date(parsed.expiresAt) >= new Date()) {
         return { userId: key.userId };
       }
@@ -53,37 +64,40 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return apiErrors.unauthorized('Invalid or expired token');
+      return apiErrors.unauthorized("Invalid or expired token");
     }
 
     const body = await request.json().catch(() => ({}));
-    const { imageBase64, ehrType = 'generic', captureDate } = body;
+    const { imageBase64, ehrType = "generic", captureDate } = body;
 
-    if (!imageBase64 || typeof imageBase64 !== 'string') {
-      return apiErrors.badRequest('Missing imageBase64');
+    if (!imageBase64 || typeof imageBase64 !== "string") {
+      return apiErrors.badRequest("Missing imageBase64");
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 503 });
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY not configured" },
+        { status: 503 },
+      );
     }
 
     const openai = new OpenAI({ apiKey });
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
     const visionResponse = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4o",
       max_tokens: 1024,
       messages: [
         {
-          role: 'user',
+          role: "user",
           content: [
             {
-              type: 'text',
+              type: "text",
               text: VISION_PROMPT,
             },
             {
-              type: 'image_url',
+              type: "image_url",
               image_url: {
                 url: `data:image/png;base64,${base64Data}`,
               },
@@ -95,32 +109,50 @@ export async function POST(request: NextRequest) {
 
     const raw = visionResponse.choices[0]?.message?.content?.trim();
     if (!raw) {
-      return NextResponse.json({ error: 'No response from Vision API' }, { status: 502 });
+      return NextResponse.json(
+        { error: "No response from Vision API" },
+        { status: 502 },
+      );
     }
 
-    let parsed: { date?: string; slots?: string[]; booked?: { time: string; patient: string }[] };
+    let parsed: {
+      date?: string;
+      slots?: string[];
+      booked?: { time: string; patient: string }[];
+    };
     try {
-      const jsonStr = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const jsonStr = raw
+        .replace(/```json\s*/g, "")
+        .replace(/```\s*/g, "")
+        .trim();
       parsed = JSON.parse(jsonStr) as typeof parsed;
     } catch {
-      return NextResponse.json({ error: 'Failed to parse Vision API response' }, { status: 502 });
+      return NextResponse.json(
+        { error: "Failed to parse Vision API response" },
+        { status: 502 },
+      );
     }
 
     const dateStr = parsed.date || new Date().toISOString().slice(0, 10);
-    const captureDateObj = captureDate ? new Date(captureDate) : new Date(dateStr);
+    const captureDateObj = captureDate
+      ? new Date(captureDate)
+      : new Date(dateStr);
     const availability = {
       slots: Array.isArray(parsed.slots) ? parsed.slots : [],
       booked: Array.isArray(parsed.booked) ? parsed.booked : [],
       date: dateStr,
     };
 
-    await prisma.ehrScheduleSnapshot.create({
+    const ctx = await resolveDalContext(auth.userId);
+    const db = getCrmDb(ctx);
+
+    await db.ehrScheduleSnapshot.create({
       data: {
         userId: auth.userId,
         ehrType,
         captureDate: captureDateObj,
         availability,
-        source: 'screenshot',
+        source: "screenshot",
       },
     });
 
@@ -132,7 +164,9 @@ export async function POST(request: NextRequest) {
       message: `Captured ${availability.slots.length} available slots`,
     });
   } catch (error) {
-    console.error('[EHR Bridge] Analyze screenshot failed:', error);
-    return apiErrors.internal(error instanceof Error ? error.message : 'Analyze failed');
+    console.error("[EHR Bridge] Analyze screenshot failed:", error);
+    return apiErrors.internal(
+      error instanceof Error ? error.message : "Analyze failed",
+    );
   }
 }

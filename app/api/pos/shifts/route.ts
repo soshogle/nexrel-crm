@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET SHIFTS
  * List all shifts with filtering
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,12 +19,16 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const staffId = searchParams.get('staffId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const status = searchParams.get("status");
+    const staffId = searchParams.get("staffId");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     const where: any = { userId: session.user.id };
 
@@ -36,7 +40,7 @@ export async function GET(req: NextRequest) {
       if (endDate) where.clockIn.lte = new Date(endDate);
     }
 
-    const shifts = await prisma.shift.findMany({
+    const shifts = await getCrmDb(ctx).shift.findMany({
       where,
       include: {
         staff: {
@@ -51,14 +55,14 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { clockIn: 'desc' },
+      orderBy: { clockIn: "desc" },
       take: 100,
     });
 
     return NextResponse.json(shifts);
   } catch (error) {
-    console.error('❌ Shifts fetch error:', error);
-    return apiErrors.internal('Failed to fetch shifts');
+    console.error("❌ Shifts fetch error:", error);
+    return apiErrors.internal("Failed to fetch shifts");
   }
 }
 
@@ -71,35 +75,39 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await req.json();
     const { staffId, startingCash } = body;
 
     // Validate required fields
     if (!staffId || startingCash === undefined) {
-      return apiErrors.badRequest('Staff ID and starting cash are required');
+      return apiErrors.badRequest("Staff ID and starting cash are required");
     }
 
     // Check if staff has an active shift
-    const activeShift = await prisma.shift.findFirst({
+    const activeShift = await getCrmDb(ctx).shift.findFirst({
       where: {
         staffId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
     if (activeShift) {
-      return apiErrors.badRequest('Staff already has an active shift');
+      return apiErrors.badRequest("Staff already has an active shift");
     }
 
     // Create new shift
-    const shift = await prisma.shift.create({
+    const shift = await getCrmDb(ctx).shift.create({
       data: {
         userId: session.user.id,
         staffId,
         clockIn: new Date(),
         startingCash,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
       include: {
         staff: {
@@ -115,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(shift, { status: 201 });
   } catch (error) {
-    console.error('❌ Shift creation error:', error);
-    return apiErrors.internal('Failed to start shift');
+    console.error("❌ Shift creation error:", error);
+    return apiErrors.internal("Failed to start shift");
   }
 }

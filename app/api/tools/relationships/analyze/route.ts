@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/tools/relationships/analyze - Analyze tool usage patterns and create relationships
 export async function POST(request: NextRequest) {
@@ -14,9 +15,12 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     // Get all tool actions for the user
-    const actions = await prisma.toolAction.findMany({
+    const actions = await db.toolAction.findMany({
       where: {
         userId: session.user.id,
         success: true,
@@ -28,7 +32,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      orderBy: { executedAt: 'desc' },
+      orderBy: { executedAt: "desc" },
       take: 500, // Analyze last 500 successful actions
     });
 
@@ -41,7 +45,7 @@ export async function POST(request: NextRequest) {
       const action2 = actions[i + 1];
 
       const timeDiff = Math.abs(
-        action1.executedAt.getTime() - action2.executedAt.getTime()
+        action1.executedAt.getTime() - action2.executedAt.getTime(),
       );
 
       if (timeDiff < timeWindow) {
@@ -49,7 +53,8 @@ export async function POST(request: NextRequest) {
         const existing = pairMap.get(pairKey) || { count: 0, successful: 0 };
         pairMap.set(pairKey, {
           count: existing.count + 1,
-          successful: existing.successful + (action1.success && action2.success ? 1 : 0),
+          successful:
+            existing.successful + (action1.success && action2.success ? 1 : 0),
         });
       }
     }
@@ -57,25 +62,25 @@ export async function POST(request: NextRequest) {
     // Create or update relationships
     const relationships = [];
     for (const [pairKey, stats] of pairMap.entries()) {
-      const [sourceId, targetId] = pairKey.split('->');
+      const [sourceId, targetId] = pairKey.split("->");
 
       // Only create relationship if pattern occurs at least 3 times
       if (stats.count >= 3) {
         const strength = (stats.successful / stats.count) * 10; // 0-10 scale
         const aiConfidence = Math.min(stats.count / 10, 1); // Higher frequency = higher confidence
 
-        const existing = await prisma.toolRelationship.findFirst({
+        const existing = await db.toolRelationship.findFirst({
           where: {
             userId: session.user.id,
             sourceInstanceId: sourceId,
-            targetType: 'tool',
+            targetType: "tool",
             targetId: targetId,
           },
         });
 
         if (existing) {
           // Update existing relationship
-          const updated = await prisma.toolRelationship.update({
+          const updated = await db.toolRelationship.update({
             where: { id: existing.id },
             data: {
               interactionCount: existing.interactionCount + stats.count,
@@ -88,13 +93,13 @@ export async function POST(request: NextRequest) {
           relationships.push(updated);
         } else {
           // Create new relationship
-          const newRel = await prisma.toolRelationship.create({
+          const newRel = await db.toolRelationship.create({
             data: {
               userId: session.user.id,
               sourceInstanceId: sourceId,
-              targetType: 'tool',
+              targetType: "tool",
               targetId: targetId,
-              relationshipType: 'triggers',
+              relationshipType: "triggers",
               strength,
               interactionCount: stats.count,
               successfulUses: stats.successful,
@@ -112,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Detect usage patterns
-    const patterns = await detectUsagePatterns(session.user.id, actions);
+    const patterns = await detectUsagePatterns(db, session.user.id, actions);
 
     return NextResponse.json({
       success: true,
@@ -125,14 +130,23 @@ export async function POST(request: NextRequest) {
       patterns,
     });
   } catch (error: any) {
-    console.error('Error analyzing tool relationships:', error);
-    return apiErrors.internal(error.message || 'Failed to analyze tool relationships');
+    console.error("Error analyzing tool relationships:", error);
+    return apiErrors.internal(
+      error.message || "Failed to analyze tool relationships",
+    );
   }
 }
 
 // Helper function to detect usage patterns
-async function detectUsagePatterns(userId: string, actions: any[]) {
-  const patternMap = new Map<string, { count: number; toolIds: string[]; avgTime: number }>();
+async function detectUsagePatterns(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  actions: any[],
+) {
+  const patternMap = new Map<
+    string,
+    { count: number; toolIds: string[]; avgTime: number }
+  >();
   const timeWindow = 60 * 60 * 1000; // 1 hour
 
   // Group actions into sessions
@@ -141,7 +155,10 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
   let lastTime: Date | null = null;
 
   for (const action of actions) {
-    if (!lastTime || action.executedAt.getTime() - lastTime.getTime() < timeWindow) {
+    if (
+      !lastTime ||
+      action.executedAt.getTime() - lastTime.getTime() < timeWindow
+    ) {
       currentSession.push(action);
     } else {
       if (currentSession.length >= 3) {
@@ -159,9 +176,11 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
 
   // Analyze sessions for patterns
   for (const session of sessions) {
-    const sequence = session.map((a: any) => a.actionType).join('->');
+    const sequence = session.map((a: any) => a.actionType).join("->");
     const toolIds = session.map((a: any) => a.instanceId);
-    const sessionTime = session[session.length - 1].executedAt.getTime() - session[0].executedAt.getTime();
+    const sessionTime =
+      session[session.length - 1].executedAt.getTime() -
+      session[0].executedAt.getTime();
 
     const existing = patternMap.get(sequence) || {
       count: 0,
@@ -172,7 +191,9 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
     patternMap.set(sequence, {
       count: existing.count + 1,
       toolIds,
-      avgTime: (existing.avgTime * existing.count + sessionTime) / (existing.count + 1),
+      avgTime:
+        (existing.avgTime * existing.count + sessionTime) /
+        (existing.count + 1),
     });
   }
 
@@ -180,17 +201,19 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
   const patterns = [];
   for (const [sequence, stats] of patternMap.entries()) {
     if (stats.count >= 2) {
-      const sessionActions = sessions
-        .filter(s => s.map((a: any) => a.actionType).join('->') === sequence);
+      const sessionActions = sessions.filter(
+        (s) => s.map((a: any) => a.actionType).join("->") === sequence,
+      );
       const totalActions = sessionActions.reduce((sum, s) => sum + s.length, 0);
       const successfulActions = sessionActions.reduce(
         (sum, s) => sum + s.filter((a: any) => a.success).length,
         0,
       );
-      const successRate = totalActions > 0 ? successfulActions / totalActions : 0;
+      const successRate =
+        totalActions > 0 ? successfulActions / totalActions : 0;
       const confidence = Math.min(stats.count / 5, 1);
 
-      const existing = await prisma.toolUsagePattern.findFirst({
+      const existing = await db.toolUsagePattern.findFirst({
         where: {
           userId,
           patternName: sequence,
@@ -198,7 +221,7 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
       });
 
       if (existing) {
-        const updated = await prisma.toolUsagePattern.update({
+        const updated = await db.toolUsagePattern.update({
           where: { id: existing.id },
           data: {
             detectedCount: existing.detectedCount + stats.count,
@@ -207,25 +230,27 @@ async function detectUsagePatterns(userId: string, actions: any[]) {
         });
         patterns.push(updated);
       } else {
-        const newPattern = await prisma.toolUsagePattern.create({
+        const newPattern = await db.toolUsagePattern.create({
           data: {
             userId,
             patternName: sequence,
-            description: `Detected pattern: ${sequence.replace(/->/g, ' → ')}`,
+            description: `Detected pattern: ${sequence.replace(/->/g, " → ")}`,
             toolInstanceIds: stats.toolIds,
-            executionOrder: sequence.split('->').map((step: string, i: number) => ({
-              step: i + 1,
-              action: step,
-              toolId: stats.toolIds[i],
-            })),
+            executionOrder: sequence
+              .split("->")
+              .map((step: string, i: number) => ({
+                step: i + 1,
+                action: step,
+                toolId: stats.toolIds[i],
+              })),
             detectedCount: stats.count,
             successRate,
             avgTimeSaved: Math.round(stats.avgTime / 60000), // Convert to minutes
             confidence,
             recommendation:
               confidence > 0.7
-                ? 'This pattern is strong enough to automate. Consider creating a workflow.'
-                : 'Pattern detected but needs more occurrences for automation.',
+                ? "This pattern is strong enough to automate. Consider creating a workflow."
+                : "Pattern detected but needs more occurrences for automation.",
           },
         });
         patterns.push(newPattern);

@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { dataMonetizationService } from '@/lib/payments/data-monetization-service';
 import { InsightType, InsightPeriod } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
@@ -22,6 +23,10 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(req.url);
     const insightType = searchParams.get('insightType') as InsightType | null;
@@ -29,7 +34,7 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const insights = await prisma.dataInsight.findMany({
+    const insights = await getCrmDb(ctx).dataInsight.findMany({
       where: {
         userId: session.user.id,
         ...(insightType ? { insightType } : {}),
@@ -58,6 +63,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 

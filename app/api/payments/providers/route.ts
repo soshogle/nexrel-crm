@@ -1,32 +1,27 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 // GET - Get all payment provider settings
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
-
-    const providers = await prisma.paymentProviderSettings.findMany({
-      where: { userId: user.id },
+    const providers = await db.paymentProviderSettings.findMany({
+      where: { userId: session.user.id },
       select: {
         id: true,
         provider: true,
@@ -36,15 +31,15 @@ export async function GET(request: NextRequest) {
         testMode: true,
         publishableKey: true, // Safe to expose
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
         // Don't expose secretKey, webhookSecret, etc.
-      }
+      },
     });
 
     return NextResponse.json({ providers });
   } catch (error) {
-    console.error('Error fetching payment providers:', error);
-    return apiErrors.internal('Failed to fetch payment providers');
+    console.error("Error fetching payment providers:", error);
+    return apiErrors.internal("Failed to fetch payment providers");
   }
 }
 
@@ -52,17 +47,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return apiErrors.notFound('User not found');
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -73,39 +63,39 @@ export async function POST(request: NextRequest) {
       merchantId,
       clientId,
       accountId,
-      currency = 'USD',
+      currency = "USD",
       testMode = true,
       isActive = true,
-      isDefault = false
+      isDefault = false,
     } = body;
 
     if (!provider) {
-      return apiErrors.badRequest('Provider is required');
+      return apiErrors.badRequest("Provider is required");
     }
 
     // If setting as default, unset other defaults
     if (isDefault) {
-      await prisma.paymentProviderSettings.updateMany({
+      await db.paymentProviderSettings.updateMany({
         where: {
-          userId: user.id,
-          isDefault: true
+          userId: session.user.id,
+          isDefault: true,
         },
         data: {
-          isDefault: false
-        }
+          isDefault: false,
+        },
       });
     }
 
     // Upsert the provider settings
-    const providerSettings = await prisma.paymentProviderSettings.upsert({
+    const providerSettings = await db.paymentProviderSettings.upsert({
       where: {
         userId_provider: {
-          userId: user.id,
-          provider
-        }
+          userId: session.user.id,
+          provider,
+        },
       },
       create: {
-        userId: user.id,
+        userId: session.user.id,
         provider,
         publishableKey,
         secretKey,
@@ -116,7 +106,7 @@ export async function POST(request: NextRequest) {
         currency,
         testMode,
         isActive,
-        isDefault
+        isDefault,
       },
       update: {
         publishableKey,
@@ -128,8 +118,8 @@ export async function POST(request: NextRequest) {
         currency,
         testMode,
         isActive,
-        isDefault
-      }
+        isDefault,
+      },
     });
 
     return NextResponse.json({
@@ -140,11 +130,11 @@ export async function POST(request: NextRequest) {
         isActive: providerSettings.isActive,
         isDefault: providerSettings.isDefault,
         currency: providerSettings.currency,
-        testMode: providerSettings.testMode
-      }
+        testMode: providerSettings.testMode,
+      },
     });
   } catch (error) {
-    console.error('Error saving payment provider:', error);
-    return apiErrors.internal('Failed to save payment provider settings');
+    console.error("Error saving payment provider:", error);
+    return apiErrors.internal("Failed to save payment provider settings");
   }
 }

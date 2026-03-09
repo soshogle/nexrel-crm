@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
 import { apiErrors } from '@/lib/api-error';
 
@@ -17,6 +18,10 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -35,7 +40,7 @@ export async function POST(
         // Bulk update product visibility
         for (const productId of productIds) {
           try {
-            await prisma.websiteProduct.updateMany({
+            await getCrmDb(ctx).websiteProduct.updateMany({
               where: {
                 websiteId: params.id,
                 productId,
@@ -59,14 +64,14 @@ export async function POST(
           const quantity = typeof item === 'object' ? item.quantity : data.quantity;
 
           try {
-            const product = await prisma.product.findUnique({
+            const product = await getCrmDb(ctx).product.findUnique({
               where: { id: productId },
               select: { inventory: true, sku: true },
             });
 
             if (product) {
               const previousQuantity = product.inventory;
-              await prisma.product.update({
+              await getCrmDb(ctx).product.update({
                 where: { id: productId },
                 data: { inventory: quantity },
               });
@@ -93,7 +98,7 @@ export async function POST(
         // Bulk remove products from website
         for (const productId of productIds) {
           try {
-            await prisma.websiteProduct.deleteMany({
+            await getCrmDb(ctx).websiteProduct.deleteMany({
               where: {
                 websiteId: params.id,
                 productId,

@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -46,10 +51,10 @@ export async function GET(request: NextRequest) {
     }
 
     const [transactionsCount, fraudAlerts, riskScoreAgg, highRiskCount] = await Promise.all([
-      prisma.soshogleTransaction.count({
+      getCrmDb(ctx).soshogleTransaction.count({
         where: { customer: { userId: session.user.id } },
       }),
-      prisma.fraudAlert.findMany({
+      getCrmDb(ctx).fraudAlert.findMany({
         where: { userId: session.user.id },
         include: {
           transaction: {
@@ -64,11 +69,11 @@ export async function GET(request: NextRequest) {
         orderBy: { detectedAt: 'desc' },
         take: 200,
       }),
-      prisma.fraudAlert.aggregate({
+      getCrmDb(ctx).fraudAlert.aggregate({
         where: { userId: session.user.id },
         _avg: { riskScore: true },
       }),
-      prisma.fraudAlert.count({
+      getCrmDb(ctx).fraudAlert.count({
         where: {
           userId: session.user.id,
           riskLevel: { in: ['HIGH', 'CRITICAL'] },

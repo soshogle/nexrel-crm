@@ -1,12 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/general-inventory/stats - Get inventory statistics
 export async function GET(request: NextRequest) {
@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const [
       totalItems,
@@ -24,12 +27,12 @@ export async function GET(request: NextRequest) {
       recentAdjustments,
     ] = await Promise.all([
       // Total active items
-      prisma.generalInventoryItem.count({
+      db.generalInventoryItem.count({
         where: { userId: session.user.id, isActive: true },
       }),
 
       // Total inventory value
-      prisma.generalInventoryItem.aggregate({
+      db.generalInventoryItem.aggregate({
         where: { userId: session.user.id, isActive: true },
         _sum: {
           quantity: true,
@@ -37,11 +40,11 @@ export async function GET(request: NextRequest) {
       }),
 
       // Low stock items (quantity <= reorderLevel)
-      prisma.generalInventoryItem.findMany({
+      db.generalInventoryItem.findMany({
         where: {
           userId: session.user.id,
           isActive: true,
-          quantity: { lte: prisma.generalInventoryItem.fields.reorderLevel },
+          quantity: { lte: db.generalInventoryItem.fields.reorderLevel },
         },
         select: {
           id: true,
@@ -54,12 +57,12 @@ export async function GET(request: NextRequest) {
       }),
 
       // Out of stock items
-      prisma.generalInventoryItem.count({
+      db.generalInventoryItem.count({
         where: { userId: session.user.id, isActive: true, quantity: 0 },
       }),
 
       // Recent adjustments
-      prisma.generalInventoryAdjustment.findMany({
+      db.generalInventoryAdjustment.findMany({
         where: { userId: session.user.id },
         include: {
           item: {
@@ -69,13 +72,13 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 5,
       }),
     ]);
 
     // Calculate total value
-    const items = await prisma.generalInventoryItem.findMany({
+    const items = await db.generalInventoryItem.findMany({
       where: { userId: session.user.id, isActive: true },
       select: {
         quantity: true,
@@ -100,7 +103,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error fetching inventory stats:', error);
+    console.error("Error fetching inventory stats:", error);
     return apiErrors.internal(error.message);
   }
 }

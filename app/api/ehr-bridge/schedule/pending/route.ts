@@ -4,24 +4,35 @@
  * Requires: Bearer token
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function verifyToken(request: NextRequest): Promise<{ userId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token || !token.startsWith('ehr_')) return null;
+async function verifyToken(
+  request: NextRequest,
+): Promise<{ userId: string } | null> {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token || !token.startsWith("ehr_")) return null;
 
-  const apiKeys = await prisma.apiKey.findMany({
-    where: { service: 'ehr_bridge', keyName: 'extension_token', isActive: true },
+  const apiKeys = await getMetaDb().apiKey.findMany({
+    where: {
+      service: "ehr_bridge",
+      keyName: "extension_token",
+      isActive: true,
+    },
   });
   for (const key of apiKeys) {
     try {
-      const parsed = JSON.parse(key.keyValue) as { token: string; expiresAt: string };
+      const parsed = JSON.parse(key.keyValue) as {
+        token: string;
+        expiresAt: string;
+      };
       if (parsed.token === token && new Date(parsed.expiresAt) >= new Date()) {
         return { userId: key.userId };
       }
@@ -36,16 +47,19 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return apiErrors.unauthorized('Invalid or expired token');
+      return apiErrors.unauthorized("Invalid or expired token");
     }
 
-    const appointments = await prisma.bookingAppointment.findMany({
+    const ctx = await resolveDalContext(auth.userId);
+    const db = getCrmDb(ctx);
+
+    const appointments = await db.bookingAppointment.findMany({
       where: {
         userId: auth.userId,
-        status: 'SCHEDULED',
-        syncStatus: 'PENDING',
+        status: "SCHEDULED",
+        syncStatus: "PENDING",
       },
-      orderBy: { appointmentDate: 'asc' },
+      orderBy: { appointmentDate: "asc" },
       take: 20,
       select: {
         id: true,
@@ -70,7 +84,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('[EHR Bridge] Pending failed:', error);
-    return apiErrors.internal('Failed to fetch pending');
+    console.error("[EHR Bridge] Pending failed:", error);
+    return apiErrors.internal("Failed to fetch pending");
   }
 }

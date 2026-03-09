@@ -1,52 +1,53 @@
 /**
  * Docpen Knowledge Base Upload API
- * 
+ *
  * POST - Upload and process a document for training
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import mammoth from 'mammoth';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import mammoth from "mammoth";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // Helper function to extract text from file buffer
 async function extractTextFromFile(
   buffer: Buffer,
   fileType: string,
-  fileName: string
+  fileName: string,
 ): Promise<string> {
   try {
     // For text files
-    if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
-      return buffer.toString('utf-8');
+    if (fileType === "text/plain" || fileName.endsWith(".txt")) {
+      return buffer.toString("utf-8");
     }
 
     // For DOCX files
     if (
       fileType ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      fileName.endsWith('.docx')
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      fileName.endsWith(".docx")
     ) {
       try {
         const result = await mammoth.extractRawText({ buffer });
-        return result.value || '';
+        return result.value || "";
       } catch (docxError: any) {
         return `[DOCX extraction error: ${docxError.message}]`;
       }
     }
 
     // For DOC files
-    if (fileType === 'application/msword' || fileName.endsWith('.doc')) {
+    if (fileType === "application/msword" || fileName.endsWith(".doc")) {
       return `[Legacy DOC format - please convert to DOCX or TXT]`;
     }
 
     // For PDF files
-    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+    if (fileType === "application/pdf" || fileName.endsWith(".pdf")) {
       return `[PDF content - text extraction pending]`;
     }
 
@@ -64,19 +65,27 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const specialty = formData.get('specialty') as string | null;
-    const customSpecialty = formData.get('customSpecialty') as string | null;
-    const agentId = formData.get('agentId') as string | null;
-    const tagsRaw = formData.get('tags') as string | null;
+    const file = formData.get("file") as File;
+    const specialty = formData.get("specialty") as string | null;
+    const customSpecialty = formData.get("customSpecialty") as string | null;
+    const agentId = formData.get("agentId") as string | null;
+    const tagsRaw = formData.get("tags") as string | null;
 
     if (!file) {
-      return apiErrors.badRequest('No file provided');
+      return apiErrors.badRequest("No file provided");
     }
 
-    console.log('📄 [Docpen KB] Uploading file:', file.name, 'for specialty:', specialty);
+    console.log(
+      "📄 [Docpen KB] Uploading file:",
+      file.name,
+      "for specialty:",
+      specialty,
+    );
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -86,32 +95,37 @@ export async function POST(request: NextRequest) {
     const extractedText = await extractTextFromFile(
       buffer,
       file.type,
-      file.name
+      file.name,
     );
 
     // Parse tags
-    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const tags = tagsRaw
+      ? tagsRaw
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
 
     // Create knowledge base file
-    const kbFile = await prisma.docpenKnowledgeBaseFile.create({
+    const kbFile = await db.docpenKnowledgeBaseFile.create({
       data: {
         userId: session.user.id,
         fileName: file.name,
-        fileType: file.type || 'application/octet-stream',
+        fileType: file.type || "application/octet-stream",
         fileSize: file.size,
         extractedText,
-        specialty: specialty as any || null,
+        specialty: (specialty as any) || null,
         customSpecialty,
         tags,
       },
     });
 
-    console.log('✅ [Docpen KB] File created:', kbFile.id);
+    console.log("✅ [Docpen KB] File created:", kbFile.id);
 
     // Link to agent if specified
     if (agentId) {
       // Verify agent ownership
-      const agent = await prisma.docpenVoiceAgent.findFirst({
+      const agent = await db.docpenVoiceAgent.findFirst({
         where: {
           id: agentId,
           userId: session.user.id,
@@ -119,13 +133,13 @@ export async function POST(request: NextRequest) {
       });
 
       if (agent) {
-        await prisma.docpenAgentKnowledgeBaseFile.create({
+        await db.docpenAgentKnowledgeBaseFile.create({
           data: {
             agentId,
             fileId: kbFile.id,
           },
         });
-        console.log('✅ [Docpen KB] Linked to agent:', agentId);
+        console.log("✅ [Docpen KB] Linked to agent:", agentId);
       }
     }
 
@@ -138,12 +152,12 @@ export async function POST(request: NextRequest) {
         fileSize: kbFile.fileSize,
         specialty: kbFile.specialty,
         tags: kbFile.tags,
-        extractedText: extractedText.substring(0, 500) + '...',
+        extractedText: extractedText.substring(0, 500) + "...",
         createdAt: kbFile.createdAt,
       },
     });
   } catch (error: any) {
-    console.error('❌ [Docpen KB] Error uploading:', error);
-    return apiErrors.internal(error.message || 'Failed to upload file');
+    console.error("❌ [Docpen KB] Error uploading:", error);
+    return apiErrors.internal(error.message || "Failed to upload file");
   }
 }

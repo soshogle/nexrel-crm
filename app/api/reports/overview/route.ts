@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET COMPREHENSIVE OVERVIEW REPORT
  * Combines all system metrics into one dashboard
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,30 +19,35 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const period = searchParams.get('period') || '7d'; // 1d, 7d, 30d, 90d
+    const period = searchParams.get("period") || "7d"; // 1d, 7d, 30d, 90d
 
     // Calculate date range
     const endDate = new Date();
     const startDate = new Date();
     switch (period) {
-      case '1d':
+      case "1d":
         startDate.setDate(startDate.getDate() - 1);
         break;
-      case '7d':
+      case "7d":
         startDate.setDate(startDate.getDate() - 7);
         break;
-      case '30d':
+      case "30d":
         startDate.setDate(startDate.getDate() - 30);
         break;
-      case '90d':
+      case "90d":
         startDate.setDate(startDate.getDate() - 90);
         break;
     }
 
     // POS Sales Metrics
-    const posOrders = await prisma.pOSOrder.findMany({
+    const posOrders = await db.pOSOrder.findMany({
       where: {
         userId: session.user.id,
         createdAt: {
@@ -57,13 +62,16 @@ export async function GET(req: NextRequest) {
 
     const totalRevenue = posOrders.reduce(
       (sum, order) => sum + Number(order.total),
-      0
+      0,
     );
-    const averageOrderValue = posOrders.length > 0 ? totalRevenue / posOrders.length : 0;
-    const completedOrders = posOrders.filter(o => o.status === 'COMPLETED').length;
+    const averageOrderValue =
+      posOrders.length > 0 ? totalRevenue / posOrders.length : 0;
+    const completedOrders = posOrders.filter(
+      (o) => o.status === "COMPLETED",
+    ).length;
 
     // Kitchen Performance
-    const kitchenItems = await prisma.kitchenOrderItem.findMany({
+    const kitchenItems = await db.kitchenOrderItem.findMany({
       where: {
         userId: session.user.id,
         createdAt: {
@@ -80,12 +88,13 @@ export async function GET(req: NextRequest) {
       return sum;
     }, 0);
 
-    const averagePrepTime = kitchenItems.length > 0
-      ? Math.round(totalPrepTime / kitchenItems.length / 1000 / 60) // minutes
-      : 0;
+    const averagePrepTime =
+      kitchenItems.length > 0
+        ? Math.round(totalPrepTime / kitchenItems.length / 1000 / 60) // minutes
+        : 0;
 
     // Inventory Status
-    const inventoryItems = await prisma.inventoryItem.findMany({
+    const inventoryItems = await db.inventoryItem.findMany({
       where: {
         userId: session.user.id,
         isActive: true,
@@ -93,20 +102,20 @@ export async function GET(req: NextRequest) {
     });
 
     const lowStockCount = inventoryItems.filter(
-      item => Number(item.currentStock) <= Number(item.minimumStock)
+      (item) => Number(item.currentStock) <= Number(item.minimumStock),
     ).length;
 
     const outOfStockCount = inventoryItems.filter(
-      item => Number(item.currentStock) <= 0
+      (item) => Number(item.currentStock) <= 0,
     ).length;
 
     const totalInventoryValue = inventoryItems.reduce(
-      (sum, item) => sum + (Number(item.currentStock) * Number(item.costPerUnit)),
-      0
+      (sum, item) => sum + Number(item.currentStock) * Number(item.costPerUnit),
+      0,
     );
 
     // Delivery Performance
-    const deliveryOrders = await prisma.deliveryOrder.findMany({
+    const deliveryOrders = await db.deliveryOrder.findMany({
       where: {
         userId: session.user.id,
         createdAt: {
@@ -117,20 +126,27 @@ export async function GET(req: NextRequest) {
     });
 
     const completedDeliveries = deliveryOrders.filter(
-      d => d.status === 'DELIVERED'
+      (d) => d.status === "DELIVERED",
     ).length;
 
-    const averageDeliveryTime = deliveryOrders.length > 0
-      ? deliveryOrders.reduce((sum, d) => {
-          if (d.actualDeliveryTime && d.actualPickupTime) {
-            return sum + (d.actualDeliveryTime.getTime() - d.actualPickupTime.getTime());
-          }
-          return sum;
-        }, 0) / deliveryOrders.length / 1000 / 60 // minutes
-      : 0;
+    const averageDeliveryTime =
+      deliveryOrders.length > 0
+        ? deliveryOrders.reduce((sum, d) => {
+            if (d.actualDeliveryTime && d.actualPickupTime) {
+              return (
+                sum +
+                (d.actualDeliveryTime.getTime() - d.actualPickupTime.getTime())
+              );
+            }
+            return sum;
+          }, 0) /
+          deliveryOrders.length /
+          1000 /
+          60 // minutes
+        : 0;
 
     // Reservations
-    const reservations = await prisma.reservation.findMany({
+    const reservations = await db.reservation.findMany({
       where: {
         userId: session.user.id,
         reservationDate: {
@@ -141,11 +157,11 @@ export async function GET(req: NextRequest) {
     });
 
     const confirmedReservations = reservations.filter(
-      r => r.status === 'CONFIRMED'
+      (r) => r.status === "CONFIRMED",
     ).length;
 
     // Top Selling Products
-    const posOrderItems = posOrders.flatMap(order => order.items);
+    const posOrderItems = posOrders.flatMap((order) => order.items);
     const productSales = posOrderItems.reduce((acc: any, item) => {
       const name = item.name;
       if (!acc[name]) {
@@ -174,18 +190,16 @@ export async function GET(req: NextRequest) {
       dayEnd.setHours(23, 59, 59, 999);
 
       const dayOrders = posOrders.filter(
-        order =>
-          order.createdAt >= dayStart &&
-          order.createdAt <= dayEnd
+        (order) => order.createdAt >= dayStart && order.createdAt <= dayEnd,
       );
 
       const dayRevenue = dayOrders.reduce(
         (sum, order) => sum + Number(order.total),
-        0
+        0,
       );
 
       revenueTrend.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: currentDate.toISOString().split("T")[0],
         revenue: dayRevenue,
         orders: dayOrders.length,
       });
@@ -208,7 +222,8 @@ export async function GET(req: NextRequest) {
       kitchen: {
         totalItems: kitchenItems.length,
         averagePrepTime: `${averagePrepTime} mins`,
-        completedItems: kitchenItems.filter(i => i.status === 'BUMPED').length,
+        completedItems: kitchenItems.filter((i) => i.status === "BUMPED")
+          .length,
       },
       inventory: {
         totalItems: inventoryItems.length,
@@ -224,13 +239,13 @@ export async function GET(req: NextRequest) {
       reservations: {
         total: reservations.length,
         confirmed: confirmedReservations,
-        pending: reservations.filter(r => r.status === 'PENDING').length,
+        pending: reservations.filter((r) => r.status === "PENDING").length,
       },
       topProducts,
       revenueTrend,
     });
   } catch (error) {
-    console.error('❌ Overview report error:', error);
-    return apiErrors.internal('Failed to generate report');
+    console.error("❌ Overview report error:", error);
+    return apiErrors.internal("Failed to generate report");
   }
 }

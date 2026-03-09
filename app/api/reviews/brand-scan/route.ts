@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import {
   runBrandScan,
   getScanStatus,
@@ -23,6 +24,10 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -50,7 +55,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'running') {
-      const running = await prisma.brandScan.findFirst({
+      const running = await getCrmDb(ctx).brandScan.findFirst({
         where: { userId: session.user.id, status: { in: ['PENDING', 'RUNNING'] } },
         select: { id: true },
       });
@@ -76,12 +81,16 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await req.json().catch(() => ({}));
 
     let businessName = body.businessName as string | undefined;
     if (!businessName) {
-      const user = await prisma.user.findUnique({
+      const user = await getCrmDb(ctx).user.findUnique({
         where: { id: session.user.id },
         select: { legalEntityName: true, name: true },
       });
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const stuckPendingBefore = new Date(now.getTime() - STUCK_PENDING_MS);
     const stuckRunningBefore = new Date(now.getTime() - STUCK_RUNNING_MS);
-    await prisma.brandScan.updateMany({
+    await getCrmDb(ctx).brandScan.updateMany({
       where: {
         userId: session.user.id,
         status: 'PENDING',
@@ -109,7 +118,7 @@ export async function POST(req: NextRequest) {
       },
       data: { status: 'FAILED', error: 'Scan timed out (never started)', completedAt: now },
     });
-    await prisma.brandScan.updateMany({
+    await getCrmDb(ctx).brandScan.updateMany({
       where: {
         userId: session.user.id,
         status: 'RUNNING',
@@ -122,7 +131,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Prevent concurrent scans
-    const running = await prisma.brandScan.findFirst({
+    const running = await getCrmDb(ctx).brandScan.findFirst({
       where: { userId: session.user.id, status: { in: ['PENDING', 'RUNNING'] } },
     });
     if (running) {
@@ -159,6 +168,10 @@ export async function PATCH(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await req.json().catch(() => ({}));
     const { scanId, action } = body;
@@ -169,7 +182,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const scan = await prisma.brandScan.findFirst({
+    const scan = await getCrmDb(ctx).brandScan.findFirst({
       where: { id: scanId, userId: session.user.id },
     });
     if (!scan) {
@@ -182,7 +195,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    await prisma.brandScan.update({
+    await getCrmDb(ctx).brandScan.update({
       where: { id: scanId },
       data: {
         status: 'FAILED',

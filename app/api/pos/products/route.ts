@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET POS PRODUCTS
  * List all products available for sale in POS
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,10 +19,14 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get('category');
-    const inStock = searchParams.get('inStock');
+    const category = searchParams.get("category");
+    const inStock = searchParams.get("inStock");
 
     const where: any = {
       userId: session.user.id,
@@ -34,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get products from inventory that can be sold
-    const products = await prisma.inventoryItem.findMany({
+    const products = await getCrmDb(ctx).inventoryItem.findMany({
       where: {
         ...where,
         sellingPrice: {
@@ -54,19 +58,20 @@ export async function GET(req: NextRequest) {
         costPerUnit: true,
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
 
     // Filter by stock if requested
-    const filteredProducts = inStock === 'true'
-      ? products.filter(p => Number(p.currentStock) > 0)
-      : products;
+    const filteredProducts =
+      inStock === "true"
+        ? products.filter((p) => Number(p.currentStock) > 0)
+        : products;
 
     return NextResponse.json(filteredProducts);
   } catch (error) {
-    console.error('❌ POS products fetch error:', error);
-    return apiErrors.internal('Failed to fetch products');
+    console.error("❌ POS products fetch error:", error);
+    return apiErrors.internal("Failed to fetch products");
   }
 }
 
@@ -78,6 +83,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -96,27 +105,29 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !sku || !category || !sellingPrice) {
-      return apiErrors.badRequest('Name, SKU, category, and selling price are required');
+      return apiErrors.badRequest(
+        "Name, SKU, category, and selling price are required",
+      );
     }
 
     // Check if SKU already exists
-    const existingSku = await prisma.inventoryItem.findUnique({
+    const existingSku = await getCrmDb(ctx).inventoryItem.findUnique({
       where: { sku },
     });
 
     if (existingSku) {
-      return apiErrors.badRequest('SKU already exists');
+      return apiErrors.badRequest("SKU already exists");
     }
 
     // Create inventory item with selling price
-    const product = await prisma.inventoryItem.create({
+    const product = await getCrmDb(ctx).inventoryItem.create({
       data: {
         userId: session.user.id,
         name,
         sku,
         description,
-        category: category || 'OTHER',
-        unit: unit || 'PIECE',
+        category: category || "OTHER",
+        unit: unit || "PIECE",
         currentStock: initialStock || 0,
         minimumStock: minimumStock || 0,
         reorderQuantity: minimumStock || 10,
@@ -130,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    console.error('❌ POS product creation error:', error);
-    return apiErrors.internal('Failed to create product');
+    console.error("❌ POS product creation error:", error);
+    return apiErrors.internal("Failed to create product");
   }
 }

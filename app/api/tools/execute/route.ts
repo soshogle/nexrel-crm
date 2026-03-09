@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { decrypt } from '@/lib/encryption';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { decrypt } from "@/lib/encryption";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/tools/execute - Execute a tool action
 export async function POST(request: NextRequest) {
@@ -17,22 +18,27 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const { instanceId, actionType, method, endpoint, payload, context } = body;
 
     if (!instanceId || !actionType || !method || !endpoint) {
-      return apiErrors.badRequest('Missing required fields: instanceId, actionType, method, endpoint',);
+      return apiErrors.badRequest(
+        "Missing required fields: instanceId, actionType, method, endpoint",
+      );
     }
 
     // Get tool instance
-    const instance = await prisma.toolInstance.findUnique({
+    const instance = await db.toolInstance.findUnique({
       where: { id: instanceId },
       include: { definition: true },
     });
 
     if (!instance) {
-      return apiErrors.notFound('Tool instance not found');
+      return apiErrors.notFound("Tool instance not found");
     }
 
     // Verify ownership
@@ -41,41 +47,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if tool is active
-    if (instance.status === 'INACTIVE' || instance.status === 'FAILED') {
+    if (instance.status === "INACTIVE" || instance.status === "FAILED") {
       return NextResponse.json(
         {
           error: `Tool is ${instance.status.toLowerCase()}. Please activate it first.`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Decrypt credentials
     const credentialsData: any = instance.credentials;
-    const decryptedCredentials = JSON.parse(
-      decrypt(credentialsData.encrypted)
-    );
+    const decryptedCredentials = JSON.parse(decrypt(credentialsData.encrypted));
 
     // Build request URL
-    const baseUrl = instance.definition.baseUrl || '';
-    const fullUrl = endpoint.startsWith('http')
+    const baseUrl = instance.definition.baseUrl || "";
+    const fullUrl = endpoint.startsWith("http")
       ? endpoint
       : `${baseUrl}${endpoint}`;
 
     // Build headers based on auth type
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
-    if (instance.definition.authType === 'API_KEY') {
-      headers['Authorization'] = `Bearer ${decryptedCredentials.apiKey}`;
-    } else if (instance.definition.authType === 'BEARER_TOKEN') {
-      headers['Authorization'] = `Bearer ${decryptedCredentials.token}`;
-    } else if (instance.definition.authType === 'BASIC_AUTH') {
+    if (instance.definition.authType === "API_KEY") {
+      headers["Authorization"] = `Bearer ${decryptedCredentials.apiKey}`;
+    } else if (instance.definition.authType === "BEARER_TOKEN") {
+      headers["Authorization"] = `Bearer ${decryptedCredentials.token}`;
+    } else if (instance.definition.authType === "BASIC_AUTH") {
       const credentials = Buffer.from(
-        `${decryptedCredentials.username}:${decryptedCredentials.password}`
-      ).toString('base64');
-      headers['Authorization'] = `Basic ${credentials}`;
+        `${decryptedCredentials.username}:${decryptedCredentials.password}`,
+      ).toString("base64");
+      headers["Authorization"] = `Basic ${credentials}`;
     }
 
     // Execute API call
@@ -91,7 +95,10 @@ export async function POST(request: NextRequest) {
         headers,
       };
 
-      if (payload && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      if (
+        payload &&
+        (method === "POST" || method === "PUT" || method === "PATCH")
+      ) {
         requestOptions.body = JSON.stringify(payload);
       }
 
@@ -100,15 +107,16 @@ export async function POST(request: NextRequest) {
       success = response.ok;
 
       // Try to parse response
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
         responseData = await response.json();
       } else {
         responseData = { raw: await response.text() };
       }
 
       if (!success) {
-        errorMessage = responseData.error || responseData.message || 'API call failed';
+        errorMessage =
+          responseData.error || responseData.message || "API call failed";
       }
     } catch (error: any) {
       success = false;
@@ -120,7 +128,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
 
     // Log the action
-    const action = await prisma.toolAction.create({
+    const action = await db.toolAction.create({
       data: {
         userId: session.user.id,
         instanceId,
@@ -133,7 +141,7 @@ export async function POST(request: NextRequest) {
         duration,
         success,
         errorMessage,
-        triggeredBy: context?.triggeredBy || 'User',
+        triggeredBy: context?.triggeredBy || "User",
         context: context || {},
       },
     });
@@ -161,18 +169,19 @@ export async function POST(request: NextRequest) {
 
       // Auto-disable after 5 consecutive errors
       if (instance.consecutiveErrors >= 4) {
-        updateData.status = 'FAILED';
+        updateData.status = "FAILED";
       }
     }
 
-    await prisma.toolInstance.update({
+    await db.toolInstance.update({
       where: { id: instanceId },
       data: updateData,
     });
 
     // Calculate uptime
     const successRate =
-      (instance.successfulCalls + (success ? 1 : 0)) / (instance.totalCalls + 1);
+      (instance.successfulCalls + (success ? 1 : 0)) /
+      (instance.totalCalls + 1);
 
     return NextResponse.json({
       success,
@@ -188,7 +197,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error executing tool action:', error);
-    return apiErrors.internal(error.message || 'Failed to execute tool action');
+    console.error("Error executing tool action:", error);
+    return apiErrors.internal(error.message || "Failed to execute tool action");
   }
 }

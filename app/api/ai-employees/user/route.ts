@@ -4,12 +4,13 @@
  * POST: Create new AI Team employee
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { ensureUserHasVoiceAgent } from '@/lib/ensure-voice-agent';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { ensureUserHasVoiceAgent } from "@/lib/ensure-voice-agent";
+import { apiErrors } from "@/lib/api-error";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,10 +18,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
-    const employees = await prisma.userAIEmployee.findMany({
+    const employees = await db.userAIEmployee.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
 
     return NextResponse.json({
@@ -36,8 +40,8 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
-    console.error('[API] GET /api/ai-employees/user:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch AI Team');
+    console.error("[API] GET /api/ai-employees/user:", error);
+    return apiErrors.internal(error.message || "Failed to fetch AI Team");
   }
 }
 
@@ -47,34 +51,38 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     let { profession, customName, voiceAgentId, voiceConfig } = body;
 
     if (!profession || !customName) {
-      return apiErrors.badRequest('profession and customName are required');
+      return apiErrors.badRequest("profession and customName are required");
     }
 
     // If no voice agent assigned, ensure user has one and auto-assign
     if (!voiceAgentId) {
       try {
         const { agentId } = await ensureUserHasVoiceAgent(session.user.id, {
-          templateId: 'general_assistant',
+          templateId: "general_assistant",
           preferredName: `${customName} Voice`,
         });
         voiceAgentId = agentId;
       } catch (err) {
-        console.warn('[API] Could not ensure voice agent:', err);
+        console.warn("[API] Could not ensure voice agent:", err);
       }
     }
 
-    const employee = await prisma.userAIEmployee.create({
+    const employee = await db.userAIEmployee.create({
       data: {
         userId: session.user.id,
         profession: String(profession),
         customName: String(customName),
         voiceAgentId: voiceAgentId || null,
-        voiceConfig: voiceConfig && typeof voiceConfig === 'object' ? voiceConfig : null,
+        voiceConfig:
+          voiceConfig && typeof voiceConfig === "object" ? voiceConfig : null,
         isActive: true,
       },
     });
@@ -92,7 +100,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('[API] POST /api/ai-employees/user:', error);
-    return apiErrors.internal(error.message || 'Failed to create AI Team employee');
+    console.error("[API] POST /api/ai-employees/user:", error);
+    return apiErrors.internal(
+      error.message || "Failed to create AI Team employee",
+    );
   }
 }

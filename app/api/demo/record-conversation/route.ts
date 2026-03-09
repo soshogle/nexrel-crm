@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { apiErrors } from '@/lib/api-error';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const { leadId, transcript, duration, recordingUrl, messages } = await request.json();
+    const { leadId, transcript, duration, recordingUrl, messages } =
+      await request.json();
 
     if (!leadId) {
       return apiErrors.badRequest("Missing leadId");
@@ -24,7 +26,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    await prisma.callLog.create({
+    const ctx = await resolveDalContext(leadOwnerId);
+    await getCrmDb(ctx).callLog.create({
       data: {
         userId: leadOwnerId,
         leadId,

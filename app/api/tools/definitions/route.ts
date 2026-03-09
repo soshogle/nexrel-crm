@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET /api/tools/definitions - List all tool definitions (public + user-created)
 export async function GET(request: NextRequest) {
@@ -14,10 +15,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const isPublic = searchParams.get('public');
+    const category = searchParams.get("category");
+    const isPublic = searchParams.get("public");
 
     const where: any = {
       OR: [
@@ -30,11 +34,11 @@ export async function GET(request: NextRequest) {
       where.category = category;
     }
 
-    if (isPublic === 'true') {
+    if (isPublic === "true") {
       where.isPublic = true;
     }
 
-    const definitions = await prisma.toolDefinition.findMany({
+    const definitions = await db.toolDefinition.findMany({
       where,
       include: {
         _count: {
@@ -42,16 +46,18 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { isOfficial: 'desc' },
-        { rating: 'desc' },
-        { installCount: 'desc' },
+        { isOfficial: "desc" },
+        { rating: "desc" },
+        { installCount: "desc" },
       ],
     });
 
     return NextResponse.json({ success: true, definitions });
   } catch (error: any) {
-    console.error('Error fetching tool definitions:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch tool definitions');
+    console.error("Error fetching tool definitions:", error);
+    return apiErrors.internal(
+      error.message || "Failed to fetch tool definitions",
+    );
   }
 }
 
@@ -62,6 +68,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const body = await request.json();
     const {
@@ -81,19 +90,21 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!name || !slug || !description || !category || !authType) {
-      return apiErrors.badRequest('Missing required fields: name, slug, description, category, authType');
+      return apiErrors.badRequest(
+        "Missing required fields: name, slug, description, category, authType",
+      );
     }
 
     // Check for duplicate slug
-    const existing = await prisma.toolDefinition.findUnique({
+    const existing = await db.toolDefinition.findUnique({
       where: { slug },
     });
 
     if (existing) {
-      return apiErrors.conflict('Tool with this slug already exists');
+      return apiErrors.conflict("Tool with this slug already exists");
     }
 
-    const definition = await prisma.toolDefinition.create({
+    const definition = await db.toolDefinition.create({
       data: {
         name,
         slug,
@@ -114,7 +125,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, definition });
   } catch (error: any) {
-    console.error('Error creating tool definition:', error);
-    return apiErrors.internal(error.message || 'Failed to create tool definition');
+    console.error("Error creating tool definition:", error);
+    return apiErrors.internal(
+      error.message || "Failed to create tool definition",
+    );
   }
 }

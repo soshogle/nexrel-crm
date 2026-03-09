@@ -1,18 +1,16 @@
-
 /**
  * Admin Users API
  * Manage all users in the system (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,27 +20,27 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if user is admin
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
     });
 
-    if (user?.role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Forbidden - Super Admin access required');
+    if (user?.role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Forbidden - Super Admin access required");
     }
 
     // Get all users with their subscriptions
-    const users = await prisma.user.findMany({
+    const users = await getMetaDb().user.findMany({
       include: {
         subscription: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     return NextResponse.json({ users });
   } catch (error: any) {
-    console.error('❌ Admin users fetch error:', error);
-    return apiErrors.internal(error.message || 'Failed to fetch users');
+    console.error("❌ Admin users fetch error:", error);
+    return apiErrors.internal(error.message || "Failed to fetch users");
   }
 }

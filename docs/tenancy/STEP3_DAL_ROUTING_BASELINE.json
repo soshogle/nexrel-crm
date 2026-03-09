@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-03-09",
+  "totalFilesScanned": 1259,
+  "totalViolations": 342,
+  "byReason": {
+    "Direct prisma usage detected; use resolveDalContext + getCrmDb for tenant data": 330,
+    "resolveDalContext used without getCrmDb call": 12
+  },
+  "guardrail": {
+    "policy": "non-regression",
+    "maxViolations": 342,
+    "note": "Step 3 starts by preventing regression while reducing violations in waves."
+  }
+}

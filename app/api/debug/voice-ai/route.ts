@@ -3,15 +3,15 @@
  * Helps diagnose issues with voice booking and email notifications
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,9 +22,12 @@ export async function GET(request: NextRequest) {
 
     // Debug endpoints are admin-only
     const role = (session.user as any)?.role;
-    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-      return apiErrors.forbidden('Admin access required');
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return apiErrors.forbidden("Admin access required");
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return apiErrors.unauthorized();
+    const db = getCrmDb(ctx);
 
     const diagnostics = {
       timestamp: new Date().toISOString(),
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Check Voice Agents
 
-    const agents = await prisma.voiceAgent.findMany({
+    const agents = await db.voiceAgent.findMany({
       where: { userId: session.user.id },
       select: {
         id: true,
@@ -59,9 +62,9 @@ export async function GET(request: NextRequest) {
 
     // Check Reservations (last 10)
 
-    const reservations = await prisma.reservation.findMany({
+    const reservations = await db.reservation.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 10,
       select: {
         id: true,
@@ -81,11 +84,11 @@ export async function GET(request: NextRequest) {
 
     // Check Call Logs
 
-    const callLogs = await prisma.callLog.findMany({
+    const callLogs = await db.callLog.findMany({
       where: {
         voiceAgent: { userId: session.user.id },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 10,
       select: {
         id: true,
@@ -106,10 +109,10 @@ export async function GET(request: NextRequest) {
 
     // Check Email Connections
 
-    const emailConnections = await prisma.channelConnection.findMany({
+    const emailConnections = await db.channelConnection.findMany({
       where: {
         userId: session.user.id,
-        channelType: 'EMAIL',
+        channelType: "EMAIL",
       },
       select: {
         id: true,
@@ -127,35 +130,50 @@ export async function GET(request: NextRequest) {
     // Summary
     const summary = {
       voiceAgentsCount: agents.length,
-      agentsWithEmailNotifications: agents.filter(a => a.sendRecordingEmail).length,
+      agentsWithEmailNotifications: agents.filter((a) => a.sendRecordingEmail)
+        .length,
       totalReservations: reservations.length,
-      voiceAIReservations: reservations.filter(r => r.source === 'VOICE_AI').length,
+      voiceAIReservations: reservations.filter((r) => r.source === "VOICE_AI")
+        .length,
       totalCallLogs: callLogs.length,
-      gmailConnected: emailConnections.some(e => e.providerType === 'GMAIL' && e.status === 'CONNECTED'),
+      gmailConnected: emailConnections.some(
+        (e) => e.providerType === "GMAIL" && e.status === "CONNECTED",
+      ),
       issuesDetected: [] as string[],
     };
 
     // Detect issues
     if (agents.length === 0) {
-      summary.issuesDetected.push('No voice agents configured');
+      summary.issuesDetected.push("No voice agents configured");
     }
 
     if (agents.length > 0 && callLogs.length === 0) {
-      summary.issuesDetected.push('Voice agents exist but no call logs found - calls may not be working');
+      summary.issuesDetected.push(
+        "Voice agents exist but no call logs found - calls may not be working",
+      );
     }
 
-    if (agents.some(a => a.sendRecordingEmail) && !summary.gmailConnected) {
-      summary.issuesDetected.push('Email notifications enabled but Gmail not properly connected');
+    if (agents.some((a) => a.sendRecordingEmail) && !summary.gmailConnected) {
+      summary.issuesDetected.push(
+        "Email notifications enabled but Gmail not properly connected",
+      );
     }
 
-    if (callLogs.length > 0 && reservations.filter(r => r.source === 'VOICE_AI').length === 0) {
-      summary.issuesDetected.push('Call logs exist but no voice AI reservations found - booking function may not be triggering');
+    if (
+      callLogs.length > 0 &&
+      reservations.filter((r) => r.source === "VOICE_AI").length === 0
+    ) {
+      summary.issuesDetected.push(
+        "Call logs exist but no voice AI reservations found - booking function may not be triggering",
+      );
     }
 
-    const emailAgents = agents.filter(a => a.sendRecordingEmail);
+    const emailAgents = agents.filter((a) => a.sendRecordingEmail);
     for (const agent of emailAgents) {
-      if (!agent.recordingEmailAddress || agent.recordingEmailAddress === '') {
-        summary.issuesDetected.push(`Agent "${agent.name}" has email notifications enabled but no recipient email address`);
+      if (!agent.recordingEmailAddress || agent.recordingEmailAddress === "") {
+        summary.issuesDetected.push(
+          `Agent "${agent.name}" has email notifications enabled but no recipient email address`,
+        );
       }
     }
 
@@ -165,14 +183,14 @@ export async function GET(request: NextRequest) {
       diagnostics,
     });
   } catch (error) {
-    console.error('Error in voice AI diagnostics:', error);
+    console.error("Error in voice AI diagnostics:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to run diagnostics',
+        error: "Failed to run diagnostics",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

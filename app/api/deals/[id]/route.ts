@@ -1,24 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { dealService, getCrmDb } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { workflowEngine } from '@/lib/workflow-engine';
-import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
-import { processCampaignTriggers } from '@/lib/campaign-triggers';
-import { processOrthodontistWorkflowEnrollment } from '@/lib/orthodontist/workflow-enrollment-triggers';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { dealService, getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { workflowEngine } from "@/lib/workflow-engine";
+import { detectDealStageWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
+import { processCampaignTriggers } from "@/lib/campaign-triggers";
+import { processOrthodontistWorkflowEnrollment } from "@/lib/orthodontist/workflow-enrollment-triggers";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
 
 // GET /api/deals/[id] - Get single deal
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -35,25 +35,25 @@ export async function GET(
       stage: true,
       pipeline: true,
       activities: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       },
     } as any);
 
     if (!deal) {
-      return apiErrors.notFound('Deal not found');
+      return apiErrors.notFound("Deal not found");
     }
 
     return NextResponse.json(deal);
   } catch (error) {
-    console.error('Error fetching deal:', error);
-    return apiErrors.internal('Failed to fetch deal');
+    console.error("Error fetching deal:", error);
+    return apiErrors.internal("Failed to fetch deal");
   }
 }
 
 // PATCH /api/deals/[id] - Update deal
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -64,19 +64,21 @@ export async function PATCH(
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
-    const user = await prisma.user.findUnique({
+    const user = await getMetaDb().user.findUnique({
       where: { id: session.user.id },
     });
 
     if (!user) {
-      return apiErrors.notFound('User not found');
+      return apiErrors.notFound("User not found");
     }
 
     const data = await request.json();
-    const existingDeal: any = await dealService.findUnique(ctx, params.id, { stage: true } as any);
+    const existingDeal: any = await dealService.findUnique(ctx, params.id, {
+      stage: true,
+    } as any);
 
     if (!existingDeal) {
-      return apiErrors.notFound('Deal not found');
+      return apiErrors.notFound("Deal not found");
     }
 
     // Check if stage changed
@@ -95,15 +97,22 @@ export async function PATCH(
     }
 
     // Update deal
-    const updatedDeal: any = await dealService.update(ctx, params.id, {
-      ...data,
-      probability: data.stageId ? newProbability : existingDeal.probability,
-      expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : existingDeal.expectedCloseDate,
-    }, {
-      lead: true,
-      assignedTo: true,
-      stage: true,
-    } as any);
+    const updatedDeal: any = await dealService.update(
+      ctx,
+      params.id,
+      {
+        ...data,
+        probability: data.stageId ? newProbability : existingDeal.probability,
+        expectedCloseDate: data.expectedCloseDate
+          ? new Date(data.expectedCloseDate)
+          : existingDeal.expectedCloseDate,
+      },
+      {
+        lead: true,
+        assignedTo: true,
+        stage: true,
+      } as any,
+    );
 
     // Log activity
     if (stageChanged) {
@@ -111,63 +120,103 @@ export async function PATCH(
         data: {
           dealId: params.id,
           userId: user.id,
-          type: 'STAGE_CHANGED',
+          type: "STAGE_CHANGED",
           description: `Deal moved from "${existingDeal.stage.name}" to stage`,
         },
       });
 
-      emitCRMEvent('deal_stage_changed', user.id, { entityId: params.id, entityType: 'Deal', data: { from: existingDeal.stage.name } });
+      emitCRMEvent("deal_stage_changed", user.id, {
+        entityId: params.id,
+        entityType: "Deal",
+        data: { from: existingDeal.stage.name },
+      });
 
       // Trigger DEAL_STAGE_CHANGED workflows (generic)
-      workflowEngine.triggerWorkflow('DEAL_STAGE_CHANGED', {
-        userId: user.id,
-        dealId: params.id,
-        leadId: updatedDeal.leadId || undefined,
-        variables: {
-          dealTitle: updatedDeal.title,
-          dealValue: updatedDeal.value,
-          businessName: updatedDeal.lead?.businessName,
-        },
-      }, {
-        oldStageId: existingDeal.stageId,
-        newStageId: data.stageId,
-      }).catch(err => console.error('Deal stage changed workflow trigger failed:', err));
+      workflowEngine
+        .triggerWorkflow(
+          "DEAL_STAGE_CHANGED",
+          {
+            userId: user.id,
+            dealId: params.id,
+            leadId: updatedDeal.leadId || undefined,
+            variables: {
+              dealTitle: updatedDeal.title,
+              dealValue: updatedDeal.value,
+              businessName: updatedDeal.lead?.businessName,
+            },
+          },
+          {
+            oldStageId: existingDeal.stageId,
+            newStageId: data.stageId,
+          },
+        )
+        .catch((err) =>
+          console.error("Deal stage changed workflow trigger failed:", err),
+        );
 
       // Trigger RE-specific workflows if user is in real estate industry
-      if (user.industry === 'REAL_ESTATE' && newStage) {
-        detectDealStageWorkflowTriggers(user.id, params.id, newStage.name || '').catch(err => {
-          console.error('[RE Workflow] Failed to trigger RE workflow for deal:', err);
+      if (user.industry === "REAL_ESTATE" && newStage) {
+        detectDealStageWorkflowTriggers(
+          user.id,
+          params.id,
+          newStage.name || "",
+        ).catch((err) => {
+          console.error(
+            "[RE Workflow] Failed to trigger RE workflow for deal:",
+            err,
+          );
         });
       }
 
       // Check if deal is won (moved to CLOSED_WON stage)
-      if (newStage?.name?.toLowerCase().includes('won') || newStage?.name?.toLowerCase().includes('closed won')) {
+      if (
+        newStage?.name?.toLowerCase().includes("won") ||
+        newStage?.name?.toLowerCase().includes("closed won")
+      ) {
         // Trigger DEAL_WON workflows
-        workflowEngine.triggerWorkflow('DEAL_WON', {
-          userId: user.id,
-          dealId: params.id,
-          leadId: updatedDeal.leadId || undefined,
-          variables: {
-            dealTitle: updatedDeal.title,
-            dealValue: updatedDeal.value,
-            contactName: updatedDeal.lead?.contactPerson || updatedDeal.lead?.businessName,
-          },
-        }).catch(err => console.error('Deal won workflow trigger failed:', err));
+        workflowEngine
+          .triggerWorkflow("DEAL_WON", {
+            userId: user.id,
+            dealId: params.id,
+            leadId: updatedDeal.leadId || undefined,
+            variables: {
+              dealTitle: updatedDeal.title,
+              dealValue: updatedDeal.value,
+              contactName:
+                updatedDeal.lead?.contactPerson ||
+                updatedDeal.lead?.businessName,
+            },
+          })
+          .catch((err) =>
+            console.error("Deal won workflow trigger failed:", err),
+          );
 
         // Trigger campaign enrollment for DEAL_WON campaigns
         if (updatedDeal.leadId) {
           processCampaignTriggers({
             leadId: updatedDeal.leadId,
             userId: user.id,
-            triggerType: 'DEAL_WON',
+            triggerType: "DEAL_WON",
             metadata: { dealId: params.id, newStatus: newStage?.name },
-          }).catch(err => console.error('Deal won campaign trigger failed:', err));
+          }).catch((err) =>
+            console.error("Deal won campaign trigger failed:", err),
+          );
 
           // Orthodontist: TREATMENT_ACCEPTED triggers Financial Agreement workflow
-          if (user.industry === 'ORTHODONTIST') {
-            processOrthodontistWorkflowEnrollment(user.id, updatedDeal.leadId, 'TREATMENT_ACCEPTED', {
-              dealId: params.id,
-            }).catch(err => console.error('Orthodontist treatment-accepted trigger failed:', err));
+          if (user.industry === "ORTHODONTIST") {
+            processOrthodontistWorkflowEnrollment(
+              user.id,
+              updatedDeal.leadId,
+              "TREATMENT_ACCEPTED",
+              {
+                dealId: params.id,
+              },
+            ).catch((err) =>
+              console.error(
+                "Orthodontist treatment-accepted trigger failed:",
+                err,
+              ),
+            );
           }
         }
       }
@@ -176,7 +225,7 @@ export async function PATCH(
         data: {
           dealId: params.id,
           userId: user.id,
-          type: 'VALUE_CHANGED',
+          type: "VALUE_CHANGED",
           description: `Deal value changed from $${existingDeal.value} to $${data.value}`,
         },
       });
@@ -184,15 +233,15 @@ export async function PATCH(
 
     return NextResponse.json(updatedDeal);
   } catch (error) {
-    console.error('Error updating deal:', error);
-    return apiErrors.internal('Failed to update deal');
+    console.error("Error updating deal:", error);
+    return apiErrors.internal("Failed to update deal");
   }
 }
 
 // DELETE /api/deals/[id] - Delete deal
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -207,7 +256,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting deal:', error);
-    return apiErrors.internal('Failed to delete deal');
+    console.error("Error deleting deal:", error);
+    return apiErrors.internal("Failed to delete deal");
   }
 }

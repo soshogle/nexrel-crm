@@ -1,17 +1,17 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET KITCHEN STATIONS
  * List all kitchen stations
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,16 +19,21 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const { searchParams } = new URL(req.url);
-    const isActive = searchParams.get('isActive');
+    const isActive = searchParams.get("isActive");
 
     const where: any = { userId: session.user.id };
     if (isActive !== null) {
-      where.isActive = isActive === 'true';
+      where.isActive = isActive === "true";
     }
 
-    const stations = await prisma.kitchenStation.findMany({
+    const stations = await db.kitchenStation.findMany({
       where,
       include: {
         _count: {
@@ -36,23 +41,20 @@ export async function GET(req: NextRequest) {
             kitchenItems: {
               where: {
                 status: {
-                  in: ['PENDING', 'PREPARING'],
+                  in: ["PENDING", "PREPARING"],
                 },
               },
             },
           },
         },
       },
-      orderBy: [
-        { priority: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ priority: "desc" }, { name: "asc" }],
     });
 
     return NextResponse.json(stations);
   } catch (error) {
-    console.error('❌ Kitchen stations fetch error:', error);
-    return apiErrors.internal('Failed to fetch stations');
+    console.error("❌ Kitchen stations fetch error:", error);
+    return apiErrors.internal("Failed to fetch stations");
   }
 }
 
@@ -65,6 +67,11 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const {
@@ -79,11 +86,11 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !displayName) {
-      return apiErrors.badRequest('Station name and display name are required');
+      return apiErrors.badRequest("Station name and display name are required");
     }
 
     // Create station
-    const station = await prisma.kitchenStation.create({
+    const station = await db.kitchenStation.create({
       data: {
         userId: session.user.id,
         name,
@@ -100,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(station, { status: 201 });
   } catch (error) {
-    console.error('❌ Kitchen station creation error:', error);
-    return apiErrors.internal('Failed to create station');
+    console.error("❌ Kitchen station creation error:", error);
+    return apiErrors.internal("Failed to create station");
   }
 }

@@ -1,38 +1,43 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * UPDATE KITCHEN ITEM STATUS
  * Handles status transitions (PENDING → PREPARING → READY → BUMPED)
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     const body = await req.json();
     const { status, staffId, staffName, notes } = body;
 
     // Validate required fields
     if (!status) {
-      return apiErrors.badRequest('Status is required');
+      return apiErrors.badRequest("Status is required");
     }
 
     // Get current item
-    const item = await prisma.kitchenOrderItem.findFirst({
+    const item = await db.kitchenOrderItem.findFirst({
       where: {
         id: params.id,
         userId: session.user.id,
@@ -40,7 +45,7 @@ export async function PATCH(
     });
 
     if (!item) {
-      return apiErrors.notFound('Kitchen item not found');
+      return apiErrors.notFound("Kitchen item not found");
     }
 
     // Build update data
@@ -49,15 +54,15 @@ export async function PATCH(
     };
 
     // Set timestamps based on status
-    if (status === 'PREPARING' && !item.startedAt) {
+    if (status === "PREPARING" && !item.startedAt) {
       updateData.startedAt = new Date();
       if (staffId) updateData.assignedTo = staffId;
-    } else if (status === 'READY' && !item.completedAt) {
+    } else if (status === "READY" && !item.completedAt) {
       updateData.completedAt = new Date();
     }
 
     // Update item
-    const updatedItem = await prisma.kitchenOrderItem.update({
+    const updatedItem = await db.kitchenOrderItem.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -77,7 +82,7 @@ export async function PATCH(
 
     // Create prep log
     const action = getActionFromStatus(item.status, status) as any;
-    await prisma.prepLog.create({
+    await db.prepLog.create({
       data: {
         kitchenItemId: params.id,
         action,
@@ -90,8 +95,8 @@ export async function PATCH(
     });
 
     // Check if all items in the order are ready
-    if (status === 'READY' || status === 'BUMPED') {
-      await checkAndUpdateOrderStatus(updatedItem.posOrderId);
+    if (status === "READY" || status === "BUMPED") {
+      await checkAndUpdateOrderStatus(db, updatedItem.posOrderId);
     }
 
     console.log(`✅ Kitchen item status updated: ${item.itemName} → ${status}`);
@@ -101,8 +106,8 @@ export async function PATCH(
       item: updatedItem,
     });
   } catch (error) {
-    console.error('❌ Kitchen item status update error:', error);
-    return apiErrors.internal('Failed to update status');
+    console.error("❌ Kitchen item status update error:", error);
+    return apiErrors.internal("Failed to update status");
   }
 }
 
@@ -111,51 +116,51 @@ export async function PATCH(
  */
 function getActionFromStatus(
   previousStatus: string,
-  newStatus: string
+  newStatus: string,
 ): string {
-  if (previousStatus === 'PENDING' && newStatus === 'PREPARING') {
-    return 'STARTED';
+  if (previousStatus === "PENDING" && newStatus === "PREPARING") {
+    return "STARTED";
   }
-  if (newStatus === 'READY') {
-    return 'READY';
+  if (newStatus === "READY") {
+    return "READY";
   }
-  if (newStatus === 'BUMPED') {
-    return 'BUMPED';
+  if (newStatus === "BUMPED") {
+    return "BUMPED";
   }
-  if (newStatus === 'CANCELLED') {
-    return 'CANCELLED';
+  if (newStatus === "CANCELLED") {
+    return "CANCELLED";
   }
-  return 'MODIFIED';
+  return "MODIFIED";
 }
 
 /**
  * Helper to update POS order status based on kitchen items
  */
-async function checkAndUpdateOrderStatus(posOrderId: string) {
-  const kitchenItems = await prisma.kitchenOrderItem.findMany({
+async function checkAndUpdateOrderStatus(db: any, posOrderId: string) {
+  const kitchenItems = await db.kitchenOrderItem.findMany({
     where: { posOrderId },
   });
 
   const allReady = kitchenItems.every(
-    (item) => item.status === 'READY' || item.status === 'BUMPED'
+    (item: any) => item.status === "READY" || item.status === "BUMPED",
   );
 
-  const allBumped = kitchenItems.every((item) => item.status === 'BUMPED');
+  const allBumped = kitchenItems.every((item: any) => item.status === "BUMPED");
 
   if (allBumped) {
-    await prisma.pOSOrder.update({
+    await db.pOSOrder.update({
       where: { id: posOrderId },
-      data: { status: 'COMPLETED' },
+      data: { status: "COMPLETED" },
     });
   } else if (allReady) {
-    await prisma.pOSOrder.update({
+    await db.pOSOrder.update({
       where: { id: posOrderId },
-      data: { status: 'READY' },
+      data: { status: "READY" },
     });
   } else {
-    await prisma.pOSOrder.update({
+    await db.pOSOrder.update({
       where: { id: posOrderId },
-      data: { status: 'PREPARING' },
+      data: { status: "PREPARING" },
     });
   }
 }

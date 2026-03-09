@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REReportType } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
@@ -14,12 +15,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as REReportType | null;
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const reports = await prisma.rEMarketReport.findMany({
+    const reports = await getCrmDb(ctx).rEMarketReport.findMany({
       where: {
         userId: session.user.id,
         ...(type && { type }),
@@ -39,6 +44,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return apiErrors.unauthorized();
+    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return apiErrors.unauthorized();
     }
 
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Type, title, region, periodStart, and periodEnd are required');
     }
 
-    const report = await prisma.rEMarketReport.create({
+    const report = await getCrmDb(ctx).rEMarketReport.create({
       data: {
         userId: session.user.id,
         type: type as REReportType,
@@ -91,6 +100,10 @@ export async function PUT(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -99,7 +112,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.badRequest('Report ID required');
     }
 
-    const existing = await prisma.rEMarketReport.findFirst({
+    const existing = await getCrmDb(ctx).rEMarketReport.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -107,7 +120,7 @@ export async function PUT(request: NextRequest) {
       return apiErrors.notFound('Report not found');
     }
 
-    const report = await prisma.rEMarketReport.update({
+    const report = await getCrmDb(ctx).rEMarketReport.update({
       where: { id },
       data: {
         ...(updateData.title && { title: updateData.title }),
@@ -131,6 +144,10 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -139,7 +156,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest('Report ID required');
     }
 
-    const existing = await prisma.rEMarketReport.findFirst({
+    const existing = await getCrmDb(ctx).rEMarketReport.findFirst({
       where: { id, userId: session.user.id },
     });
 
@@ -147,7 +164,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.notFound('Report not found');
     }
 
-    await prisma.rEMarketReport.delete({ where: { id } });
+    await getCrmDb(ctx).rEMarketReport.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

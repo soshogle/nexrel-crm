@@ -1,20 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { addMinutes, parse, isAfter, isBefore, format } from 'date-fns';
-import { emailService } from '@/lib/email-service';
-import { CalendarService } from '@/lib/calendar/calendar-service';
-import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { addMinutes, parse, isAfter, isBefore, format } from "date-fns";
+import { emailService } from "@/lib/email-service";
+import { CalendarService } from "@/lib/calendar/calendar-service";
+import {
+  getEmailTemplates,
+  replaceEmailPlaceholders,
+  formatDateForLocale,
+} from "@/lib/email-templates";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/booking/[userId]/book
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: { userId: string } },
 ) {
   try {
+    const ctx = await resolveDalContext(params.userId);
+    const db = getCrmDb(ctx);
+
     const body = await request.json();
     const {
       customerName,
@@ -30,27 +38,27 @@ export async function POST(
 
     // Validation
     if (!customerName || !customerEmail || !date || !time) {
-      return apiErrors.badRequest('Missing required fields');
+      return apiErrors.badRequest("Missing required fields");
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail)) {
-      return apiErrors.badRequest('Invalid email format');
+      return apiErrors.badRequest("Invalid email format");
     }
 
     // Get user's booking settings
-    const settings = await prisma.bookingSettings.findUnique({
+    const settings = await db.bookingSettings.findUnique({
       where: { userId: params.userId },
     });
 
     if (!settings) {
-      return apiErrors.notFound('Booking settings not found');
+      return apiErrors.notFound("Booking settings not found");
     }
 
     // Parse appointment date/time
     const requestedDate = new Date(date);
-    const appointmentDateTime = parse(time, 'HH:mm', requestedDate);
+    const appointmentDateTime = parse(time, "HH:mm", requestedDate);
     const slotDuration = settings.slotDuration || 30;
 
     // Check if slot is still available
@@ -59,7 +67,7 @@ export async function POST(
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await prisma.bookingAppointment.findMany({
+    const existingAppointments = await db.bookingAppointment.findMany({
       where: {
         userId: params.userId,
         appointmentDate: {
@@ -67,7 +75,7 @@ export async function POST(
           lte: endOfDay,
         },
         status: {
-          not: 'CANCELLED',
+          not: "CANCELLED",
         },
       },
       select: {
@@ -82,21 +90,22 @@ export async function POST(
       const aptStart = new Date(apt.appointmentDate);
       const aptEnd = addMinutes(aptStart, apt.duration);
       return (
-        (isAfter(appointmentDateTime, aptStart) && isBefore(appointmentDateTime, aptEnd)) ||
+        (isAfter(appointmentDateTime, aptStart) &&
+          isBefore(appointmentDateTime, aptEnd)) ||
         (isAfter(slotEnd, aptStart) && isBefore(slotEnd, aptEnd)) ||
         (isBefore(appointmentDateTime, aptStart) && isAfter(slotEnd, aptEnd))
       );
     });
 
     if (hasConflict) {
-      return apiErrors.conflict('This time slot is no longer available');
+      return apiErrors.conflict("This time slot is no longer available");
     }
 
     // Determine initial status based on settings
-    const status = settings.requireApproval ? 'SCHEDULED' : 'CONFIRMED';
+    const status = settings.requireApproval ? "SCHEDULED" : "CONFIRMED";
 
     // Get user details for email
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: params.userId },
       select: {
         name: true,
@@ -107,23 +116,23 @@ export async function POST(
     });
 
     // Get active calendar connection for this user
-    const calendarConnection = await prisma.calendarConnection.findFirst({
+    const calendarConnection = await db.calendarConnection.findFirst({
       where: {
         userId: params.userId,
         syncEnabled: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     // Combine user notes with industry-specific fields for storage
-    let combinedNotes = notes || '';
-    if (industryFields && typeof industryFields === 'object') {
+    let combinedNotes = notes || "";
+    if (industryFields && typeof industryFields === "object") {
       const fieldEntries = Object.entries(industryFields)
-        .filter(([, v]) => v && v !== 'none')
+        .filter(([, v]) => v && v !== "none")
         .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
+        .join("\n");
       if (fieldEntries) {
         combinedNotes = combinedNotes
           ? `${combinedNotes}\n\n--- Industry Details ---\n${fieldEntries}`
@@ -132,93 +141,101 @@ export async function POST(
     }
 
     // Create appointment with calendar connection if available
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await db.bookingAppointment.create({
       data: {
         userId: params.userId,
         customerName,
         customerEmail,
-        customerPhone: customerPhone || '',
+        customerPhone: customerPhone || "",
         appointmentDate: appointmentDateTime,
         duration: slotDuration,
         status,
         notes: combinedNotes || null,
-        customerTimezone: timezone || 'UTC',
-        meetingLocation: meetingType || 'PHONE',
+        customerTimezone: timezone || "UTC",
+        meetingLocation: meetingType || "PHONE",
         calendarConnectionId: calendarConnection?.id || null,
-        syncStatus: calendarConnection ? 'PENDING' : undefined,
+        syncStatus: calendarConnection ? "PENDING" : undefined,
       },
     });
 
     // Sync to calendar if connection exists
     if (calendarConnection) {
-      console.log('📅 Syncing appointment to calendar:', appointment.id);
+      console.log("📅 Syncing appointment to calendar:", appointment.id);
       CalendarService.syncAppointmentToCalendar(appointment.id)
         .then((result) => {
           if (result.success) {
-            console.log('✅ Appointment synced to calendar successfully');
+            console.log("✅ Appointment synced to calendar successfully");
           } else {
-            console.error('❌ Failed to sync to calendar:', result.error);
+            console.error("❌ Failed to sync to calendar:", result.error);
           }
         })
         .catch((error) => {
-          console.error('❌ Calendar sync error:', error);
+          console.error("❌ Calendar sync error:", error);
         });
     } else {
-      console.log('ℹ️  No calendar connection found, skipping calendar sync');
+      console.log("ℹ️  No calendar connection found, skipping calendar sync");
     }
 
     // Send confirmation email to customer via Gmail OAuth
-    const businessName = user?.name || 'Our Business';
-    const appointmentTime = format(appointmentDateTime, 'h:mm a');
+    const businessName = user?.name || "Our Business";
+    const appointmentTime = format(appointmentDateTime, "h:mm a");
     const confirmationCode = appointment.id.slice(0, 8).toUpperCase();
 
-    console.log('📧 Sending confirmation email to customer:', customerEmail);
-    emailService.sendAppointmentConfirmation({
-      recipientEmail: customerEmail,
-      customerName,
-      appointmentDate: appointmentDateTime,
-      appointmentTime,
-      businessName,
-      confirmationCode,
-      userId: params.userId, // Use Gmail OAuth for sending
-    })
+    console.log("📧 Sending confirmation email to customer:", customerEmail);
+    emailService
+      .sendAppointmentConfirmation({
+        recipientEmail: customerEmail,
+        customerName,
+        appointmentDate: appointmentDateTime,
+        appointmentTime,
+        businessName,
+        confirmationCode,
+        userId: params.userId, // Use Gmail OAuth for sending
+      })
       .then((sent) => {
         if (sent) {
-          console.log('✅ Confirmation email sent successfully to customer');
+          console.log("✅ Confirmation email sent successfully to customer");
         } else {
-          console.error('❌ Failed to send confirmation email to customer');
+          console.error("❌ Failed to send confirmation email to customer");
         }
       })
       .catch((error) => {
-        console.error('❌ Email error:', error);
+        console.error("❌ Email error:", error);
       });
 
     // Send notification email to business owner if email available
     if (user?.email) {
-      console.log('📧 Sending notification email to business owner:', user.email);
-      
+      console.log(
+        "📧 Sending notification email to business owner:",
+        user.email,
+      );
+
       // Get user's language preference
-      const userLanguage = (user.language && ['en', 'fr', 'es', 'zh'].includes(user.language)) 
-        ? (user.language as 'en' | 'fr' | 'es' | 'zh')
-        : 'en';
-      
+      const userLanguage =
+        user.language && ["en", "fr", "es", "zh"].includes(user.language)
+          ? (user.language as "en" | "fr" | "es" | "zh")
+          : "en";
+
       const templates = getEmailTemplates(userLanguage);
       const emailTemplates = templates.bookingNotification;
-      
-      const formattedDate = formatDateForLocale(appointmentDateTime, userLanguage);
-      const actionMessage = settings.requireApproval 
-        ? emailTemplates.actionPendingApproval 
+
+      const formattedDate = formatDateForLocale(
+        appointmentDateTime,
+        userLanguage,
+      );
+      const actionMessage = settings.requireApproval
+        ? emailTemplates.actionPendingApproval
         : emailTemplates.actionConfirmed;
-      const statusText = settings.requireApproval 
-        ? emailTemplates.statusPending 
+      const statusText = settings.requireApproval
+        ? emailTemplates.statusPending
         : emailTemplates.statusConfirmed;
 
       const ownerSubject = replaceEmailPlaceholders(emailTemplates.subject, {
         customerName,
-        date: format(appointmentDateTime, 'MMM dd, yyyy'),
+        date: format(appointmentDateTime, "MMM dd, yyyy"),
         time: appointmentTime,
       });
-      
+
       const ownerHtml = `
         <!DOCTYPE html>
         <html>
@@ -269,11 +286,15 @@ export async function POST(
             <div class="detail-row">
               <span class="label">${emailTemplates.emailLabel}</span> ${customerEmail}
             </div>
-            ${customerPhone ? `
+            ${
+              customerPhone
+                ? `
             <div class="detail-row">
               <span class="label">${emailTemplates.phoneLabel}</span> ${customerPhone}
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             <div class="detail-row">
               <span class="label">${emailTemplates.dateLabel}</span> ${formattedDate}
             </div>
@@ -283,11 +304,15 @@ export async function POST(
             <div class="detail-row">
               <span class="label">${emailTemplates.durationLabel}</span> ${slotDuration} minutes
             </div>
-            ${notes ? `
+            ${
+              notes
+                ? `
             <div class="detail-row">
               <span class="label">${emailTemplates.notesLabel}</span> ${notes}
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             <div class="detail-row">
               <span class="label">${emailTemplates.confirmationCodeLabel}</span> ${confirmationCode}
             </div>
@@ -305,21 +330,26 @@ export async function POST(
         </html>
       `;
 
-      emailService.sendEmail({
-        to: user.email,
-        subject: ownerSubject,
-        html: ownerHtml,
-        userId: params.userId, // Use Gmail OAuth for business owner
-      })
+      emailService
+        .sendEmail({
+          to: user.email,
+          subject: ownerSubject,
+          html: ownerHtml,
+          userId: params.userId, // Use Gmail OAuth for business owner
+        })
         .then((sent) => {
           if (sent) {
-            console.log('✅ Notification email sent successfully to business owner');
+            console.log(
+              "✅ Notification email sent successfully to business owner",
+            );
           } else {
-            console.error('❌ Failed to send notification email to business owner');
+            console.error(
+              "❌ Failed to send notification email to business owner",
+            );
           }
         })
         .catch((error) => {
-          console.error('❌ Owner email error:', error);
+          console.error("❌ Owner email error:", error);
         });
     }
 
@@ -332,13 +362,12 @@ export async function POST(
         status: appointment.status,
         calendarSynced: !!calendarConnection,
       },
-      message:
-        settings.requireApproval
-          ? 'Your appointment request has been received and is pending approval. You will receive a confirmation email shortly.'
-          : 'Your appointment has been confirmed! You will receive a confirmation email shortly.',
+      message: settings.requireApproval
+        ? "Your appointment request has been received and is pending approval. You will receive a confirmation email shortly."
+        : "Your appointment has been confirmed! You will receive a confirmation email shortly.",
     });
   } catch (error: any) {
-    console.error('Error creating booking:', error);
-    return apiErrors.internal(error.message || 'Failed to create booking');
+    console.error("Error creating booking:", error);
+    return apiErrors.internal(error.message || "Failed to create booking");
   }
 }

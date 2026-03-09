@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { twilioHealthMonitor } from "@/lib/twilio-failover/health-monitor";
 import { twilioFailoverService } from "@/lib/twilio-failover/failover-service";
-import { prisma } from "@/lib/db";
+import { getMetaDb } from "@/lib/db/meta-db";
 import { apiErrors } from "@/lib/api-error";
 
 function isAuthorizedCron(request: NextRequest): boolean {
@@ -28,7 +28,7 @@ async function runMonitor(request: NextRequest) {
     console.log("🔍 [Cron] Starting Twilio health monitoring...");
 
     // Get all active Twilio accounts
-    const accounts = await prisma.twilioAccount.findMany({
+    const accounts = await getMetaDb().twilioAccount.findMany({
       where: {
         isActive: true,
       },
@@ -60,14 +60,16 @@ async function runMonitor(request: NextRequest) {
           );
 
           // Check if there's already a pending failover event
-          const existingEvent = await prisma.twilioFailoverEvent.findFirst({
-            where: {
-              fromAccountId: account.id,
-              status: {
-                in: ["PENDING_APPROVAL", "APPROVED", "EXECUTING"],
+          const existingEvent = await getMetaDb().twilioFailoverEvent.findFirst(
+            {
+              where: {
+                fromAccountId: account.id,
+                status: {
+                  in: ["PENDING_APPROVAL", "APPROVED", "EXECUTING"],
+                },
               },
             },
-          });
+          );
 
           if (!existingEvent) {
             // Start failover process

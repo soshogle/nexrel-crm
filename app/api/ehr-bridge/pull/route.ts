@@ -5,26 +5,35 @@
  * Requires: Authorization: Bearer <extension_token>
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getCrmDb, leadService } from '@/lib/dal';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getCrmDb, leadService } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getMetaDb } from "@/lib/db/meta-db";
+import { apiErrors } from "@/lib/api-error";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function verifyToken(request: NextRequest): Promise<{ userId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token || !token.startsWith('ehr_')) return null;
+async function verifyToken(
+  request: NextRequest,
+): Promise<{ userId: string } | null> {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token || !token.startsWith("ehr_")) return null;
 
-  const apiKeys = await prisma.apiKey.findMany({
-    where: { service: 'ehr_bridge', keyName: 'extension_token', isActive: true },
+  const apiKeys = await getMetaDb().apiKey.findMany({
+    where: {
+      service: "ehr_bridge",
+      keyName: "extension_token",
+      isActive: true,
+    },
   });
   for (const key of apiKeys) {
     try {
-      const parsed = JSON.parse(key.keyValue) as { token: string; expiresAt: string };
+      const parsed = JSON.parse(key.keyValue) as {
+        token: string;
+        expiresAt: string;
+      };
       if (parsed.token === token && new Date(parsed.expiresAt) >= new Date()) {
         return { userId: key.userId };
       }
@@ -36,40 +45,52 @@ async function verifyToken(request: NextRequest): Promise<{ userId: string } | n
 }
 
 function normalizePhone(phone: string | null | undefined): string | null {
-  if (!phone || typeof phone !== 'string') return null;
-  const digits = phone.replace(/\D/g, '');
+  if (!phone || typeof phone !== "string") return null;
+  const digits = phone.replace(/\D/g, "");
   return digits.length >= 10 ? digits : null;
 }
 
 function normalizeEmail(email: string | null | undefined): string | null {
-  if (!email || typeof email !== 'string') return null;
+  if (!email || typeof email !== "string") return null;
   const trimmed = email.trim().toLowerCase();
-  return trimmed.includes('@') ? trimmed : null;
+  return trimmed.includes("@") ? trimmed : null;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return apiErrors.unauthorized('Invalid or expired token');
+      return apiErrors.unauthorized("Invalid or expired token");
     }
 
     const body = await request.json().catch(() => ({}));
-    const { source = 'dom', ehrType, pageType, dataType, data, url } = body;
+    const { source = "dom", ehrType, pageType, dataType, data, url } = body;
 
-    if (!data || typeof data !== 'object') {
-      return apiErrors.badRequest('Missing or invalid data');
+    if (!data || typeof data !== "object") {
+      return apiErrors.badRequest("Missing or invalid data");
     }
 
-    let result: { created?: boolean; leadId?: string; matched?: string; error?: string } = {};
+    let result: {
+      created?: boolean;
+      leadId?: string;
+      matched?: string;
+      error?: string;
+    } = {};
 
-    if (dataType === 'patient' || (data.patientName || data.email || data.phone)) {
+    if (
+      dataType === "patient" ||
+      data.patientName ||
+      data.email ||
+      data.phone
+    ) {
       const email = normalizeEmail(data.email);
       const phone = normalizePhone(data.phone);
-      const patientName = (data.patientName || '').trim() || undefined;
+      const patientName = (data.patientName || "").trim() || undefined;
 
       if (!email && !phone && !patientName) {
-        return apiErrors.badRequest('Need at least email, phone, or patient name to sync');
+        return apiErrors.badRequest(
+          "Need at least email, phone, or patient name to sync",
+        );
       }
 
       let existing: { id: string; businessName: string } | null = null;
@@ -78,15 +99,34 @@ export async function POST(request: NextRequest) {
       const db = getCrmDb(ctx);
 
       if (email) {
-        existing = ((await leadService.findMany(ctx, { where: { email }, take: 1 } as any))[0] as any) || null;
+        existing =
+          ((
+            await leadService.findMany(ctx, {
+              where: { email },
+              take: 1,
+            } as any)
+          )[0] as any) || null;
       }
       if (!existing && phone) {
-        const leads: any[] = await leadService.findMany(ctx, { select: { id: true, businessName: true, phone: true } } as any);
+        const leads: any[] = await leadService.findMany(ctx, {
+          select: { id: true, businessName: true, phone: true },
+        } as any);
         const phoneDigits = normalizePhone(phone);
-        existing = leads.find((l: any) => l.phone && normalizePhone(l.phone) === phoneDigits) || null;
+        existing =
+          leads.find(
+            (l: any) => l.phone && normalizePhone(l.phone) === phoneDigits,
+          ) || null;
       }
       if (!existing && patientName) {
-        existing = ((await leadService.findMany(ctx, { where: { contactPerson: { equals: patientName, mode: 'insensitive' } }, take: 1 } as any))[0] as any) || null;
+        existing =
+          ((
+            await leadService.findMany(ctx, {
+              where: {
+                contactPerson: { equals: patientName, mode: "insensitive" },
+              },
+              take: 1,
+            } as any)
+          )[0] as any) || null;
       }
 
       const updateData: Record<string, unknown> = {};
@@ -99,7 +139,8 @@ export async function POST(request: NextRequest) {
       if (existing) {
         if (data.priorNotes || data.lastVisitDate) {
           const current = await leadService.findUnique(ctx, existing.id);
-          const existingDh = (current?.dentalHistory as Record<string, unknown>) || {};
+          const existingDh =
+            (current?.dentalHistory as Record<string, unknown>) || {};
           updateData.dentalHistory = {
             ...existingDh,
             ...(data.priorNotes && { priorNotes: data.priorNotes }),
@@ -107,32 +148,36 @@ export async function POST(request: NextRequest) {
           };
         }
         await leadService.update(ctx, existing.id, updateData as any);
-        result = { created: false, leadId: existing.id, matched: email ? 'email' : 'phone' };
+        result = {
+          created: false,
+          leadId: existing.id,
+          matched: email ? "email" : "phone",
+        };
       } else {
         const dentalHistory =
           data.priorNotes || data.lastVisitDate
             ? { priorNotes: data.priorNotes, lastVisitDate: data.lastVisitDate }
             : undefined;
         const lead = await leadService.create(ctx, {
-          businessName: patientName || 'Unknown',
+          businessName: patientName || "Unknown",
           contactPerson: patientName,
           email: email || null,
           phone: phone || null,
           address: (data.address as string) || null,
           dateOfBirth: parseDob(data.dob),
           dentalHistory: dentalHistory as any,
-          source: 'ehr_bridge',
+          source: "ehr_bridge",
         } as any);
         result = { created: true, leadId: lead.id };
       }
-    } else if (dataType === 'calendar' && Array.isArray(data.appointments)) {
+    } else if (dataType === "calendar" && Array.isArray(data.appointments)) {
       result = {
-        matched: 'calendar',
+        matched: "calendar",
         appointmentsCount: data.appointments.length,
         message: `Extracted ${data.appointments.length} appointments from calendar payload`,
       } as any;
     } else {
-      return apiErrors.badRequest('Unsupported data type');
+      return apiErrors.badRequest("Unsupported data type");
     }
 
     return NextResponse.json({
@@ -140,13 +185,13 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error('[EHR Bridge] Pull failed:', error);
-    return apiErrors.internal('Failed to sync data');
+    console.error("[EHR Bridge] Pull failed:", error);
+    return apiErrors.internal("Failed to sync data");
   }
 }
 
 function parseDob(dob: string | null | undefined): Date | null {
-  if (!dob || typeof dob !== 'string') return null;
+  if (!dob || typeof dob !== "string") return null;
   const d = new Date(dob);
   return isNaN(d.getTime()) ? null : d;
 }

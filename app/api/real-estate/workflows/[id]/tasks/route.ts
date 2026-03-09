@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -22,9 +23,13 @@ export async function GET(
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -35,7 +40,7 @@ export async function GET(
       return apiErrors.notFound('Workflow not found');
     }
 
-    const tasks = await prisma.rEWorkflowTask.findMany({
+    const tasks = await getCrmDb(ctx).rEWorkflowTask.findMany({
       where: { templateId: params.id },
       orderBy: { displayOrder: 'asc' }
     });
@@ -60,9 +65,13 @@ export async function POST(
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -97,7 +106,7 @@ export async function POST(
     // Get the next display order if not provided
     let order = displayOrder;
     if (order === undefined) {
-      const maxOrder = await prisma.rEWorkflowTask.aggregate({
+      const maxOrder = await getCrmDb(ctx).rEWorkflowTask.aggregate({
         where: { templateId: params.id },
         _max: { displayOrder: true }
       });
@@ -113,7 +122,7 @@ export async function POST(
       assignedAIEmployeeId: body.assignedAIEmployeeId || null,
     };
 
-    const task = await prisma.rEWorkflowTask.create({
+    const task = await getCrmDb(ctx).rEWorkflowTask.create({
       data: {
         templateId: params.id,
         name,
@@ -152,9 +161,13 @@ export async function PATCH(
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -170,7 +183,7 @@ export async function PATCH(
     // Bulk reorder tasks
     if (body.reorder && Array.isArray(body.tasks)) {
       const updates = body.tasks.map((task: { id: string; displayOrder: number; position?: object }) =>
-        prisma.rEWorkflowTask.update({
+        getCrmDb(ctx).rEWorkflowTask.update({
           where: { id: task.id },
           data: {
             displayOrder: task.displayOrder,
@@ -179,9 +192,9 @@ export async function PATCH(
         })
       );
 
-      await prisma.$transaction(updates);
+      await getCrmDb(ctx).$transaction(updates);
 
-      const tasks = await prisma.rEWorkflowTask.findMany({
+      const tasks = await getCrmDb(ctx).rEWorkflowTask.findMany({
         where: { templateId: params.id },
         orderBy: { displayOrder: 'asc' }
       });
@@ -199,7 +212,7 @@ export async function PATCH(
     }
 
     // Verify task belongs to this workflow
-    const existingTask = await prisma.rEWorkflowTask.findFirst({
+    const existingTask = await getCrmDb(ctx).rEWorkflowTask.findFirst({
       where: {
         id: taskId,
         templateId: params.id
@@ -240,7 +253,7 @@ export async function PATCH(
       ...(updateData.actionConfig !== undefined && !hasAssignment && { actionConfig: updateData.actionConfig }),
     };
 
-    const task = await prisma.rEWorkflowTask.update({
+    const task = await getCrmDb(ctx).rEWorkflowTask.update({
       where: { id: taskId },
       data: updatePayload as any
     });
@@ -265,6 +278,10 @@ export async function DELETE(
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
 
     const { searchParams } = new URL(request.url);
     const taskId = searchParams.get('taskId');
@@ -274,7 +291,7 @@ export async function DELETE(
     }
 
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -286,7 +303,7 @@ export async function DELETE(
     }
 
     // Verify task belongs to this workflow
-    const task = await prisma.rEWorkflowTask.findFirst({
+    const task = await getCrmDb(ctx).rEWorkflowTask.findFirst({
       where: {
         id: taskId,
         templateId: params.id
@@ -298,26 +315,26 @@ export async function DELETE(
     }
 
     // Delete the task
-    await prisma.rEWorkflowTask.delete({
+    await getCrmDb(ctx).rEWorkflowTask.delete({
       where: { id: taskId }
     });
 
     // Reorder remaining tasks
-    const remainingTasks = await prisma.rEWorkflowTask.findMany({
+    const remainingTasks = await getCrmDb(ctx).rEWorkflowTask.findMany({
       where: { templateId: params.id },
       orderBy: { displayOrder: 'asc' }
     });
 
     // Update display orders
     const updates = remainingTasks.map((t: { id: string }, index: number) =>
-      prisma.rEWorkflowTask.update({
+      getCrmDb(ctx).rEWorkflowTask.update({
         where: { id: t.id },
         data: { displayOrder: index + 1 }
       })
     );
 
     if (updates.length > 0) {
-      await prisma.$transaction(updates);
+      await getCrmDb(ctx).$transaction(updates);
     }
 
     return NextResponse.json({

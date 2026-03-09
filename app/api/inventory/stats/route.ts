@@ -1,16 +1,16 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { apiErrors } from "@/lib/api-error";
 
 /**
  * GET INVENTORY STATISTICS
  */
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,9 +18,14 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return apiErrors.unauthorized();
+    }
+    const db = getCrmDb(ctx);
 
     // Get all inventory items
-    const items = await prisma.inventoryItem.findMany({
+    const items = await db.inventoryItem.findMany({
       where: {
         userId: session.user.id,
         isActive: true,
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Get unresolved alerts count
-    const unresolvedAlertsCount = await prisma.stockAlert.count({
+    const unresolvedAlertsCount = await db.stockAlert.count({
       where: {
         userId: session.user.id,
         isResolved: false,
@@ -56,18 +61,18 @@ export async function GET(req: NextRequest) {
     });
 
     // Get pending purchase orders count
-    const pendingPOCount = await prisma.purchaseOrder.count({
+    const pendingPOCount = await db.purchaseOrder.count({
       where: {
         userId: session.user.id,
         status: {
-          in: ['DRAFT', 'SENT', 'CONFIRMED'],
+          in: ["DRAFT", "SENT", "CONFIRMED"],
         },
       },
     });
 
     // Category breakdown
-    const categoryBreakdown = await prisma.inventoryItem.groupBy({
-      by: ['category'],
+    const categoryBreakdown = await db.inventoryItem.groupBy({
+      by: ["category"],
       where: {
         userId: session.user.id,
         isActive: true,
@@ -87,7 +92,7 @@ export async function GET(req: NextRequest) {
       categoryBreakdown,
     });
   } catch (error) {
-    console.error('❌ Stats fetch error:', error);
-    return apiErrors.internal('Failed to fetch statistics');
+    console.error("❌ Stats fetch error:", error);
+    return apiErrors.internal("Failed to fetch statistics");
   }
 }
