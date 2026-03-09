@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Soshogle Inc. - PIPEDA Legal Review Packet</title>
+    <style>
+      @page {
+        size: Letter;
+        margin: 0.85in;
+      }
+      body {
+        font-family: "Times New Roman", Georgia, serif;
+        color: #111827;
+        line-height: 1.35;
+        font-size: 11pt;
+      }
+      .cover {
+        min-height: 9.5in;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      h1 {
+        font-size: 22pt;
+        margin: 0 0 12px;
+      }
+      h2 {
+        font-size: 14pt;
+        margin: 20px 0 8px;
+        border-bottom: 1px solid #d1d5db;
+        padding-bottom: 4px;
+      }
+      h3 {
+        font-size: 12pt;
+        margin: 14px 0 6px;
+      }
+      p {
+        margin: 7px 0;
+      }
+      ul,
+      ol {
+        margin: 6px 0 8px 18px;
+      }
+      li {
+        margin: 3px 0;
+      }
+      .meta {
+        border: 1px solid #d1d5db;
+        padding: 10px 12px;
+        background: #f9fafb;
+      }
+      .disclaimer {
+        font-size: 10pt;
+        color: #374151;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+      .table th,
+      .table td {
+        border: 1px solid #d1d5db;
+        padding: 6px 7px;
+        vertical-align: top;
+      }
+      .table th {
+        background: #f3f4f6;
+        text-align: left;
+      }
+      .sign {
+        margin-top: 16px;
+      }
+      .line {
+        display: inline-block;
+        min-width: 260px;
+        border-bottom: 1px solid #111827;
+        margin: 0 6px;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid #9ca3af;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 9pt;
+        margin-right: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="cover">
+      <div>
+        <div class="badge">CONFIDENTIAL - LEGAL REVIEW DRAFT</div>
+        <h1>Soshogle Inc. - PIPEDA Compliance Legal Review Packet</h1>
+        <p><strong>Entity:</strong> Soshogle Inc.</p>
+        <p><strong>Product:</strong> Nexrel CRM Platform</p>
+        <p>
+          <strong>Framework:</strong> PIPEDA Fair Information Principles (with
+          emphasis on Principle 1 - Accountability)
+        </p>
+      </div>
+
+      <div class="meta">
+        <p>
+          <strong>Designated Privacy Official (Draft):</strong> Urpi
+          Carhuachagua
+        </p>
+        <p><strong>Proposed Role:</strong> Privacy Officer</p>
+        <p><strong>Proposed Contact:</strong> privacy@soshogle.com</p>
+        <p><strong>Document Date:</strong> 2026-03-08</p>
+      </div>
+
+      <p class="disclaimer">
+        This packet is a technical + policy draft prepared for counsel. It is
+        not legal advice and requires lawyer approval before operational
+        reliance.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>1) Purpose and Scope</h2>
+      <p>
+        This legal draft translates the client requirements and PIPEDA
+        accountability guidance into an operational privacy management program
+        for Soshogle Inc. and Nexrel.
+      </p>
+      <p>
+        It governs collection, use, disclosure, retention, access, correction,
+        complaint handling, and incident response for personal information
+        handled through Nexrel.
+      </p>
+
+      <h2>2) Governance and Accountability</h2>
+      <ul>
+        <li>
+          Appoint and publicly identify a Privacy Officer with authority to
+          intervene on privacy issues.
+        </li>
+        <li>
+          Maintain senior-management support and governance oversight for
+          privacy controls.
+        </li>
+        <li>
+          Maintain a documented privacy management program with periodic review
+          and remediation.
+        </li>
+      </ul>
+
+      <h2>3) Consent, Purpose Limitation, and Transparency</h2>
+      <ul>
+        <li>
+          Identify and document purposes for each category of personal
+          information collected.
+        </li>
+        <li>Provide clear purpose notice before or at collection.</li>
+        <li>
+          Obtain meaningful consent for collection/use/disclosure where
+          required.
+        </li>
+        <li>Obtain new consent for materially new purposes.</li>
+        <li>
+          Enable consent withdrawal (subject to legal/contractual constraints)
+          and explain implications.
+        </li>
+      </ul>
+
+      <h2>4) Retention, Accuracy, Access, and Complaints</h2>
+      <ul>
+        <li>
+          Maintain retention/destruction timetables by data category and legal
+          hold requirements.
+        </li>
+        <li>
+          Maintain procedures for correction and dispute notation where data
+          accuracy is challenged.
+        </li>
+        <li>
+          Respond to access requests within 30 days, with lawful extension
+          handling and notice.
+        </li>
+        <li>
+          Provide complaint intake, impartial review, tracked outcomes, and
+          corrective action records.
+        </li>
+      </ul>
+    </section>
+
+    <section class="page-break">
+      <h2>5) Technical Security and Safety Measures in Nexrel</h2>
+      <p>
+        The following controls are currently implemented in the codebase and
+        intended to support protection of customer and owner data.
+      </p>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Control Domain</th>
+            <th>Implemented Measure</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Encryption in Transit</td>
+            <td>
+              HTTPS security posture via strict headers, HSTS, CSP, and
+              production redirect from HTTP to HTTPS.
+            </td>
+            <td>`middleware.ts`</td>
+          </tr>
+          <tr>
+            <td>Encryption at Rest (App-Level)</td>
+            <td>
+              AES-256-GCM encryption helper for sensitive values; production now
+              fails closed when encryption key material is missing.
+            </td>
+            <td>`lib/encryption.ts`</td>
+          </tr>
+          <tr>
+            <td>Field-Level Secret Protection</td>
+            <td>
+              Helper utilities for encrypting sensitive DB fields (API
+              keys/tokens/secrets) with encrypted prefix handling.
+            </td>
+            <td>`lib/crypto-fields.ts`</td>
+          </tr>
+          <tr>
+            <td>Document Security</td>
+            <td>
+              Application-level encryption for stored documents plus server-side
+              encryption metadata for storage backends.
+            </td>
+            <td>`lib/storage/canadian-storage-service.ts`</td>
+          </tr>
+          <tr>
+            <td>Access and Incident Traceability</td>
+            <td>
+              Audit and privacy-related models exist for access logs, access
+              requests, and breach tracking.
+            </td>
+            <td>
+              `prisma/schema.prisma` (`AuditLog`, `DocumentAccessLog`,
+              `DataAccessRequest`, `DataBreach`)
+            </td>
+          </tr>
+          <tr>
+            <td>PII Logging Safety</td>
+            <td>
+              Structured logger includes built-in redaction of common PII/token
+              fields.
+            </td>
+            <td>`lib/logger.ts`</td>
+          </tr>
+          <tr>
+            <td>Rights Handling</td>
+            <td>
+              Service logic exists for patient access/deletion request workflow
+              handling.
+            </td>
+            <td>`lib/storage/patient-rights-service.ts`</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Encryption Statement (Counsel Review Required)</h3>
+      <p>
+        Nexrel applies encryption in transit and encryption at rest for
+        sensitive data paths. For legal materials, describe this as "encryption
+        in transit and at rest with key management and access controls" unless a
+        specific workflow is architected as strict cryptographic end-to-end
+        encryption.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>6) Third-Party Processor and Cross-Border Requirements</h2>
+      <ul>
+        <li>Maintain documented processor inventory and data flow map.</li>
+        <li>
+          Use contractual terms requiring equivalent safeguards and purpose
+          limitation.
+        </li>
+        <li>
+          Assess transfer risk and provide customer transparency on
+          jurisdictional access risk.
+        </li>
+      </ul>
+
+      <h2>7) Breach/Incident Protocol</h2>
+      <ul>
+        <li>
+          Document incident intake, severity classification, containment, and
+          remediation.
+        </li>
+        <li>Document notification decisioning and legal notice pathways.</li>
+        <li>
+          Maintain post-incident corrective action and control hardening
+          records.
+        </li>
+      </ul>
+
+      <h2>8) Approval Block</h2>
+      <p class="sign">
+        Prepared by: <span class="line"></span> Date:
+        <span class="line" style="min-width: 120px"></span>
+      </p>
+      <p class="sign">
+        Reviewed by Counsel: <span class="line"></span> Date:
+        <span class="line" style="min-width: 120px"></span>
+      </p>
+      <p class="sign">
+        Approved by Soshogle Executive: <span class="line"></span> Date:
+        <span class="line" style="min-width: 120px"></span>
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>Appendix A - Redline Checklist for Counsel</h2>
+      <p>
+        Mark each line as <strong>Accept / Revise / Remove</strong> and provide
+        redline notes.
+      </p>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Clause / Topic</th>
+            <th>Status</th>
+            <th>Redline Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Privacy Officer designation language and authority</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Meaningful consent standard and exceptions</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Purpose limitation wording</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Consent withdrawal wording and operational implications</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Access request SLA (30 days + extension protocol)</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Correction/dispute propagation language</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Complaint handling process and recourse wording</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Breach notification and incident protocol language</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Cross-border processing disclosure text</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Third-party processor contractual standard</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Retention/destruction timetable commitments</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>
+              Encryption statement wording (avoid over-claiming strict E2EE)
+            </td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Public privacy policy alignment requirements</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Provincial overlay requirements (if any)</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="disclaimer">End of packet.</p>
+    </section>
+  </body>
+</html>
