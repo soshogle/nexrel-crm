@@ -37,10 +37,25 @@ export async function GET(request: NextRequest) {
       "propertyType",
     ) as REPropertyType | null;
     const limit = parseInt(searchParams.get("limit") || "50");
+    const scopedUserIds = [session.user.id];
+    if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
+      const owner = await getCrmDb(ctx).user.findFirst({
+        where: {
+          agencyId: session.user.agencyId,
+          role: "BUSINESS_OWNER",
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (owner?.id && owner.id !== session.user.id) {
+        scopedUserIds.push(owner.id);
+      }
+    }
 
     let properties = await getCrmDb(ctx).rEProperty.findMany({
       where: {
-        userId: session.user.id,
+        userId:
+          scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
         ...(status && { listingStatus: status }),
         ...(propertyType && { propertyType }),
       },
@@ -68,7 +83,10 @@ export async function GET(request: NextRequest) {
         databaseEnvKey: industryEnvKey,
       }).rEProperty.findMany({
         where: {
-          userId: session.user.id,
+          userId:
+            scopedUserIds.length === 1
+              ? scopedUserIds[0]
+              : { in: scopedUserIds },
           ...(status && { listingStatus: status }),
           ...(propertyType && { propertyType }),
         },

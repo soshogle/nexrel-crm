@@ -50,11 +50,26 @@ export async function GET(request: NextRequest) {
       getDalContextFromSession(session) ??
       (await resolveDalContext(session.user.id).catch(() => null));
     if (!ctx) return apiErrors.unauthorized(await t("api.unauthorized"));
+    const scopedUserIds = [ctx.userId];
+    if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
+      const owner = await getCrmDb(ctx).user.findFirst({
+        where: {
+          agencyId: session.user.agencyId,
+          role: "BUSINESS_OWNER",
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (owner?.id && owner.id !== ctx.userId) {
+        scopedUserIds.push(owner.id);
+      }
+    }
 
     // Build where clause with clinic filtering
     const where: any = {
       leadId,
-      userId: ctx.userId,
+      userId:
+        scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
     };
     if (clinicId) {
       where.clinicId = clinicId;
@@ -94,14 +109,23 @@ export async function GET(request: NextRequest) {
 
     if (xrays.length === 0) {
       const lead = await getCrmDb(ctx).lead.findFirst({
-        where: { id: leadId, userId: ctx.userId },
+        where: {
+          id: leadId,
+          userId:
+            scopedUserIds.length === 1
+              ? scopedUserIds[0]
+              : { in: scopedUserIds },
+        },
         select: { id: true, contactPerson: true, email: true },
       });
 
       if (lead) {
         const siblingLeadIds = await getCrmDb(ctx).lead.findMany({
           where: {
-            userId: ctx.userId,
+            userId:
+              scopedUserIds.length === 1
+                ? scopedUserIds[0]
+                : { in: scopedUserIds },
             id: { not: lead.id },
             OR: [
               ...(lead.email ? [{ email: lead.email }] : []),
@@ -116,7 +140,10 @@ export async function GET(request: NextRequest) {
         if (siblingLeadIds.length > 0) {
           const fallbackXrays = await getCrmDb(ctx).dentalXRay.findMany({
             where: {
-              userId: ctx.userId,
+              userId:
+                scopedUserIds.length === 1
+                  ? scopedUserIds[0]
+                  : { in: scopedUserIds },
               leadId: { in: siblingLeadIds.map((l) => l.id) },
               ...(clinicId ? { clinicId } : {}),
             },
