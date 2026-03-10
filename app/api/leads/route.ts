@@ -104,24 +104,57 @@ export async function GET(request: NextRequest) {
         : {}),
     };
 
-    const [leads, total] = await Promise.all([
-      db.lead.findMany({
-        where,
-        include: {
-          notes: { select: { id: true, createdAt: true } },
-          messages: { select: { id: true, createdAt: true } },
-        },
-        take: pagination.take,
-        skip: pagination.skip,
-        orderBy: [
-          { contactPerson: "asc" },
-          { businessName: "asc" },
-          { email: "asc" },
-          { createdAt: "desc" },
-        ],
-      }),
-      db.lead.count({ where }),
-    ]);
+    let leads: any[] = [];
+    let total = 0;
+    try {
+      [leads, total] = await Promise.all([
+        db.lead.findMany({
+          where,
+          include: {
+            notes: { select: { id: true, createdAt: true } },
+            messages: { select: { id: true, createdAt: true } },
+          },
+          take: pagination.take,
+          skip: pagination.skip,
+          orderBy: [
+            { contactPerson: "asc" },
+            { businessName: "asc" },
+            { email: "asc" },
+            { createdAt: "desc" },
+          ],
+        }),
+        db.lead.count({ where }),
+      ]);
+    } catch {
+      [leads, total] = await Promise.all([
+        db.lead.findMany({
+          where,
+          select: {
+            id: true,
+            userId: true,
+            businessName: true,
+            contactPerson: true,
+            email: true,
+            phone: true,
+            status: true,
+            source: true,
+            city: true,
+            state: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          take: pagination.take,
+          skip: pagination.skip,
+          orderBy: [
+            { contactPerson: "asc" },
+            { businessName: "asc" },
+            { email: "asc" },
+            { createdAt: "desc" },
+          ],
+        }),
+        db.lead.count({ where }),
+      ]);
+    }
 
     const isOrthoDemo =
       String(session.user.email || "")
