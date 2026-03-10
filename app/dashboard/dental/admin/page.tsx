@@ -104,14 +104,26 @@ export default function AdministrativeDashboardPage() {
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
     try {
-      const response = await fetch("/api/leads");
+      const response = await fetch("/api/leads?pageSize=500");
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data)
+        let leadsArray = Array.isArray(data)
           ? data
           : Array.isArray(data?.leads)
             ? data.leads
             : [];
+        if (
+          requestedLeadId &&
+          !leadsArray.some((l: any) => l.id === requestedLeadId)
+        ) {
+          const singleLeadRes = await fetch(`/api/leads/${requestedLeadId}`);
+          if (singleLeadRes.ok) {
+            const singleLead = await singleLeadRes.json();
+            if (singleLead?.id) {
+              leadsArray = [singleLead, ...leadsArray];
+            }
+          }
+        }
         setLeads(leadsArray);
       }
     } catch (error) {
@@ -120,7 +132,7 @@ export default function AdministrativeDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [requestedLeadId]);
 
   // Fetch appointments
   const fetchAppointments = useCallback(async () => {
