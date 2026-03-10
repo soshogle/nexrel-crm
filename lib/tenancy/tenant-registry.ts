@@ -57,11 +57,24 @@ function readTenantOverrideMap(): TenantOverrideMap {
   }
 }
 
+function readTenantOverrideBlocklist(): Set<string> {
+  const raw = process.env.TENANT_DB_OVERRIDE_BLOCKLIST;
+  if (!raw || !raw.trim()) return new Set<string>();
+  return new Set(
+    raw
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
+}
+
 function writeTenantOverrideMap(overrides: TenantOverrideMap): void {
   process.env.TENANT_DB_OVERRIDES_JSON = JSON.stringify(overrides);
 }
 
 export function resolveTenantOverrideEnvKey(tenantId: string): string | null {
+  const blocked = readTenantOverrideBlocklist();
+  if (blocked.has(tenantId)) return null;
   const overrides = readTenantOverrideMap();
   return overrides[tenantId] ?? null;
 }
