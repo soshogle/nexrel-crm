@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       : null;
     if (
       xrays.length === 0 &&
-      session.user.role === "BUSINESS_OWNER" &&
       ctx.databaseEnvKey &&
       industryEnvKey &&
       industryEnvKey !== ctx.databaseEnvKey &&

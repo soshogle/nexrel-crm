@@ -49,11 +49,17 @@ export function getDalContextFromSession(session: Session | null): {
     process.env[industryFallbackEnvKey]
       ? industryFallbackEnvKey
       : null;
+  const sharedIndustryFallbackEnvKey =
+    industryFallbackEnvKey && process.env[industryFallbackEnvKey]
+      ? industryFallbackEnvKey
+      : null;
   const databaseEnvKey = resolvedOverride
     ? resolvedOverride
     : session.user.role === "BUSINESS_OWNER"
       ? ownerFallbackEnvKey
-      : session.user.databaseEnvKey ?? null;
+      : session.user.databaseEnvKey && process.env[session.user.databaseEnvKey]
+        ? session.user.databaseEnvKey
+        : sharedIndustryFallbackEnvKey;
   if (
     isStrictOwnerTenancyEnabled() &&
     session.user.role === "BUSINESS_OWNER" &&
