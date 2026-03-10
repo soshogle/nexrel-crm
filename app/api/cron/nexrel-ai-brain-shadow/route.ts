@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMetaDb } from "@/lib/db/meta-db";
-import { createDalContext } from "@/lib/context/industry-context";
-import { getCrmDb } from "@/lib/dal";
 import { runNexrelAiBrainShadow } from "@/lib/nexrel-ai-brain/shadow-runner";
 import { apiErrors } from "@/lib/api-error";
 
@@ -33,9 +31,8 @@ async function runShadowCron(request: NextRequest) {
 
     for (const owner of owners) {
       try {
-        const ctx = createDalContext(owner.id, owner.industry);
         const shadow = await runNexrelAiBrainShadow({
-          tenantId: ctx.userId,
+          tenantId: owner.id,
           userId: owner.id,
           route: "/api/cron/nexrel-ai-brain-shadow",
           message: "daily ai brain shadow check",
@@ -46,7 +43,7 @@ async function runShadowCron(request: NextRequest) {
         if (shadow.executed) executed += 1;
         else blocked += 1;
 
-        await getCrmDb(ctx).auditLog.create({
+        await getMetaDb().auditLog.create({
           data: {
             userId: owner.id,
             action: "SETTINGS_MODIFIED",
