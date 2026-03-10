@@ -5,7 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { leadService } from "@/lib/dal";
-import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal/db";
+import {
+  getDalContextFromSession,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
 import { detectLeadWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
 import { apiErrors } from "@/lib/api-error";
 import {
@@ -24,7 +28,10 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const ctx = getDalContextFromSession(session);
+    const resolvedCtx = await resolveDalContext(session.user.id).catch(
+      () => null,
+    );
+    const ctx = getDalContextFromSession(session) ?? resolvedCtx;
     if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
@@ -41,10 +48,69 @@ export async function GET(request: NextRequest) {
     const { status, search } = queryResult.data;
     const pagination = parsePagination(request);
 
+    const resolveScopedUserIds = async (
+      db: ReturnType<typeof getCrmDb>,
+    ): Promise<string[]> => {
+      const ids = new Set<string>([session.user.id, ctx.userId]);
+      if (session.user.email) {
+        const emailUser = await db.user.findFirst({
+          where: { email: session.user.email },
+          select: { id: true },
+        });
+        if (emailUser?.id) ids.add(emailUser.id);
+      }
+      if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
+        try {
+          const owner = await db.user.findFirst({
+            where: {
+              agencyId: session.user.agencyId,
+              role: "BUSINESS_OWNER",
+            },
+            select: { id: true },
+          });
+          if (owner?.id) ids.add(owner.id);
+        } catch {
+          // Best effort only
+        }
+      }
+      return Array.from(ids);
+    };
+
+    const db = getCrmDb(ctx);
+    const scopedUserIds = await resolveScopedUserIds(db);
+    const where = {
+      userId:
+        scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
+      ...(status && status !== "ALL" ? { status: status as any } : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                businessName: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                contactPerson: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              { email: { contains: search, mode: "insensitive" as const } },
+              { phone: { contains: search } },
+            ],
+          }
+        : {}),
+    };
+
     const [leads, total] = await Promise.all([
-      leadService.findMany(ctx, {
-        status,
-        search,
+      db.lead.findMany({
+        where,
+        include: {
+          notes: { select: { id: true, createdAt: true } },
+          messages: { select: { id: true, createdAt: true } },
+        },
         take: pagination.take,
         skip: pagination.skip,
         orderBy: [
@@ -54,9 +120,7 @@ export async function GET(request: NextRequest) {
           { createdAt: "desc" },
         ],
       }),
-      leadService.count(ctx, {
-        ...(status && status !== "ALL" ? { status: status as any } : {}),
-      }),
+      db.lead.count({ where }),
     ]);
 
     const isOrthoDemo =
