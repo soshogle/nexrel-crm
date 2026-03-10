@@ -65,7 +65,23 @@ async function proxyToActionsAPI(
   if (!res.ok) {
     return { error: data.error || "Action failed" };
   }
-  return data.result || data;
+
+  if (!data?.success || data?.error || data?.result?.error) {
+    return {
+      success: false,
+      error:
+        data?.error ||
+        data?.result?.error ||
+        "Action failed to complete successfully.",
+      result: data?.result,
+    };
+  }
+
+  return {
+    success: true,
+    action,
+    ...(data?.result ?? {}),
+  };
 }
 
 /**

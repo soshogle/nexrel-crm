@@ -1284,6 +1284,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
                 success?: boolean;
                 action?: string;
                 result?: any;
+                error?: string;
               }>(actionResponse),
             );
             if (parseErr || !actionResponseData) {
@@ -1305,6 +1306,33 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             console.log(
               "═══════════════════════════════════════════════════════",
             );
+
+            const actionSucceeded =
+              actionResponseData.success === true &&
+              !actionResponseData.error &&
+              !actionResponseData.result?.error &&
+              actionResponseData.result?.success !== false;
+
+            if (!actionSucceeded) {
+              const actionError =
+                actionResponseData.error ||
+                actionResponseData.result?.error ||
+                "Action could not be completed.";
+              console.error(
+                `❌ [Chat] Action ${action} reported failure:`,
+                actionError,
+              );
+              toolResults.push({
+                tool_call_id: toolCall.id,
+                role: "tool",
+                name: functionName,
+                content: JSON.stringify({
+                  success: false,
+                  error: actionError,
+                }),
+              });
+              continue;
+            }
 
             lastActionResult = actionResponseData;
 

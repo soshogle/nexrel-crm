@@ -384,6 +384,20 @@ export async function POST(req: NextRequest) {
 
     const result = await handler(user.id, parameters || {});
 
+    if ((result as any)?.error || (result as any)?.success === false) {
+      return NextResponse.json(
+        {
+          error:
+            (result as any)?.error ||
+            "Action could not be completed with the provided data.",
+          action,
+          result,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json({
       success: true,
       action,

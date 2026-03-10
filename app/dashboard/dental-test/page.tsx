@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -70,6 +71,7 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
 
 export default function DentalTestPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const isDemoAccount = isDemoAccountEmail(session?.user?.email);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
@@ -92,6 +94,7 @@ export default function DentalTestPage() {
     monthlyRevenue: 0,
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
+  const requestedLeadId = searchParams.get("leadId");
 
   useEffect(() => {
     setMounted(true);
@@ -179,15 +182,38 @@ export default function DentalTestPage() {
 
   const fetchLeads = useCallback(async () => {
     try {
-      const response = await fetch("/api/leads");
+      const response = await fetch("/api/leads?pageSize=500");
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data)
+        let leadsArray = Array.isArray(data)
           ? data
           : Array.isArray(data?.leads)
             ? data.leads
             : [];
-        setLeads(leadsArray);
+
+        if (
+          requestedLeadId &&
+          !leadsArray.some((lead: any) => lead.id === requestedLeadId)
+        ) {
+          const singleLeadRes = await fetch(`/api/leads/${requestedLeadId}`);
+          if (singleLeadRes.ok) {
+            const singleLead = await singleLeadRes.json();
+            if (singleLead?.id) {
+              leadsArray = [singleLead, ...leadsArray];
+            }
+          }
+        }
+
+        const sortedLeads = leadsArray.slice().sort((a: any, b: any) => {
+          const aName = String(
+            a?.contactPerson || a?.businessName || a?.email || "",
+          ).toLocaleLowerCase();
+          const bName = String(
+            b?.contactPerson || b?.businessName || b?.email || "",
+          ).toLocaleLowerCase();
+          return aName.localeCompare(bName, undefined, { sensitivity: "base" });
+        });
+        setLeads(sortedLeads);
       }
     } catch (error) {
       console.error("Error fetching leads:", error);
@@ -195,7 +221,7 @@ export default function DentalTestPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [requestedLeadId]);
 
   const fetchOdontogram = useCallback(async () => {
     if (!selectedLeadId) return;
@@ -326,6 +352,13 @@ export default function DentalTestPage() {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  useEffect(() => {
+    if (!requestedLeadId || !Array.isArray(leads) || leads.length === 0) return;
+    if (leads.some((lead) => lead.id === requestedLeadId)) {
+      setSelectedLeadId((prev) => prev || requestedLeadId);
+    }
+  }, [requestedLeadId, leads]);
 
   useEffect(() => {
     if (leads.length > 0) {
