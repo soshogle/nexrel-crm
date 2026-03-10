@@ -66,23 +66,91 @@ export async function GET(request: NextRequest) {
       return Array.from(ids);
     };
 
-    const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
-
-    let properties = await getCrmDb(ctx).rEProperty.findMany({
-      where: {
-        userId:
-          scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
+    const loadProperties = async (
+      db: ReturnType<typeof getCrmDb>,
+      userIds: string[],
+    ) => {
+      const where = {
+        userId: userIds.length === 1 ? userIds[0] : { in: userIds },
         ...(status && { listingStatus: status }),
         ...(propertyType && { propertyType }),
-      },
-      include: {
-        sellerLead: {
-          select: { id: true, contactPerson: true, email: true, phone: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-    });
+      };
+
+      try {
+        return await db.rEProperty.findMany({
+          where,
+          include: {
+            sellerLead: {
+              select: {
+                id: true,
+                contactPerson: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+        });
+      } catch (error) {
+        const maybeCode = (error as { code?: string })?.code;
+        const maybeMessage = String((error as { message?: string })?.message);
+        if (
+          maybeCode !== "P2022" ||
+          !maybeMessage.includes("isBrokerListing")
+        ) {
+          throw error;
+        }
+
+        const legacyRows = await db.rEProperty.findMany({
+          where,
+          select: {
+            id: true,
+            userId: true,
+            address: true,
+            unit: true,
+            city: true,
+            state: true,
+            zip: true,
+            country: true,
+            beds: true,
+            baths: true,
+            sqft: true,
+            lotSize: true,
+            yearBuilt: true,
+            propertyType: true,
+            listingStatus: true,
+            listPrice: true,
+            mlsNumber: true,
+            daysOnMarket: true,
+            photos: true,
+            virtualTourUrl: true,
+            description: true,
+            features: true,
+            sellerLeadId: true,
+            listingDate: true,
+            expirationDate: true,
+            createdAt: true,
+            updatedAt: true,
+            sellerLead: {
+              select: {
+                id: true,
+                contactPerson: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+        });
+
+        return legacyRows.map((p) => ({ ...p, isBrokerListing: false }));
+      }
+    };
+
+    const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
+    let properties = await loadProperties(getCrmDb(ctx), scopedUserIds);
 
     const effectiveIndustry =
       ctx.industry ?? resolvedCtx?.industry ?? session.user.industry ?? null;
@@ -101,34 +169,19 @@ export async function GET(request: NextRequest) {
         databaseEnvKey: industryEnvKey,
       });
       const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
-      properties = await fallbackDb.rEProperty.findMany({
-        where: {
-          userId:
-            fallbackScopedUserIds.length === 1
-              ? fallbackScopedUserIds[0]
-              : { in: fallbackScopedUserIds },
-          ...(status && { listingStatus: status }),
-          ...(propertyType && { propertyType }),
-        },
-        include: {
-          sellerLead: {
-            select: {
-              id: true,
-              contactPerson: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-      });
+      properties = await loadProperties(fallbackDb, fallbackScopedUserIds);
     }
 
     // Align order with broker's website (is_featured DESC, created_at DESC)
-    const website = await websiteService.findFirst(ctx, {
-      templateType: "SERVICE",
-    });
+    let website: Awaited<ReturnType<typeof websiteService.findFirst>> | null =
+      null;
+    try {
+      website = await websiteService.findFirst(ctx, {
+        templateType: "SERVICE",
+      });
+    } catch {
+      website = null;
+    }
     const baseUrl = (
       website as { vercelDeploymentUrl?: string | null }
     )?.vercelDeploymentUrl?.replace(/\/$/, "");
