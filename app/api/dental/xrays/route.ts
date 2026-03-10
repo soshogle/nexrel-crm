@@ -8,7 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { leadService, getCrmDb } from "@/lib/dal";
-import { getDalContextFromSession } from "@/lib/context/industry-context";
+import {
+  getDalContextFromSession,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
 import { CanadianStorageService } from "@/lib/storage/canadian-storage-service";
 import { DicomParser } from "@/lib/dental/dicom-parser";
 import { DicomToImageConverter } from "@/lib/dental/dicom-to-image";
@@ -43,7 +46,9 @@ export async function GET(request: NextRequest) {
       return apiErrors.badRequest(await t("api.leadIdRequired"));
     }
 
-    const ctx = getDalContextFromSession(session);
+    const ctx =
+      getDalContextFromSession(session) ??
+      (await resolveDalContext(session.user.id).catch(() => null));
     if (!ctx) return apiErrors.unauthorized(await t("api.unauthorized"));
 
     // Build where clause with clinic filtering

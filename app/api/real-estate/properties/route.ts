@@ -11,7 +11,10 @@ import {
   syncStatusToWebsite,
   getWebsiteListingOrderForCrmMatch,
 } from "@/lib/website-builder/listings-service";
-import { getDalContextFromSession } from "@/lib/context/industry-context";
+import {
+  getDalContextFromSession,
+  resolveDalContext,
+} from "@/lib/context/industry-context";
 import { websiteService } from "@/lib/dal";
 import { apiErrors } from "@/lib/api-error";
 
@@ -21,7 +24,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-    const ctx = getDalContextFromSession(session);
+    const ctx =
+      getDalContextFromSession(session) ??
+      (await resolveDalContext(session.user.id).catch(() => null));
     if (!ctx) {
       return apiErrors.unauthorized();
     }
