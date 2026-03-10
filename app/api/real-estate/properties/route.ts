@@ -24,9 +24,10 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiErrors.unauthorized();
     }
-    const ctx =
-      getDalContextFromSession(session) ??
-      (await resolveDalContext(session.user.id).catch(() => null));
+    const resolvedCtx = await resolveDalContext(session.user.id).catch(
+      () => null,
+    );
+    const ctx = getDalContextFromSession(session) ?? resolvedCtx;
     if (!ctx) {
       return apiErrors.unauthorized();
     }
@@ -80,8 +81,10 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    const industryEnvKey = session.user.industry
-      ? `DATABASE_URL_${session.user.industry}`
+    const effectiveIndustry =
+      ctx.industry ?? resolvedCtx?.industry ?? session.user.industry ?? null;
+    const industryEnvKey = effectiveIndustry
+      ? `DATABASE_URL_${effectiveIndustry}`
       : null;
     if (
       properties.length === 0 &&
