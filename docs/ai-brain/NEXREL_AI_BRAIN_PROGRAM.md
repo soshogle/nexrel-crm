@@ -100,8 +100,16 @@ Exit Criteria:
 - `POST /api/nexrel-ai-brain/operator/jobs/:jobId/reject`
 - `GET /api/nexrel-ai-brain/health`
   - Runtime status and phase flags
+- `GET /api/nexrel-ai-brain/metrics?days=7`
+  - Operator run volume, denied action trend, and approval SLA visibility
+- `POST /api/nexrel-ai-brain/metrics/baseline`
+  - Writes tenant baseline snapshot model to immutable audit log (`NEXREL_AI_BRAIN_KPI_BASELINE`)
+- `GET /api/nexrel-ai-brain/metrics/correlation?days=30`
+  - Correlates AI Brain activity with CRM outcome KPIs against latest baseline snapshot
 - `GET|POST /api/cron/nexrel-ai-brain-operator`
   - Daily production-grade operator sweep for business owners
+- `GET|POST /api/cron/nexrel-ai-brain-digest`
+  - Scheduled business impact digest + governance alert evaluation
 
 ## Phase/Policy Environment Flags
 
@@ -113,6 +121,10 @@ Exit Criteria:
 - `NEXREL_AI_BRAIN_ENABLE_HIGH_RISK_AUTO_EXECUTE=true|false` (recommended `false`)
 - `NEXREL_AI_BRAIN_KILL_SWITCH=true|false`
 - `NEXREL_AI_BRAIN_TENANT_KILL_SWITCH=<tenantId1,tenantId2,...>`
+- `NEXREL_AI_BRAIN_ALERT_MAX_APPROVAL_SLA_HOURS=<number>` (default `24`)
+- `NEXREL_AI_BRAIN_ALERT_MAX_PENDING_APPROVALS=<number>` (default `10`)
+- `NEXREL_AI_BRAIN_ALERT_MAX_DENIED_ACTIONS=<number>` (default `25`)
+- `NEXREL_AI_BRAIN_ALERT_MAX_CONVERSION_DROP_PCT=<number>` (default `5`)
 
 ## Required Shared Controls Across All Phases
 

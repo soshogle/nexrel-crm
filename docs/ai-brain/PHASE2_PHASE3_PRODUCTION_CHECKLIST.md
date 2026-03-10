@@ -47,7 +47,23 @@ Scope: Backend-only integration with guarded writes + HITL approvals
 - [x] PIPEDA evidence artifact linking extensions
 - [x] Distributed tracing propagation across surfaces
 
+## Phase 5 - Operational KPIs + SLA Visibility (In Progress)
+
+- [x] Operator metrics endpoint (`GET /api/nexrel-ai-brain/metrics?days=7`)
+- [x] Approval SLA average (completed approval jobs)
+- [x] Pending approvals + denied action trend counters
+- [x] KPI lift tracking against business outcome baselines
+
+## Phase 6 - Business Impact + Governance Analytics (Completed)
+
+- [x] Baseline model + snapshot writer (`POST /api/nexrel-ai-brain/metrics/baseline`)
+- [x] KPI correlation endpoint (`GET /api/nexrel-ai-brain/metrics/correlation?days=30`)
+- [x] Scheduled digest + alerting route (`GET|POST /api/cron/nexrel-ai-brain-digest`)
+- [x] Governance alert threshold controls (env-driven)
+- [x] Unit tests for KPI correlation + alert rules
+
 ## Verification Commands
 
 - `npx eslint "lib/nexrel-ai-brain/**/*.ts" "app/api/nexrel-ai-brain/**/*.ts" "app/api/cron/nexrel-ai-brain-operator/route.ts" "app/api/ai-assistant/chat/route.ts"`
 - `npx tsc --noEmit --pretty false --incremental false`
+- `npx vitest run tests/unit/nexrel-ai-brain/governance-analytics.test.ts`
