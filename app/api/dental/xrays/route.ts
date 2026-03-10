@@ -50,20 +50,31 @@ export async function GET(request: NextRequest) {
       getDalContextFromSession(session) ??
       (await resolveDalContext(session.user.id).catch(() => null));
     if (!ctx) return apiErrors.unauthorized(await t("api.unauthorized"));
-    const scopedUserIds = [ctx.userId];
-    if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
-      const owner = await getCrmDb(ctx).user.findFirst({
-        where: {
-          agencyId: session.user.agencyId,
-          role: "BUSINESS_OWNER",
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (owner?.id && owner.id !== ctx.userId) {
-        scopedUserIds.push(owner.id);
+    const resolveScopedUserIds = async (
+      db: ReturnType<typeof getCrmDb>,
+    ): Promise<string[]> => {
+      const ids = new Set<string>([ctx.userId]);
+      if (session.user.email) {
+        const emailUser = await db.user.findFirst({
+          where: { email: session.user.email },
+          select: { id: true },
+        });
+        if (emailUser?.id) ids.add(emailUser.id);
       }
-    }
+      if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
+        const owner = await db.user.findFirst({
+          where: {
+            agencyId: session.user.agencyId,
+            role: "BUSINESS_OWNER",
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (owner?.id) ids.add(owner.id);
+      }
+      return Array.from(ids);
+    };
+    const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
 
     // Build where clause with clinic filtering
     const where: any = {
@@ -93,11 +104,19 @@ export async function GET(request: NextRequest) {
       industryEnvKey !== ctx.databaseEnvKey &&
       process.env[industryEnvKey]
     ) {
-      const fallbackXrays = await getCrmDb({
+      const fallbackDb = getCrmDb({
         ...ctx,
         databaseEnvKey: industryEnvKey,
-      }).dentalXRay.findMany({
-        where,
+      });
+      const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
+      const fallbackXrays = await fallbackDb.dentalXRay.findMany({
+        where: {
+          ...where,
+          userId:
+            fallbackScopedUserIds.length === 1
+              ? fallbackScopedUserIds[0]
+              : { in: fallbackScopedUserIds },
+        },
         orderBy: {
           dateTaken: "desc",
         },

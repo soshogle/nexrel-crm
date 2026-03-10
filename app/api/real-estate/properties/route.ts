@@ -37,20 +37,32 @@ export async function GET(request: NextRequest) {
       "propertyType",
     ) as REPropertyType | null;
     const limit = parseInt(searchParams.get("limit") || "50");
-    const scopedUserIds = [session.user.id];
-    if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
-      const owner = await getCrmDb(ctx).user.findFirst({
-        where: {
-          agencyId: session.user.agencyId,
-          role: "BUSINESS_OWNER",
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (owner?.id && owner.id !== session.user.id) {
-        scopedUserIds.push(owner.id);
+    const resolveScopedUserIds = async (
+      db: ReturnType<typeof getCrmDb>,
+    ): Promise<string[]> => {
+      const ids = new Set<string>([session.user.id]);
+      if (session.user.email) {
+        const emailUser = await db.user.findFirst({
+          where: { email: session.user.email },
+          select: { id: true },
+        });
+        if (emailUser?.id) ids.add(emailUser.id);
       }
-    }
+      if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
+        const owner = await db.user.findFirst({
+          where: {
+            agencyId: session.user.agencyId,
+            role: "BUSINESS_OWNER",
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (owner?.id) ids.add(owner.id);
+      }
+      return Array.from(ids);
+    };
+
+    const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
 
     let properties = await getCrmDb(ctx).rEProperty.findMany({
       where: {
@@ -78,15 +90,17 @@ export async function GET(request: NextRequest) {
       industryEnvKey !== ctx.databaseEnvKey &&
       process.env[industryEnvKey]
     ) {
-      properties = await getCrmDb({
+      const fallbackDb = getCrmDb({
         ...ctx,
         databaseEnvKey: industryEnvKey,
-      }).rEProperty.findMany({
+      });
+      const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
+      properties = await fallbackDb.rEProperty.findMany({
         where: {
           userId:
-            scopedUserIds.length === 1
-              ? scopedUserIds[0]
-              : { in: scopedUserIds },
+            fallbackScopedUserIds.length === 1
+              ? fallbackScopedUserIds[0]
+              : { in: fallbackScopedUserIds },
           ...(status && { listingStatus: status }),
           ...(propertyType && { propertyType }),
         },
