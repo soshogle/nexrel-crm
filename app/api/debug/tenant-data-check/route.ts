@@ -25,8 +25,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get("leadId");
-    const industryEnvKey = session.user.industry
-      ? `DATABASE_URL_${session.user.industry}`
+    const effectiveIndustry =
+      ctx.industry ?? resolvedCtx?.industry ?? session.user.industry ?? null;
+    const industryEnvKey = effectiveIndustry
+      ? `DATABASE_URL_${effectiveIndustry}`
       : null;
 
     const checks: Array<{ label: string; databaseEnvKey: string | null }> = [
@@ -80,6 +82,11 @@ export async function GET(request: NextRequest) {
         industry: session.user.industry,
         databaseEnvKey: session.user.databaseEnvKey,
       },
+      effectiveIndustry,
+      industryEnvKey,
+      industryEnvConfigured: industryEnvKey
+        ? Boolean(process.env[industryEnvKey])
+        : false,
       sessionCtx: sessionCtx
         ? {
             userId: sessionCtx.userId,
