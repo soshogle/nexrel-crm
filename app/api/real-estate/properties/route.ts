@@ -50,15 +50,18 @@ export async function GET(request: NextRequest) {
         if (emailUser?.id) ids.add(emailUser.id);
       }
       if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
-        const owner = await db.user.findFirst({
-          where: {
-            agencyId: session.user.agencyId,
-            role: "BUSINESS_OWNER",
-            deletedAt: null,
-          },
-          select: { id: true },
-        });
-        if (owner?.id) ids.add(owner.id);
+        try {
+          const owner = await db.user.findFirst({
+            where: {
+              agencyId: session.user.agencyId,
+              role: "BUSINESS_OWNER",
+            },
+            select: { id: true },
+          });
+          if (owner?.id) ids.add(owner.id);
+        } catch {
+          // Best-effort scope expansion; keep base user scope on schema drift
+        }
       }
       return Array.from(ids);
     };
