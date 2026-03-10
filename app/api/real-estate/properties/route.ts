@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     ) as REPropertyType | null;
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    const properties = await getCrmDb(ctx).rEProperty.findMany({
+    let properties = await getCrmDb(ctx).rEProperty.findMany({
       where: {
         userId: session.user.id,
         ...(status && { listingStatus: status }),
@@ -47,6 +47,41 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: limit,
     });
+
+    const industryEnvKey = session.user.industry
+      ? `DATABASE_URL_${session.user.industry}`
+      : null;
+    if (
+      properties.length === 0 &&
+      session.user.role === "BUSINESS_OWNER" &&
+      ctx.databaseEnvKey &&
+      industryEnvKey &&
+      industryEnvKey !== ctx.databaseEnvKey &&
+      process.env[industryEnvKey]
+    ) {
+      properties = await getCrmDb({
+        ...ctx,
+        databaseEnvKey: industryEnvKey,
+      }).rEProperty.findMany({
+        where: {
+          userId: session.user.id,
+          ...(status && { listingStatus: status }),
+          ...(propertyType && { propertyType }),
+        },
+        include: {
+          sellerLead: {
+            select: {
+              id: true,
+              contactPerson: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      });
+    }
 
     // Align order with broker's website (is_featured DESC, created_at DESC)
     const website = await websiteService.findFirst(ctx, {

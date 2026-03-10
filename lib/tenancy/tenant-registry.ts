@@ -82,7 +82,7 @@ export function resolveTenantOverrideEnvKey(tenantId: string): string | null {
   if (blocked.has(tenantId)) return null;
   const overrides = readTenantOverrideMap();
   const explicit = overrides[tenantId];
-  if (explicit) return explicit;
+  if (explicit && hasConfiguredEnvUrl(explicit)) return explicit;
 
   // Safety fallback: if explicit override map is stale/unavailable,
   // still route to deterministic tenant env key when configured.
