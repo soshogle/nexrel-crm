@@ -103,55 +103,55 @@ export async function GET(request: NextRequest) {
           throw error;
         }
 
-        const legacyRows = await db.rEProperty.findMany({
-          where,
-          select: {
-            id: true,
-            userId: true,
-            address: true,
-            unit: true,
-            city: true,
-            state: true,
-            zip: true,
-            country: true,
-            beds: true,
-            baths: true,
-            sqft: true,
-            lotSize: true,
-            yearBuilt: true,
-            propertyType: true,
-            listingStatus: true,
-            listPrice: true,
-            mlsNumber: true,
-            daysOnMarket: true,
-            photos: true,
-            virtualTourUrl: true,
-            description: true,
-            features: true,
-            sellerLeadId: true,
-            listingDate: true,
-            expirationDate: true,
-            createdAt: true,
-            updatedAt: true,
-            sellerLead: {
-              select: {
-                id: true,
-                contactPerson: true,
-                email: true,
-                phone: true,
+        try {
+          const legacyRows = await db.rEProperty.findMany({
+            where,
+            select: {
+              id: true,
+              userId: true,
+              address: true,
+              unit: true,
+              city: true,
+              state: true,
+              zip: true,
+              propertyType: true,
+              listingStatus: true,
+              listPrice: true,
+              mlsNumber: true,
+              daysOnMarket: true,
+              photos: true,
+              description: true,
+              features: true,
+              sellerLeadId: true,
+              createdAt: true,
+              updatedAt: true,
+              sellerLead: {
+                select: {
+                  id: true,
+                  contactPerson: true,
+                  email: true,
+                  phone: true,
+                },
               },
             },
-          },
-          orderBy: { createdAt: "desc" },
-          take: limit,
-        });
+            orderBy: { createdAt: "desc" },
+            take: limit,
+          });
 
-        return legacyRows.map((p) => ({ ...p, isBrokerListing: false }));
+          return legacyRows.map((p) => ({ ...p, isBrokerListing: false }));
+        } catch {
+          return [];
+        }
       }
     };
 
     const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
-    let properties = await loadProperties(getCrmDb(ctx), scopedUserIds);
+    let properties: any[] = [];
+    try {
+      properties = await loadProperties(getCrmDb(ctx), scopedUserIds);
+    } catch {
+      properties = [];
+    }
 
     const effectiveIndustry =
       ctx.industry ?? resolvedCtx?.industry ?? session.user.industry ?? null;
@@ -170,7 +170,11 @@ export async function GET(request: NextRequest) {
         databaseEnvKey: industryEnvKey,
       });
       const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
-      properties = await loadProperties(fallbackDb, fallbackScopedUserIds);
+      try {
+        properties = await loadProperties(fallbackDb, fallbackScopedUserIds);
+      } catch {
+        properties = [];
+      }
     }
 
     const loadPropertiesRaw = async (
