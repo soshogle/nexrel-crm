@@ -108,10 +108,10 @@ export async function resolveDalContext(userId: string): Promise<{
   if (
     isStrictOwnerTenancyEnabled() &&
     user?.role === "BUSINESS_OWNER" &&
-    routing?.routingMode !== "TENANT_OVERRIDE"
+    !routing?.databaseUrlConfigured
   ) {
     throw new Error(
-      "[DAL] Strict owner tenancy enabled and tenant override is missing for business owner",
+      "[DAL] Strict owner tenancy enabled and no configured CRM database URL was found for business owner",
     );
   }
   return createDalContext(
