@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { SharedDashboardLayout } from "@/components/dental/shared-dashboard-layout";
 import { ProductionDashboard } from "@/components/dental/production-dashboard";
 import { TeamPerformanceCard } from "@/components/dental/team-performance-card";
@@ -52,6 +53,7 @@ import {
 } from "lucide-react";
 
 export default function AdministrativeDashboardPage() {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const isDemoAccount =
     String(session?.user?.email || "")
@@ -97,6 +99,7 @@ export default function AdministrativeDashboardPage() {
   const [outstandingBalance, setOutstandingBalance] = useState<number | null>(
     null,
   );
+  const requestedLeadId = searchParams.get("leadId");
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -418,6 +421,30 @@ export default function AdministrativeDashboardPage() {
     fetchClaims();
     fetchProductionMetrics();
   }, [fetchLeads, fetchAppointments, fetchClaims, fetchProductionMetrics]);
+
+  useEffect(() => {
+    if (selectedLeadId || leads.length === 0) return;
+
+    if (requestedLeadId) {
+      const requested = leads.find((l: any) => l.id === requestedLeadId);
+      if (requested?.id) {
+        setSelectedLeadId(requested.id);
+        return;
+      }
+    }
+
+    if (!isDemoAccount) return;
+    const marieLead = leads.find(
+      (l: any) =>
+        l.id === "cmm0vfbds0001pu6eafjy4cqe" ||
+        String(l.contactPerson || "")
+          .toLowerCase()
+          .includes("marie"),
+    );
+    if (marieLead?.id) {
+      setSelectedLeadId(marieLead.id);
+    }
+  }, [isDemoAccount, leads, requestedLeadId, selectedLeadId]);
 
   useEffect(() => {
     fetchFormResponses();
