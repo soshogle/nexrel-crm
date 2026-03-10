@@ -17,6 +17,11 @@ export interface TenantRoutingRecord {
 
 type TenantOverrideMap = Record<string, string>;
 
+function tenantEnvKeyFromId(tenantId: string): string {
+  const normalized = tenantId.replace(/[^A-Za-z0-9_]/g, "_").toUpperCase();
+  return `DATABASE_URL_TENANT_${normalized}`;
+}
+
 const INDUSTRY_ENV_MAP: Partial<Record<Industry, string>> = {
   ACCOUNTING: "DATABASE_URL_ACCOUNTING",
   CONSTRUCTION: "DATABASE_URL_CONSTRUCTION",
@@ -76,7 +81,15 @@ export function resolveTenantOverrideEnvKey(tenantId: string): string | null {
   const blocked = readTenantOverrideBlocklist();
   if (blocked.has(tenantId)) return null;
   const overrides = readTenantOverrideMap();
-  return overrides[tenantId] ?? null;
+  const explicit = overrides[tenantId];
+  if (explicit) return explicit;
+
+  // Safety fallback: if explicit override map is stale/unavailable,
+  // still route to deterministic tenant env key when configured.
+  const derived = tenantEnvKeyFromId(tenantId);
+  if (hasConfiguredEnvUrl(derived)) return derived;
+
+  return null;
 }
 
 export function setTenantOverrideEnvKey(

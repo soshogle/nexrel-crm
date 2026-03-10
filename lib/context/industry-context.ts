@@ -39,8 +39,12 @@ export function getDalContextFromSession(session: Session | null): {
   databaseEnvKey?: string | null;
 } | null {
   if (!session?.user?.id) return null;
-  const databaseEnvKey =
-    resolveTenantOverrideEnvKey(session.user.id) || session.user.databaseEnvKey;
+  const resolvedOverride = resolveTenantOverrideEnvKey(session.user.id);
+  const databaseEnvKey = resolvedOverride
+    ? resolvedOverride
+    : session.user.role === "BUSINESS_OWNER"
+      ? null
+      : session.user.databaseEnvKey ?? null;
   if (
     isStrictOwnerTenancyEnabled() &&
     session.user.role === "BUSINESS_OWNER" &&
