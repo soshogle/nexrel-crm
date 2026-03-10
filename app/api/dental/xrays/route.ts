@@ -80,23 +80,32 @@ export async function GET(request: NextRequest) {
     };
     const scopedUserIds = await resolveScopedUserIds(getCrmDb(ctx));
 
-    // Build where clause with clinic filtering
-    const where: any = {
-      leadId,
-      userId:
-        scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
+    const queryXrays = async (
+      db: ReturnType<typeof getCrmDb>,
+      userIds: string[],
+      withClinicFilter: boolean,
+    ) => {
+      const where: any = {
+        leadId,
+        userId: userIds.length === 1 ? userIds[0] : { in: userIds },
+      };
+      if (withClinicFilter && clinicId) {
+        where.clinicId = clinicId;
+      }
+      return db.dentalXRay.findMany({
+        where,
+        orderBy: {
+          dateTaken: "desc",
+        },
+      });
     };
-    if (clinicId) {
-      where.clinicId = clinicId;
-    }
 
-    // Use correct Prisma model name (capitalized)
-    const xrays = await getCrmDb(ctx).dentalXRay.findMany({
-      where,
-      orderBy: {
-        dateTaken: "desc",
-      },
-    });
+    // Primary query (clinic scoped when provided)
+    let xrays = await queryXrays(getCrmDb(ctx), scopedUserIds, true);
+    // Relax clinic filter if it hides existing images
+    if (xrays.length === 0 && clinicId) {
+      xrays = await queryXrays(getCrmDb(ctx), scopedUserIds, false);
+    }
 
     const effectiveIndustry =
       ctx.industry ?? resolvedCtx?.industry ?? session.user.industry ?? null;
@@ -115,18 +124,18 @@ export async function GET(request: NextRequest) {
         databaseEnvKey: industryEnvKey,
       });
       const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
-      const fallbackXrays = await fallbackDb.dentalXRay.findMany({
-        where: {
-          ...where,
-          userId:
-            fallbackScopedUserIds.length === 1
-              ? fallbackScopedUserIds[0]
-              : { in: fallbackScopedUserIds },
-        },
-        orderBy: {
-          dateTaken: "desc",
-        },
-      });
+      let fallbackXrays = await queryXrays(
+        fallbackDb,
+        fallbackScopedUserIds,
+        true,
+      );
+      if (fallbackXrays.length === 0 && clinicId) {
+        fallbackXrays = await queryXrays(
+          fallbackDb,
+          fallbackScopedUserIds,
+          false,
+        );
+      }
       if (fallbackXrays.length > 0) {
         return NextResponse.json(fallbackXrays);
       }
@@ -170,7 +179,6 @@ export async function GET(request: NextRequest) {
                   ? scopedUserIds[0]
                   : { in: scopedUserIds },
               leadId: { in: siblingLeadIds.map((l) => l.id) },
-              ...(clinicId ? { clinicId } : {}),
             },
             orderBy: {
               dateTaken: "desc",
