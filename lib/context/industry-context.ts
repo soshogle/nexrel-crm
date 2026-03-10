@@ -40,10 +40,19 @@ export function getDalContextFromSession(session: Session | null): {
 } | null {
   if (!session?.user?.id) return null;
   const resolvedOverride = resolveTenantOverrideEnvKey(session.user.id);
+  const industryFallbackEnvKey = session.user.industry
+    ? `DATABASE_URL_${session.user.industry}`
+    : null;
+  const ownerFallbackEnvKey =
+    session.user.role === "BUSINESS_OWNER" &&
+    industryFallbackEnvKey &&
+    process.env[industryFallbackEnvKey]
+      ? industryFallbackEnvKey
+      : null;
   const databaseEnvKey = resolvedOverride
     ? resolvedOverride
     : session.user.role === "BUSINESS_OWNER"
-      ? null
+      ? ownerFallbackEnvKey
       : session.user.databaseEnvKey ?? null;
   if (
     isStrictOwnerTenancyEnabled() &&
