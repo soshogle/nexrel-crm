@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useClinic, ClinicProvider } from "@/lib/dental/clinic-context";
 import { SharedDashboardLayout } from "@/components/dental/shared-dashboard-layout";
 import { CustomXRayAnalysis } from "@/components/dental/custom-xray-analysis";
@@ -144,6 +145,7 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
 }
 
 function ClinicalDashboardPageContent() {
+  const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
   const { activeClinic } = useClinic();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -172,6 +174,7 @@ function ClinicalDashboardPageContent() {
   const [odontogramViewMode, setOdontogramViewMode] = useState<
     "wisely" | "treatment" | "caries" | "completed"
   >("wisely");
+  const requestedLeadId = searchParams.get("leadId");
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -461,6 +464,34 @@ function ClinicalDashboardPageContent() {
     // We still fetch leads so the dashboard never gets stuck on a permanent spinner.
     fetchLeads();
   }, [fetchLeads, sessionStatus]);
+
+  useEffect(() => {
+    if (selectedLeadId || leads.length === 0) return;
+
+    if (requestedLeadId) {
+      const requested = leads.find((l: any) => l.id === requestedLeadId);
+      if (requested?.id) {
+        setSelectedLeadId(requested.id);
+        return;
+      }
+    }
+
+    const isOrthoDemo =
+      String(session?.user?.email || "").toLowerCase() ===
+      "orthodontist@nexrel.com";
+    if (!isOrthoDemo) return;
+
+    const marieLead = leads.find(
+      (l: any) =>
+        l.id === "cmm0vfbds0001pu6eafjy4cqe" ||
+        String(l.contactPerson || "")
+          .toLowerCase()
+          .includes("marie"),
+    );
+    if (marieLead?.id) {
+      setSelectedLeadId(marieLead.id);
+    }
+  }, [leads, requestedLeadId, selectedLeadId, session?.user?.email]);
 
   useEffect(() => {
     if (selectedLeadId) {
