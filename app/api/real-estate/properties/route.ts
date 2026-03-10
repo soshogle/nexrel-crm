@@ -17,6 +17,7 @@ import {
 } from "@/lib/context/industry-context";
 import { websiteService } from "@/lib/dal";
 import { apiErrors } from "@/lib/api-error";
+import { Client } from "pg";
 
 export async function GET(request: NextRequest) {
   try {
@@ -170,6 +171,60 @@ export async function GET(request: NextRequest) {
       });
       const fallbackScopedUserIds = await resolveScopedUserIds(fallbackDb);
       properties = await loadProperties(fallbackDb, fallbackScopedUserIds);
+    }
+
+    const loadPropertiesRaw = async (
+      userIds: string[],
+      databaseEnvKey: string,
+    ) => {
+      const url = process.env[databaseEnvKey];
+      if (!url) return [];
+      const client = new Client({ connectionString: url });
+      await client.connect();
+      try {
+        const result = await client.query(
+          `SELECT id, address, unit, city, state, zip, "propertyType", "listingStatus", "listPrice", "mlsNumber", "daysOnMarket", "createdAt", "updatedAt"
+             FROM "REProperty"
+            WHERE "userId" = ANY($1::text[])
+            ORDER BY "createdAt" DESC
+            LIMIT $2`,
+          [userIds, limit],
+        );
+        return result.rows.map((row) => ({
+          ...row,
+          beds: null,
+          baths: null,
+          sqft: null,
+          description: null,
+          features: [],
+          photos: [],
+          virtualTourUrl: null,
+          listingDate: null,
+          sellerLead: null,
+          isBrokerListing: false,
+        }));
+      } finally {
+        await client.end();
+      }
+    };
+
+    if (properties.length === 0) {
+      const rawKeys = [
+        ctx.databaseEnvKey,
+        industryEnvKey,
+        "DATABASE_URL",
+      ].filter((k): k is string => Boolean(k));
+      for (const key of rawKeys) {
+        try {
+          const raw = await loadPropertiesRaw(scopedUserIds, key);
+          if (raw.length > 0) {
+            properties = raw as typeof properties;
+            break;
+          }
+        } catch {
+          // Ignore raw fallback errors and keep trying
+        }
+      }
     }
 
     // Align order with broker's website (is_featured DESC, created_at DESC)
