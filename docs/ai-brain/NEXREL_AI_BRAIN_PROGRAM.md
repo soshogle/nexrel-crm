@@ -82,6 +82,38 @@ Exit Criteria:
 - Approval SLA and audit evidence operational
 - Stable business KPI lift under guardrails
 
+## Implementation Status (2026-03)
+
+- Phase 1: Implemented (`shadow-runner`, shadow cron, assistant hook, audit logs)
+- Phase 2: Implemented with guarded low-risk writes (`CREATE_TASK`, `UPDATE_LEAD_STATUS`, `ADD_LEAD_TAG`, `DRAFT_CAMPAIGN_ARTIFACT`)
+- Phase 3: Implemented with approval-gated high-risk operator jobs (`MASS_OUTREACH` requires HITL approval, no auto-send)
+- Shared controls (partial): kill switch (global + tenant), idempotency for operator mutation endpoints, role capability matrix
+- Shared controls (extended): distributed trace propagation (`x-nexrel-trace-id`) and PIPEDA evidence artifacts attached to operator/shadow audit metadata
+
+## Operator Runtime Endpoints
+
+- `POST /api/nexrel-ai-brain/operator/run`
+  - Executes/simulates operator actions by surface (`assistant`, `leads`, `dental`, `real_estate`, `campaigns`, etc.)
+- `GET /api/nexrel-ai-brain/operator/jobs`
+  - Lists pending and historical operator jobs
+- `POST /api/nexrel-ai-brain/operator/jobs/:jobId/approve`
+- `POST /api/nexrel-ai-brain/operator/jobs/:jobId/reject`
+- `GET /api/nexrel-ai-brain/health`
+  - Runtime status and phase flags
+- `GET|POST /api/cron/nexrel-ai-brain-operator`
+  - Daily production-grade operator sweep for business owners
+
+## Phase/Policy Environment Flags
+
+- `NEXREL_AI_BRAIN_ENABLED=true`
+- `NEXREL_AI_BRAIN_PHASE=1|2|3`
+- `NEXREL_AI_BRAIN_READ_ONLY=true|false`
+- `NEXREL_AI_BRAIN_ENABLE_LOW_RISK_WRITES=true|false`
+- `NEXREL_AI_BRAIN_ENABLE_HIGH_RISK_APPROVALS=true|false`
+- `NEXREL_AI_BRAIN_ENABLE_HIGH_RISK_AUTO_EXECUTE=true|false` (recommended `false`)
+- `NEXREL_AI_BRAIN_KILL_SWITCH=true|false`
+- `NEXREL_AI_BRAIN_TENANT_KILL_SWITCH=<tenantId1,tenantId2,...>`
+
 ## Required Shared Controls Across All Phases
 
 - Capability matrix by AI employee role

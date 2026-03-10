@@ -12,6 +12,12 @@ import {
 import { aiBrainService } from "@/lib/ai-brain-service";
 import { apiErrors } from "@/lib/api-error";
 import { runNexrelAiBrainShadow } from "@/lib/nexrel-ai-brain/shadow-runner";
+import { runNexrelAiBrainOperator } from "@/lib/nexrel-ai-brain/operator";
+import { isNexrelAiBrainReadOnlyMode } from "@/lib/nexrel-ai-brain/config";
+import {
+  buildPipedaEvidenceArtifact,
+  resolveNexrelAiBrainTraceId,
+} from "@/lib/nexrel-ai-brain/controls";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,6 +74,7 @@ export async function POST(req: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
+    const traceId = resolveNexrelAiBrainTraceId(req);
 
     // Get user's language preference (default to 'en' if not set)
     const userLanguage = user.language || "en";
@@ -193,6 +200,7 @@ export async function POST(req: NextRequest) {
         message,
         conversationHistoryCount: conversationHistory.length,
         contextKeys: Object.keys(context || {}),
+        traceId,
       });
 
       await db.auditLog.create({
@@ -204,9 +212,17 @@ export async function POST(req: NextRequest) {
           entityId: shadow.runId,
           metadata: {
             route: "/api/ai-assistant/chat",
+            traceId,
             mode: shadow.mode,
             executed: shadow.executed,
             policyDecision: shadow.policyDecision,
+            pipedaEvidence: buildPipedaEvidenceArtifact({
+              control: "shadow_run",
+              traceId,
+              runId: shadow.runId,
+              route: "/api/ai-assistant/chat",
+              surface: "assistant",
+            }),
           },
           success: true,
         },
@@ -214,6 +230,46 @@ export async function POST(req: NextRequest) {
     } catch (shadowError) {
       // Never block current assistant behavior during phase 1.
       console.error("[nexrel-ai-brain] shadow run failed", shadowError);
+    }
+
+    try {
+      const operator = await runNexrelAiBrainOperator({
+        tenantId: ctx.userId,
+        userId: user.id,
+        surface: "assistant",
+        objective: message,
+        ctx,
+        traceId,
+        dryRun: isNexrelAiBrainReadOnlyMode(),
+      });
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "SETTINGS_MODIFIED",
+          severity: "LOW",
+          entityType: "NEXREL_AI_BRAIN_OPERATOR_CHAT",
+          entityId: operator.runId,
+          metadata: {
+            route: "/api/ai-assistant/chat",
+            traceId,
+            phase: operator.phase,
+            mode: operator.mode,
+            executedActionCount: operator.executedActions.length,
+            pendingApprovalCount: operator.pendingApprovals.length,
+            deniedActionCount: operator.deniedActions.length,
+            pipedaEvidence: buildPipedaEvidenceArtifact({
+              control: "operator_run",
+              traceId,
+              runId: operator.runId,
+              route: "/api/ai-assistant/chat",
+              surface: "assistant",
+            }),
+          },
+          success: true,
+        },
+      });
+    } catch (operatorError) {
+      console.error("[nexrel-ai-brain] operator run failed", operatorError);
     }
 
     // Build comprehensive context about the CRM and user's data with error handling

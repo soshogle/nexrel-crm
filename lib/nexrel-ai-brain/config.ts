@@ -14,6 +14,33 @@ export function isNexrelAiBrainReadOnlyMode(): boolean {
   return isTrue(explicit);
 }
 
+export type NexrelAiBrainPhase = 1 | 2 | 3;
+
+export function getNexrelAiBrainPhase(): NexrelAiBrainPhase {
+  const raw = Number(process.env.NEXREL_AI_BRAIN_PHASE || "1");
+  if (raw >= 3) return 3;
+  if (raw === 2) return 2;
+  return 1;
+}
+
+export function isNexrelAiBrainLowRiskWritesEnabled(): boolean {
+  if (!isNexrelAiBrainEnabled()) return false;
+  if (isNexrelAiBrainReadOnlyMode()) return false;
+  if (getNexrelAiBrainPhase() < 2) return false;
+  return isTrue(process.env.NEXREL_AI_BRAIN_ENABLE_LOW_RISK_WRITES);
+}
+
+export function isNexrelAiBrainHighRiskApprovalEnabled(): boolean {
+  if (!isNexrelAiBrainEnabled()) return false;
+  if (getNexrelAiBrainPhase() < 3) return false;
+  return isTrue(process.env.NEXREL_AI_BRAIN_ENABLE_HIGH_RISK_APPROVALS);
+}
+
+export function isNexrelAiBrainHighRiskAutoExecuteEnabled(): boolean {
+  if (!isNexrelAiBrainHighRiskApprovalEnabled()) return false;
+  return isTrue(process.env.NEXREL_AI_BRAIN_ENABLE_HIGH_RISK_AUTO_EXECUTE);
+}
+
 export function getNexrelAiBrainTenantAllowlist(): Set<string> {
   const raw = process.env.NEXREL_AI_BRAIN_TENANT_ALLOWLIST;
   if (!raw || !raw.trim()) return new Set<string>();
@@ -31,10 +58,30 @@ export function isTenantAllowedForNexrelAiBrain(tenantId: string): boolean {
   return allowlist.has(tenantId);
 }
 
+export function isNexrelAiBrainGlobalKillSwitchActive(): boolean {
+  return isTrue(process.env.NEXREL_AI_BRAIN_KILL_SWITCH);
+}
+
+export function getNexrelAiBrainTenantKillSwitchList(): Set<string> {
+  const raw = process.env.NEXREL_AI_BRAIN_TENANT_KILL_SWITCH;
+  if (!raw || !raw.trim()) return new Set<string>();
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+export function isTenantKilledForNexrelAiBrain(tenantId: string): boolean {
+  const killedTenants = getNexrelAiBrainTenantKillSwitchList();
+  return killedTenants.has(tenantId);
+}
+
 export function assertNexrelAiBrainWriteAllowed(): void {
-  if (isNexrelAiBrainReadOnlyMode()) {
+  if (!isNexrelAiBrainLowRiskWritesEnabled()) {
     throw new Error(
-      "Nexrel AI Brain is in read-only mode. Write actions are disabled in phase 1.",
+      "Nexrel AI Brain write path disabled. Enable phase 2+ low-risk writes.",
     );
   }
 }
