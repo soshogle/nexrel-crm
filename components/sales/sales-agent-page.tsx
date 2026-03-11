@@ -87,15 +87,17 @@ export function SalesAgentPage() {
 
   const squad = status?.squad;
   const readiness = health?.readiness?.salesSquad;
+  const nextPhase = Number(readiness?.nextPhase || 0);
   const enrichmentReady = Boolean(
     health?.readiness?.enrichmentKeys?.anyConfigured,
   );
   const automationState = useMemo(() => {
     if (!squad) {
       return {
-        level: "Needs verification",
+        level: "Needs Setup",
         reason: "Initialize a sales squad first.",
-        next: "Click Initialize to begin.",
+        next: "Start automation to create your sales squad.",
+        cta: "Start Automation",
       };
     }
     if (!readiness?.runnable) {
@@ -104,26 +106,30 @@ export function SalesAgentPage() {
       );
       const needsApproval = reason.toLowerCase().includes("trust stage");
       return {
-        level: needsApproval ? "Needs approval" : "Needs verification",
+        level: needsApproval ? "Needs Approval" : "Needs Setup",
         reason,
         next: needsApproval
           ? "Promote trust stage before running this phase."
           : "Complete the missing prerequisite shown above.",
+        cta: needsApproval ? "Review & Approve" : "Fix Setup",
       };
     }
     if (!enrichmentReady) {
       return {
-        level: "Needs verification",
+        level: "Needs Setup",
         reason: "No enrichment key found (Hunter/Clearbit).",
         next: "Add at least one enrichment API key.",
+        cta: "Fix Setup",
       };
     }
     return {
       level: "Auto",
       reason: "All checks passed for the next phase.",
-      next: "Run the next phase.",
+      next:
+        nextPhase > 0 ? `Run phase ${nextPhase}.` : "Workflow is completed.",
+      cta: nextPhase > 0 ? "Run Now" : "View Results",
     };
-  }, [squad, readiness, enrichmentReady]);
+  }, [enrichmentReady, nextPhase, readiness, squad]);
   const progress = useMemo(() => {
     const phaseStatus = squad?.phaseStatus || {};
     const completed = Object.values(phaseStatus).filter(
@@ -184,6 +190,24 @@ export function SalesAgentPage() {
       refresh();
     } catch (error: any) {
       toast.error(error?.message || "Failed to update trust stage");
+    }
+  };
+
+  const runPrimaryAction = async () => {
+    if (!squad) {
+      await initialize();
+      return;
+    }
+    if (automationState.level === "Needs Approval") {
+      toast.info("Open Advanced Controls to approve trust stage.");
+      return;
+    }
+    if (automationState.level === "Needs Setup") {
+      router.push("/dashboard/settings");
+      return;
+    }
+    if (nextPhase > 0) {
+      await runPhase(nextPhase);
     }
   };
 
@@ -275,7 +299,9 @@ export function SalesAgentPage() {
 
         <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Automation Status</CardTitle>
+            <CardTitle className="text-base">
+              Owner Automation Overview
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-gray-700 space-y-1">
             <p>
@@ -290,6 +316,12 @@ export function SalesAgentPage() {
               <span className="font-semibold">Next Step:</span>{" "}
               {automationState.next}
             </p>
+            <div className="pt-2">
+              <Button onClick={runPrimaryAction} disabled={running}>
+                {running && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {automationState.cta}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -320,119 +352,132 @@ export function SalesAgentPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Initialize Sales Squad</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input
-              value={squadName}
-              onChange={(e) => setSquadName(e.target.value)}
-              placeholder="Squad name"
-            />
-            <Input
-              value={primaryGoal}
-              onChange={(e) => setPrimaryGoal(e.target.value)}
-              placeholder="Primary goal"
-            />
-            <div className="flex gap-2">
-              <Button onClick={initialize} disabled={running}>
-                {running && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Initialize
-              </Button>
-              <Button variant="outline" onClick={refresh} disabled={running}>
-                Refresh
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Owner Action Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-800">
-                Trust Stage Approval
-              </p>
-              <select
-                value={trustStage}
-                onChange={(e) =>
-                  setTrustStage(e.target.value as "crawl" | "walk" | "run")
-                }
-                className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
-              >
-                <option value="crawl">crawl</option>
-                <option value="walk">walk</option>
-                <option value="run">run</option>
-              </select>
-              <Button onClick={setTrust} disabled={running || !squad}>
-                Apply Trust Stage
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-800">
-                Phase 2 Company URLs (one per line)
-              </p>
-              <textarea
-                value={companyUrlsText}
-                onChange={(e) => setCompanyUrlsText(e.target.value)}
-                placeholder="acme.com\nexample.org"
-                className="w-full min-h-[120px] rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
-              />
-              <p className="text-xs text-gray-600">
-                Used when running phase 2 to enrich leads and personalize
-                outbound.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {phaseLabels.map((label, index) => {
-            const phaseId = index + 1;
-            return (
-              <Card
-                key={label}
-                className="border border-purple-200/50 bg-white/80 backdrop-blur-sm"
-              >
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    {phaseId === 1 && (
-                      <Brain className="h-4 w-4 text-purple-600" />
+        <details className="rounded-lg border border-purple-200 bg-white/85 p-4">
+          <summary className="cursor-pointer font-medium text-sm text-gray-800">
+            Advanced Controls
+          </summary>
+          <div className="mt-4 space-y-4">
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Initialize Sales Squad</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Input
+                  value={squadName}
+                  onChange={(e) => setSquadName(e.target.value)}
+                  placeholder="Squad name"
+                />
+                <Input
+                  value={primaryGoal}
+                  onChange={(e) => setPrimaryGoal(e.target.value)}
+                  placeholder="Primary goal"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={initialize} disabled={running}>
+                    {running && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {phaseId === 2 && (
-                      <Rocket className="h-4 w-4 text-purple-600" />
-                    )}
-                    {phaseId === 3 && (
-                      <Target className="h-4 w-4 text-purple-600" />
-                    )}
-                    {phaseId === 4 && (
-                      <Users className="h-4 w-4 text-purple-600" />
-                    )}
-                    {phaseId === 5 && (
-                      <CheckCircle2 className="h-4 w-4 text-purple-600" />
-                    )}
-                    {phaseId === 6 && (
-                      <Workflow className="h-4 w-4 text-purple-600" />
-                    )}
-                    Phase {phaseId}: {label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(phaseId)}
-                    disabled={running || !squad}
-                  >
-                    Run Phase {phaseId}
+                    Initialize
                   </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  <Button
+                    variant="outline"
+                    onClick={refresh}
+                    disabled={running}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Owner Action Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-800">
+                    Trust Stage Approval
+                  </p>
+                  <select
+                    value={trustStage}
+                    onChange={(e) =>
+                      setTrustStage(e.target.value as "crawl" | "walk" | "run")
+                    }
+                    className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="crawl">crawl</option>
+                    <option value="walk">walk</option>
+                    <option value="run">run</option>
+                  </select>
+                  <Button onClick={setTrust} disabled={running || !squad}>
+                    Apply Trust Stage
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-800">
+                    Phase 2 Company URLs (one per line)
+                  </p>
+                  <textarea
+                    value={companyUrlsText}
+                    onChange={(e) => setCompanyUrlsText(e.target.value)}
+                    placeholder={"acme.com\nexample.org"}
+                    className="w-full min-h-[120px] rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+                  />
+                  <p className="text-xs text-gray-600">
+                    Used when running phase 2 to enrich leads and personalize
+                    outbound.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {phaseLabels.map((label, index) => {
+                const phaseId = index + 1;
+                return (
+                  <Card
+                    key={label}
+                    className="border border-purple-200/50 bg-white/80 backdrop-blur-sm"
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {phaseId === 1 && (
+                          <Brain className="h-4 w-4 text-purple-600" />
+                        )}
+                        {phaseId === 2 && (
+                          <Rocket className="h-4 w-4 text-purple-600" />
+                        )}
+                        {phaseId === 3 && (
+                          <Target className="h-4 w-4 text-purple-600" />
+                        )}
+                        {phaseId === 4 && (
+                          <Users className="h-4 w-4 text-purple-600" />
+                        )}
+                        {phaseId === 5 && (
+                          <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                        )}
+                        {phaseId === 6 && (
+                          <Workflow className="h-4 w-4 text-purple-600" />
+                        )}
+                        Phase {phaseId}: {label}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        size="sm"
+                        onClick={() => runPhase(phaseId)}
+                        disabled={running || !squad}
+                      >
+                        Run Phase {phaseId}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );

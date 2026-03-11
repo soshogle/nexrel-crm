@@ -81,13 +81,15 @@ export function ViralPage() {
 
   const project = status?.project;
   const readiness = health?.readiness?.viralLoop;
+  const nextPhase = Number(readiness?.nextPhase || 0);
   const socialReady = Boolean(health?.readiness?.socialNativeDraftingReady);
   const automationState = useMemo(() => {
     if (!project) {
       return {
-        level: "Needs verification",
+        level: "Needs Setup",
         reason: "Initialize a marketing project first.",
-        next: "Click Initialize in Setup.",
+        next: "Start automation to create the viral workflow.",
+        cta: "Start Automation",
       };
     }
     if (!readiness?.runnable) {
@@ -96,26 +98,30 @@ export function ViralPage() {
       );
       const needsApproval = reason.toLowerCase().includes("trust stage");
       return {
-        level: needsApproval ? "Needs approval" : "Needs verification",
+        level: needsApproval ? "Needs Approval" : "Needs Setup",
         reason,
         next: needsApproval
           ? "Promote trust stage before running this phase."
           : "Complete the missing prerequisite shown above.",
+        cta: needsApproval ? "Review & Approve" : "Fix Setup",
       };
     }
     if (!socialReady) {
       return {
-        level: "Needs verification",
+        level: "Needs Setup",
         reason: "No connected Instagram/Facebook channels with valid token.",
         next: "Connect a social account in Settings.",
+        cta: "Fix Setup",
       };
     }
     return {
       level: "Auto",
       reason: "All checks passed for the next phase.",
-      next: "Run the next phase.",
+      next:
+        nextPhase > 0 ? `Run phase ${nextPhase}.` : "Workflow is completed.",
+      cta: nextPhase > 0 ? "Run Now" : "View Results",
     };
-  }, [project, readiness, socialReady]);
+  }, [nextPhase, project, readiness, socialReady]);
   const progress = useMemo(() => {
     const phaseStatus = project?.phaseStatus || {};
     const completed = Object.values(phaseStatus).filter(
@@ -180,6 +186,24 @@ export function ViralPage() {
       refreshStatus();
     } catch (error: any) {
       toast.error(error?.message || "Failed to update trust stage");
+    }
+  };
+
+  const runPrimaryAction = async () => {
+    if (!project) {
+      await initializeProject();
+      return;
+    }
+    if (automationState.level === "Needs Approval") {
+      toast.info("Open Advanced Controls to approve trust stage.");
+      return;
+    }
+    if (automationState.level === "Needs Setup") {
+      router.push("/dashboard/settings");
+      return;
+    }
+    if (nextPhase > 0) {
+      await runPhase(nextPhase);
     }
   };
 
@@ -262,7 +286,9 @@ export function ViralPage() {
 
         <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Automation Status</CardTitle>
+            <CardTitle className="text-base">
+              Owner Automation Overview
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-gray-700 space-y-1">
             <p>
@@ -277,6 +303,12 @@ export function ViralPage() {
               <span className="font-semibold">Next Step:</span>{" "}
               {automationState.next}
             </p>
+            <div className="pt-2">
+              <Button onClick={runPrimaryAction} disabled={running}>
+                {running && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {automationState.cta}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -308,309 +340,319 @@ export function ViralPage() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="setup" className="w-full">
-          <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
-            <TabsTrigger
-              value="setup"
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <Workflow className="w-4 h-4 mr-2" /> Setup
-            </TabsTrigger>
-            <TabsTrigger
-              value="modules"
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <Sparkles className="w-4 h-4 mr-2" /> Viral Modules
-            </TabsTrigger>
-          </TabsList>
+        <details className="rounded-lg border border-purple-200 bg-white/85 p-4">
+          <summary className="cursor-pointer font-medium text-sm text-gray-800">
+            Advanced Controls
+          </summary>
+          <Tabs defaultValue="setup" className="w-full mt-4">
+            <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+              <TabsTrigger
+                value="setup"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                <Workflow className="w-4 h-4 mr-2" /> Setup
+              </TabsTrigger>
+              <TabsTrigger
+                value="modules"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Viral Modules
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="setup" className="mt-6 space-y-4">
-            <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Initialize Viral Project</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="Project name"
-                />
-                <Input
-                  value={niche}
-                  onChange={(e) => setNiche(e.target.value)}
-                  placeholder="Niche"
-                />
-                <Input
-                  value={conversionGoal}
-                  onChange={(e) => setConversionGoal(e.target.value)}
-                  placeholder="Conversion goal"
-                />
-                <div className="flex gap-2">
-                  <Button onClick={initializeProject} disabled={running}>
-                    {running && (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    )}{" "}
-                    Initialize
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={refreshStatus}
-                    disabled={running}
-                  >
-                    Refresh Status
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Owner Action Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-800">
-                      Trust Stage Approval
-                    </p>
-                    <select
-                      value={trustStage}
-                      onChange={(e) =>
-                        setTrustStage(
-                          e.target.value as "crawl" | "walk" | "run",
-                        )
-                      }
-                      className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+            <TabsContent value="setup" className="mt-6 space-y-4">
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Initialize Viral Project</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="Project name"
+                  />
+                  <Input
+                    value={niche}
+                    onChange={(e) => setNiche(e.target.value)}
+                    placeholder="Niche"
+                  />
+                  <Input
+                    value={conversionGoal}
+                    onChange={(e) => setConversionGoal(e.target.value)}
+                    placeholder="Conversion goal"
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={initializeProject} disabled={running}>
+                      {running && (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      )}{" "}
+                      Initialize
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={refreshStatus}
+                      disabled={running}
                     >
-                      <option value="crawl">crawl</option>
-                      <option value="walk">walk</option>
-                      <option value="run">run</option>
-                    </select>
-                    <Button onClick={setTrust} disabled={running || !project}>
-                      Apply Trust Stage
+                      Refresh Status
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-800">
-                      Phase Options
-                    </p>
-                    <Input
-                      value={mediaUrl}
-                      onChange={(e) => setMediaUrl(e.target.value)}
-                      placeholder="Phase 3 media URL (public image)"
-                    />
-                    <Input
-                      value={limitPerChannel}
-                      onChange={(e) => setLimitPerChannel(e.target.value)}
-                      placeholder="Phase 4 posts per channel (default 6)"
-                    />
-                    <p className="text-xs text-gray-600">
-                      Use these options before running phase 3 or 4.
-                    </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Owner Action Controls</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-800">
+                        Trust Stage Approval
+                      </p>
+                      <select
+                        value={trustStage}
+                        onChange={(e) =>
+                          setTrustStage(
+                            e.target.value as "crawl" | "walk" | "run",
+                          )
+                        }
+                        className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="crawl">crawl</option>
+                        <option value="walk">walk</option>
+                        <option value="run">run</option>
+                      </select>
+                      <Button onClick={setTrust} disabled={running || !project}>
+                        Apply Trust Stage
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-800">
+                        Phase Options
+                      </p>
+                      <Input
+                        value={mediaUrl}
+                        onChange={(e) => setMediaUrl(e.target.value)}
+                        placeholder="Phase 3 media URL (public image)"
+                      />
+                      <Input
+                        value={limitPerChannel}
+                        onChange={(e) => setLimitPerChannel(e.target.value)}
+                        placeholder="Phase 4 posts per channel (default 6)"
+                      />
+                      <p className="text-xs text-gray-600">
+                        Use these options before running phase 3 or 4.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="modules" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FlaskConical className="w-4 h-4 text-purple-600" /> Niche
-                    Research
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>Research winning hooks, CTA styles, and visual formats.</p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(1)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 1
-                  </Button>
-                </CardContent>
-              </Card>
+            <TabsContent value="modules" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FlaskConical className="w-4 h-4 text-purple-600" /> Niche
+                      Research
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Research winning hooks, CTA styles, and visual formats.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(1)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 1
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-600" /> Content
-                    Creation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Generate viral content package from current winning
-                    strategy.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(2)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 2
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-purple-600" /> Content
+                      Creation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Generate viral content package from current winning
+                      strategy.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(2)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 2
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileEdit className="w-4 h-4 text-purple-600" /> Draft
-                    Pipeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Create draft-ready campaign + human review task for publish.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(3)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 3
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileEdit className="w-4 h-4 text-purple-600" /> Draft
+                      Pipeline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Create draft-ready campaign + human review task for
+                      publish.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(3)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 3
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="w-4 h-4 text-purple-600" /> Diagnostics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Detect whether underperformance is hook, CTA, or format.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(4)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 4
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="w-4 h-4 text-purple-600" /> Diagnostics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Detect whether underperformance is hook, CTA, or format.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(4)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 4
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Workflow className="w-4 h-4 text-purple-600" /> Hook
-                    Rotation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Apply 60/30/10 winner-proven-test distribution and CTA
-                    evolution.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(5)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 5
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Workflow className="w-4 h-4 text-purple-600" /> Hook
+                      Rotation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Apply 60/30/10 winner-proven-test distribution and CTA
+                      evolution.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(5)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 5
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="w-4 h-4 text-purple-600" /> Goal Tracking
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Correlate post performance to conversion outcomes and
-                    business impact.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(6)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 6
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="w-4 h-4 text-purple-600" /> Goal
+                      Tracking
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Correlate post performance to conversion outcomes and
+                      business impact.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(6)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 6
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Megaphone className="w-4 h-4 text-purple-600" />
-                    Cross-Platform
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Adapt TikTok content package into drafts for IG, FB,
-                    LinkedIn, YouTube, and X.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(7)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 7
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-purple-600" />
+                      Cross-Platform
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Adapt TikTok content package into drafts for IG, FB,
+                      LinkedIn, YouTube, and X.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(7)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 7
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-600" /> Memory Backup
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <p>
-                    Export memory snapshot and persist viral loop strategy
-                    context.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => runPhase(8)}
-                    disabled={running || !project}
-                  >
-                    Run Phase 8
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-purple-600" /> Memory
+                      Backup
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      Export memory snapshot and persist viral loop strategy
+                      context.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => runPhase(8)}
+                      disabled={running || !project}
+                    >
+                      Run Phase 8
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="w-4 h-4 text-purple-600" /> Next Wave
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-gray-600">
-                  Use crawl - walk - run trust progression and keep draft-first
-                  posting for algorithm-safe distribution.
-                </CardContent>
-              </Card>
-              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Megaphone className="w-4 h-4 text-purple-600" /> Posting
-                    Policy
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-gray-600">
-                  Draft-first mode is enforced. Human publishes from mobile
-                  after adding sound/trending context.
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="w-4 h-4 text-purple-600" /> Next Wave
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-600">
+                    Use crawl - walk - run trust progression and keep
+                    draft-first posting for algorithm-safe distribution.
+                  </CardContent>
+                </Card>
+                <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-purple-600" /> Posting
+                      Policy
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-600">
+                    Draft-first mode is enforced. Human publishes from mobile
+                    after adding sound/trending context.
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </details>
       </div>
     </div>
   );
