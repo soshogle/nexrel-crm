@@ -1,4 +1,3 @@
-
 {
   "common": {
     "save": "保存",
@@ -31,6 +30,9 @@
     "pipeline": "销售管道",
     "messages": "消息",
     "campaigns": "营销活动",
+    "marketing": "营销",
+    "viral": "爆款",
+    "salesAgent": "销售AI",
     "calendar": "日历",
     "analytics": "分析",
     "reports": "报告",

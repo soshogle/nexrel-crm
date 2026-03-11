@@ -7,9 +7,15 @@ import { ArrowLeft, Loader2, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-type OwnerMode = "Auto" | "Needs Approval" | "Needs Setup";
+type OwnerState = {
+  chip: "Running" | "Needs your approval" | "Needs setup";
+  message: string;
+  nextAction: string;
+  cta: string;
+};
 
 export function MarketingPage() {
   const router = useRouter();
@@ -69,41 +75,39 @@ export function MarketingPage() {
     (value: any) => value === "completed",
   ).length;
 
-  const ownerState = useMemo(() => {
+  const ownerState: OwnerState = useMemo(() => {
     if (!project) {
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason: "Marketing automation is not started yet.",
-        next: "Start automation.",
-        cta: "Start Automation",
+        chip: "Needs setup",
+        message: "Marketing automation has not started yet.",
+        nextAction: "Start your first marketing cycle.",
+        cta: "Start Marketing Cycle",
       };
     }
-
     if (!readiness?.runnable) {
       const reason = String(readiness?.reason || "A prerequisite is missing.");
       if (reason.toLowerCase().includes("trust stage")) {
         return {
-          mode: "Needs Approval" as OwnerMode,
-          reason,
-          next: "Approve the next stage.",
-          cta: "Review & Approve",
+          chip: "Needs your approval",
+          message: "Automation is waiting for your approval to continue.",
+          nextAction: "Approve the next trust stage in details.",
+          cta: "Review Approval",
         };
       }
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason,
-        next: "Fix setup and run again.",
+        chip: "Needs setup",
+        message: reason,
+        nextAction: "Fix setup, then run the cycle.",
         cta: "Fix Setup",
       };
     }
-
     return {
-      mode: "Auto" as OwnerMode,
-      reason: "Automation is ready to run the next marketing step.",
-      next: nextPhase > 0 ? `Run phase ${nextPhase}.` : "Workflow completed.",
-      cta: nextPhase > 0 ? "Run Now" : "View Results",
+      chip: "Running",
+      message: "Automation is ready to run the next marketing step.",
+      nextAction: nextPhase > 0 ? `Run step ${nextPhase}.` : "Review outcomes.",
+      cta: nextPhase > 0 ? "Run Marketing Cycle" : "View Outcomes",
     };
-  }, [project, readiness, nextPhase]);
+  }, [nextPhase, project, readiness]);
 
   const runPrimaryAction = async () => {
     setBusy(true);
@@ -115,15 +119,15 @@ export function MarketingPage() {
           niche,
           conversionGoal,
         });
-        toast.success("Marketing automation started.");
+        toast.success("Marketing cycle started.");
         await refresh();
         return;
       }
-      if (ownerState.mode === "Needs Approval") {
+      if (ownerState.chip === "Needs your approval") {
         router.push("/dashboard/marketing/viral");
         return;
       }
-      if (ownerState.mode === "Needs Setup") {
+      if (ownerState.chip === "Needs setup") {
         router.push("/dashboard/settings");
         return;
       }
@@ -133,7 +137,7 @@ export function MarketingPage() {
           projectId: project.projectId,
           phaseId: nextPhase,
         });
-        toast.success(`Phase ${nextPhase} executed.`);
+        toast.success(`Marketing step ${nextPhase} completed.`);
         await refresh();
       }
     } catch (error: any) {
@@ -153,7 +157,7 @@ export function MarketingPage() {
           function_name: "create_task",
           parameters: {
             title: taskTitle,
-            description: "Owner planning task from Marketing hub.",
+            description: "Owner planning task from Marketing page.",
             priority: "HIGH",
           },
         }),
@@ -169,6 +173,14 @@ export function MarketingPage() {
     }
   };
 
+  const campaignsLaunched = project?.phaseOutputs?.[3]?.draftCampaign ? 1 : 0;
+  const leadsInfluenced = Number(
+    project?.phaseOutputs?.[6]?.totalConversions || 0,
+  );
+  const topChannel =
+    project?.phaseOutputs?.[7]?.recommendation?.primaryChannel ||
+    "Not enough data yet";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 p-8 space-y-6">
       <div className="flex items-center gap-4">
@@ -182,27 +194,23 @@ export function MarketingPage() {
         </Button>
         <h1 className="text-4xl font-bold flex items-center gap-3">
           <Megaphone className="h-8 w-8 text-purple-600" />
-          <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
-            Marketing
-          </span>
+          Marketing
         </h1>
       </div>
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Current Status</CardTitle>
+          <CardTitle className="text-base">What should I do now?</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-gray-700">
+        <CardContent className="space-y-3 text-sm text-gray-700">
+          <Badge className="w-fit bg-purple-100 text-purple-700">
+            {ownerState.chip}
+          </Badge>
           <p>
-            <span className="font-semibold">Mode:</span> {ownerState.mode}
+            <span className="font-semibold">Status:</span> {ownerState.message}
           </p>
           <p>
-            <span className="font-semibold">What is happening:</span>{" "}
-            {ownerState.reason}
-          </p>
-          <p>
-            <span className="font-semibold">Next action:</span>{" "}
-            {ownerState.next}
+            <span className="font-semibold">Next:</span> {ownerState.nextAction}
           </p>
           <Button onClick={runPrimaryAction} disabled={busy || loading}>
             {(busy || loading) && (
@@ -215,20 +223,23 @@ export function MarketingPage() {
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Business Result</CardTitle>
+          <CardTitle className="text-base">What changed this week</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-gray-700 space-y-1">
           <p>
-            <span className="font-semibold">Active workflow:</span>{" "}
-            {project?.projectName || "Not started"}
+            <span className="font-semibold">Campaigns launched:</span>{" "}
+            {campaignsLaunched}
+          </p>
+          <p>
+            <span className="font-semibold">Leads influenced:</span>{" "}
+            {leadsInfluenced}
+          </p>
+          <p>
+            <span className="font-semibold">Top channel:</span> {topChannel}
           </p>
           <p>
             <span className="font-semibold">Completed steps:</span>{" "}
             {completedCount}/8
-          </p>
-          <p>
-            <span className="font-semibold">Expected outcome:</span> More
-            consistent lead-focused marketing execution.
           </p>
         </CardContent>
       </Card>
@@ -244,7 +255,7 @@ export function MarketingPage() {
 
       <details className="rounded-lg border border-purple-200 bg-white/85 p-4">
         <summary className="cursor-pointer font-medium text-sm text-gray-800">
-          Advanced
+          Details
         </summary>
         <div className="mt-3 space-y-2">
           <Input

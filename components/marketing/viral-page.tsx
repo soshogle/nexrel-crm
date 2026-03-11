@@ -2,13 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Megaphone } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-type OwnerMode = "Auto" | "Needs Approval" | "Needs Setup";
+type OwnerState = {
+  chip: "Running" | "Needs your approval" | "Needs setup";
+  message: string;
+  nextAction: string;
+  cta: string;
+};
 
 export function ViralPage() {
   const router = useRouter();
@@ -64,52 +70,46 @@ export function ViralPage() {
   const readiness = health?.readiness?.viralLoop;
   const nextPhase = Number(readiness?.nextPhase || 0);
   const socialReady = Boolean(health?.readiness?.socialNativeDraftingReady);
-  const completedCount = Object.values(project?.phaseStatus || {}).filter(
-    (value: any) => value === "completed",
-  ).length;
 
-  const ownerState = useMemo(() => {
+  const ownerState: OwnerState = useMemo(() => {
     if (!project) {
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason: "Viral automation is not started yet.",
-        next: "Start automation.",
-        cta: "Start Automation",
+        chip: "Needs setup",
+        message: "Viral automation has not started yet.",
+        nextAction: "Start your first content cycle.",
+        cta: "Start Content Cycle",
       };
     }
-
     if (!readiness?.runnable) {
       const reason = String(readiness?.reason || "A prerequisite is missing.");
       if (reason.toLowerCase().includes("trust stage")) {
         return {
-          mode: "Needs Approval" as OwnerMode,
-          reason,
-          next: "Approve the next trust stage.",
-          cta: "Review & Approve",
+          chip: "Needs your approval",
+          message: "Automation is waiting for your approval to continue.",
+          nextAction: "Approve the next trust stage in details.",
+          cta: "Review Approval",
         };
       }
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason,
-        next: "Fix setup and run again.",
+        chip: "Needs setup",
+        message: reason,
+        nextAction: "Fix setup, then run again.",
         cta: "Fix Setup",
       };
     }
-
     if (nextPhase >= 3 && !socialReady) {
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason: "Native social channels are not connected.",
-        next: "Connect Instagram or Facebook.",
+        chip: "Needs setup",
+        message: "No native social channels are connected.",
+        nextAction: "Connect Instagram or Facebook.",
         cta: "Fix Setup",
       };
     }
-
     return {
-      mode: "Auto" as OwnerMode,
-      reason: "Viral automation is ready for the next step.",
-      next: nextPhase > 0 ? `Run phase ${nextPhase}.` : "Workflow completed.",
-      cta: nextPhase > 0 ? "Run Now" : "View Results",
+      chip: "Running",
+      message: "Viral automation is ready to run the next step.",
+      nextAction: nextPhase > 0 ? `Run step ${nextPhase}.` : "Review outcomes.",
+      cta: nextPhase > 0 ? "Run Content Cycle" : "View Outcomes",
     };
   }, [nextPhase, project, readiness, socialReady]);
 
@@ -153,21 +153,21 @@ export function ViralPage() {
     try {
       if (!project) {
         await initializeProject();
-        toast.success("Viral automation started.");
+        toast.success("Content cycle started.");
         await refresh();
         return;
       }
-      if (ownerState.mode === "Needs Approval") {
-        toast.info("Open Advanced and approve trust stage.");
+      if (ownerState.chip === "Needs your approval") {
+        toast.info("Open Details and approve trust stage.");
         return;
       }
-      if (ownerState.mode === "Needs Setup") {
+      if (ownerState.chip === "Needs setup") {
         router.push("/dashboard/settings");
         return;
       }
       if (nextPhase > 0) {
         await runPhase(nextPhase);
-        toast.success(`Phase ${nextPhase} executed.`);
+        toast.success(`Content step ${nextPhase} completed.`);
         await refresh();
       }
     } catch (error: any) {
@@ -176,6 +176,16 @@ export function ViralPage() {
       setRunning(false);
     }
   };
+
+  const winningHook =
+    project?.phaseOutputs?.[5]?.winner?.hook ||
+    project?.phaseOutputs?.[4]?.topPerformer?.hook ||
+    "Not enough data yet";
+  const conversionTrend = Number(
+    project?.phaseOutputs?.[6]?.totalConversions || 0,
+  );
+  const topPost =
+    project?.phaseOutputs?.[4]?.topPerformer?.id || "Not enough data yet";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 p-8 space-y-6">
@@ -189,28 +199,24 @@ export function ViralPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-4xl font-bold flex items-center gap-3">
-          <Megaphone className="h-8 w-8 text-purple-600" />
-          <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
-            Viral
-          </span>
+          <Sparkles className="h-8 w-8 text-purple-600" />
+          Viral
         </h1>
       </div>
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Current Status</CardTitle>
+          <CardTitle className="text-base">What should I do now?</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-gray-700">
+        <CardContent className="space-y-3 text-sm text-gray-700">
+          <Badge className="w-fit bg-purple-100 text-purple-700">
+            {ownerState.chip}
+          </Badge>
           <p>
-            <span className="font-semibold">Mode:</span> {ownerState.mode}
+            <span className="font-semibold">Status:</span> {ownerState.message}
           </p>
           <p>
-            <span className="font-semibold">What is happening:</span>{" "}
-            {ownerState.reason}
-          </p>
-          <p>
-            <span className="font-semibold">Next action:</span>{" "}
-            {ownerState.next}
+            <span className="font-semibold">Next:</span> {ownerState.nextAction}
           </p>
           <Button onClick={runPrimaryAction} disabled={running || loading}>
             {(running || loading) && (
@@ -223,27 +229,25 @@ export function ViralPage() {
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Business Result</CardTitle>
+          <CardTitle className="text-base">What changed this week</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-gray-700 space-y-1">
           <p>
-            <span className="font-semibold">Active workflow:</span>{" "}
-            {project?.projectName || "Not started"}
+            <span className="font-semibold">Top post:</span> {topPost}
           </p>
           <p>
-            <span className="font-semibold">Completed steps:</span>{" "}
-            {completedCount}/8
+            <span className="font-semibold">Winning hook:</span> {winningHook}
           </p>
           <p>
-            <span className="font-semibold">Expected outcome:</span>{" "}
-            Better-performing content with clearer lead intent signals.
+            <span className="font-semibold">Conversion trend:</span>{" "}
+            {conversionTrend}
           </p>
         </CardContent>
       </Card>
 
       <details className="rounded-lg border border-purple-200 bg-white/85 p-4">
         <summary className="cursor-pointer font-medium text-sm text-gray-800">
-          Advanced
+          Details
         </summary>
         <div className="mt-4 space-y-4">
           <Card className="border border-purple-200 bg-white/90">
@@ -302,12 +306,12 @@ export function ViralPage() {
               <Input
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
-                placeholder="Phase 3 media URL"
+                placeholder="Step 3 media URL"
               />
               <Input
                 value={limitPerChannel}
                 onChange={(e) => setLimitPerChannel(e.target.value)}
-                placeholder="Phase 4 posts per channel"
+                placeholder="Step 4 posts per channel"
               />
               <div className="flex flex-wrap gap-2 pt-1">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((phaseId) => (

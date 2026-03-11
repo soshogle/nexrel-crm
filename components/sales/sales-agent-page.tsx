@@ -6,6 +6,7 @@ import { ArrowLeft, DollarSign, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const phaseLabels = [
@@ -17,7 +18,12 @@ const phaseLabels = [
   "Content & Research",
 ];
 
-type OwnerMode = "Auto" | "Needs Approval" | "Needs Setup";
+type OwnerState = {
+  chip: "Running" | "Needs your approval" | "Needs setup";
+  message: string;
+  nextAction: string;
+  cta: string;
+};
 
 export function SalesAgentPage() {
   const router = useRouter();
@@ -73,52 +79,46 @@ export function SalesAgentPage() {
   const enrichmentReady = Boolean(
     health?.readiness?.enrichmentKeys?.anyConfigured,
   );
-  const completedCount = Object.values(squad?.phaseStatus || {}).filter(
-    (value: any) => value === "completed",
-  ).length;
 
-  const ownerState = useMemo(() => {
+  const ownerState: OwnerState = useMemo(() => {
     if (!squad) {
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason: "Sales automation is not started yet.",
-        next: "Start automation.",
-        cta: "Start Automation",
+        chip: "Needs setup",
+        message: "Sales automation has not started yet.",
+        nextAction: "Start your first sales cycle.",
+        cta: "Start Sales Cycle",
       };
     }
-
     if (!readiness?.runnable) {
       const reason = String(readiness?.reason || "A prerequisite is missing.");
       if (reason.toLowerCase().includes("trust stage")) {
         return {
-          mode: "Needs Approval" as OwnerMode,
-          reason,
-          next: "Approve the next trust stage.",
-          cta: "Review & Approve",
+          chip: "Needs your approval",
+          message: "Automation is waiting for your approval to continue.",
+          nextAction: "Approve the next trust stage in details.",
+          cta: "Review Approval",
         };
       }
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason,
-        next: "Fix setup and run again.",
+        chip: "Needs setup",
+        message: reason,
+        nextAction: "Fix setup, then run again.",
         cta: "Fix Setup",
       };
     }
-
     if (nextPhase >= 2 && !enrichmentReady) {
       return {
-        mode: "Needs Setup" as OwnerMode,
-        reason: "Enrichment API keys are not configured.",
-        next: "Add Hunter or Clearbit key.",
+        chip: "Needs setup",
+        message: "Sales enrichment keys are missing.",
+        nextAction: "Add Hunter or Clearbit key.",
         cta: "Fix Setup",
       };
     }
-
     return {
-      mode: "Auto" as OwnerMode,
-      reason: "Sales automation is ready for the next step.",
-      next: nextPhase > 0 ? `Run phase ${nextPhase}.` : "Workflow completed.",
-      cta: nextPhase > 0 ? "Run Now" : "View Results",
+      chip: "Running",
+      message: "Sales automation is ready to run the next step.",
+      nextAction: nextPhase > 0 ? `Run step ${nextPhase}.` : "Review outcomes.",
+      cta: nextPhase > 0 ? "Run Sales Cycle" : "View Outcomes",
     };
   }, [enrichmentReady, nextPhase, readiness, squad]);
 
@@ -162,21 +162,21 @@ export function SalesAgentPage() {
     try {
       if (!squad) {
         await initialize();
-        toast.success("Sales automation started.");
+        toast.success("Sales cycle started.");
         await refresh();
         return;
       }
-      if (ownerState.mode === "Needs Approval") {
-        toast.info("Open Advanced and approve trust stage.");
+      if (ownerState.chip === "Needs your approval") {
+        toast.info("Open Details and approve trust stage.");
         return;
       }
-      if (ownerState.mode === "Needs Setup") {
+      if (ownerState.chip === "Needs setup") {
         router.push("/dashboard/settings");
         return;
       }
       if (nextPhase > 0) {
         await runPhase(nextPhase);
-        toast.success(`Phase ${nextPhase} executed.`);
+        toast.success(`Sales step ${nextPhase} completed.`);
         await refresh();
       }
     } catch (error: any) {
@@ -185,6 +185,14 @@ export function SalesAgentPage() {
       setRunning(false);
     }
   };
+
+  const meetingsBooked = Number(
+    squad?.phaseOutputs?.[5]?.metrics?.meetingsBooked || 0,
+  );
+  const qualifiedLeads = Number(squad?.phaseOutputs?.[4]?.qualifiedLeads || 0);
+  const enrichmentRuns = Number(
+    squad?.phaseOutputs?.[2]?.enrichedLeadCount || 0,
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 p-8 space-y-6">
@@ -199,27 +207,23 @@ export function SalesAgentPage() {
         </Button>
         <h1 className="text-4xl font-bold flex items-center gap-3">
           <DollarSign className="h-8 w-8 text-purple-600" />
-          <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
-            Sales
-          </span>
+          Sales
         </h1>
       </div>
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Current Status</CardTitle>
+          <CardTitle className="text-base">What should I do now?</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-gray-700">
+        <CardContent className="space-y-3 text-sm text-gray-700">
+          <Badge className="w-fit bg-purple-100 text-purple-700">
+            {ownerState.chip}
+          </Badge>
           <p>
-            <span className="font-semibold">Mode:</span> {ownerState.mode}
+            <span className="font-semibold">Status:</span> {ownerState.message}
           </p>
           <p>
-            <span className="font-semibold">What is happening:</span>{" "}
-            {ownerState.reason}
-          </p>
-          <p>
-            <span className="font-semibold">Next action:</span>{" "}
-            {ownerState.next}
+            <span className="font-semibold">Next:</span> {ownerState.nextAction}
           </p>
           <Button onClick={runPrimaryAction} disabled={running || loading}>
             {(running || loading) && (
@@ -232,27 +236,27 @@ export function SalesAgentPage() {
 
       <Card className="border border-purple-300/60 bg-white/90">
         <CardHeader>
-          <CardTitle className="text-base">Business Result</CardTitle>
+          <CardTitle className="text-base">What changed this week</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-gray-700 space-y-1">
           <p>
-            <span className="font-semibold">Active workflow:</span>{" "}
-            {squad?.squadName || "Not started"}
+            <span className="font-semibold">Meetings booked:</span>{" "}
+            {meetingsBooked}
           </p>
           <p>
-            <span className="font-semibold">Completed steps:</span>{" "}
-            {completedCount}/6
+            <span className="font-semibold">Qualified leads:</span>{" "}
+            {qualifiedLeads}
           </p>
           <p>
-            <span className="font-semibold">Expected outcome:</span> More
-            consistent meetings and qualified pipeline movement.
+            <span className="font-semibold">Leads enriched:</span>{" "}
+            {enrichmentRuns}
           </p>
         </CardContent>
       </Card>
 
       <details className="rounded-lg border border-purple-200 bg-white/85 p-4">
         <summary className="cursor-pointer font-medium text-sm text-gray-800">
-          Advanced
+          Details
         </summary>
         <div className="mt-4 space-y-4">
           <Card className="border border-purple-200 bg-white/90">

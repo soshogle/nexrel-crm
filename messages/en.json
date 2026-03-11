@@ -1,4 +1,3 @@
-
 {
   "common": {
     "save": "Save",
@@ -31,6 +30,9 @@
     "pipeline": "Pipeline",
     "messages": "Messages",
     "campaigns": "Campaigns",
+    "marketing": "Marketing",
+    "viral": "Viral",
+    "salesAgent": "Sales AI",
     "calendar": "Calendar",
     "analytics": "Analytics",
     "reports": "Reports",
