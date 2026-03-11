@@ -28,6 +28,7 @@ export function ViralPage() {
   const [niche, setNiche] = useState("Dental marketing automation");
   const [conversionGoal, setConversionGoal] = useState("qualified leads");
   const [status, setStatus] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
 
   const callViral = useCallback(async (parameters: any) => {
     setRunning(true);
@@ -36,7 +37,7 @@ export function ViralPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          function_name: "openclaw_operate",
+          function_name: "automation_operate",
           parameters: {
             mode: "viral_loop",
             ...parameters,
@@ -56,8 +57,14 @@ export function ViralPage() {
   const refreshStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await callViral({ action: "status" }).catch(() => null);
+      const [data, healthRes] = await Promise.all([
+        callViral({ action: "status" }).catch(() => null),
+        fetch("/api/automation/health")
+          .then((res) => (res.ok ? res.json() : null))
+          .catch(() => null),
+      ]);
       setStatus(data || null);
+      setHealth(healthRes || null);
     } finally {
       setLoading(false);
     }
@@ -68,6 +75,42 @@ export function ViralPage() {
   }, [refreshStatus]);
 
   const project = status?.project;
+  const readiness = health?.readiness?.viralLoop;
+  const socialReady = Boolean(health?.readiness?.socialNativeDraftingReady);
+  const automationState = useMemo(() => {
+    if (!project) {
+      return {
+        level: "Needs verification",
+        reason: "Initialize a marketing project first.",
+        next: "Click Initialize in Setup.",
+      };
+    }
+    if (!readiness?.runnable) {
+      const reason = String(
+        readiness?.reason || "Prerequisites are not ready.",
+      );
+      const needsApproval = reason.toLowerCase().includes("trust stage");
+      return {
+        level: needsApproval ? "Needs approval" : "Needs verification",
+        reason,
+        next: needsApproval
+          ? "Promote trust stage before running this phase."
+          : "Complete the missing prerequisite shown above.",
+      };
+    }
+    if (!socialReady) {
+      return {
+        level: "Needs verification",
+        reason: "No connected Instagram/Facebook channels with valid token.",
+        next: "Connect a social account in Settings.",
+      };
+    }
+    return {
+      level: "Auto",
+      reason: "All checks passed for the next phase.",
+      next: "Run the next phase.",
+    };
+  }, [project, readiness, socialReady]);
   const progress = useMemo(() => {
     const phaseStatus = project?.phaseStatus || {};
     const completed = Object.values(phaseStatus).filter(
@@ -146,7 +189,7 @@ export function ViralPage() {
                 </span>
               </h1>
               <p className="text-gray-600 mt-1">
-                OpenClaw + AI Brain autonomous social media loop (draft-first).
+                Autonomous social media loop with draft-first safety controls.
               </p>
             </div>
           </div>
@@ -185,6 +228,26 @@ export function ViralPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Automation Status</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-gray-700 space-y-1">
+            <p>
+              <span className="font-semibold">Mode:</span>{" "}
+              {automationState.level}
+            </p>
+            <p>
+              <span className="font-semibold">Why:</span>{" "}
+              {automationState.reason}
+            </p>
+            <p>
+              <span className="font-semibold">Next Step:</span>{" "}
+              {automationState.next}
+            </p>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="setup" className="w-full">
           <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">

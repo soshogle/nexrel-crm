@@ -1,4 +1,5 @@
 export const OPENCLAW_MODES = [
+  "sales_squad",
   "viral_loop",
   "work_ai_orchestrator",
   "execution_chain",

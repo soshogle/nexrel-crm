@@ -75,6 +75,88 @@ export const VIRAL_LOOP_PHASES: ViralLoopPhase[] = [
   },
 ];
 
+const VIRAL_TRUST_STAGE_ORDER: ViralLoopState["trustStage"][] = [
+  "crawl",
+  "walk",
+  "run",
+];
+
+export function getRequiredViralTrustStageForPhase(
+  phaseId: number,
+): ViralLoopState["trustStage"] {
+  if (phaseId <= 3) return "crawl";
+  if (phaseId <= 6) return "walk";
+  return "run";
+}
+
+export function canRunViralLoopPhaseForTrustStage(
+  trustStage: ViralLoopState["trustStage"],
+  phaseId: number,
+) {
+  const required = getRequiredViralTrustStageForPhase(phaseId);
+  const currentIndex = VIRAL_TRUST_STAGE_ORDER.indexOf(trustStage);
+  const requiredIndex = VIRAL_TRUST_STAGE_ORDER.indexOf(required);
+  if (currentIndex < requiredIndex) {
+    return {
+      ok: false,
+      reason: `Phase ${phaseId} requires trust stage ${required}. Current stage is ${trustStage}.`,
+      required,
+    };
+  }
+  return { ok: true, required };
+}
+
+export function canPromoteViralTrustStage(
+  state: ViralLoopState,
+  targetStage: ViralLoopState["trustStage"],
+) {
+  const currentIndex = VIRAL_TRUST_STAGE_ORDER.indexOf(state.trustStage);
+  const targetIndex = VIRAL_TRUST_STAGE_ORDER.indexOf(targetStage);
+
+  if (targetIndex < 0) {
+    return { ok: false, reason: `Unknown trust stage ${targetStage}` };
+  }
+
+  if (targetIndex <= currentIndex) {
+    return { ok: true };
+  }
+
+  if (targetIndex - currentIndex > 1) {
+    return {
+      ok: false,
+      reason: `Cannot jump trust stage from ${state.trustStage} to ${targetStage}. Promote one stage at a time.`,
+    };
+  }
+
+  if (state.trustStage === "crawl" && targetStage === "walk") {
+    if (
+      state.phaseStatus[1] !== "completed" ||
+      state.phaseStatus[2] !== "completed" ||
+      state.phaseStatus[3] !== "completed"
+    ) {
+      return {
+        ok: false,
+        reason: "Promoting to walk requires phases 1-3 to be completed.",
+      };
+    }
+  }
+
+  if (state.trustStage === "walk" && targetStage === "run") {
+    const needs = [1, 2, 3, 4, 5, 6];
+    const missing = needs.filter(
+      (phaseId) => state.phaseStatus[phaseId] !== "completed",
+    );
+    if (missing.length > 0) {
+      return {
+        ok: false,
+        reason: `Promoting to run requires phases 1-6 completed. Missing: ${missing.join(", ")}`,
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 export function createViralLoopState(input: {
   projectId: string;
   ownerUserId: string;

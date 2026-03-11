@@ -34,6 +34,7 @@ export type MenuItemId =
   | "leads"
   | "contacts"
   | "pipeline"
+  | "sales-agent"
   | "tasks"
   | "messages"
   | "soshogle"
@@ -113,6 +114,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   "widgets", // Embeddable lead capture widget - available to ALL industries
   "contacts",
   "pipeline",
+  "sales-agent",
   "tasks",
   "messages",
   "soshogle", // Soshogle Multi-Channel - available to ALL industries
@@ -414,10 +416,12 @@ export function getAllFeatures(): {
     { id: "leads", label: "Contacts & Leads", category: "Core CRM" },
     { id: "contacts", label: "Contacts Management", category: "Core CRM" },
     { id: "pipeline", label: "Pipeline/Deals", category: "Core CRM" },
+    { id: "sales-agent", label: "Sales AI", category: "Core CRM" },
     { id: "messages", label: "Messaging (SMS/Email)", category: "Core CRM" },
     { id: "voice-agent", label: "Voice Agent", category: "Core CRM" },
     { id: "calendar", label: "Calendar/Appointments", category: "Core CRM" },
     { id: "campaigns", label: "Campaigns", category: "Core CRM" },
+    { id: "viral-marketing", label: "Marketing Viral", category: "Core CRM" },
     { id: "workflows", label: "Workflows & Automation", category: "Core CRM" },
     { id: "team", label: "Team Management", category: "Core CRM" },
     { id: "reports", label: "Reports", category: "Core CRM" },

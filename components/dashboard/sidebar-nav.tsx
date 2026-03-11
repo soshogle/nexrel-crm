@@ -56,6 +56,7 @@ import {
   Globe,
   Sparkles,
   Calculator,
+  Megaphone,
 } from "lucide-react";
 
 // Parent Portal items - what parents see when they log in
@@ -135,6 +136,12 @@ const merchantItems = [
     title: "Pipeline",
     href: "/dashboard/pipeline",
     icon: Briefcase,
+  },
+  {
+    id: "sales-agent" as MenuItemId,
+    title: "Sales AI",
+    href: "/dashboard/sales/agent",
+    icon: DollarSign,
   },
 
   {
@@ -499,6 +506,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const displaySession = session?.user ? session : lastSessionRef.current;
   const t = useTranslations("navigation");
   const [adminExpanded, setAdminExpanded] = useState(false);
+  const [marketingExpanded, setMarketingExpanded] = useState(true);
   const [isParent, setIsParent] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(true);
   const [cachedSidebarUser, setCachedSidebarUser] =
@@ -555,6 +563,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       "voice-agent-preview": "testVoiceAgent",
       "voice-ai-notifications": "callNotifications",
       "viral-marketing": "viral",
+      marketing: "campaigns",
+      "sales-agent": "salesAgent",
       team: "team",
       settings: "settings",
       tasks: "tasks",
@@ -855,6 +865,25 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const isAdminSectionActive = visibleAdminItems.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
   );
+  const marketingItemIds = new Set<MenuItemId>([
+    "campaigns",
+    "viral-marketing",
+  ]);
+  const marketingItems = visibleMainItems.filter((item) =>
+    marketingItemIds.has(item.id),
+  );
+  const primaryMainItems = visibleMainItems.filter(
+    (item) => !marketingItemIds.has(item.id),
+  );
+  const isMarketingSectionActive = marketingItems.some(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
+
+  useEffect(() => {
+    if (isMarketingSectionActive) {
+      setMarketingExpanded(true);
+    }
+  }, [isMarketingSectionActive]);
 
   // Helper function to check if a link is active
   const isLinkActive = (href: string) => {
@@ -895,7 +924,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
         <div className="space-y-1 pb-32">
           {/* Extra padding at bottom to ensure admin items are fully visible above the sticky footer */}
           {/* Main Menu Items (Parent or Merchant based on role) */}
-          {visibleMainItems.map((item) => {
+          {primaryMainItems.map((item) => {
             const Icon = item.icon;
             const isActive = isLinkActive(item.href);
             const translatedTitle = translateMenuItem(item.id, item.title);
@@ -919,6 +948,85 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               </Link>
             );
           })}
+
+          {marketingItems.length > 0 &&
+            (!isExpanded ? (
+              marketingItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = isLinkActive(item.href);
+                const translatedTitle = translateMenuItem(item.id, item.title);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-gray-300 hover:bg-gray-800 hover:text-white",
+                    )}
+                    title={translatedTitle}
+                  >
+                    <Icon className="h-[18px] w-[18px] flex-shrink-0" />
+                  </Link>
+                );
+              })
+            ) : (
+              <div>
+                <button
+                  onClick={() => setMarketingExpanded(!marketingExpanded)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full",
+                    isMarketingSectionActive
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white",
+                  )}
+                >
+                  <Megaphone className="h-[18px] w-[18px] flex-shrink-0" />
+                  <span className="flex-1 text-left whitespace-nowrap">
+                    {translateMenuItem("marketing", "Marketing")}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      marketingExpanded && "rotate-180",
+                    )}
+                  />
+                </button>
+
+                {marketingExpanded && (
+                  <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
+                    {marketingItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isLinkActive(item.href);
+                      const translatedTitle = translateMenuItem(
+                        item.id,
+                        item.title,
+                      );
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded",
+                            isActive
+                              ? "bg-purple-600 text-white font-medium"
+                              : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                          )}
+                        >
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="whitespace-nowrap text-xs flex-1">
+                            {translatedTitle}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
 
           {/* Admin Section */}
           {visibleAdminItems.length > 0 && (

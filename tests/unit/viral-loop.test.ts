@@ -6,6 +6,8 @@ import {
   buildViralContentPackage,
   buildViralMemorySnapshot,
   buildViralResearchOutput,
+  canPromoteViralTrustStage,
+  canRunViralLoopPhaseForTrustStage,
   canRunViralLoopPhase,
   createViralLoopState,
   diagnoseViralPerformance,
@@ -101,5 +103,43 @@ describe("viral loop orchestration", () => {
     const snapshot = buildViralMemorySnapshot({ state: withDiag });
     expect(snapshot.projectId).toBe("viral-2");
     expect(snapshot.knownWinners.length).toBe(1);
+  });
+
+  it("enforces trust stage progression", () => {
+    const base = createViralLoopState({
+      projectId: "viral-3",
+      ownerUserId: "owner-3",
+      projectName: "Project",
+      niche: "Dental",
+      conversionGoal: "leads",
+    });
+
+    const phase4AtCrawl = canRunViralLoopPhaseForTrustStage("crawl", 4);
+    expect(phase4AtCrawl.ok).toBe(false);
+
+    let progressed = upsertViralLoopPhaseOutput(base, {
+      phaseId: 1,
+      status: "completed",
+      output: { done: true },
+      currentPhase: 2,
+    });
+    progressed = upsertViralLoopPhaseOutput(progressed, {
+      phaseId: 2,
+      status: "completed",
+      output: { done: true },
+      currentPhase: 3,
+    });
+    progressed = upsertViralLoopPhaseOutput(progressed, {
+      phaseId: 3,
+      status: "completed",
+      output: { done: true },
+      currentPhase: 4,
+    });
+
+    const canPromoteToWalk = canPromoteViralTrustStage(progressed, "walk");
+    expect(canPromoteToWalk.ok).toBe(true);
+
+    const cannotJumpToRun = canPromoteViralTrustStage(base, "run");
+    expect(cannotJumpToRun.ok).toBe(false);
   });
 });

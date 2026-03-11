@@ -9,6 +9,12 @@ import { getCrmDb } from "@/lib/dal";
 import { apiErrors } from "@/lib/api-error";
 import { WORK_AI_PHASES } from "@/lib/work-ai-marketing";
 import { VIRAL_LOOP_PHASES } from "@/lib/viral-loop";
+import { SALES_SQUAD_PHASES } from "@/lib/sales-squad";
+import {
+  buildSalesReadiness,
+  buildViralReadiness,
+  buildWorkAiReadiness,
+} from "@/lib/openclaw-readiness";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,6 +39,8 @@ export async function GET(_req: NextRequest) {
       pendingApprovals,
       workAiLaunch,
       viralLaunch,
+      salesLaunch,
+      connectedNativeSocialChannels,
     ] = await Promise.all([
       db.auditLog.findMany({
         where: {
@@ -79,6 +87,23 @@ export async function GET(_req: NextRequest) {
         orderBy: { createdAt: "desc" },
         select: { metadata: true },
       }),
+      db.auditLog.findFirst({
+        where: {
+          userId: session.user.id,
+          entityType: "SALES_SQUAD_PROJECT",
+        },
+        orderBy: { createdAt: "desc" },
+        select: { metadata: true },
+      }),
+      db.channelConnection.count({
+        where: {
+          userId: session.user.id,
+          status: "CONNECTED",
+          isActive: true,
+          channelType: { in: ["INSTAGRAM", "FACEBOOK_MESSENGER"] },
+          accessToken: { not: null },
+        },
+      }),
     ]);
 
     const successCount = recentOps.filter((r) => r.success).length;
@@ -104,6 +129,33 @@ export async function GET(_req: NextRequest) {
     const viralCurrentPhaseName =
       VIRAL_LOOP_PHASES.find((p) => p.id === Number(viral?.currentPhase || 1))
         ?.name || null;
+
+    const sales = salesLaunch?.metadata as any;
+    const salesCompletedPhases = sales?.phaseStatus
+      ? Object.values(sales.phaseStatus).filter((v: any) => v === "completed")
+          .length
+      : 0;
+    const salesCurrentPhaseName =
+      SALES_SQUAD_PHASES.find((p) => p.id === Number(sales?.currentPhase || 1))
+        ?.name || null;
+
+    const hunterConfigured = Boolean(
+      process.env.HUNTER_API_KEY || process.env.HUNTER_IO_API_KEY,
+    );
+    const clearbitConfigured = Boolean(process.env.CLEARBIT_API_KEY);
+
+    const readiness = {
+      socialNativeDraftingReady: connectedNativeSocialChannels > 0,
+      connectedNativeSocialChannels,
+      enrichmentKeys: {
+        hunterConfigured,
+        clearbitConfigured,
+        anyConfigured: hunterConfigured || clearbitConfigured,
+      },
+      workAi: buildWorkAiReadiness((workAi as any) || null),
+      viralLoop: buildViralReadiness((viral as any) || null),
+      salesSquad: buildSalesReadiness((sales as any) || null),
+    };
 
     return NextResponse.json({
       success: true,
@@ -145,6 +197,19 @@ export async function GET(_req: NextRequest) {
             trustStage: viral.trustStage,
           }
         : null,
+      salesSquad: sales
+        ? {
+            squadId: sales.squadId,
+            squadName: sales.squadName,
+            primaryGoal: sales.primaryGoal,
+            currentPhase: sales.currentPhase,
+            currentPhaseName: salesCurrentPhaseName,
+            completedPhases: salesCompletedPhases,
+            totalPhases: SALES_SQUAD_PHASES.length,
+            trustStage: sales.trustStage,
+          }
+        : null,
+      readiness,
     });
   } catch (error: any) {
     console.error("[openclaw] health route error", error);

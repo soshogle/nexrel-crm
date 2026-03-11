@@ -90,7 +90,7 @@ function BusinessAIPageContent() {
   const [crmStatistics, setCrmStatistics] = useState<any>(null);
   const [showVisualizations, setShowVisualizations] = useState(false);
   const [conversationMessages, setConversationMessages] = useState<any[]>([]);
-  const [openClawHealth, setOpenClawHealth] = useState<any>(null);
+  const [automationHealth, setAutomationHealth] = useState<any>(null);
 
   useEffect(() => {
     if (crmStatistics) {
@@ -200,10 +200,10 @@ function BusinessAIPageContent() {
         })
         .catch(() => {});
 
-      fetch("/api/openclaw/health")
+      fetch("/api/automation/health")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data?.success) setOpenClawHealth(data);
+          if (data?.success) setAutomationHealth(data);
         })
         .catch(() => {});
     }
@@ -344,26 +344,26 @@ function BusinessAIPageContent() {
           />
         )}
 
-        {openClawHealth?.metrics && (
+        {automationHealth?.metrics && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="rounded-xl border border-purple-200 bg-white/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 text-purple-700 text-sm font-medium mb-1">
-                <Activity className="h-4 w-4" /> OpenClaw Operations (24h)
+                <Activity className="h-4 w-4" /> Automation Operations (24h)
               </div>
               <div className="text-2xl font-bold text-gray-900">
-                {openClawHealth.metrics.operations}
+                {automationHealth.metrics.operations}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                {openClawHealth.metrics.successCount} success /{" "}
-                {openClawHealth.metrics.failureCount} failed
+                {automationHealth.metrics.successCount} success /{" "}
+                {automationHealth.metrics.failureCount} failed
               </p>
             </div>
             <div className="rounded-xl border border-purple-200 bg-white/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 text-purple-700 text-sm font-medium mb-1">
-                <ShieldCheck className="h-4 w-4" /> OpenClaw Health Score
+                <ShieldCheck className="h-4 w-4" /> Automation Health Score
               </div>
               <div className="text-2xl font-bold text-gray-900">
-                {openClawHealth.metrics.healthScore}%
+                {automationHealth.metrics.healthScore}%
               </div>
               <p className="text-xs text-gray-600 mt-1">
                 Based on recent operation success rate
@@ -375,10 +375,10 @@ function BusinessAIPageContent() {
                 Approvals
               </div>
               <div className="text-2xl font-bold text-gray-900">
-                {openClawHealth.metrics.pendingApprovals}
+                {automationHealth.metrics.pendingApprovals}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                Voice approvals available in OpenClaw mode
+                Voice approvals available when required
               </p>
             </div>
             <div className="rounded-xl border border-purple-200 bg-white/80 backdrop-blur-sm p-4">
@@ -386,13 +386,13 @@ function BusinessAIPageContent() {
                 <Brain className="h-4 w-4" /> Work AI Phase Progress
               </div>
               <div className="text-2xl font-bold text-gray-900">
-                {openClawHealth.workAi
-                  ? `${openClawHealth.workAi.completedPhases}/${openClawHealth.workAi.totalPhases}`
+                {automationHealth.workAi
+                  ? `${automationHealth.workAi.completedPhases}/${automationHealth.workAi.totalPhases}`
                   : "0/12"}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                {openClawHealth.workAi
-                  ? `Current: Phase ${openClawHealth.workAi.currentPhase} (${openClawHealth.workAi.currentPhaseName})`
+                {automationHealth.workAi
+                  ? `Current: Phase ${automationHealth.workAi.currentPhase} (${automationHealth.workAi.currentPhaseName})`
                   : "Initialize Work AI orchestrator to start"}
               </p>
             </div>
