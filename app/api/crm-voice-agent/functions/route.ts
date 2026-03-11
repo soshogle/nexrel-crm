@@ -39,6 +39,18 @@ import {
   sendEmailToLeads,
 } from "@/lib/messaging-service";
 import { apiErrors } from "@/lib/api-error";
+import {
+  collectAIBrainOperationalMetrics,
+  collectCrmOutcomeMetrics,
+  correlateWithBaseline,
+  getLatestGovernanceBaselineSnapshot,
+} from "@/lib/nexrel-ai-brain/governance-analytics";
+import {
+  OPENCLAW_MODES,
+  buildOpenClawRecoverySuggestion,
+  getCustomerWorkflowSteps,
+  getVerticalPlaybookSteps,
+} from "@/lib/openclaw-voice";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -82,6 +94,40 @@ async function proxyToActionsAPI(
     action,
     ...(data?.result ?? {}),
   };
+}
+
+async function saveVoiceNavigationIntent(input: {
+  userId: string;
+  industry: Industry | null;
+  functionName: string;
+  path: string;
+}) {
+  try {
+    const ctx = createDalContext(input.userId, input.industry);
+    const db = getCrmDb(ctx);
+    await db.auditLog.create({
+      data: {
+        userId: input.userId,
+        action: "SETTINGS_MODIFIED",
+        severity: "LOW",
+        entityType: "VOICE_NAVIGATION_INTENT",
+        entityId: crypto.randomUUID(),
+        metadata: {
+          path: input.path,
+          functionName: input.functionName,
+          consumed: false,
+          createdAt: new Date().toISOString(),
+        },
+        success: true,
+      },
+    });
+  } catch (error) {
+    console.error("[CRM Voice Functions] Failed to save navigation intent", {
+      functionName: input.functionName,
+      path: input.path,
+      error,
+    });
+  }
 }
 
 /**
@@ -230,6 +276,15 @@ export async function POST(req: NextRequest) {
         );
         break;
 
+      case "openclaw_operate":
+        result = await handleOpenClawOperate(
+          userId,
+          parameters || {},
+          industry,
+          req,
+        );
+        break;
+
       case "create_task":
       case "list_tasks":
       case "complete_task":
@@ -335,6 +390,46 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`✅ [CRM Voice Functions] ${function_name} result:`, result);
+
+    if (function_name === "openclaw_operate") {
+      try {
+        const logCtx = createDalContext(userId, industry);
+        await getCrmDb(logCtx).auditLog.create({
+          data: {
+            userId,
+            action: "SETTINGS_MODIFIED",
+            severity: result?.success ? "LOW" : "MEDIUM",
+            entityType: "OPENCLAW_OPERATION",
+            entityId: crypto.randomUUID(),
+            metadata: {
+              mode: params?.mode || null,
+              success: !!result?.success,
+              error: result?.error || null,
+              createdAt: new Date().toISOString(),
+            },
+            success: !!result?.success,
+          },
+        });
+      } catch (logError) {
+        console.error(
+          "[CRM Voice Functions] Failed to log OpenClaw operation",
+          logError,
+        );
+      }
+    }
+
+    const navigationPath =
+      typeof result?.navigateTo === "string" && result.navigateTo.trim()
+        ? result.navigateTo
+        : null;
+    if (navigationPath) {
+      await saveVoiceNavigationIntent({
+        userId,
+        industry,
+        functionName: function_name,
+        path: navigationPath,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {
@@ -752,7 +847,7 @@ async function createLead(
 
     return {
       success: true,
-      navigateTo: "/dashboard/contacts",
+      navigateTo: `/dashboard/contacts?id=${lead.id}`,
       lead: {
         id: lead.id,
         contactPerson: lead.contactPerson,
@@ -1482,5 +1577,648 @@ async function handleAddWorkflowTask(
     message: `Added "${name}" to the workflow. What's the next step?`,
     task: { id: task.id, name: task.name, taskType: task.taskType },
     navigateTo: "/dashboard/workflows",
+  };
+}
+
+async function handleOpenClawOperate(
+  userId: string,
+  params: any,
+  industry: Industry | null,
+  req: NextRequest,
+) {
+  const mode = String(params?.mode || "execution_chain");
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
+  if (mode === "execution_chain") {
+    const checkpoints: Array<{
+      step: string;
+      status: "ok" | "failed";
+      detail: string;
+    }> = [];
+    const contactName = params?.contactName || params?.name;
+    const email = params?.email;
+    const phone = params?.phone;
+    const company = params?.company;
+    if (!contactName) {
+      return {
+        success: false,
+        error: "contactName is required for execution_chain",
+        recovery: buildOpenClawRecoverySuggestion("name required", params),
+      };
+    }
+
+    const leadResult = await createLead(
+      userId,
+      {
+        name: contactName,
+        email,
+        phone,
+        company,
+        source: "OpenClaw Voice Chain",
+      },
+      industry,
+    );
+    if (!leadResult?.success || !leadResult?.lead?.id) {
+      return {
+        success: false,
+        error: leadResult?.error || "Failed to create contact",
+        checkpoints,
+        recovery: buildOpenClawRecoverySuggestion(
+          leadResult?.error || "",
+          params,
+        ),
+      };
+    }
+    checkpoints.push({
+      step: "create_contact",
+      status: "ok",
+      detail: `Created ${leadResult.lead.contactPerson}`,
+    });
+
+    const dealTitle = params?.dealTitle || `${contactName} Opportunity`;
+    const dealValue = params?.dealValue;
+    const dealResult = await createDeal(
+      userId,
+      { title: dealTitle, value: dealValue, leadId: leadResult.lead.id },
+      industry,
+    );
+    if (!dealResult?.success || !dealResult?.deal?.id) {
+      checkpoints.push({
+        step: "create_deal",
+        status: "failed",
+        detail: dealResult?.error || "Deal creation failed",
+      });
+      return {
+        success: false,
+        error: dealResult?.error || "Failed to create deal",
+        checkpoints,
+        recovery: buildOpenClawRecoverySuggestion(
+          dealResult?.error || "",
+          params,
+        ),
+        rollback: `Contact ${contactName} remains created. Say 'delete contact ${contactName}' to rollback.`,
+      };
+    }
+    checkpoints.push({
+      step: "create_deal",
+      status: "ok",
+      detail: `Created deal ${dealResult.deal.title}`,
+    });
+
+    const taskResult = await proxyToActionsAPI(
+      "create_task",
+      {
+        title: params?.followUpTaskTitle || `Follow up with ${contactName}`,
+        description:
+          params?.followUpTaskDescription ||
+          `OpenClaw chain follow-up for ${contactName}`,
+        priority: params?.taskPriority || "HIGH",
+        leadId: leadResult.lead.id,
+        dealId: dealResult.deal.id,
+      },
+      userId,
+      req,
+    );
+    if (taskResult?.error) {
+      checkpoints.push({
+        step: "create_follow_up_task",
+        status: "failed",
+        detail: taskResult.error,
+      });
+      return {
+        success: false,
+        error: taskResult.error,
+        checkpoints,
+        recovery: buildOpenClawRecoverySuggestion(taskResult.error, params),
+      };
+    }
+    checkpoints.push({
+      step: "create_follow_up_task",
+      status: "ok",
+      detail: "Created follow-up task",
+    });
+
+    const emailDraftResult = await handleDraftEmail(
+      userId,
+      {
+        contactName,
+        email,
+        subject:
+          params?.introEmailSubject ||
+          `Great connecting with you, ${contactName.split(" ")[0]}`,
+        body:
+          params?.introEmailBody ||
+          `Hi ${contactName},\n\nThanks for your time today. I created your onboarding record and next-step follow up.\n\nBest regards,`,
+      },
+      industry,
+    );
+    if (emailDraftResult?.error) {
+      checkpoints.push({
+        step: "draft_intro_email",
+        status: "failed",
+        detail: emailDraftResult.error,
+      });
+      return {
+        success: false,
+        error: emailDraftResult.error,
+        checkpoints,
+        recovery: buildOpenClawRecoverySuggestion(
+          emailDraftResult.error,
+          params,
+        ),
+      };
+    }
+    checkpoints.push({
+      step: "draft_intro_email",
+      status: "ok",
+      detail: "Drafted intro email",
+    });
+
+    return {
+      success: true,
+      mode,
+      checkpoints,
+      lead: leadResult.lead,
+      deal: dealResult.deal,
+      emailDraft: emailDraftResult?.emailDraft,
+      message:
+        "Chain complete: contact created, deal created, follow-up task set, intro email drafted.",
+      navigateTo: `/dashboard/contacts?id=${leadResult.lead.id}`,
+    };
+  }
+
+  if (mode === "approval_voice") {
+    const decision = String(params?.decision || "list");
+    const jobId = params?.jobId;
+    if (decision === "list") {
+      const jobs = await (db as any).aIJob.findMany({
+        where: {
+          status: "PENDING",
+          input: { path: ["approvalRequired"], equals: true },
+          jobType: { startsWith: "nexrel_ai_brain_" },
+        },
+        orderBy: { createdAt: "desc" },
+        take: Number(params?.limit || 10),
+        select: {
+          id: true,
+          jobType: true,
+          createdAt: true,
+          input: true,
+        },
+      });
+      return {
+        success: true,
+        mode,
+        pendingApprovals: jobs,
+        riskSummary: jobs.map((job: any) => ({
+          jobId: job.id,
+          jobType: job.jobType,
+          createdAt: job.createdAt,
+          riskLevel: job?.input?.riskTier || "HIGH",
+          reason: job?.input?.reason || "Approval required",
+        })),
+      };
+    }
+
+    if (!jobId) {
+      return { success: false, error: "jobId is required for approve/reject" };
+    }
+
+    if (decision === "approve") {
+      await (db as any).aIJob.update({
+        where: { id: jobId },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+          output: {
+            approvedByVoice: true,
+            approvedAt: new Date().toISOString(),
+            notes: params?.notes || null,
+          },
+        },
+      });
+      return {
+        success: true,
+        mode,
+        message: `Approved job ${jobId}`,
+        navigateTo: "/dashboard/ai-brain-operator/jobs",
+      };
+    }
+
+    if (decision === "reject") {
+      await (db as any).aIJob.update({
+        where: { id: jobId },
+        data: {
+          status: "FAILED",
+          completedAt: new Date(),
+          output: {
+            rejectedByVoice: true,
+            rejectedAt: new Date().toISOString(),
+            notes: params?.notes || "Rejected by voice",
+          },
+        },
+      });
+      return {
+        success: true,
+        mode,
+        message: `Rejected job ${jobId}`,
+        navigateTo: "/dashboard/ai-brain-operator/jobs",
+      };
+    }
+    return {
+      success: false,
+      error: "decision must be list, approve, or reject",
+    };
+  }
+
+  if (mode === "daily_command_center") {
+    const now = new Date();
+    const staleDealDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const overdueTasks = await (db as any).task.count({
+      where: {
+        dueDate: { lt: now },
+        status: { in: ["TODO", "IN_PROGRESS"] },
+      },
+    });
+    const staleDeals = await (db as any).deal.count({
+      where: {
+        status: "OPEN",
+        updatedAt: { lt: staleDealDate },
+      },
+    });
+    const pendingApprovals = await (db as any).aIJob.count({
+      where: {
+        status: "PENDING",
+        input: { path: ["approvalRequired"], equals: true },
+      },
+    });
+
+    const recommendations = [
+      {
+        code: "CREATE_FOLLOW_UP_TASKS",
+        title: "Create follow-up tasks for stale open deals",
+      },
+      {
+        code: "REVIEW_HIGH_RISK_APPROVALS",
+        title: "Review pending high-risk approvals",
+      },
+      {
+        code: "RUN_LEAD_NUDGE_CAMPAIGN",
+        title: "Run outreach to inactive leads",
+      },
+    ];
+
+    if (params?.executeRecommendation === true) {
+      const code = String(params?.recommendationCode || "");
+      if (code === "CREATE_FOLLOW_UP_TASKS") {
+        const exec = await proxyToActionsAPI(
+          "create_bulk_tasks",
+          {
+            taskTitle: "Follow up with {name} on open opportunity",
+            period: "last_week",
+            dueInDays: 1,
+          },
+          userId,
+          req,
+        );
+        return {
+          success: !exec?.error,
+          mode,
+          executedRecommendation: code,
+          execution: exec,
+          navigateTo: "/dashboard/tasks",
+        };
+      }
+    }
+
+    return {
+      success: true,
+      mode,
+      summary: {
+        overdueTasks,
+        staleDeals,
+        pendingApprovals,
+      },
+      recommendations,
+      message: `Morning brief: ${overdueTasks} overdue tasks, ${staleDeals} stale deals, ${pendingApprovals} pending approvals.`,
+      navigateTo: "/dashboard/business-ai?mode=voice",
+    };
+  }
+
+  if (mode === "meeting_call_intelligence") {
+    const phase = String(params?.phase || "pre_call");
+    const contactName = params?.contactName;
+    if (!contactName) {
+      return { success: false, error: "contactName is required" };
+    }
+
+    const leads = await leadService.findMany(ctx, {
+      where: {
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+      take: 1,
+    });
+    const lead = leads[0];
+    if (!lead)
+      return { success: false, error: `Contact ${contactName} not found` };
+
+    if (phase === "pre_call") {
+      const [tasks, deals] = await Promise.all([
+        (db as any).task.findMany({
+          where: { leadId: lead.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+        (db as any).deal.findMany({
+          where: { leadId: lead.id },
+          orderBy: { createdAt: "desc" },
+          take: 3,
+        }),
+      ]);
+      return {
+        success: true,
+        mode,
+        phase,
+        prep: {
+          lead: {
+            id: lead.id,
+            name: lead.contactPerson,
+            company: lead.businessName,
+            status: lead.status,
+            email: lead.email,
+            phone: lead.phone,
+          },
+          recentTasks: tasks,
+          relatedDeals: deals,
+        },
+        navigateTo: `/dashboard/contacts?id=${lead.id}`,
+      };
+    }
+
+    const callSummary = String(params?.callSummary || "Call completed.");
+    const nextAction = String(
+      params?.nextAction ||
+        `Follow up with ${lead.contactPerson || contactName}`,
+    );
+    const noteRes = await proxyToActionsAPI(
+      "add_note",
+      {
+        contactName: lead.contactPerson || lead.businessName,
+        content: `Call summary: ${callSummary}`,
+      },
+      userId,
+      req,
+    );
+    const taskRes = await proxyToActionsAPI(
+      "create_task",
+      {
+        title: nextAction,
+        description: `Auto-created from call summary for ${lead.contactPerson || contactName}`,
+        leadId: lead.id,
+        priority: "HIGH",
+      },
+      userId,
+      req,
+    );
+    const draftRes = await handleDraftEmail(
+      userId,
+      {
+        contactName: lead.contactPerson || lead.businessName,
+        subject:
+          params?.followUpSubject ||
+          `Great speaking today, ${lead.contactPerson || contactName}`,
+        body:
+          params?.followUpBody ||
+          `Hi ${lead.contactPerson || contactName},\n\nThanks for the call today. Here's a recap: ${callSummary}\n\nNext step: ${nextAction}.`,
+      },
+      industry,
+    );
+    return {
+      success: !noteRes?.error && !taskRes?.error,
+      mode,
+      phase: "post_call",
+      outcomes: {
+        note: noteRes,
+        task: taskRes,
+        emailDraft: draftRes,
+      },
+      message:
+        "Post-call workflow complete: note logged, next action created, follow-up drafted.",
+      navigateTo: `/dashboard/contacts?id=${lead.id}`,
+    };
+  }
+
+  if (mode === "performance_coaching") {
+    const days = Math.max(7, Math.min(90, Number(params?.days || 30)));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const [operational, crm, baseline] = await Promise.all([
+      collectAIBrainOperationalMetrics(ctx, since),
+      collectCrmOutcomeMetrics(ctx, since),
+      getLatestGovernanceBaselineSnapshot(ctx),
+    ]);
+    const correlation = correlateWithBaseline(
+      { aiBrain: operational, crm },
+      baseline,
+    );
+    const correctiveActions: string[] = [];
+    if (correlation.crm.conversionRatePctDelta < 0) {
+      correctiveActions.push(
+        "Increase follow-up cadence for qualified leads and trigger same-day outreach tasks.",
+      );
+    }
+    if (operational.pendingApprovals > 5) {
+      correctiveActions.push(
+        "Clear pending high-risk approvals to reduce execution latency.",
+      );
+    }
+    if (operational.deniedActions > 20) {
+      correctiveActions.push(
+        "Tune role capability matrix and prompts to reduce denied action attempts.",
+      );
+    }
+    return {
+      success: true,
+      mode,
+      windowDays: days,
+      metrics: { operational, crm },
+      correlation,
+      correctiveActions,
+      navigateTo: "/dashboard/business-ai?mode=voice",
+    };
+  }
+
+  if (mode === "vertical_playbook") {
+    const vertical = String(params?.vertical || "dental").toLowerCase();
+    const playbookType = String(params?.playbookType || "campaign_workflow");
+    const workflowName =
+      params?.workflowName ||
+      (vertical === "real_estate"
+        ? "OpenClaw Real Estate Nurture Playbook"
+        : "OpenClaw Dental Recall & Follow-up Playbook");
+    const createWorkflow = await proxyToActionsAPI(
+      "create_workflow",
+      {
+        name: workflowName,
+        description: `${vertical} ${playbookType} playbook`,
+      },
+      userId,
+      req,
+    );
+    if (createWorkflow?.error) {
+      return { success: false, mode, error: createWorkflow.error };
+    }
+    const workflowId =
+      createWorkflow?.workflow?.id || createWorkflow?.id || params?.workflowId;
+    if (!workflowId) {
+      return {
+        success: false,
+        mode,
+        error: "Workflow created but workflowId was not returned.",
+      };
+    }
+
+    const steps = getVerticalPlaybookSteps(
+      vertical === "real_estate" ? "real_estate" : "dental",
+    );
+
+    for (const step of steps) {
+      await proxyToActionsAPI(
+        "add_workflow_task",
+        {
+          workflowId,
+          name: step.name,
+          taskType: step.taskType,
+        },
+        userId,
+        req,
+      );
+    }
+
+    return {
+      success: true,
+      mode,
+      workflowId,
+      vertical,
+      stepsCreated: steps.length,
+      message: `Built ${vertical} playbook with ${steps.length} workflow steps.`,
+      navigateTo: `/dashboard/workflows?openBuilder=1&draftId=${workflowId}`,
+    };
+  }
+
+  if (mode === "autonomous_mode") {
+    const enabled = Boolean(params?.enabled);
+    const businessHoursOnly = params?.businessHoursOnly !== false;
+    const allowedRisk = params?.allowedRisk || "LOW";
+    await db.auditLog.create({
+      data: {
+        userId,
+        action: "SETTINGS_MODIFIED",
+        severity: "MEDIUM",
+        entityType: "OPENCLAW_AUTONOMY_POLICY",
+        entityId: crypto.randomUUID(),
+        metadata: {
+          enabled,
+          businessHoursOnly,
+          allowedRisk,
+          queuedHighRiskForHITL: true,
+          updatedAt: new Date().toISOString(),
+        },
+        success: true,
+      },
+    });
+    return {
+      success: true,
+      mode,
+      message: enabled
+        ? "Controlled autonomous mode enabled for low-risk actions in business hours."
+        : "Controlled autonomous mode disabled.",
+      navigateTo: "/dashboard/business-ai?mode=voice",
+    };
+  }
+
+  if (mode === "team_ops") {
+    const employees = await (db as any).aIEmployee.findMany({
+      where: { userId, isActive: true },
+      select: {
+        id: true,
+        customName: true,
+        profession: true,
+      },
+      take: 25,
+    });
+    const delegationTaskTitle =
+      params?.delegationTaskTitle || "Review stale leads and assign follow-ups";
+    const delegateTo = employees[0];
+    const taskResult = await proxyToActionsAPI(
+      "create_task",
+      {
+        title: delegationTaskTitle,
+        description: delegateTo
+          ? `Delegated to ${delegateTo.customName} (${delegateTo.profession})`
+          : "Delegation requested; no active AI employee found.",
+        priority: "HIGH",
+      },
+      userId,
+      req,
+    );
+    return {
+      success: !taskResult?.error,
+      mode,
+      employees,
+      delegation: taskResult,
+      message: delegateTo
+        ? `Delegated to ${delegateTo.customName}.`
+        : "No active AI employee available; created unassigned delegation task.",
+      navigateTo: "/dashboard/tasks",
+    };
+  }
+
+  if (mode === "customer_voice_workflow") {
+    const workflowName =
+      params?.workflowName || "OpenClaw Customer Voice Qualification Flow";
+    const createWorkflow = await proxyToActionsAPI(
+      "create_workflow",
+      {
+        name: workflowName,
+        description:
+          "Inbound qualification, booking, FAQ handling, human handoff, CRM sync",
+      },
+      userId,
+      req,
+    );
+    if (createWorkflow?.error) {
+      return { success: false, mode, error: createWorkflow.error };
+    }
+    const workflowId = createWorkflow?.workflow?.id || createWorkflow?.id;
+    if (!workflowId) {
+      return { success: false, mode, error: "Workflow ID not returned" };
+    }
+    const steps = getCustomerWorkflowSteps();
+    for (const step of steps) {
+      await proxyToActionsAPI(
+        "add_workflow_task",
+        { workflowId, name: step.name, taskType: step.taskType },
+        userId,
+        req,
+      );
+    }
+    return {
+      success: true,
+      mode,
+      workflowId,
+      stepsCreated: steps.length,
+      message:
+        "Customer-facing voice workflow created with qualification, booking, FAQ, handoff, and CRM sync steps.",
+      navigateTo: `/dashboard/workflows?openBuilder=1&draftId=${workflowId}`,
+    };
+  }
+
+  return {
+    success: false,
+    error: `Unsupported mode. Use one of: ${OPENCLAW_MODES.join(", ")}`,
   };
 }

@@ -14,6 +14,7 @@ import React, {
   useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
+import { getExplicitVoiceNavigationTarget } from "@/lib/voice-navigation-policy";
 
 const STORAGE_KEY = "ai-brain-voice-agent-state";
 const VISUALIZATION_EVENT = "ai-brain-visualization-update";
@@ -47,6 +48,7 @@ export function AIBrainVoiceProvider({
   const [conversationActive, setConversationActiveState] = useState(false);
   const lastStatsCheckRef = useRef<number>(0);
   const lastNavigateRef = useRef<number>(0);
+  const pendingNavigationPathRef = useRef<string | null>(null);
 
   // Load persisted state
   useEffect(() => {
@@ -80,6 +82,34 @@ export function AIBrainVoiceProvider({
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (!conversationActive) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await fetch("/api/crm-voice-agent/navigation", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const path = data?.intent?.path;
+        if (!cancelled && typeof path === "string" && path.trim()) {
+          pendingNavigationPathRef.current = path;
+        }
+      } catch {
+        // Ignore transient polling errors
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [conversationActive]);
 
   // Save state to localStorage
   const setConversationActive = useCallback((active: boolean) => {
@@ -233,51 +263,6 @@ export function AIBrainVoiceProvider({
     [router],
   );
 
-  const getExplicitNavigationTarget = useCallback(
-    (content: string): string | null => {
-      const transitionIntent =
-        content.includes("taking you to") ||
-        content.includes("i will take you to") ||
-        content.includes("i'll take you to") ||
-        content.includes("navigate to") ||
-        content.includes("opening the") ||
-        content.includes("opening your");
-
-      if (!transitionIntent) return null;
-
-      if (
-        content.includes("contacts page") ||
-        content.includes("contact page")
-      ) {
-        return "/dashboard/contacts";
-      }
-      if (content.includes("reports page") || content.includes("report page")) {
-        return "/dashboard/reports";
-      }
-      if (content.includes("pipeline")) {
-        return "/dashboard/pipeline";
-      }
-      if (content.includes("campaign")) {
-        return "/dashboard/campaigns";
-      }
-      if (content.includes("workflow")) {
-        return "/dashboard/workflows";
-      }
-      if (content.includes("ai brain") || content.includes("business ai")) {
-        return "/dashboard/business-ai?mode=voice";
-      }
-      if (content.includes("messages")) {
-        return "/dashboard/messages";
-      }
-      if (content.includes("voice agent")) {
-        return "/dashboard/voice-agents";
-      }
-
-      return null;
-    },
-    [],
-  );
-
   const handleMessage = useCallback(
     async (message: any) => {
       const now = Date.now();
@@ -328,14 +313,17 @@ export function AIBrainVoiceProvider({
         }
 
         if (!inWorkflowBuildingMode) {
-          const explicitTarget = getExplicitNavigationTarget(content);
+          const explicitTarget = getExplicitVoiceNavigationTarget(content);
           if (explicitTarget) {
             console.log(
               "🧭 [AI Brain Voice Context] Explicit post-action navigation:",
               explicitTarget,
             );
             lastStatsCheckRef.current = now;
-            navigateTo(explicitTarget);
+            const resolvedNavigationPath =
+              pendingNavigationPathRef.current || explicitTarget;
+            pendingNavigationPathRef.current = null;
+            navigateTo(resolvedNavigationPath);
             if (explicitTarget.includes("/business-ai")) {
               fetchCrmStatistics(message.content);
             }
@@ -344,7 +332,7 @@ export function AIBrainVoiceProvider({
         }
       }
     },
-    [fetchCrmStatistics, getExplicitNavigationTarget, navigateTo],
+    [fetchCrmStatistics, navigateTo],
   );
 
   return (
