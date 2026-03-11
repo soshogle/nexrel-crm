@@ -51,6 +51,22 @@ import {
   getCustomerWorkflowSteps,
   getVerticalPlaybookSteps,
 } from "@/lib/openclaw-voice";
+import {
+  buildAssetFactoryManifest,
+  buildCampaignCommanderPlan,
+  buildContentPublisherPlan,
+  buildMasterOfferDocument,
+  buildCompetitorDossiers,
+  buildGtmPlaybook,
+  canRunWorkAiPhase,
+  computePricingRecommendation,
+  createWorkAiLaunchState,
+  getNextPendingWorkAiPhase,
+  getWorkAiPhaseDefinition,
+  scoreOfferValidation,
+  upsertWorkAiPhaseOutput,
+  type WorkAiLaunchState,
+} from "@/lib/work-ai-marketing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -1580,6 +1596,47 @@ async function handleAddWorkflowTask(
   };
 }
 
+const WORK_AI_ENTITY_TYPE = "WORK_AI_OFFER_LAUNCH";
+
+async function getLatestWorkAiLaunch(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  launchId?: string,
+): Promise<WorkAiLaunchState | null> {
+  const row = await db.auditLog.findFirst({
+    where: {
+      userId,
+      entityType: WORK_AI_ENTITY_TYPE,
+      ...(launchId ? { entityId: launchId } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      metadata: true,
+    },
+  });
+  const metadata = row?.metadata as any;
+  if (!metadata?.launchId || !metadata?.phaseStatus) return null;
+  return metadata as WorkAiLaunchState;
+}
+
+async function persistWorkAiLaunch(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  state: WorkAiLaunchState,
+) {
+  await db.auditLog.create({
+    data: {
+      userId,
+      action: "SETTINGS_MODIFIED",
+      severity: "LOW",
+      entityType: WORK_AI_ENTITY_TYPE,
+      entityId: state.launchId,
+      metadata: state as any,
+      success: true,
+    },
+  });
+}
+
 async function handleOpenClawOperate(
   userId: string,
   params: any,
@@ -1589,6 +1646,664 @@ async function handleOpenClawOperate(
   const mode = String(params?.mode || "execution_chain");
   const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
+
+  if (mode === "work_ai_orchestrator") {
+    const action = String(params?.action || "status");
+    const requestedLaunchId =
+      typeof params?.launchId === "string" ? params.launchId : undefined;
+
+    if (action === "initialize") {
+      const state = createWorkAiLaunchState({
+        launchId: crypto.randomUUID(),
+        ownerUserId: userId,
+        offerName: String(params?.offerName || "Untitled Offer"),
+        selectedNiche:
+          typeof params?.selectedNiche === "string"
+            ? params.selectedNiche
+            : null,
+      });
+      await persistWorkAiLaunch(db, userId, state);
+      return {
+        success: true,
+        mode,
+        action,
+        launch: state,
+        message:
+          "Work AI launch initialized. Start with phase 1 (Truth Engine) using run_phase.",
+        navigateTo: "/dashboard/business-ai?mode=voice",
+      };
+    }
+
+    const current = await getLatestWorkAiLaunch(db, userId, requestedLaunchId);
+    if (!current) {
+      return {
+        success: false,
+        mode,
+        error:
+          "No Work AI launch found. Initialize first with action=initialize.",
+      };
+    }
+
+    if (action === "status") {
+      return {
+        success: true,
+        mode,
+        action,
+        launch: current,
+        nextPhase: getNextPendingWorkAiPhase(current),
+      };
+    }
+
+    if (action !== "run_phase") {
+      return {
+        success: false,
+        mode,
+        error: "action must be initialize, status, or run_phase",
+      };
+    }
+
+    const phaseId = Number(params?.phaseId || current.currentPhase || 1);
+    const phase = getWorkAiPhaseDefinition(phaseId);
+    if (!phase) {
+      return {
+        success: false,
+        mode,
+        error: `Unknown phase ${phaseId}`,
+      };
+    }
+
+    const gate = canRunWorkAiPhase(current, phaseId);
+    if (!gate.ok) {
+      return {
+        success: false,
+        mode,
+        action,
+        phaseId,
+        error: gate.reason,
+      };
+    }
+
+    if (phaseId === 1) {
+      const skills = Array.isArray(params?.skills)
+        ? params.skills.filter(Boolean)
+        : [];
+      const interests = Array.isArray(params?.interests)
+        ? params.interests.filter(Boolean)
+        : [];
+      const businessModels = Array.isArray(params?.businessModels)
+        ? params.businessModels.filter(Boolean)
+        : ["services", "digital products"];
+      if (skills.length === 0 && interests.length === 0) {
+        return {
+          success: false,
+          mode,
+          action,
+          phaseId,
+          error:
+            "Phase 1 needs skills or interests. Provide skills[] and interests[] to continue.",
+        };
+      }
+
+      const niche = String(
+        params?.selectedNiche ||
+          `${skills[0] || interests[0]} automation services`,
+      );
+      const recommendation = {
+        niche,
+        rationale:
+          "Demand and pain alignment indicate this niche is monetizable and suitable for offer construction.",
+        businessModels,
+      };
+      const shouldLock = params?.lockIn === true;
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: shouldLock ? "completed" : "in_progress",
+        output: recommendation,
+        currentPhase: shouldLock ? 2 : 1,
+        selectedNiche: shouldLock ? niche : current.selectedNiche,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        lockedIn: shouldLock,
+        message: shouldLock
+          ? `Phase 1 completed. Niche locked: ${niche}`
+          : `Phase 1 drafted. Say 'lock it in' with selectedNiche=${niche} to complete.`,
+        output: recommendation,
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 2) {
+      const niche = current.selectedNiche || params?.selectedNiche;
+      if (!niche) {
+        return {
+          success: false,
+          mode,
+          action,
+          phaseId,
+          error: "Phase 2 requires a locked niche from Phase 1.",
+        };
+      }
+      const rawPains = Array.isArray(params?.painSignals)
+        ? params.painSignals
+        : [
+            "Leads go cold due to slow follow-up",
+            "Ad spend is wasted on low-intent prospects",
+            "No repeatable system for conversion",
+          ];
+      const synthesizedPains = rawPains
+        .slice(0, 10)
+        .map((pain: string, index: number) => ({
+          rank: index + 1,
+          pain,
+        }));
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: { niche, synthesizedPains },
+        currentPhase: 3,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: { niche, synthesizedPains },
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 3) {
+      const pains = current.phaseOutputs?.[2]?.synthesizedPains || [];
+      const mechanisms = [
+        {
+          name: "Predictable Pipeline Engine",
+          pillars: [
+            "Speed-to-lead automation",
+            "Intent scoring and prioritization",
+            "Automated follow-up sequence",
+          ],
+        },
+        {
+          name: "Offer Conversion Accelerator",
+          pillars: [
+            "Pain-aligned messaging",
+            "Objection-aware scripts",
+            "High-ticket qualification flow",
+          ],
+        },
+        {
+          name: "Revenue Recovery Loop",
+          pillars: [
+            "Database reactivation",
+            "No-show rescue automation",
+            "Renewal and upsell prompts",
+          ],
+        },
+      ];
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: { sourcePains: pains, mechanisms },
+        currentPhase: 4,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: { mechanisms },
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 4) {
+      const icps = [
+        {
+          name: "The Growth-Focused Operator",
+          demographics: "Owner/operator with active demand but weak conversion",
+          psychographics:
+            "Wants predictable growth, distrusts generic agencies",
+          behaviors: "Consumes tactical marketing content, values ROI proofs",
+        },
+        {
+          name: "The Capacity-Constrained Team",
+          demographics: "Small team with limited sales bandwidth",
+          psychographics: "Overwhelmed by follow-up and process complexity",
+          behaviors: "Responds to automation and done-for-you implementation",
+        },
+        {
+          name: "The Performance Optimizer",
+          demographics: "Already advertising but underperforming funnels",
+          psychographics: "Data-driven and benchmark-oriented",
+          behaviors: "Seeks split-test plans and measurable lift",
+        },
+      ];
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: { icps },
+        currentPhase: 5,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: { icps },
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 5) {
+      const niche = current.selectedNiche || "General";
+      const icpNames = Array.isArray(current.phaseOutputs?.[4]?.icps)
+        ? current.phaseOutputs[4].icps.map((icp: any) => String(icp.name))
+        : [];
+      const dossiers = buildCompetitorDossiers({
+        niche,
+        icpNames,
+        competitors: Array.isArray(params?.competitors)
+          ? params.competitors
+          : undefined,
+      });
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: { dossiers },
+        currentPhase: 6,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: { dossiers },
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 6) {
+      const niche = current.selectedNiche || "General";
+      const competitors = Array.isArray(current.phaseOutputs?.[5]?.dossiers)
+        ? current.phaseOutputs[5].dossiers
+        : [];
+      const playbook = buildGtmPlaybook({ niche, competitors });
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: { playbook },
+        currentPhase: 7,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: { playbook },
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 7) {
+      const pricing = computePricingRecommendation({
+        expectedClientValue: params?.expectedClientValue,
+        competitorPriceMedian: params?.competitorPriceMedian,
+        estimatedCac: params?.estimatedCac,
+        fulfillmentCost: params?.fulfillmentCost,
+        targetMarginPct: params?.targetMarginPct,
+      });
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: pricing,
+        currentPhase: 8,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: pricing,
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 8) {
+      const validation = scoreOfferValidation({
+        demandStrength: params?.demandStrength,
+        painClarity: params?.painClarity,
+        mechanismUniqueness: params?.mechanismUniqueness,
+        competitorPressure: params?.competitorPressure,
+        profitabilityStrength: params?.profitabilityStrength,
+      });
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: validation,
+        currentPhase: 9,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: validation,
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 9) {
+      const masterOfferDoc = buildMasterOfferDocument({
+        offerName: current.offerName,
+        selectedNiche: current.selectedNiche,
+        phaseOutputs: current.phaseOutputs,
+      });
+
+      const reportResult = await proxyToActionsAPI(
+        "create_report",
+        {
+          title: masterOfferDoc.title,
+          reportType: "custom",
+          period: "all_time",
+        },
+        userId,
+        req,
+      );
+
+      const output = {
+        masterOfferDoc,
+        report: reportResult?.error ? null : reportResult,
+      };
+
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output,
+        currentPhase: 10,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output,
+        launch: updated,
+      };
+    }
+
+    if (phaseId === 10) {
+      const masterOfferDoc = current.phaseOutputs?.[9]?.masterOfferDoc;
+      if (!masterOfferDoc) {
+        return {
+          success: false,
+          mode,
+          action,
+          phaseId,
+          error: "Phase 10 requires phase 9 master offer document output.",
+        };
+      }
+
+      const manifest = buildAssetFactoryManifest({
+        offerName: current.offerName,
+        selectedNiche: current.selectedNiche,
+        masterOfferDoc,
+      });
+
+      const websiteResult = await proxyToActionsAPI(
+        "create_website",
+        {
+          name: manifest.website.name,
+          templateType: manifest.website.templateType,
+          businessDescription: manifest.website.businessDescription,
+        },
+        userId,
+        req,
+      );
+
+      const vslReport = await proxyToActionsAPI(
+        "create_report",
+        {
+          title: manifest.documents.vslTitle,
+          reportType: "custom",
+          period: "all_time",
+        },
+        userId,
+        req,
+      );
+
+      const deckReport = await proxyToActionsAPI(
+        "create_report",
+        {
+          title: manifest.documents.deckTitle,
+          reportType: "custom",
+          period: "all_time",
+        },
+        userId,
+        req,
+      );
+
+      const output = {
+        manifest,
+        website: websiteResult?.error ? null : websiteResult,
+        vsl: vslReport?.error ? null : vslReport,
+        salesDeck: deckReport?.error ? null : deckReport,
+      };
+
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output,
+        currentPhase: 11,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output,
+        launch: updated,
+        navigateTo:
+          output.website?.navigateTo ||
+          output.website?.url ||
+          "/dashboard/websites",
+      };
+    }
+
+    if (phaseId === 11) {
+      const gtmPlaybook = current.phaseOutputs?.[6]?.playbook;
+      const icps = current.phaseOutputs?.[4]?.icps;
+      const plan = buildCampaignCommanderPlan({
+        offerName: current.offerName,
+        selectedNiche: current.selectedNiche,
+        gtmPlaybook,
+        icps,
+        defaultDailyBudget: params?.budgetDaily,
+      });
+
+      const approvedLaunch = params?.approvedLaunch === true;
+      if (!approvedLaunch) {
+        const pending = upsertWorkAiPhaseOutput(current, {
+          phaseId,
+          status: "in_progress",
+          output: {
+            plan,
+            approvalRequired: true,
+            approvalPrompt:
+              "Campaign launch requires explicit confirmation. Re-run phase 11 with approvedLaunch=true to execute.",
+          },
+          currentPhase: 11,
+        });
+        await persistWorkAiLaunch(db, userId, pending);
+        return {
+          success: true,
+          mode,
+          action,
+          phaseId,
+          phaseName: phase.name,
+          approvalRequired: true,
+          output: { plan },
+          message:
+            "Campaign plan prepared. Confirm with approvedLaunch=true to create and launch the campaign.",
+          launch: pending,
+        };
+      }
+
+      const campaignResult = await proxyToActionsAPI(
+        "create_campaign",
+        {
+          name: plan.campaignName,
+          type: "EMAIL",
+        },
+        userId,
+        req,
+      );
+
+      const campaignId =
+        campaignResult?.campaign?.id ||
+        campaignResult?.id ||
+        campaignResult?.result?.id;
+
+      let activationResult: any = null;
+      if (campaignId) {
+        activationResult = await proxyToActionsAPI(
+          "update_campaign",
+          {
+            campaignId,
+            status: "ACTIVE",
+          },
+          userId,
+          req,
+        );
+      }
+
+      const output = {
+        plan,
+        campaign: campaignResult?.error ? null : campaignResult,
+        activation: activationResult?.error ? null : activationResult,
+      };
+
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status: campaignResult?.error ? "blocked" : "completed",
+        output,
+        currentPhase: campaignResult?.error ? 11 : 12,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success: !campaignResult?.error,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output,
+        launch: updated,
+        navigateTo: "/dashboard/campaigns",
+      };
+    }
+
+    if (phaseId === 12) {
+      const contentPlan = buildContentPublisherPlan({
+        offerName: current.offerName,
+        selectedNiche: current.selectedNiche,
+      });
+
+      const campaignResult = await proxyToActionsAPI(
+        "create_campaign",
+        {
+          name: contentPlan.campaignName,
+          type: "EMAIL",
+        },
+        userId,
+        req,
+      );
+
+      const reportResult = await proxyToActionsAPI(
+        "create_report",
+        {
+          title: `${current.offerName} Content Calendar`,
+          reportType: "custom",
+          period: "last_30_days",
+        },
+        userId,
+        req,
+      );
+
+      const taskResult = await proxyToActionsAPI(
+        "create_task",
+        {
+          title: `${current.offerName} - Publish weekly content set`,
+          description: `Execute content calendar across channels with CTA: ${contentPlan.primaryCta}`,
+          priority: "MEDIUM",
+        },
+        userId,
+        req,
+      );
+
+      const output = {
+        contentPlan,
+        distributionCampaign: campaignResult?.error ? null : campaignResult,
+        contentReport: reportResult?.error ? null : reportResult,
+        publishingTask: taskResult?.error ? null : taskResult,
+      };
+
+      const updated = upsertWorkAiPhaseOutput(current, {
+        phaseId,
+        status:
+          campaignResult?.error || reportResult?.error || taskResult?.error
+            ? "blocked"
+            : "completed",
+        output,
+        currentPhase: 12,
+      });
+      await persistWorkAiLaunch(db, userId, updated);
+      return {
+        success:
+          !campaignResult?.error && !reportResult?.error && !taskResult?.error,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output,
+        launch: updated,
+        message:
+          "Content publishing system prepared with campaign, report artifact, and publishing task.",
+        navigateTo: "/dashboard/campaigns",
+      };
+    }
+
+    return {
+      success: false,
+      mode,
+      action,
+      phaseId,
+      error: "Phase is unsupported or unavailable for this launch state.",
+      launch: current,
+    };
+  }
 
   if (mode === "execution_chain") {
     const checkpoints: Array<{

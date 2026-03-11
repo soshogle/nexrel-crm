@@ -1,4 +1,5 @@
 export const OPENCLAW_MODES = [
+  "work_ai_orchestrator",
   "execution_chain",
   "approval_voice",
   "daily_command_center",

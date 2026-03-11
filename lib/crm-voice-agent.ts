@@ -327,6 +327,7 @@ SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it des
 CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when available. When user is viewing a contact (active_lead_id), use it for add_note, create_deal. When viewing a deal (active_deal_id), use it for add_note, update_deal_stage.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 For complex OpenClaw tasks, call openclaw_operate with the right mode:
+- work_ai_orchestrator
 - execution_chain
 - approval_voice
 - daily_command_center
@@ -1307,6 +1308,7 @@ ${getConfidentialityGuard()}`;
               type: "string",
               description: "OpenClaw operation mode",
               enum: [
+                "work_ai_orchestrator",
                 "execution_chain",
                 "approval_voice",
                 "daily_command_center",
@@ -1363,6 +1365,66 @@ ${getConfidentialityGuard()}`;
             enabled: {
               type: "boolean",
               description: "Enable/disable autonomous mode",
+            },
+            action: {
+              type: "string",
+              description:
+                "For work_ai_orchestrator mode: initialize, status, or run_phase",
+              enum: ["initialize", "status", "run_phase"],
+            },
+            launchId: {
+              type: "string",
+              description:
+                "Work AI launch ID for status/run_phase actions (optional if only one active)",
+            },
+            phaseId: {
+              type: "number",
+              description:
+                "Phase number for work_ai_orchestrator run_phase (1-12)",
+            },
+            offerName: {
+              type: "string",
+              description: "Offer name used when initializing a Work AI launch",
+            },
+            selectedNiche: {
+              type: "string",
+              description:
+                "Selected niche for phase 1 lock-in or initialization",
+            },
+            lockIn: {
+              type: "boolean",
+              description:
+                "For phase 1: mark recommendation as locked and complete the phase",
+            },
+            skills: {
+              type: "array",
+              description: "Skills list for phase 1 truth engine",
+              items: { type: "string" },
+            },
+            interests: {
+              type: "array",
+              description: "Interests list for phase 1 truth engine",
+              items: { type: "string" },
+            },
+            businessModels: {
+              type: "array",
+              description: "Preferred business models for phase 1",
+              items: { type: "string" },
+            },
+            painSignals: {
+              type: "array",
+              description: "Optional pain statements for phase 2 synthesis",
+              items: { type: "string" },
+            },
+            approvedLaunch: {
+              type: "boolean",
+              description:
+                "For work_ai_orchestrator phase 11: explicit approval to launch campaign",
+            },
+            budgetDaily: {
+              type: "number",
+              description:
+                "For work_ai_orchestrator phase 11: daily campaign budget",
             },
           },
           required: ["mode"],

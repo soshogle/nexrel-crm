@@ -345,7 +345,7 @@ function BusinessAIPageContent() {
         )}
 
         {openClawHealth?.metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="rounded-xl border border-purple-200 bg-white/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 text-purple-700 text-sm font-medium mb-1">
                 <Activity className="h-4 w-4" /> OpenClaw Operations (24h)
@@ -379,6 +379,21 @@ function BusinessAIPageContent() {
               </div>
               <p className="text-xs text-gray-600 mt-1">
                 Voice approvals available in OpenClaw mode
+              </p>
+            </div>
+            <div className="rounded-xl border border-purple-200 bg-white/80 backdrop-blur-sm p-4">
+              <div className="flex items-center gap-2 text-purple-700 text-sm font-medium mb-1">
+                <Brain className="h-4 w-4" /> Work AI Phase Progress
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {openClawHealth.workAi
+                  ? `${openClawHealth.workAi.completedPhases}/${openClawHealth.workAi.totalPhases}`
+                  : "0/12"}
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                {openClawHealth.workAi
+                  ? `Current: Phase ${openClawHealth.workAi.currentPhase} (${openClawHealth.workAi.currentPhaseName})`
+                  : "Initialize Work AI orchestrator to start"}
               </p>
             </div>
           </div>
