@@ -215,3 +215,154 @@ export function buildViralContentPackage(input: {
     caption: `${hook}. Built with the ${input.projectName} viral loop. ${cta}`,
   };
 }
+
+export function diagnoseViralPerformance(input: {
+  posts: Array<{
+    id: string;
+    hook: string;
+    cta: string;
+    views: number;
+    conversions: number;
+  }>;
+}) {
+  const diagnostics = input.posts.map((post) => {
+    const conversionRate = post.views > 0 ? post.conversions / post.views : 0;
+    const highViews = post.views >= 10000;
+    const lowViews = post.views < 3000;
+    const highConv = conversionRate >= 0.02;
+    const lowConv = conversionRate < 0.0075;
+
+    if (lowViews) {
+      return {
+        postId: post.id,
+        diagnosis: "bad_hook",
+        action: "Retire this hook and test a new variation",
+        hook: post.hook,
+        cta: post.cta,
+      };
+    }
+
+    if (highViews && lowConv) {
+      return {
+        postId: post.id,
+        diagnosis: "bad_cta",
+        action: "Keep hook, rewrite CTA with direct conversion outcome",
+        hook: post.hook,
+        cta: post.cta,
+      };
+    }
+
+    if (!highViews && highConv) {
+      return {
+        postId: post.id,
+        diagnosis: "good_cta_bad_hook",
+        action: "Keep CTA and pair with proven winner hook",
+        hook: post.hook,
+        cta: post.cta,
+      };
+    }
+
+    return {
+      postId: post.id,
+      diagnosis: "winner",
+      action: "Create 3 close variations and rotate",
+      hook: post.hook,
+      cta: post.cta,
+    };
+  });
+
+  return {
+    diagnostics,
+    summary: {
+      winners: diagnostics.filter((d) => d.diagnosis === "winner").length,
+      badHooks: diagnostics.filter((d) => d.diagnosis === "bad_hook").length,
+      badCtas: diagnostics.filter((d) => d.diagnosis === "bad_cta").length,
+    },
+  };
+}
+
+export function buildHookRotationPlan(input: {
+  activeWinners: string[];
+  provenHooks: string[];
+  testingHooks: string[];
+}) {
+  const pick = (source: string[], count: number) => source.slice(0, count);
+  return {
+    distribution: {
+      winnerShare: 60,
+      provenShare: 30,
+      testingShare: 10,
+    },
+    queue: {
+      activeWinners: pick(input.activeWinners, 6),
+      provenRotation: pick(input.provenHooks, 3),
+      testing: pick(input.testingHooks, 1),
+    },
+  };
+}
+
+export function buildGoalCorrelation(input: {
+  conversionGoal: string;
+  posts: Array<{ id: string; hook: string; cta: string; conversions: number }>;
+}) {
+  const topPosts = [...input.posts]
+    .sort((a, b) => b.conversions - a.conversions)
+    .slice(0, 3);
+  return {
+    conversionGoal: input.conversionGoal,
+    topContributors: topPosts,
+    insight:
+      topPosts.length > 0
+        ? `Top post ${topPosts[0].id} contributed strongest lift for ${input.conversionGoal}`
+        : `No attribution data yet for ${input.conversionGoal}`,
+  };
+}
+
+export function buildCrossPlatformDrafts(input: {
+  contentPackage: {
+    hook: string;
+    caption: string;
+    slides: Array<{ index: number; overlay: string }>;
+  };
+}) {
+  return {
+    instagram: {
+      format: "reel_slideshow",
+      caption: `${input.contentPackage.caption} #growth #marketing`,
+    },
+    facebook: {
+      format: "carousel",
+      caption: `${input.contentPackage.hook} — full context in comments`,
+    },
+    linkedin: {
+      format: "professional_carousel",
+      caption: `What this teaches us about conversion strategy: ${input.contentPackage.hook}`,
+    },
+    youtube: {
+      format: "shorts",
+      caption: `${input.contentPackage.hook} | AI growth loop`,
+    },
+    twitter: {
+      format: "thread",
+      caption: `${input.contentPackage.hook}\n\nThread with breakdown below.`,
+    },
+  };
+}
+
+export function buildViralMemorySnapshot(input: { state: ViralLoopState }) {
+  return {
+    snapshotId: crypto.randomUUID(),
+    projectId: input.state.projectId,
+    projectName: input.state.projectName,
+    trustStage: input.state.trustStage,
+    completedPhases: Object.values(input.state.phaseStatus).filter(
+      (status) => status === "completed",
+    ).length,
+    currentPhase: input.state.currentPhase,
+    knownWinners:
+      input.state.phaseOutputs?.[4]?.diagnostics?.filter(
+        (d: any) => d.diagnosis === "winner",
+      ) || [],
+    generatedAt: new Date().toISOString(),
+  };
+}

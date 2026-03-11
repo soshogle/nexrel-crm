@@ -305,6 +305,112 @@ export function ViralPage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-600" /> Diagnostics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    Detect whether underperformance is hook, CTA, or format.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => runPhase(4)}
+                    disabled={running || !project}
+                  >
+                    Run Phase 4
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Workflow className="w-4 h-4 text-purple-600" /> Hook
+                    Rotation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    Apply 60/30/10 winner-proven-test distribution and CTA
+                    evolution.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => runPhase(5)}
+                    disabled={running || !project}
+                  >
+                    Run Phase 5
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-600" /> Goal Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    Correlate post performance to conversion outcomes and
+                    business impact.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => runPhase(6)}
+                    disabled={running || !project}
+                  >
+                    Run Phase 6
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-purple-600" />
+                    Cross-Platform
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    Adapt TikTok content package into drafts for IG, FB,
+                    LinkedIn, YouTube, and X.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => runPhase(7)}
+                    disabled={running || !project}
+                  >
+                    Run Phase 7
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-purple-600" /> Memory Backup
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    Export memory snapshot and persist viral loop strategy
+                    context.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => runPhase(8)}
+                    disabled={running || !project}
+                  >
+                    Run Phase 8
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
@@ -315,8 +421,8 @@ export function ViralPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-gray-600">
-                  Diagnostics, hook rotation, goal tracking, and memory backup
-                  are queued for the next phase rollout.
+                  Use crawl - walk - run trust progression and keep draft-first
+                  posting for algorithm-safe distribution.
                 </CardContent>
               </Card>
               <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
