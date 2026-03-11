@@ -67,6 +67,16 @@ import {
   upsertWorkAiPhaseOutput,
   type WorkAiLaunchState,
 } from "@/lib/work-ai-marketing";
+import {
+  buildViralContentPackage,
+  buildViralResearchOutput,
+  canRunViralLoopPhase,
+  createViralLoopState,
+  getNextPendingViralPhase,
+  getViralLoopPhaseDefinition,
+  upsertViralLoopPhaseOutput,
+  type ViralLoopState,
+} from "@/lib/viral-loop";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -1597,6 +1607,7 @@ async function handleAddWorkflowTask(
 }
 
 const WORK_AI_ENTITY_TYPE = "WORK_AI_OFFER_LAUNCH";
+const VIRAL_LOOP_ENTITY_TYPE = "VIRAL_LOOP_PROJECT";
 
 async function getLatestWorkAiLaunch(
   db: ReturnType<typeof getCrmDb>,
@@ -1637,6 +1648,43 @@ async function persistWorkAiLaunch(
   });
 }
 
+async function getLatestViralLoopProject(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  projectId?: string,
+): Promise<ViralLoopState | null> {
+  const row = await db.auditLog.findFirst({
+    where: {
+      userId,
+      entityType: VIRAL_LOOP_ENTITY_TYPE,
+      ...(projectId ? { entityId: projectId } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    select: { metadata: true },
+  });
+  const metadata = row?.metadata as any;
+  if (!metadata?.projectId || !metadata?.phaseStatus) return null;
+  return metadata as ViralLoopState;
+}
+
+async function persistViralLoopProject(
+  db: ReturnType<typeof getCrmDb>,
+  userId: string,
+  state: ViralLoopState,
+) {
+  await db.auditLog.create({
+    data: {
+      userId,
+      action: "SETTINGS_MODIFIED",
+      severity: "LOW",
+      entityType: VIRAL_LOOP_ENTITY_TYPE,
+      entityId: state.projectId,
+      metadata: state as any,
+      success: true,
+    },
+  });
+}
+
 async function handleOpenClawOperate(
   userId: string,
   params: any,
@@ -1646,6 +1694,221 @@ async function handleOpenClawOperate(
   const mode = String(params?.mode || "execution_chain");
   const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
+
+  if (mode === "viral_loop") {
+    const action = String(params?.action || "status");
+    const requestedProjectId =
+      typeof params?.projectId === "string" ? params.projectId : undefined;
+
+    if (action === "initialize") {
+      const niche = String(params?.niche || "General Market");
+      const conversionGoal = String(
+        params?.conversionGoal || "qualified leads",
+      );
+      const state = createViralLoopState({
+        projectId: crypto.randomUUID(),
+        ownerUserId: userId,
+        projectName: String(params?.projectName || "Viral Loop Project"),
+        niche,
+        conversionGoal,
+        channels: Array.isArray(params?.channels)
+          ? params.channels.filter(Boolean)
+          : undefined,
+      });
+      await persistViralLoopProject(db, userId, state);
+      return {
+        success: true,
+        mode,
+        action,
+        project: state,
+        message:
+          "Viral loop initialized. Run phase 1 (Niche Research) to start the loop.",
+        navigateTo: "/dashboard/marketing/viral",
+      };
+    }
+
+    const current = await getLatestViralLoopProject(
+      db,
+      userId,
+      requestedProjectId,
+    );
+    if (!current) {
+      return {
+        success: false,
+        mode,
+        error:
+          "No viral project found. Initialize first with action=initialize.",
+      };
+    }
+
+    if (action === "status") {
+      return {
+        success: true,
+        mode,
+        action,
+        project: current,
+        nextPhase: getNextPendingViralPhase(current),
+      };
+    }
+
+    if (action !== "run_phase") {
+      return {
+        success: false,
+        mode,
+        error: "action must be initialize, status, or run_phase",
+      };
+    }
+
+    const phaseId = Number(params?.phaseId || current.currentPhase || 1);
+    const phase = getViralLoopPhaseDefinition(phaseId);
+    if (!phase) {
+      return {
+        success: false,
+        mode,
+        error: `Unknown phase ${phaseId}`,
+      };
+    }
+
+    const gate = canRunViralLoopPhase(current, phaseId);
+    if (!gate.ok) {
+      return {
+        success: false,
+        mode,
+        action,
+        phaseId,
+        error: gate.reason,
+      };
+    }
+
+    if (phaseId === 1) {
+      const research = buildViralResearchOutput({
+        niche: current.niche,
+        conversionGoal: current.conversionGoal,
+      });
+      const updated = upsertViralLoopPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: research,
+        currentPhase: 2,
+      });
+      await persistViralLoopProject(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: research,
+        project: updated,
+      };
+    }
+
+    if (phaseId === 2) {
+      const phase1 = current.phaseOutputs?.[1];
+      if (!phase1?.hooks || !phase1?.ctas) {
+        return {
+          success: false,
+          mode,
+          action,
+          phaseId,
+          error: "Phase 2 requires phase 1 research output.",
+        };
+      }
+      const contentPackage = buildViralContentPackage({
+        projectName: current.projectName,
+        niche: current.niche,
+        hooks: phase1.hooks,
+        ctas: phase1.ctas,
+      });
+      const updated = upsertViralLoopPhaseOutput(current, {
+        phaseId,
+        status: "completed",
+        output: contentPackage,
+        currentPhase: 3,
+      });
+      await persistViralLoopProject(db, userId, updated);
+      return {
+        success: true,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output: contentPackage,
+        project: updated,
+      };
+    }
+
+    if (phaseId === 3) {
+      const contentPackage = current.phaseOutputs?.[2];
+      if (!contentPackage?.packageId) {
+        return {
+          success: false,
+          mode,
+          action,
+          phaseId,
+          error: "Phase 3 requires phase 2 content package.",
+        };
+      }
+
+      const draftCampaign = await proxyToActionsAPI(
+        "create_campaign",
+        {
+          name: `${current.projectName} Draft ${new Date().toISOString().slice(0, 10)}`,
+          type: "EMAIL",
+        },
+        userId,
+        req,
+      );
+
+      const notifyTask = await proxyToActionsAPI(
+        "create_task",
+        {
+          title: `Review and publish viral draft for ${current.projectName}`,
+          description:
+            "Draft is ready. Add trending sound from mobile and publish manually.",
+          priority: "HIGH",
+        },
+        userId,
+        req,
+      );
+
+      const output = {
+        contentPackageId: contentPackage.packageId,
+        draftCampaign: draftCampaign?.error ? null : draftCampaign,
+        notifyTask: notifyTask?.error ? null : notifyTask,
+        postingMode: "draft_first",
+      };
+
+      const updated = upsertViralLoopPhaseOutput(current, {
+        phaseId,
+        status:
+          draftCampaign?.error || notifyTask?.error ? "blocked" : "completed",
+        output,
+        currentPhase: draftCampaign?.error || notifyTask?.error ? 3 : 4,
+      });
+      await persistViralLoopProject(db, userId, updated);
+      return {
+        success: !draftCampaign?.error && !notifyTask?.error,
+        mode,
+        action,
+        phaseId,
+        phaseName: phase.name,
+        output,
+        project: updated,
+        navigateTo: "/dashboard/campaigns",
+      };
+    }
+
+    return {
+      success: false,
+      mode,
+      action,
+      phaseId,
+      error:
+        "Phases 4-8 are queued for the next implementation wave (diagnostics/rotation/goal tracking/memory).",
+      project: current,
+    };
+  }
 
   if (mode === "work_ai_orchestrator") {
     const action = String(params?.action || "status");

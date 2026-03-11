@@ -242,6 +242,12 @@ const merchantItems = [
     icon: Mail,
   },
   {
+    id: "viral-marketing" as MenuItemId,
+    title: "Viral",
+    href: "/dashboard/marketing/viral",
+    icon: Sparkles,
+  },
+  {
     id: "workflows" as MenuItemId,
     title: "Workflows",
     href: "/dashboard/workflows",
@@ -548,6 +554,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       "voice-agents": "voiceAgents",
       "voice-agent-preview": "testVoiceAgent",
       "voice-ai-notifications": "callNotifications",
+      "viral-marketing": "viral",
       team: "team",
       settings: "settings",
       tasks: "tasks",

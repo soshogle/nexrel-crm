@@ -1,4 +1,5 @@
 export const OPENCLAW_MODES = [
+  "viral_loop",
   "work_ai_orchestrator",
   "execution_chain",
   "approval_voice",

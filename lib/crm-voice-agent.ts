@@ -327,6 +327,7 @@ SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it des
 CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when available. When user is viewing a contact (active_lead_id), use it for add_note, create_deal. When viewing a deal (active_deal_id), use it for add_note, update_deal_stage.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 For complex OpenClaw tasks, call openclaw_operate with the right mode:
+- viral_loop
 - work_ai_orchestrator
 - execution_chain
 - approval_voice
@@ -1308,6 +1309,7 @@ ${getConfidentialityGuard()}`;
               type: "string",
               description: "OpenClaw operation mode",
               enum: [
+                "viral_loop",
                 "work_ai_orchestrator",
                 "execution_chain",
                 "approval_voice",
@@ -1425,6 +1427,25 @@ ${getConfidentialityGuard()}`;
               type: "number",
               description:
                 "For work_ai_orchestrator phase 11: daily campaign budget",
+            },
+            projectName: {
+              type: "string",
+              description: "For viral_loop initialize: project/campaign name",
+            },
+            niche: {
+              type: "string",
+              description: "For viral_loop initialize: target niche",
+            },
+            conversionGoal: {
+              type: "string",
+              description:
+                "For viral_loop initialize: conversion goal (downloads, leads, sales)",
+            },
+            channels: {
+              type: "array",
+              description:
+                "For viral_loop initialize: channels to include (e.g. tiktok, instagram)",
+              items: { type: "string" },
             },
           },
           required: ["mode"],

@@ -55,6 +55,7 @@ export type MenuItemId =
   | "voice-agent-preview"
   | "voice-ai-notifications"
   | "campaigns"
+  | "viral-marketing"
   | "sms-campaigns"
   | "reviews"
   | "analytics"
@@ -121,6 +122,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   "voice-agent-preview", // Voice Agent Preview Testing - Browser-based testing for all business owners
   "voice-ai-notifications", // Call Notifications Management - Available to all business owners
   "campaigns",
+  "viral-marketing",
   "sms-campaigns", // SMS Campaign Management - Available to all industries
   "reviews",
   "analytics",
