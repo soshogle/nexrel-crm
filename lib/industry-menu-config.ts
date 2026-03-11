@@ -56,6 +56,7 @@ export type MenuItemId =
   | "voice-agent-preview"
   | "voice-ai-notifications"
   | "campaigns"
+  | "marketing"
   | "viral-marketing"
   | "sms-campaigns"
   | "reviews"
@@ -124,6 +125,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   "voice-agent-preview", // Voice Agent Preview Testing - Browser-based testing for all business owners
   "voice-ai-notifications", // Call Notifications Management - Available to all business owners
   "campaigns",
+  "marketing",
   "viral-marketing",
   "sms-campaigns", // SMS Campaign Management - Available to all industries
   "reviews",
@@ -421,6 +423,7 @@ export function getAllFeatures(): {
     { id: "voice-agent", label: "Voice Agent", category: "Core CRM" },
     { id: "calendar", label: "Calendar/Appointments", category: "Core CRM" },
     { id: "campaigns", label: "Campaigns", category: "Core CRM" },
+    { id: "marketing", label: "Marketing", category: "Core CRM" },
     { id: "viral-marketing", label: "Marketing Viral", category: "Core CRM" },
     { id: "workflows", label: "Workflows & Automation", category: "Core CRM" },
     { id: "team", label: "Team Management", category: "Core CRM" },

@@ -27,6 +27,11 @@ export function ViralPage() {
   const [projectName, setProjectName] = useState("Viral Growth Loop");
   const [niche, setNiche] = useState("Dental marketing automation");
   const [conversionGoal, setConversionGoal] = useState("qualified leads");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [limitPerChannel, setLimitPerChannel] = useState("6");
+  const [trustStage, setTrustStage] = useState<"crawl" | "walk" | "run">(
+    "crawl",
+  );
   const [status, setStatus] = useState<any>(null);
   const [health, setHealth] = useState<any>(null);
 
@@ -140,15 +145,41 @@ export function ViralPage() {
 
   const runPhase = async (phaseId: number) => {
     try {
+      const options: Record<string, any> = {};
+      if (phaseId === 3 && mediaUrl.trim()) {
+        options.mediaUrl = mediaUrl.trim();
+      }
+      if (phaseId === 4) {
+        const parsedLimit = Number(limitPerChannel);
+        if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
+          options.limitPerChannel = parsedLimit;
+        }
+      }
       const data = await callViral({
         action: "run_phase",
         projectId: project?.projectId,
         phaseId,
+        ...options,
       });
       setStatus(data);
       toast.success(`Phase ${phaseId} completed`);
     } catch (error: any) {
       toast.error(error?.message || `Failed phase ${phaseId}`);
+    }
+  };
+
+  const setTrust = async () => {
+    try {
+      const data = await callViral({
+        action: "set_trust_stage",
+        projectId: project?.projectId,
+        trustStage,
+      });
+      setStatus(data);
+      toast.success(`Trust stage updated to ${trustStage}`);
+      refreshStatus();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update trust stage");
     }
   };
 
@@ -249,6 +280,34 @@ export function ViralPage() {
           </CardContent>
         </Card>
 
+        <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Owner Playbook</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-gray-700">
+            <p>
+              Step 1: Initialize the viral project in Setup so phases and trust
+              controls are available.
+            </p>
+            <p>
+              Step 2: Use Owner Action Controls to set trust stage and optional
+              phase inputs such as media URL and analytics limit.
+            </p>
+            <p>
+              Step 3: Run phases 1-8 in order from Viral Modules to generate
+              research, drafts, diagnostics, and optimization plans.
+            </p>
+            <p>
+              Step 4: Follow the Automation Status card when blocked to know if
+              you need approval or setup verification.
+            </p>
+            <p className="text-xs text-gray-600">
+              Expected result: repeatable social growth execution with
+              diagnostics-backed decisions and controlled autonomy.
+            </p>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="setup" className="w-full">
           <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
             <TabsTrigger
@@ -300,6 +359,55 @@ export function ViralPage() {
                   >
                     Refresh Status
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-purple-200/50 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Owner Action Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-800">
+                      Trust Stage Approval
+                    </p>
+                    <select
+                      value={trustStage}
+                      onChange={(e) =>
+                        setTrustStage(
+                          e.target.value as "crawl" | "walk" | "run",
+                        )
+                      }
+                      className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="crawl">crawl</option>
+                      <option value="walk">walk</option>
+                      <option value="run">run</option>
+                    </select>
+                    <Button onClick={setTrust} disabled={running || !project}>
+                      Apply Trust Stage
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-800">
+                      Phase Options
+                    </p>
+                    <Input
+                      value={mediaUrl}
+                      onChange={(e) => setMediaUrl(e.target.value)}
+                      placeholder="Phase 3 media URL (public image)"
+                    />
+                    <Input
+                      value={limitPerChannel}
+                      onChange={(e) => setLimitPerChannel(e.target.value)}
+                      placeholder="Phase 4 posts per channel (default 6)"
+                    />
+                    <p className="text-xs text-gray-600">
+                      Use these options before running phase 3 or 4.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

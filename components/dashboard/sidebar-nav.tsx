@@ -249,6 +249,12 @@ const merchantItems = [
     icon: Mail,
   },
   {
+    id: "marketing" as MenuItemId,
+    title: "Marketing",
+    href: "/dashboard/marketing",
+    icon: Megaphone,
+  },
+  {
     id: "viral-marketing" as MenuItemId,
     title: "Viral",
     href: "/dashboard/marketing/viral",
@@ -506,7 +512,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const displaySession = session?.user ? session : lastSessionRef.current;
   const t = useTranslations("navigation");
   const [adminExpanded, setAdminExpanded] = useState(false);
-  const [marketingExpanded, setMarketingExpanded] = useState(true);
   const [isParent, setIsParent] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(true);
   const [cachedSidebarUser, setCachedSidebarUser] =
@@ -563,7 +568,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       "voice-agent-preview": "testVoiceAgent",
       "voice-ai-notifications": "callNotifications",
       "viral-marketing": "viral",
-      marketing: "campaigns",
+      marketing: "marketing",
       "sales-agent": "salesAgent",
       team: "team",
       settings: "settings",
@@ -745,7 +750,16 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
         const roleResponse = await fetch("/api/clubos/parent/check-role");
         if (roleResponse.ok) {
           const roleData = await roleResponse.json();
-          setIsParent(roleData.isParent || false);
+          const nonParentRoles = new Set([
+            "BUSINESS_OWNER",
+            "SUPER_ADMIN",
+            "AGENCY_ADMIN",
+            "ADMIN",
+            "STAFF",
+          ]);
+          const isParentView =
+            Boolean(roleData?.isParent) && !nonParentRoles.has(roleData?.role);
+          setIsParent(isParentView);
         }
       } catch (error) {
         console.error("Error fetching parent role:", error);
@@ -866,25 +880,20 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
   );
   const marketingItemIds = new Set<MenuItemId>([
-    "campaigns",
+    "marketing",
     "viral-marketing",
   ]);
   const marketingItems = visibleMainItems.filter((item) =>
     marketingItemIds.has(item.id),
   );
+  const marketingParentItem =
+    marketingItems.find((item) => item.id === "marketing") || null;
+  const marketingSubItems = marketingItems.filter(
+    (item) => item.id === "viral-marketing",
+  );
   const primaryMainItems = visibleMainItems.filter(
     (item) => !marketingItemIds.has(item.id),
   );
-  const isMarketingSectionActive = marketingItems.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
-  );
-
-  useEffect(() => {
-    if (isMarketingSectionActive) {
-      setMarketingExpanded(true);
-    }
-  }, [isMarketingSectionActive]);
-
   // Helper function to check if a link is active
   const isLinkActive = (href: string) => {
     // Exact match for dashboard
@@ -949,84 +958,61 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
             );
           })}
 
-          {marketingItems.length > 0 &&
-            (!isExpanded ? (
-              marketingItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = isLinkActive(item.href);
-                const translatedTitle = translateMenuItem(item.id, item.title);
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200",
-                      isActive
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "text-gray-300 hover:bg-gray-800 hover:text-white",
-                    )}
-                    title={translatedTitle}
-                  >
-                    <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-                  </Link>
-                );
-              })
-            ) : (
-              <div>
-                <button
-                  onClick={() => setMarketingExpanded(!marketingExpanded)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full",
-                    isMarketingSectionActive
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white",
-                  )}
-                >
-                  <Megaphone className="h-[18px] w-[18px] flex-shrink-0" />
-                  <span className="flex-1 text-left whitespace-nowrap">
+          {marketingParentItem && (
+            <div>
+              <Link
+                href={marketingParentItem.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200",
+                  isLinkActive(marketingParentItem.href)
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white",
+                )}
+                title={
+                  !isExpanded
+                    ? translateMenuItem("marketing", "Marketing")
+                    : undefined
+                }
+              >
+                <Megaphone className="h-[18px] w-[18px] flex-shrink-0" />
+                {isExpanded && (
+                  <span className="whitespace-nowrap">
                     {translateMenuItem("marketing", "Marketing")}
                   </span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200",
-                      marketingExpanded && "rotate-180",
-                    )}
-                  />
-                </button>
-
-                {marketingExpanded && (
-                  <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
-                    {marketingItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = isLinkActive(item.href);
-                      const translatedTitle = translateMenuItem(
-                        item.id,
-                        item.title,
-                      );
-
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded",
-                            isActive
-                              ? "bg-purple-600 text-white font-medium"
-                              : "text-gray-400 hover:bg-gray-800 hover:text-white",
-                          )}
-                        >
-                          <Icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="whitespace-nowrap text-xs flex-1">
-                            {translatedTitle}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
                 )}
-              </div>
-            ))}
+              </Link>
+
+              {isExpanded && marketingSubItems.length > 0 && (
+                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
+                  {marketingSubItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = isLinkActive(item.href);
+                    const translatedTitle = translateMenuItem(
+                      item.id,
+                      item.title,
+                    );
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded",
+                          isActive
+                            ? "bg-purple-600 text-white font-medium"
+                            : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="whitespace-nowrap text-xs flex-1">
+                          {translatedTitle}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Admin Section */}
           {visibleAdminItems.length > 0 && (

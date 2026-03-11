@@ -34,6 +34,10 @@ export function SalesAgentPage() {
   const [running, setRunning] = useState(false);
   const [squadName, setSquadName] = useState("Autonomous Sales Squad");
   const [primaryGoal, setPrimaryGoal] = useState("book qualified meetings");
+  const [trustStage, setTrustStage] = useState<"crawl" | "walk" | "run">(
+    "crawl",
+  );
+  const [companyUrlsText, setCompanyUrlsText] = useState("");
   const [status, setStatus] = useState<any>(null);
   const [health, setHealth] = useState<any>(null);
 
@@ -148,15 +152,38 @@ export function SalesAgentPage() {
 
   const runPhase = async (phaseId: number) => {
     try {
+      const options: Record<string, any> = {};
+      if (phaseId === 2 && companyUrlsText.trim()) {
+        options.companyUrls = companyUrlsText
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+      }
       const data = await callSales({
         action: "run_phase",
         squadId: squad?.squadId,
         phaseId,
+        ...options,
       });
       setStatus(data);
       toast.success(`Phase ${phaseId} executed`);
     } catch (error: any) {
       toast.error(error?.message || `Failed phase ${phaseId}`);
+    }
+  };
+
+  const setTrust = async () => {
+    try {
+      const data = await callSales({
+        action: "set_trust_stage",
+        squadId: squad?.squadId,
+        trustStage,
+      });
+      setStatus(data);
+      toast.success(`Trust stage updated to ${trustStage}`);
+      refresh();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update trust stage");
     }
   };
 
@@ -266,6 +293,33 @@ export function SalesAgentPage() {
           </CardContent>
         </Card>
 
+        <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Owner Playbook</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-gray-700">
+            <p>
+              Step 1: Initialize your sales squad with a clear primary goal.
+            </p>
+            <p>
+              Step 2: Use Owner Action Controls to approve trust stage changes
+              and add company URLs for outbound enrichment in phase 2.
+            </p>
+            <p>
+              Step 3: Run phases 1-6 in order to activate briefing, outbound,
+              re-engagement, qualification, growth, and content support.
+            </p>
+            <p>
+              Step 4: Follow Automation Status when blocked to resolve missing
+              approvals or missing setup.
+            </p>
+            <p className="text-xs text-gray-600">
+              Expected result: a structured sales operating rhythm with clear
+              owner approvals and faster execution.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Initialize Sales Squad</CardTitle>
@@ -289,6 +343,48 @@ export function SalesAgentPage() {
               <Button variant="outline" onClick={refresh} disabled={running}>
                 Refresh
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-purple-300/60 bg-white/90 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle>Owner Action Controls</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-800">
+                Trust Stage Approval
+              </p>
+              <select
+                value={trustStage}
+                onChange={(e) =>
+                  setTrustStage(e.target.value as "crawl" | "walk" | "run")
+                }
+                className="w-full rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+              >
+                <option value="crawl">crawl</option>
+                <option value="walk">walk</option>
+                <option value="run">run</option>
+              </select>
+              <Button onClick={setTrust} disabled={running || !squad}>
+                Apply Trust Stage
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-800">
+                Phase 2 Company URLs (one per line)
+              </p>
+              <textarea
+                value={companyUrlsText}
+                onChange={(e) => setCompanyUrlsText(e.target.value)}
+                placeholder="acme.com\nexample.org"
+                className="w-full min-h-[120px] rounded-md border border-purple-200 bg-white px-3 py-2 text-sm"
+              />
+              <p className="text-xs text-gray-600">
+                Used when running phase 2 to enrich leads and personalize
+                outbound.
+              </p>
             </div>
           </CardContent>
         </Card>
