@@ -1,59 +1,62 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { ThemeProvider } from '@/components/theme-provider'
-import { Toaster } from '@/components/ui/toaster'
-import { Toaster as SonnerToaster } from '@/components/ui/sonner'
-import { SessionProvider } from '@/components/providers/session-provider'
-import { QueryProvider } from '@/components/providers/query-provider'
-import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrapper'
-import { RootErrorBoundary } from '@/components/root-error-boundary'
-import { headers } from 'next/headers'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { SessionProvider } from "@/components/providers/session-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { IntlProviderWrapper } from "@/components/providers/intl-provider-wrapper";
+import { RootErrorBoundary } from "@/components/root-error-boundary";
+import { headers } from "next/headers";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 function getMetadataBase(): string {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'https://nexrel.soshogle.com'
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "https://nexrel.soshogle.com";
 }
 
 export const metadata: Metadata = {
   metadataBase: new URL(getMetadataBase()),
-  title: 'Soshogle AI Business Automation Ecosystem',
-  description: 'Power your business with Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation management to close more deals.',
+  title: "Soshogle AI Business Automation Ecosystem",
+  description:
+    "Power your business with Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation management to close more deals.",
   icons: {
-    icon: '/soshogle-logo.png',
-    shortcut: '/soshogle-logo.png',
+    icon: "/soshogle-logo.png",
+    shortcut: "/soshogle-logo.png",
   },
   openGraph: {
-    title: 'Soshogle AI Business Automation Ecosystem',
-    description: 'Power your businesswith Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation management tools to close more deals.',
+    title: "Soshogle AI Business Automation Ecosystem",
+    description:
+      "Power your businesswith Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation management tools to close more deals.",
     images: [
       {
-        url: '/soshogle-logo.png',
+        url: "/soshogle-logo.png",
         width: 512,
         height: 512,
-        alt: 'Soshogle AI CRM',
+        alt: "Soshogle AI CRM",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Soshogle AI CRM - Business Automation Ecosystem',
-    description: 'Power your sales with Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation tools to close more deals.',
-    images: ['/soshogle-logo.png'],
+    card: "summary_large_image",
+    title: "Soshogle AI CRM - Business Automation Ecosystem",
+    description:
+      "Power your sales with Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation tools to close more deals.",
+    images: ["/soshogle-logo.png"],
   },
-}
+};
 
 export default async function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   // Read the per-request nonce injected by middleware for CSP script-src enforcement.
   const headersList = await headers();
-  const nonce = headersList.get('x-nonce') ?? '';
+  const nonce = headersList.get("x-nonce") ?? "";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -70,6 +73,7 @@ export default async function RootLayout({
                 defaultTheme="light"
                 enableSystem
                 disableTransitionOnChange
+                nonce={nonce}
               >
                 <RootErrorBoundary>
                   {children}
@@ -82,5 +86,5 @@ export default async function RootLayout({
         </SessionProvider>
       </body>
     </html>
-  )
+  );
 }
