@@ -1,7 +1,7 @@
 export const OPENCLAW_MODES = [
-  "sales_squad",
-  "viral_loop",
   "work_ai_orchestrator",
+  "sales_squad",
+  "social_media_loop",
   "execution_chain",
   "approval_voice",
   "daily_command_center",
@@ -59,5 +59,28 @@ export function getCustomerWorkflowSteps() {
     { name: "Booking step", taskType: "CREATE_TASK" },
     { name: "Human handoff if escalation needed", taskType: "CUSTOM" },
     { name: "Sync captured data to CRM", taskType: "CREATE_TASK" },
+  ];
+}
+
+export function getSalesSquadSteps() {
+  return [
+    { name: "Lead discovery + enrichment", taskType: "CUSTOM" },
+    { name: "Score and route leads", taskType: "CREATE_TASK" },
+    { name: "Draft personalized outreach", taskType: "EMAIL" },
+    {
+      name: "Trigger voice qualification for hot leads",
+      taskType: "VOICE_CALL",
+    },
+    { name: "Create follow-up and pipeline tasks", taskType: "CREATE_TASK" },
+  ];
+}
+
+export function getSocialMediaLoopSteps() {
+  return [
+    { name: "Research hooks and winning formats", taskType: "CUSTOM" },
+    { name: "Generate content variants", taskType: "CUSTOM" },
+    { name: "Queue draft-first publishing", taskType: "CREATE_TASK" },
+    { name: "Run 24h/72h diagnostics", taskType: "CUSTOM" },
+    { name: "Rotate hooks and evolve CTA", taskType: "CREATE_TASK" },
   ];
 }

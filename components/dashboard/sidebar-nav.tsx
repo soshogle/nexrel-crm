@@ -56,7 +56,6 @@ import {
   Globe,
   Sparkles,
   Calculator,
-  Megaphone,
 } from "lucide-react";
 
 // Parent Portal items - what parents see when they log in
@@ -94,6 +93,12 @@ const merchantItems = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    id: "agent-command-center" as MenuItemId,
+    title: "Agent Command Center",
+    href: "/dashboard/agent-command-center",
+    icon: Rocket,
   },
   {
     id: "business-ai" as MenuItemId,
@@ -137,13 +142,6 @@ const merchantItems = [
     href: "/dashboard/pipeline",
     icon: Briefcase,
   },
-  {
-    id: "sales-agent" as MenuItemId,
-    title: "Sales AI",
-    href: "/dashboard/sales/agent",
-    icon: DollarSign,
-  },
-
   {
     id: "messages" as MenuItemId,
     title: "Messages",
@@ -247,18 +245,6 @@ const merchantItems = [
     title: "Campaigns",
     href: "/dashboard/campaigns",
     icon: Mail,
-  },
-  {
-    id: "marketing" as MenuItemId,
-    title: "Marketing",
-    href: "/dashboard/marketing",
-    icon: Megaphone,
-  },
-  {
-    id: "viral-marketing" as MenuItemId,
-    title: "Viral",
-    href: "/dashboard/marketing/viral",
-    icon: Sparkles,
   },
   {
     id: "workflows" as MenuItemId,
@@ -526,6 +512,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const translateMenuItem = (itemId: string, fallbackTitle: string): string => {
     const translationMap: Record<string, string> = {
       dashboard: "dashboard",
+      "agent-command-center": "agentCommandCenter",
       "ai-brain": "aiBrain",
       "business-ai": "businessAI",
       "ai-employees": "aiEmployees",
@@ -567,9 +554,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       "voice-agents": "voiceAgents",
       "voice-agent-preview": "testVoiceAgent",
       "voice-ai-notifications": "callNotifications",
-      "viral-marketing": "viral",
-      marketing: "marketing",
-      "sales-agent": "salesAgent",
       team: "team",
       settings: "settings",
       tasks: "tasks",
@@ -879,21 +863,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const isAdminSectionActive = visibleAdminItems.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
   );
-  const marketingItemIds = new Set<MenuItemId>([
-    "marketing",
-    "viral-marketing",
-  ]);
-  const marketingItems = visibleMainItems.filter((item) =>
-    marketingItemIds.has(item.id),
-  );
-  const marketingParentItem =
-    marketingItems.find((item) => item.id === "marketing") || null;
-  const marketingSubItems = marketingItems.filter(
-    (item) => item.id === "viral-marketing",
-  );
-  const primaryMainItems = visibleMainItems.filter(
-    (item) => !marketingItemIds.has(item.id),
-  );
   // Helper function to check if a link is active
   const isLinkActive = (href: string) => {
     // Exact match for dashboard
@@ -933,7 +902,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
         <div className="space-y-1 pb-32">
           {/* Extra padding at bottom to ensure admin items are fully visible above the sticky footer */}
           {/* Main Menu Items (Parent or Merchant based on role) */}
-          {primaryMainItems.map((item) => {
+          {visibleMainItems.map((item) => {
             const Icon = item.icon;
             const isActive = isLinkActive(item.href);
             const translatedTitle = translateMenuItem(item.id, item.title);
@@ -957,62 +926,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               </Link>
             );
           })}
-
-          {marketingParentItem && (
-            <div>
-              <Link
-                href={marketingParentItem.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200",
-                  isLinkActive(marketingParentItem.href)
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white",
-                )}
-                title={
-                  !isExpanded
-                    ? translateMenuItem("marketing", "Marketing")
-                    : undefined
-                }
-              >
-                <Megaphone className="h-[18px] w-[18px] flex-shrink-0" />
-                {isExpanded && (
-                  <span className="whitespace-nowrap">
-                    {translateMenuItem("marketing", "Marketing")}
-                  </span>
-                )}
-              </Link>
-
-              {isExpanded && marketingSubItems.length > 0 && (
-                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-700 pl-2">
-                  {marketingSubItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = isLinkActive(item.href);
-                    const translatedTitle = translateMenuItem(
-                      item.id,
-                      item.title,
-                    );
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-2 px-2 py-2 text-sm transition-all duration-200 rounded",
-                          isActive
-                            ? "bg-purple-600 text-white font-medium"
-                            : "text-gray-400 hover:bg-gray-800 hover:text-white",
-                        )}
-                      >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="whitespace-nowrap text-xs flex-1">
-                          {translatedTitle}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Admin Section */}
           {visibleAdminItems.length > 0 && (

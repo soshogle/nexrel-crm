@@ -327,9 +327,9 @@ SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it des
 CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when available. When user is viewing a contact (active_lead_id), use it for add_note, create_deal. When viewing a deal (active_deal_id), use it for add_note, update_deal_stage.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 For complex OpenClaw tasks, call openclaw_operate with the right mode:
-- sales_squad
-- viral_loop
 - work_ai_orchestrator
+- sales_squad
+- social_media_loop
 - execution_chain
 - approval_voice
 - daily_command_center
@@ -1302,7 +1302,7 @@ ${getConfidentialityGuard()}`;
       {
         name: "openclaw_operate",
         description:
-          "Run OpenClaw advanced operations in one command: end-to-end execution chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, controlled autonomous mode, team ops delegation, and customer-facing voice workflows.",
+          "Run OpenClaw advanced operations in one command: Work AI orchestration, Sales Squad, Social Media Loop, end-to-end execution chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, controlled autonomous mode, team ops delegation, and customer-facing voice workflows.",
         parameters: {
           type: "object",
           properties: {
@@ -1310,9 +1310,9 @@ ${getConfidentialityGuard()}`;
               type: "string",
               description: "OpenClaw operation mode",
               enum: [
-                "sales_squad",
-                "viral_loop",
                 "work_ai_orchestrator",
+                "sales_squad",
+                "social_media_loop",
                 "execution_chain",
                 "approval_voice",
                 "daily_command_center",
@@ -1384,7 +1384,7 @@ ${getConfidentialityGuard()}`;
             phaseId: {
               type: "number",
               description:
-                "Phase number for run_phase actions (work_ai_orchestrator: 1-12, viral_loop: 1-8, sales_squad: 1-6)",
+                "Phase number for run_phase actions (work_ai_orchestrator: 1-12)",
             },
             trustStage: {
               type: "string",
@@ -1434,51 +1434,6 @@ ${getConfidentialityGuard()}`;
               type: "number",
               description:
                 "For work_ai_orchestrator phase 11: daily campaign budget",
-            },
-            projectName: {
-              type: "string",
-              description: "For viral_loop initialize: project/campaign name",
-            },
-            niche: {
-              type: "string",
-              description: "For viral_loop initialize: target niche",
-            },
-            conversionGoal: {
-              type: "string",
-              description:
-                "For viral_loop initialize: conversion goal (downloads, leads, sales)",
-            },
-            channels: {
-              type: "array",
-              description:
-                "For viral_loop initialize: channels to include (e.g. tiktok, instagram)",
-              items: { type: "string" },
-            },
-            mediaUrl: {
-              type: "string",
-              description:
-                "For viral_loop phase 3 Instagram draft creation: public image URL",
-            },
-            limitPerChannel: {
-              type: "number",
-              description:
-                "For viral_loop phase 4 diagnostics: number of recent posts to ingest per channel",
-            },
-            squadName: {
-              type: "string",
-              description:
-                "For sales_squad initialize: name of the sales squad",
-            },
-            primaryGoal: {
-              type: "string",
-              description:
-                "For sales_squad initialize: primary revenue goal (leads, meetings, closed deals)",
-            },
-            companyUrls: {
-              type: "array",
-              description:
-                "For sales_squad phase 2: list of company URLs for outbound enrichment",
-              items: { type: "string" },
             },
           },
           required: ["mode"],

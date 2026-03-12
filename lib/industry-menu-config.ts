@@ -27,6 +27,7 @@ export type Industry =
 
 export type MenuItemId =
   | "dashboard"
+  | "agent-command-center"
   | "business-ai"
   | "ai-employees"
   | "docpen"
@@ -34,7 +35,6 @@ export type MenuItemId =
   | "leads"
   | "contacts"
   | "pipeline"
-  | "sales-agent"
   | "tasks"
   | "messages"
   | "soshogle"
@@ -56,8 +56,6 @@ export type MenuItemId =
   | "voice-agent-preview"
   | "voice-ai-notifications"
   | "campaigns"
-  | "marketing"
-  | "viral-marketing"
   | "sms-campaigns"
   | "reviews"
   | "analytics"
@@ -107,6 +105,7 @@ export type MenuItemId =
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
   "dashboard",
+  "agent-command-center",
   "business-ai", // AI Brain - Revolutionary voice AI business intelligence with Voice Assistant + Analytical Dashboard - available to ALL industries
   "ai-employees", // AI Employees - automated assistants available to ALL industries
   // 'docpen' removed - only available to medical industries (MEDICAL, DENTIST, MEDICAL_SPA, OPTOMETRIST, HEALTH_CLINIC, HOSPITAL)
@@ -115,7 +114,6 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   "widgets", // Embeddable lead capture widget - available to ALL industries
   "contacts",
   "pipeline",
-  "sales-agent",
   "tasks",
   "messages",
   "soshogle", // Soshogle Multi-Channel - available to ALL industries
@@ -125,8 +123,6 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   "voice-agent-preview", // Voice Agent Preview Testing - Browser-based testing for all business owners
   "voice-ai-notifications", // Call Notifications Management - Available to all business owners
   "campaigns",
-  "marketing",
-  "viral-marketing",
   "sms-campaigns", // SMS Campaign Management - Available to all industries
   "reviews",
   "analytics",
@@ -414,17 +410,19 @@ export function getAllFeatures(): {
   return [
     // Core CRM
     { id: "dashboard", label: "Dashboard", category: "Core CRM" },
+    {
+      id: "agent-command-center",
+      label: "Agent Command Center",
+      category: "Core CRM",
+    },
     { id: "onboarding", label: "Onboarding", category: "Core CRM" },
     { id: "leads", label: "Contacts & Leads", category: "Core CRM" },
     { id: "contacts", label: "Contacts Management", category: "Core CRM" },
     { id: "pipeline", label: "Pipeline/Deals", category: "Core CRM" },
-    { id: "sales-agent", label: "Sales AI", category: "Core CRM" },
     { id: "messages", label: "Messaging (SMS/Email)", category: "Core CRM" },
     { id: "voice-agent", label: "Voice Agent", category: "Core CRM" },
     { id: "calendar", label: "Calendar/Appointments", category: "Core CRM" },
     { id: "campaigns", label: "Campaigns", category: "Core CRM" },
-    { id: "marketing", label: "Marketing", category: "Core CRM" },
-    { id: "viral-marketing", label: "Marketing Viral", category: "Core CRM" },
     { id: "workflows", label: "Workflows & Automation", category: "Core CRM" },
     { id: "team", label: "Team Management", category: "Core CRM" },
     { id: "reports", label: "Reports", category: "Core CRM" },

@@ -49,6 +49,8 @@ import {
   OPENCLAW_MODES,
   buildOpenClawRecoverySuggestion,
   getCustomerWorkflowSteps,
+  getSalesSquadSteps,
+  getSocialMediaLoopSteps,
   getVerticalPlaybookSteps,
 } from "@/lib/openclaw-voice";
 import {
@@ -68,37 +70,10 @@ import {
   type WorkAiLaunchState,
 } from "@/lib/work-ai-marketing";
 import {
-  buildCrossPlatformDrafts,
-  buildGoalCorrelation,
-  buildHookRotationPlan,
-  buildViralContentPackage,
-  buildViralMemorySnapshot,
-  buildViralResearchOutput,
-  canPromoteViralTrustStage,
-  canRunViralLoopPhaseForTrustStage,
-  canRunViralLoopPhase,
-  createViralLoopState,
-  diagnoseViralPerformance,
-  getNextPendingViralPhase,
-  getViralLoopPhaseDefinition,
-  upsertViralLoopPhaseOutput,
-  type ViralLoopState,
-} from "@/lib/viral-loop";
-import {
-  canPromoteSalesTrustStage,
-  canRunSalesSquadPhaseForTrustStage,
-  canRunSalesSquadPhase,
-  createSalesSquadState,
-  getNextPendingSalesSquadPhase,
-  getSalesSquadPhase,
-  upsertSalesSquadPhaseOutput,
-  type SalesSquadState,
-} from "@/lib/sales-squad";
-import {
-  ingestNativeSocialDiagnostics,
-  publishViralDraftsToNativeChannels,
-} from "@/lib/social-native";
-import { dataEnrichmentService } from "@/lib/data-enrichment-service";
+  evaluateAutonomyGate,
+  getAutonomyControlPolicy,
+} from "@/lib/agent-command-center-control";
+import { generateGoViralAsset } from "@/lib/go-viral";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -1633,8 +1608,6 @@ async function handleAddWorkflowTask(
 }
 
 const WORK_AI_ENTITY_TYPE = "WORK_AI_OFFER_LAUNCH";
-const VIRAL_LOOP_ENTITY_TYPE = "VIRAL_LOOP_PROJECT";
-const SALES_SQUAD_ENTITY_TYPE = "SALES_SQUAD_PROJECT";
 
 async function getLatestWorkAiLaunch(
   db: ReturnType<typeof getCrmDb>,
@@ -1675,80 +1648,6 @@ async function persistWorkAiLaunch(
   });
 }
 
-async function getLatestViralLoopProject(
-  db: ReturnType<typeof getCrmDb>,
-  userId: string,
-  projectId?: string,
-): Promise<ViralLoopState | null> {
-  const row = await db.auditLog.findFirst({
-    where: {
-      userId,
-      entityType: VIRAL_LOOP_ENTITY_TYPE,
-      ...(projectId ? { entityId: projectId } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    select: { metadata: true },
-  });
-  const metadata = row?.metadata as any;
-  if (!metadata?.projectId || !metadata?.phaseStatus) return null;
-  return metadata as ViralLoopState;
-}
-
-async function persistViralLoopProject(
-  db: ReturnType<typeof getCrmDb>,
-  userId: string,
-  state: ViralLoopState,
-) {
-  await db.auditLog.create({
-    data: {
-      userId,
-      action: "SETTINGS_MODIFIED",
-      severity: "LOW",
-      entityType: VIRAL_LOOP_ENTITY_TYPE,
-      entityId: state.projectId,
-      metadata: state as any,
-      success: true,
-    },
-  });
-}
-
-async function getLatestSalesSquadProject(
-  db: ReturnType<typeof getCrmDb>,
-  userId: string,
-  squadId?: string,
-): Promise<SalesSquadState | null> {
-  const row = await db.auditLog.findFirst({
-    where: {
-      userId,
-      entityType: SALES_SQUAD_ENTITY_TYPE,
-      ...(squadId ? { entityId: squadId } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    select: { metadata: true },
-  });
-  const metadata = row?.metadata as any;
-  if (!metadata?.squadId || !metadata?.phaseStatus) return null;
-  return metadata as SalesSquadState;
-}
-
-async function persistSalesSquadProject(
-  db: ReturnType<typeof getCrmDb>,
-  userId: string,
-  state: SalesSquadState,
-) {
-  await db.auditLog.create({
-    data: {
-      userId,
-      action: "SETTINGS_MODIFIED",
-      severity: "LOW",
-      entityType: SALES_SQUAD_ENTITY_TYPE,
-      entityId: state.squadId,
-      metadata: state as any,
-      success: true,
-    },
-  });
-}
-
 async function handleOpenClawOperate(
   userId: string,
   params: any,
@@ -1758,923 +1657,6 @@ async function handleOpenClawOperate(
   const mode = String(params?.mode || "execution_chain");
   const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
-
-  if (mode === "sales_squad") {
-    const action = String(params?.action || "status");
-    const requestedSquadId =
-      typeof params?.squadId === "string" ? params.squadId : undefined;
-
-    if (action === "initialize") {
-      const state = createSalesSquadState({
-        squadId: crypto.randomUUID(),
-        ownerUserId: userId,
-        squadName: String(params?.squadName || "Autonomous Sales Squad"),
-        primaryGoal: String(params?.primaryGoal || "book qualified meetings"),
-      });
-      await persistSalesSquadProject(db, userId, state);
-      return {
-        success: true,
-        mode,
-        action,
-        squad: state,
-        message:
-          "Sales squad initialized. Start with phase 1 to configure Alfred and daily briefings.",
-        navigateTo: "/dashboard/sales/agent",
-      };
-    }
-
-    const current = await getLatestSalesSquadProject(
-      db,
-      userId,
-      requestedSquadId,
-    );
-    if (!current) {
-      return {
-        success: false,
-        mode,
-        error: "No sales squad found. Initialize first with action=initialize.",
-      };
-    }
-
-    if (action === "status") {
-      return {
-        success: true,
-        mode,
-        action,
-        squad: current,
-        nextPhase: getNextPendingSalesSquadPhase(current),
-      };
-    }
-
-    if (action === "set_trust_stage") {
-      const requestedStage = String(params?.trustStage || "").toLowerCase() as
-        | "crawl"
-        | "walk"
-        | "run";
-      if (!["crawl", "walk", "run"].includes(requestedStage)) {
-        return {
-          success: false,
-          mode,
-          action,
-          error: "trustStage must be one of: crawl, walk, run",
-        };
-      }
-
-      const promoteCheck = canPromoteSalesTrustStage(current, requestedStage);
-      if (!promoteCheck.ok) {
-        return {
-          success: false,
-          mode,
-          action,
-          error: promoteCheck.reason,
-          squad: current,
-        };
-      }
-
-      const updated = {
-        ...current,
-        trustStage: requestedStage,
-        updatedAt: new Date().toISOString(),
-      };
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        trustStage: requestedStage,
-        squad: updated,
-      };
-    }
-
-    if (action !== "run_phase") {
-      return {
-        success: false,
-        mode,
-        error:
-          "action must be initialize, status, set_trust_stage, or run_phase",
-      };
-    }
-
-    const phaseId = Number(params?.phaseId || current.currentPhase || 1);
-    const phase = getSalesSquadPhase(phaseId);
-    if (!phase) {
-      return {
-        success: false,
-        mode,
-        error: `Unknown phase ${phaseId}`,
-      };
-    }
-
-    const gate = canRunSalesSquadPhase(current, phaseId);
-    if (!gate.ok) {
-      return {
-        success: false,
-        mode,
-        action,
-        phaseId,
-        error: gate.reason,
-      };
-    }
-
-    const trustGate = canRunSalesSquadPhaseForTrustStage(
-      current.trustStage,
-      phaseId,
-    );
-    if (!trustGate.ok) {
-      return {
-        success: false,
-        mode,
-        action,
-        phaseId,
-        error: trustGate.reason,
-        requiredTrustStage: trustGate.required,
-      };
-    }
-
-    if (phaseId === 1) {
-      const briefingTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: `${current.squadName}: Daily Briefing Review`,
-          description:
-            "Alfred should summarize yesterday's leads, deal movement, calls, and today's top opportunities at 7:30 AM.",
-          priority: "HIGH",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        agents: [
-          "Alfred",
-          "Green Arrow",
-          "Oracle",
-          "Flash",
-          "Helios",
-          "The Curator",
-        ],
-        workflows: ["daily_briefing", "knowledge_loop"],
-        briefingTask: briefingTask?.error ? null : briefingTask,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status: briefingTask?.error ? "blocked" : "completed",
-        output,
-        currentPhase: briefingTask?.error ? 1 : 2,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !briefingTask?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-      };
-    }
-
-    if (phaseId === 2) {
-      const companyUrls = Array.isArray(params?.companyUrls)
-        ? params.companyUrls.filter(Boolean)
-        : [];
-      const domains = companyUrls
-        .map((raw: string) => {
-          try {
-            const normalized = raw.startsWith("http") ? raw : `https://${raw}`;
-            return new URL(normalized).hostname.replace(/^www\./, "");
-          } catch {
-            return "";
-          }
-        })
-        .filter(Boolean);
-
-      const outboundCampaign = await proxyToActionsAPI(
-        "create_campaign",
-        {
-          name: `${current.squadName} Outbound`,
-          type: "EMAIL",
-        },
-        userId,
-        req,
-      );
-      const reviewTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: "Review outbound drafts before sending",
-          description:
-            "Green Arrow + Flash generated personalized outbound drafts. Review in crawl/walk mode.",
-          priority: "HIGH",
-        },
-        userId,
-        req,
-      );
-
-      const candidateLeads = await db.lead.findMany({
-        where: {
-          userId,
-          ...(domains.length > 0
-            ? {
-                OR: domains.map((domain: string) => ({
-                  website: { contains: domain, mode: "insensitive" },
-                })),
-              }
-            : {}),
-        },
-        select: { id: true },
-        take: 10,
-      });
-      const enrichmentSummary =
-        candidateLeads.length > 0
-          ? await dataEnrichmentService.enrichLeadsBulk(
-              candidateLeads.map((lead) => lead.id),
-            )
-          : { success: 0, failed: 0 };
-
-      const output = {
-        companyUrls,
-        enrichedLeadCount: enrichmentSummary.success,
-        enrichmentFailures: enrichmentSummary.failed,
-        campaign: outboundCampaign?.error ? null : outboundCampaign,
-        reviewTask: reviewTask?.error ? null : reviewTask,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status:
-          outboundCampaign?.error || reviewTask?.error
-            ? "blocked"
-            : "completed",
-        output,
-        currentPhase: outboundCampaign?.error || reviewTask?.error ? 2 : 3,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !outboundCampaign?.error && !reviewTask?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-        navigateTo: "/dashboard/campaigns",
-      };
-    }
-
-    if (phaseId === 3) {
-      const reengagementTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: "Run proactive deal finder re-engagement",
-          description:
-            "Scan historical call context and generate WHO/WHY NOW/GAP + re-engagement copy for warm opportunities.",
-          priority: "HIGH",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        transcriptWindowMonths: 12,
-        createdReengagementPipeline: true,
-        reengagementTask: reengagementTask?.error ? null : reengagementTask,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status: reengagementTask?.error ? "blocked" : "completed",
-        output,
-        currentPhase: reengagementTask?.error ? 3 : 4,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !reengagementTask?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-        navigateTo: "/dashboard/pipeline",
-      };
-    }
-
-    if (phaseId === 4) {
-      const inboundTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: "Enable inbound lead scoring + AI voice qualification",
-          description:
-            "Oracle should score inbound leads, flag MQLs, and trigger AI voice qualification scripts.",
-          priority: "HIGH",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        scoringRubric: ["fit", "intent", "urgency", "budget"],
-        mqlThreshold: 75,
-        qualificationEnabled: true,
-        setupTask: inboundTask?.error ? null : inboundTask,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status: inboundTask?.error ? "blocked" : "completed",
-        output,
-        currentPhase: inboundTask?.error ? 4 : 5,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !inboundTask?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-      };
-    }
-
-    if (phaseId === 5) {
-      const reviewCampaign = await proxyToActionsAPI(
-        "create_campaign",
-        {
-          name: `${current.squadName} Review Requests`,
-          type: "EMAIL",
-        },
-        userId,
-        req,
-      );
-      const referralCampaign = await proxyToActionsAPI(
-        "create_campaign",
-        {
-          name: `${current.squadName} Referral Requests`,
-          type: "EMAIL",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        reviewCampaign: reviewCampaign?.error ? null : reviewCampaign,
-        referralCampaign: referralCampaign?.error ? null : referralCampaign,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status:
-          reviewCampaign?.error || referralCampaign?.error
-            ? "blocked"
-            : "completed",
-        output,
-        currentPhase: reviewCampaign?.error || referralCampaign?.error ? 5 : 6,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !reviewCampaign?.error && !referralCampaign?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-        navigateTo: "/dashboard/campaigns",
-      };
-    }
-
-    if (phaseId === 6) {
-      const researchReport = await proxyToActionsAPI(
-        "create_report",
-        {
-          title: `${current.squadName} Content and Research Brief`,
-          reportType: "custom",
-          period: "last_30_days",
-        },
-        userId,
-        req,
-      );
-      const clippingTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: "Create social clips from latest long-form content",
-          description:
-            "The Curator should identify 3-5 viral moments and assign editor tasks.",
-          priority: "MEDIUM",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        researchReport: researchReport?.error ? null : researchReport,
-        clippingTask: clippingTask?.error ? null : clippingTask,
-      };
-      const updated = upsertSalesSquadPhaseOutput(current, {
-        phaseId,
-        status:
-          researchReport?.error || clippingTask?.error
-            ? "blocked"
-            : "completed",
-        output,
-        currentPhase: 6,
-      });
-      await persistSalesSquadProject(db, userId, updated);
-      return {
-        success: !researchReport?.error && !clippingTask?.error,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        squad: updated,
-        message:
-          "Sales squad phases configured. Use set_trust_stage to promote crawl -> walk -> run.",
-      };
-    }
-
-    return {
-      success: false,
-      mode,
-      action,
-      phaseId,
-      error: "Phase is unsupported or unavailable for this squad state.",
-      squad: current,
-    };
-  }
-
-  if (mode === "viral_loop") {
-    const action = String(params?.action || "status");
-    const requestedProjectId =
-      typeof params?.projectId === "string" ? params.projectId : undefined;
-
-    if (action === "initialize") {
-      const niche = String(params?.niche || "General Market");
-      const conversionGoal = String(
-        params?.conversionGoal || "qualified leads",
-      );
-      const state = createViralLoopState({
-        projectId: crypto.randomUUID(),
-        ownerUserId: userId,
-        projectName: String(params?.projectName || "Viral Loop Project"),
-        niche,
-        conversionGoal,
-        channels: Array.isArray(params?.channels)
-          ? params.channels.filter(Boolean)
-          : undefined,
-      });
-      await persistViralLoopProject(db, userId, state);
-      return {
-        success: true,
-        mode,
-        action,
-        project: state,
-        message:
-          "Viral loop initialized. Run phase 1 (Niche Research) to start the loop.",
-        navigateTo: "/dashboard/marketing/viral",
-      };
-    }
-
-    const current = await getLatestViralLoopProject(
-      db,
-      userId,
-      requestedProjectId,
-    );
-    if (!current) {
-      return {
-        success: false,
-        mode,
-        error:
-          "No viral project found. Initialize first with action=initialize.",
-      };
-    }
-
-    if (action === "status") {
-      return {
-        success: true,
-        mode,
-        action,
-        project: current,
-        nextPhase: getNextPendingViralPhase(current),
-      };
-    }
-
-    if (action === "set_trust_stage") {
-      const requestedStage = String(params?.trustStage || "").toLowerCase() as
-        | "crawl"
-        | "walk"
-        | "run";
-      if (!["crawl", "walk", "run"].includes(requestedStage)) {
-        return {
-          success: false,
-          mode,
-          action,
-          error: "trustStage must be one of: crawl, walk, run",
-        };
-      }
-
-      const promoteCheck = canPromoteViralTrustStage(current, requestedStage);
-      if (!promoteCheck.ok) {
-        return {
-          success: false,
-          mode,
-          action,
-          error: promoteCheck.reason,
-          project: current,
-        };
-      }
-
-      const updated = {
-        ...current,
-        trustStage: requestedStage,
-        updatedAt: new Date().toISOString(),
-      };
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        trustStage: requestedStage,
-        project: updated,
-      };
-    }
-
-    if (action !== "run_phase") {
-      return {
-        success: false,
-        mode,
-        error:
-          "action must be initialize, status, set_trust_stage, or run_phase",
-      };
-    }
-
-    const phaseId = Number(params?.phaseId || current.currentPhase || 1);
-    const phase = getViralLoopPhaseDefinition(phaseId);
-    if (!phase) {
-      return {
-        success: false,
-        mode,
-        error: `Unknown phase ${phaseId}`,
-      };
-    }
-
-    const gate = canRunViralLoopPhase(current, phaseId);
-    if (!gate.ok) {
-      return {
-        success: false,
-        mode,
-        action,
-        phaseId,
-        error: gate.reason,
-      };
-    }
-
-    const trustGate = canRunViralLoopPhaseForTrustStage(
-      current.trustStage,
-      phaseId,
-    );
-    if (!trustGate.ok) {
-      return {
-        success: false,
-        mode,
-        action,
-        phaseId,
-        error: trustGate.reason,
-        requiredTrustStage: trustGate.required,
-      };
-    }
-
-    if (phaseId === 1) {
-      const research = buildViralResearchOutput({
-        niche: current.niche,
-        conversionGoal: current.conversionGoal,
-      });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: research,
-        currentPhase: 2,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: research,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 2) {
-      const phase1 = current.phaseOutputs?.[1];
-      if (!phase1?.hooks || !phase1?.ctas) {
-        return {
-          success: false,
-          mode,
-          action,
-          phaseId,
-          error: "Phase 2 requires phase 1 research output.",
-        };
-      }
-      const contentPackage = buildViralContentPackage({
-        projectName: current.projectName,
-        niche: current.niche,
-        hooks: phase1.hooks,
-        ctas: phase1.ctas,
-      });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: contentPackage,
-        currentPhase: 3,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: contentPackage,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 3) {
-      const contentPackage = current.phaseOutputs?.[2];
-      if (!contentPackage?.packageId) {
-        return {
-          success: false,
-          mode,
-          action,
-          phaseId,
-          error: "Phase 3 requires phase 2 content package.",
-        };
-      }
-
-      const nativeDrafts = await publishViralDraftsToNativeChannels({
-        db,
-        userId,
-        caption: String(contentPackage.caption || contentPackage.hook || ""),
-        mediaUrl:
-          typeof params?.mediaUrl === "string" && params.mediaUrl.trim()
-            ? params.mediaUrl.trim()
-            : undefined,
-      });
-
-      const draftCampaign = await proxyToActionsAPI(
-        "create_campaign",
-        {
-          name: `${current.projectName} Draft ${new Date().toISOString().slice(0, 10)}`,
-          type: "EMAIL",
-        },
-        userId,
-        req,
-      );
-
-      const notifyTask = await proxyToActionsAPI(
-        "create_task",
-        {
-          title: `Review and publish viral draft for ${current.projectName}`,
-          description:
-            "Draft is ready. Add trending sound from mobile and publish manually.",
-          priority: "HIGH",
-        },
-        userId,
-        req,
-      );
-
-      const output = {
-        contentPackageId: contentPackage.packageId,
-        draftCampaign: draftCampaign?.error ? null : draftCampaign,
-        notifyTask: notifyTask?.error ? null : notifyTask,
-        nativeDrafts,
-        postingMode: "draft_first",
-      };
-
-      const nativeCreated = nativeDrafts.created > 0;
-
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status:
-          draftCampaign?.error || notifyTask?.error || !nativeCreated
-            ? "blocked"
-            : "completed",
-        output,
-        currentPhase:
-          draftCampaign?.error || notifyTask?.error || !nativeCreated ? 3 : 4,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: !draftCampaign?.error && !notifyTask?.error && nativeCreated,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        project: updated,
-        navigateTo: "/dashboard/campaigns",
-      };
-    }
-
-    if (phaseId === 4) {
-      const ingested = await ingestNativeSocialDiagnostics({
-        db,
-        userId,
-        limitPerChannel:
-          typeof params?.limitPerChannel === "number"
-            ? params.limitPerChannel
-            : 6,
-      });
-      if (ingested.posts.length === 0) {
-        const updated = upsertViralLoopPhaseOutput(current, {
-          phaseId,
-          status: "blocked",
-          output: ingested,
-          currentPhase: 4,
-        });
-        await persistViralLoopProject(db, userId, updated);
-        return {
-          success: false,
-          mode,
-          action,
-          phaseId,
-          phaseName: phase.name,
-          error:
-            "No provider analytics found. Connect social channels and ensure posts exist before diagnostics.",
-          output: ingested,
-          project: updated,
-        };
-      }
-
-      const diagnosis = diagnoseViralPerformance({ posts: ingested.posts });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: {
-          ...diagnosis,
-          source: "provider_native",
-          ingested,
-        },
-        currentPhase: 5,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: diagnosis,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 5) {
-      const diagnostics = current.phaseOutputs?.[4]?.diagnostics || [];
-      const activeWinners = diagnostics
-        .filter((d: any) => d.diagnosis === "winner")
-        .map((d: any) => d.hook);
-      const badHooks = diagnostics
-        .filter((d: any) => d.diagnosis === "bad_hook")
-        .map((d: any) => d.hook);
-      const plan = buildHookRotationPlan({
-        activeWinners,
-        provenHooks: current.phaseOutputs?.[1]?.hooks || [],
-        testingHooks: badHooks.length > 0 ? badHooks : ["Fresh hook test"],
-      });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: plan,
-        currentPhase: 6,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: plan,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 6) {
-      const postsFromDiagnostics = Array.isArray(
-        current.phaseOutputs?.[4]?.ingested?.posts,
-      )
-        ? current.phaseOutputs[4].ingested.posts
-        : [];
-      if (postsFromDiagnostics.length === 0) {
-        return {
-          success: false,
-          mode,
-          action,
-          phaseId,
-          error:
-            "Phase 6 requires provider-native diagnostics output from phase 4.",
-        };
-      }
-
-      const attributionPosts = postsFromDiagnostics.map((post: any) => ({
-        id: String(post.id),
-        hook: String(post.hook || "Untitled"),
-        cta: String(post.cta || "Learn more"),
-        conversions: Number(post.conversions || 0),
-      }));
-      const correlation = buildGoalCorrelation({
-        conversionGoal: current.conversionGoal,
-        posts: attributionPosts,
-      });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: correlation,
-        currentPhase: 7,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: correlation,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 7) {
-      const contentPackage = current.phaseOutputs?.[2];
-      if (!contentPackage) {
-        return {
-          success: false,
-          mode,
-          action,
-          phaseId,
-          error: "Phase 7 requires phase 2 content package.",
-        };
-      }
-      const drafts = buildCrossPlatformDrafts({ contentPackage });
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output: drafts,
-        currentPhase: 8,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output: drafts,
-        project: updated,
-      };
-    }
-
-    if (phaseId === 8) {
-      const snapshot = buildViralMemorySnapshot({ state: current });
-      const reportResult = await proxyToActionsAPI(
-        "create_report",
-        {
-          title: `${current.projectName} Viral Memory Snapshot`,
-          reportType: "custom",
-          period: "last_30_days",
-        },
-        userId,
-        req,
-      );
-      const output = {
-        snapshot,
-        report: reportResult?.error ? null : reportResult,
-      };
-      const updated = upsertViralLoopPhaseOutput(current, {
-        phaseId,
-        status: "completed",
-        output,
-        currentPhase: 8,
-      });
-      await persistViralLoopProject(db, userId, updated);
-      return {
-        success: true,
-        mode,
-        action,
-        phaseId,
-        phaseName: phase.name,
-        output,
-        project: updated,
-        message:
-          "Memory snapshot exported. Viral loop diagnostics and strategy context persisted.",
-      };
-    }
-
-    return {
-      success: false,
-      mode,
-      action,
-      phaseId,
-      error: "Phase is unsupported or unavailable for this project state.",
-      project: current,
-    };
-  }
 
   if (mode === "work_ai_orchestrator") {
     const action = String(params?.action || "status");
@@ -3650,6 +2632,94 @@ async function handleOpenClawOperate(
     };
   }
 
+  if (mode === "sales_squad") {
+    const trustMode = String(params?.trustMode || "crawl").toLowerCase();
+    const ownerControl = await getAutonomyControlPolicy(ctx);
+    const moduleGate = evaluateAutonomyGate({
+      policy: ownerControl.policy,
+      module: "sales",
+    });
+    if (!moduleGate.ok) {
+      return {
+        success: false,
+        mode,
+        blockedByOwnerControl: true,
+        error: moduleGate.reason,
+      };
+    }
+    const leads = await leadService.findMany(ctx, {
+      where: {
+        userId,
+        status: { in: ["NEW", "CONTACTED"] as any },
+      } as any,
+      take: Number(params?.limit || 10),
+      orderBy: { updatedAt: "asc" },
+      select: {
+        id: true,
+        contactPerson: true,
+        businessName: true,
+        email: true,
+        phone: true,
+      },
+    });
+
+    let tasksCreated = 0;
+    let emailsDrafted = 0;
+
+    for (const lead of leads as any[]) {
+      await (db as any).task.create({
+        data: {
+          userId,
+          leadId: lead.id,
+          title: `Sales Squad follow-up: ${lead.contactPerson || lead.businessName || "lead"}`,
+          description: "Generated by OpenClaw sales_squad mode.",
+          priority: "HIGH",
+          status: "TODO",
+          autoCreated: true,
+          aiSuggested: true,
+          dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
+          tags: ["openclaw", "sales-squad"],
+        },
+      });
+      tasksCreated += 1;
+
+      if (
+        trustMode === "run" &&
+        lead.email &&
+        ownerControl.policy.channels.email
+      ) {
+        await (db as any).scheduledEmail.create({
+          data: {
+            userId,
+            leadId: lead.id,
+            toEmail: lead.email,
+            toName: lead.contactPerson || lead.businessName || null,
+            subject: "Quick follow-up from our sales team",
+            body: `Hi ${lead.contactPerson || "there"},\n\nWe reviewed your profile and have a tailored next step ready for you. Reply with your preferred time and we'll connect right away.`,
+            scheduledFor: new Date(Date.now() + 5 * 60 * 1000),
+            status: "PENDING",
+          },
+        });
+        emailsDrafted += 1;
+      }
+    }
+
+    return {
+      success: true,
+      mode,
+      trustMode,
+      leadsProcessed: leads.length,
+      tasksCreated,
+      emailsDrafted,
+      steps: getSalesSquadSteps(),
+      message:
+        trustMode === "run"
+          ? "Sales Squad executed autonomous follow-up tasks and queued personalized outreach."
+          : "Sales Squad prepared and routed lead follow-up tasks.",
+      navigateTo: "/dashboard/agent-command-center/sales",
+    };
+  }
+
   if (mode === "meeting_call_intelligence") {
     const phase = String(params?.phase || "pre_call");
     const contactName = params?.contactName;
@@ -3918,6 +2988,79 @@ async function handleOpenClawOperate(
         ? `Delegated to ${delegateTo.customName}.`
         : "No active AI employee available; created unassigned delegation task.",
       navigateTo: "/dashboard/tasks",
+    };
+  }
+
+  if (mode === "social_media_loop") {
+    const trustMode = String(params?.trustMode || "crawl").toLowerCase();
+    const ownerControl = await getAutonomyControlPolicy(ctx);
+    const moduleGate = evaluateAutonomyGate({
+      policy: ownerControl.policy,
+      module: "social",
+    });
+    if (!moduleGate.ok) {
+      return {
+        success: false,
+        mode,
+        blockedByOwnerControl: true,
+        error: moduleGate.reason,
+      };
+    }
+    const ideaTitle = String(
+      params?.campaignTitle || "Larry Loop content cycle",
+    );
+
+    const task = await (db as any).task.create({
+      data: {
+        userId,
+        title: `${ideaTitle} - Produce draft content set`,
+        description:
+          "Generate hooks, slide assets, captions, and queue draft-first publishing.",
+        priority: "MEDIUM",
+        status: "TODO",
+        autoCreated: true,
+        aiSuggested: true,
+        tags: ["openclaw", "social-loop"],
+      },
+    });
+
+    let draftReport: any = null;
+    if (trustMode !== "crawl" && ownerControl.policy.channels.social) {
+      draftReport = await proxyToActionsAPI(
+        "create_report",
+        {
+          title: `${ideaTitle} Diagnostic Brief`,
+          reportType: "custom",
+          period: "last_30_days",
+        },
+        userId,
+        req,
+      );
+    }
+
+    const viralDraft = await generateGoViralAsset(ctx, {
+      objective:
+        "Create a high-velocity social concept that attracts qualified leads",
+      product: String(params?.product || "core offer"),
+      audience: String(params?.audience || "high-intent buyers"),
+      kind: "image",
+      model: "nanobanana",
+      tone: "high-contrast and curiosity-driven",
+    }).catch(() => null);
+
+    return {
+      success: true,
+      mode,
+      trustMode,
+      createdTask: { id: task.id, title: task.title },
+      viralDraftJobId: viralDraft?.id || null,
+      diagnosticReport: draftReport?.error ? null : draftReport,
+      steps: getSocialMediaLoopSteps(),
+      message:
+        trustMode === "crawl"
+          ? "Social loop drafted the next content cycle for approval."
+          : "Social loop queued content production and generated a diagnostic brief.",
+      navigateTo: "/dashboard/agent-command-center/social/go-viral",
     };
   }
 

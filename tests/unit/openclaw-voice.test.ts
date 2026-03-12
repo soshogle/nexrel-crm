@@ -8,9 +8,9 @@ import {
 
 describe("openclaw voice orchestration helpers", () => {
   it("includes all required OpenClaw modes", () => {
-    expect(OPENCLAW_MODES).toContain("sales_squad");
-    expect(OPENCLAW_MODES).toContain("viral_loop");
     expect(OPENCLAW_MODES).toContain("work_ai_orchestrator");
+    expect(OPENCLAW_MODES).toContain("sales_squad");
+    expect(OPENCLAW_MODES).toContain("social_media_loop");
     expect(OPENCLAW_MODES).toContain("execution_chain");
     expect(OPENCLAW_MODES).toContain("approval_voice");
     expect(OPENCLAW_MODES).toContain("daily_command_center");
