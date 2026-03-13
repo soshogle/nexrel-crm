@@ -190,11 +190,11 @@ export default function LiveConsolePage() {
       : [];
     return [...list].reverse();
   }, [session]);
-
   const steps = Array.isArray(session?.output?.steps)
     ? session.output.steps
     : [];
   const state = String(session?.output?.sessionState || "queued");
+  const isTerminalState = ["completed", "failed", "stopped"].includes(state);
   const worker = session?.output?.worker || {};
   const workerRequired = Boolean(worker?.required);
   const workerConnected = Boolean(worker?.connected);
@@ -304,12 +304,20 @@ export default function LiveConsolePage() {
         <div className="flex gap-2">
           <Badge
             variant="outline"
-            className={streamConnected ? "text-emerald-700" : "text-zinc-500"}
+            className={
+              isTerminalState
+                ? "text-zinc-500"
+                : streamConnected
+                  ? "text-emerald-700"
+                  : "text-zinc-500"
+            }
           >
             <Radio className="w-3 h-3 mr-1" />
-            {streamConnected
-              ? "Live stream connected"
-              : "Live stream reconnecting"}
+            {isTerminalState
+              ? "Session ended"
+              : streamConnected
+                ? "Live stream connected"
+                : "Live stream reconnecting"}
           </Badge>
           <Button
             variant="outline"

@@ -246,6 +246,7 @@ function buildNavigationTarget(
 
 function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
   const appName = inferAppName(payload);
+  const openAppOnly = isOpenAppOnlyGoal(payload.goal);
   const navigationTarget = buildNavigationTarget(payload, appName);
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
   const autonomy = resolveAutonomyLevel(payload);
@@ -264,6 +265,10 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
     };
     step.requiresApproval = shouldRequireApproval(step, autonomy);
     steps.push(step);
+
+    if (openAppOnly) {
+      return steps;
+    }
   }
 
   steps.push(
@@ -923,8 +928,52 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
     return getLiveRun(ctx, session.id);
   }
 
-  currentStep.status = "completed";
-  currentStep.result = "Executed successfully";
+  if (!currentStep) {
+    return getLiveRun(ctx, session.id);
+  }
+  const runningStep = currentStep;
+
+  if (worker.required) {
+    const related = worker.commands.filter((c) => c.stepId === runningStep.id);
+    const pending = related.find(
+      (c) => c.status === "queued" || c.status === "running",
+    );
+    if (pending) {
+      output.framePreview = worker.connected
+        ? `Waiting for worker to complete: ${runningStep.title}`
+        : `Waiting for worker connection: ${runningStep.title}`;
+      await db.aIJob.update({
+        where: { id: session.id },
+        data: {
+          output: {
+            ...output,
+            worker,
+          },
+          status: AIJobStatus.RUNNING,
+        },
+      });
+      return getLiveRun(ctx, session.id);
+    }
+
+    const last = related[related.length - 1];
+    if (!last || last.status !== "completed") {
+      output.framePreview = `Awaiting worker result for: ${runningStep.title}`;
+      await db.aIJob.update({
+        where: { id: session.id },
+        data: {
+          output: {
+            ...output,
+            worker,
+          },
+          status: AIJobStatus.RUNNING,
+        },
+      });
+      return getLiveRun(ctx, session.id);
+    }
+  }
+
+  runningStep.status = "completed";
+  runningStep.result = "Executed successfully";
   output.steps = steps;
   output.currentStepId = null;
   output.sessionState = "running";
@@ -933,17 +982,17 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
     95,
     Math.round((completedSteps / Math.max(steps.length, 1)) * 100),
   );
-  output.framePreview = `Completed step: ${currentStep.title}`;
+  output.framePreview = `Completed step: ${runningStep.title}`;
   const completeEvent: LiveRunEvent = {
     id: crypto.randomUUID(),
     type: "step_completed",
-    message: `Step completed: ${currentStep.title}`,
+    message: `Step completed: ${runningStep.title}`,
     createdAt: new Date().toISOString(),
   };
   let merged = appendEvent(output, completeEvent);
   merged = appendMemoryNote(merged, {
     kind: "step_completed",
-    note: currentStep.title,
+    note: runningStep.title,
   });
 
   await db.aIJob.update({

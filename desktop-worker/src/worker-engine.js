@@ -305,6 +305,10 @@ class WorkerEngine extends EventEmitter {
     }
 
     if (command.actionType === "extract") {
+      const url = this.page.url();
+      if (!url || url === "about:blank") {
+        throw new Error("No active workspace loaded for extract");
+      }
       const title = await this.page.title().catch(() => "unknown");
       return `Extracted context: ${title} @ ${this.page.url()}`;
     }
@@ -312,11 +316,22 @@ class WorkerEngine extends EventEmitter {
     if (command.actionType === "verify") {
       await this.page.waitForLoadState("domcontentloaded", { timeout: 15000 });
       const currentUrl = this.page.url();
+      if (!currentUrl || currentUrl === "about:blank") {
+        throw new Error("No active workspace loaded for verification");
+      }
       const bodyText = await this.page
         .locator("body")
         .innerText()
         .catch(() => "");
       const body = String(bodyText || "").toLowerCase();
+      const goal = String(command?.meta?.goal || "").toLowerCase();
+      const loginSignals =
+        /auth\/signin|\/login\b|sign in|log in|authentication required/i.test(
+          `${currentUrl} ${body}`,
+        );
+      if (loginSignals && !/login|sign in|authenticate/.test(goal)) {
+        throw new Error(`login wall detected at ${currentUrl}`);
+      }
       if (body.includes("captcha")) {
         throw new Error(`captcha challenge detected at ${currentUrl}`);
       }
