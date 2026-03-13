@@ -780,10 +780,9 @@ export default function AIEmployeesPage() {
   // Session for industry check
   const { data: session, status: sessionStatus } = useSession() || {};
   const [resolvedIndustry, setResolvedIndustry] = useState<Industry | null>(
-    ((session?.user as any)?.industry as Industry) || null,
+    null,
   );
-  const userIndustry =
-    resolvedIndustry || ((session?.user as any)?.industry as Industry) || null;
+  const userIndustry = resolvedIndustry;
   const isRealEstateUser = userIndustry === "REAL_ESTATE";
   const hasWorkflowSystem =
     userIndustry &&
@@ -792,21 +791,26 @@ export default function AIEmployeesPage() {
   const hasIndustryTeam = hasIndustryAIEmployees(userIndustry);
 
   useEffect(() => {
-    const fromSession = ((session?.user as any)?.industry as Industry) || null;
-    if (fromSession) {
-      setResolvedIndustry(fromSession);
-      return;
-    }
+    if (sessionStatus !== "authenticated") return;
 
-    if (sessionStatus === "authenticated") {
-      fetch("/api/session/context")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          const industry = (data?.industry as Industry | null) || null;
-          if (industry) setResolvedIndustry(industry);
-        })
-        .catch(() => {});
-    }
+    let cancelled = false;
+    const fromSession = ((session?.user as any)?.industry as Industry) || null;
+
+    fetch("/api/session/context")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const industry = (data?.industry as Industry | null) || fromSession;
+        setResolvedIndustry(industry || null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResolvedIndustry(fromSession);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [sessionStatus, (session?.user as any)?.industry]);
 
   // Tab parameter from URL
@@ -1745,7 +1749,7 @@ export default function AIEmployeesPage() {
             {session?.user?.id && (
               <UnifiedMonitor
                 userId={session.user.id}
-                industry={userIndustry}
+                industry={userIndustry || undefined}
               />
             )}
           </TabsContent>

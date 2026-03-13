@@ -238,7 +238,7 @@ function getInitialOutput(payload: LiveRunPayload) {
       tokenExpiresAt: null as string | null,
       commands: [] as WorkerCommand[],
     },
-    framePreview: "Planner initialized. OpenClaw building execution plan.",
+    framePreview: "Planner initialized. Nexrel AI building execution plan.",
   };
 }
 
@@ -271,6 +271,14 @@ async function resolveEmployee(
   payload: LiveRunPayload,
 ) {
   const db = getCrmDb(ctx);
+  const supportedTypes = new Set<string>(Object.values(AIEmployeeType));
+  const refType = supportedTypes.has(id) ? (id as AIEmployeeType) : null;
+  const payloadType = payload.employeeType
+    ? payload.employeeType.trim().toUpperCase()
+    : "";
+  const safePayloadType = supportedTypes.has(payloadType)
+    ? (payloadType as AIEmployeeType)
+    : null;
 
   const byId = await db.aIEmployee.findFirst({
     where: { id, userId: ctx.userId },
@@ -278,11 +286,23 @@ async function resolveEmployee(
   });
   if (byId) return byId;
 
-  const byType = payload.employeeType
+  const byRefType = refType
     ? await db.aIEmployee.findFirst({
         where: {
           userId: ctx.userId,
-          type: payload.employeeType as AIEmployeeType,
+          type: refType,
+          isActive: true,
+        },
+        select: { id: true, name: true, type: true },
+      })
+    : null;
+  if (byRefType) return byRefType;
+
+  const byType = safePayloadType
+    ? await db.aIEmployee.findFirst({
+        where: {
+          userId: ctx.userId,
+          type: safePayloadType,
           isActive: true,
         },
         select: { id: true, name: true, type: true },
@@ -293,7 +313,7 @@ async function resolveEmployee(
   return db.aIEmployee.create({
     data: {
       userId: ctx.userId,
-      type: AIEmployeeType.COMMUNICATION_SPECIALIST,
+      type: safePayloadType || AIEmployeeType.COMMUNICATION_SPECIALIST,
       name: payload.employeeName || "Nexrel AI Live Agent",
       description: "Live browser/desktop mission operator",
       capabilities: {
@@ -327,7 +347,7 @@ export async function startLiveRun(
       input: {
         ...payload,
         employeeRef,
-        missionType: "openclaw_live_run",
+        missionType: "nexrel_ai_live_run",
       },
       output,
     },
@@ -590,7 +610,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
       message: `Step started: ${currentStep.title}`,
       createdAt: new Date().toISOString(),
     };
-    output.framePreview = `OpenClaw is executing: ${currentStep.title}`;
+    output.framePreview = `Nexrel AI is executing: ${currentStep.title}`;
     output.steps = steps;
     output.sessionState = "running";
     let merged = appendEvent(output, startEvent);
