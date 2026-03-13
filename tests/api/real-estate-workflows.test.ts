@@ -9,10 +9,18 @@ import { POST as POSTExecute } from "@/app/api/real-estate/workflows/[id]/execut
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { startWorkflowInstance } from "@/lib/real-estate/workflow-engine";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 
 // Mocks are already set up in tests/setup.ts
 vi.mock("next-auth");
 vi.mock("@/lib/real-estate/workflow-engine");
+vi.mock("@/lib/context/industry-context", async () => {
+  const actual = await vi.importActual("@/lib/context/industry-context");
+  return {
+    ...(actual as object),
+    getDalContextFromSession: vi.fn(),
+  };
+});
 
 describe("Real Estate Workflows API", () => {
   const mockSession = {
@@ -41,6 +49,10 @@ describe("Real Estate Workflows API", () => {
     vi.clearAllMocks();
     (getServerSession as any).mockResolvedValue(mockSession);
     (prisma.user.findUnique as any).mockResolvedValue(mockUser);
+    (getDalContextFromSession as any).mockReturnValue({
+      userId: mockUser.id,
+      industry: mockUser.industry,
+    });
   });
 
   describe("GET /api/real-estate/workflows", () => {
@@ -61,8 +73,8 @@ describe("Real Estate Workflows API", () => {
     });
 
     it("should return 403 for non-Real Estate user", async () => {
-      (prisma.user.findUnique as any).mockResolvedValue({
-        ...mockUser,
+      (getDalContextFromSession as any).mockReturnValue({
+        userId: mockUser.id,
         industry: "MEDICAL",
       });
 
