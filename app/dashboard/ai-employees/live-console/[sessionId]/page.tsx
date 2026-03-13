@@ -221,6 +221,15 @@ export default function LiveConsolePage() {
       .catch(() => toast.error("Failed to copy connection code"));
   };
 
+  const openDesktopWorkerBridge = () => {
+    if (workerToken) {
+      sessionStorage.setItem(`live-run-token:${sessionId}`, workerToken);
+    }
+    router.push(
+      `/dashboard/agent-command-center/desktop-worker?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+  };
+
   return (
     <div className="min-h-full p-6 space-y-4 text-zinc-100">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -352,11 +361,7 @@ export default function LiveConsolePage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/agent-command-center/desktop-worker?sessionId=${encodeURIComponent(sessionId)}`,
-                      )
-                    }
+                    onClick={openDesktopWorkerBridge}
                   >
                     Open Desktop Worker
                   </Button>

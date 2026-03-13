@@ -1,6 +1,7 @@
 const { EventEmitter } = require("events");
 const { chromium } = require("playwright");
 const os = require("os");
+const fs = require("fs");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
@@ -12,6 +13,13 @@ function normalizeUrl(value) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   if (/^[\w.-]+\.[a-z]{2,}/i.test(trimmed)) return `https://${trimmed}`;
   return trimmed;
+}
+
+function buildLiveConsoleUrl(baseUrl, sessionId) {
+  const normalizedBase = String(baseUrl || "").replace(/\/+$/, "");
+  const sid = encodeURIComponent(String(sessionId || ""));
+  if (!normalizedBase || !sid) return "about:blank";
+  return `${normalizedBase}/dashboard/ai-employees/live-console/${sid}`;
 }
 
 class WorkerEngine extends EventEmitter {
@@ -214,6 +222,56 @@ class WorkerEngine extends EventEmitter {
     }
   }
 
+  async launchBrowser(headed) {
+    const headless = !Boolean(headed);
+
+    try {
+      return await chromium.launch({ headless });
+    } catch (error) {
+      this.log("warn", "Default Playwright Chromium missing, trying fallback", {
+        error: error?.message || String(error),
+      });
+    }
+
+    try {
+      return await chromium.launch({ headless, channel: "chrome" });
+    } catch (error) {
+      this.log("warn", "Chrome channel launch failed", {
+        error: error?.message || String(error),
+      });
+    }
+
+    const executableCandidates =
+      os.platform() === "darwin"
+        ? ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+        : os.platform() === "win32"
+          ? [
+              "C:/Program Files/Google/Chrome/Application/chrome.exe",
+              "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+            ]
+          : [
+              "/usr/bin/google-chrome",
+              "/usr/bin/google-chrome-stable",
+              "/snap/bin/chromium",
+            ];
+
+    for (const executablePath of executableCandidates) {
+      if (!fs.existsSync(executablePath)) continue;
+      try {
+        return await chromium.launch({ headless, executablePath });
+      } catch (error) {
+        this.log("warn", "Fallback executable launch failed", {
+          executablePath,
+          error: error?.message || String(error),
+        });
+      }
+    }
+
+    throw new Error(
+      "No browser executable available. Install Google Chrome on this machine and reopen Nexrel Desktop Worker.",
+    );
+  }
+
   async start(config) {
     if (this.running) return;
     if (
@@ -233,12 +291,18 @@ class WorkerEngine extends EventEmitter {
       pollMs: Number(config.pollMs || 2200),
     };
 
-    this.browser = await chromium.launch({ headless: !Boolean(config.headed) });
+    this.browser = await this.launchBrowser(config.headed);
     this.context = await this.browser.newContext({
       viewport: { width: 1600, height: 940 },
     });
     this.page = await this.context.newPage();
-    await this.page.goto("about:blank");
+    await this.page.goto(
+      buildLiveConsoleUrl(config.baseUrl, config.sessionId),
+      {
+        waitUntil: "domcontentloaded",
+        timeout: 60000,
+      },
+    );
 
     this.running = true;
     this.log("info", "Desktop worker started", {

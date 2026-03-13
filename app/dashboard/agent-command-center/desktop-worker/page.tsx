@@ -35,8 +35,11 @@ type WorkerCommand = {
 
 export default function DesktopWorkerPage() {
   const params = useSearchParams();
-  const [sessionId, setSessionId] = useState(params.get("sessionId") || "");
-  const [workerToken, setWorkerToken] = useState("");
+  const initialSessionId = params.get("sessionId") || "";
+  const [sessionId, setSessionId] = useState(initialSessionId);
+  const [workerToken, setWorkerToken] = useState(
+    params.get("workerToken") || "",
+  );
   const [running, setRunning] = useState(false);
   const [autoExecute, setAutoExecute] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -51,6 +54,12 @@ export default function DesktopWorkerPage() {
 
   useEffect(() => {
     if (!sessionId) return;
+
+    const saved = sessionStorage.getItem(`live-run-token:${sessionId}`) || "";
+    if (saved && !workerToken) {
+      setWorkerToken(saved);
+    }
+
     fetch(`/api/ai-employees/live-run/${sessionId}`)
       .then((response) => response.json().catch(() => ({})))
       .then((data) => {
@@ -58,7 +67,7 @@ export default function DesktopWorkerPage() {
         if (ownerId) setSessionOwnerId(ownerId);
       })
       .catch(() => undefined);
-  }, [sessionId]);
+  }, [sessionId, workerToken]);
 
   const bridge = async (payload: Record<string, any>) => {
     const response = await fetch("/api/ai-employees/live-run/desktop-bridge", {
