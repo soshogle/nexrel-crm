@@ -63,6 +63,24 @@ function parseConnectionCode(raw) {
   const value = String(raw || "").trim();
   if (!value) throw new Error("Connection code is empty");
 
+  if (value.startsWith("nxa.")) {
+    const parts = value.split(".");
+    if (parts.length >= 3) {
+      try {
+        const payload = JSON.parse(decodeBase64Url(parts[1]));
+        const parsed = {
+          baseUrl: String(payload.baseUrl || "").trim(),
+          sessionId: String(payload.sessionId || "").trim(),
+          userId: String(payload.userId || "").trim(),
+          token: value,
+        };
+        if (parsed.baseUrl && parsed.sessionId && parsed.userId) {
+          return parsed;
+        }
+      } catch {}
+    }
+  }
+
   let payload = value;
   if (value.startsWith("nexrel://")) {
     const url = new URL(value);

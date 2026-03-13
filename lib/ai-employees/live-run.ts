@@ -102,37 +102,107 @@ type LiveRunPayload = {
   employeeName?: string;
 };
 
+function deriveSuccessCriteria(goal: string, appName: string): string[] {
+  const criteria = [
+    "Target application opened",
+    "Working context loaded",
+    "Final state verified against goal",
+  ];
+  const text = String(goal || "").toLowerCase();
+  if (text.includes("play"))
+    criteria.push("Media playback action is triggered");
+  if (
+    text.includes("send") ||
+    text.includes("email") ||
+    text.includes("message")
+  ) {
+    criteria.push("Communication action drafted or sent correctly");
+  }
+  if (text.includes("update") || text.includes("edit")) {
+    criteria.push("Requested changes are reflected in UI");
+  }
+  criteria.push(`Work completed in ${appName}`);
+  return criteria;
+}
+
+function extractFirstUrl(text: string): string | null {
+  const match = String(text || "").match(/https?:\/\/[^\s]+/i);
+  return match ? match[0] : null;
+}
+
+function inferAppName(payload: LiveRunPayload): string {
+  const fromTarget = String(payload.targetApps?.[0] || "").trim();
+  if (fromTarget) return fromTarget;
+
+  const goal = String(payload.goal || "").toLowerCase();
+  const aliases: Array<[string, string]> = [
+    ["spotify", "Spotify"],
+    ["slack", "Slack"],
+    ["zoom", "zoom.us"],
+    ["notion", "Notion"],
+    ["excel", "Microsoft Excel"],
+    ["google sheets", "Google Chrome"],
+    ["gmail", "Google Chrome"],
+    ["chrome", "Google Chrome"],
+    ["safari", "Safari"],
+  ];
+  for (const [needle, app] of aliases) {
+    if (goal.includes(needle)) return app;
+  }
+  return "Google Chrome";
+}
+
+function buildNavigationTarget(
+  payload: LiveRunPayload,
+  appName: string,
+): string {
+  const goal = String(payload.goal || "").trim();
+  const directUrl = extractFirstUrl(goal);
+  if (directUrl) return directUrl;
+
+  if (appName.toLowerCase() === "spotify") {
+    const playMatch = goal.match(/play\s+(.+)$/i);
+    if (playMatch?.[1]) {
+      return `https://open.spotify.com/search/${encodeURIComponent(playMatch[1].trim())}`;
+    }
+    return "https://open.spotify.com";
+  }
+
+  return `https://www.google.com/search?q=${encodeURIComponent(goal || appName)}`;
+}
+
 function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
-  const apps =
-    payload.targetApps.length > 0
-      ? payload.targetApps.join(", ")
-      : "assigned apps";
-  return [
-    ...(payload.executionTarget === "owner_desktop"
-      ? [
-          {
-            id: crypto.randomUUID(),
-            title: "Open required local app workspace",
-            actionType: "open_app" as const,
-            riskTier: "LOW" as const,
-            requiresApproval: false,
-            target: payload.targetApps[0] || "Google Chrome",
-            status: "pending" as const,
-          },
-        ]
-      : []),
+  const appName = inferAppName(payload);
+  const navigationTarget = buildNavigationTarget(payload, appName);
+  const successCriteria = deriveSuccessCriteria(payload.goal, appName);
+
+  const steps: LiveRunStep[] = [];
+
+  if (payload.executionTarget === "owner_desktop") {
+    steps.push({
+      id: crypto.randomUUID(),
+      title: `Open ${appName}`,
+      actionType: "open_app",
+      riskTier: "LOW",
+      requiresApproval: false,
+      target: appName,
+      status: "pending",
+    });
+  }
+
+  steps.push(
     {
       id: crypto.randomUUID(),
-      title: `Open ${apps} and verify account state`,
+      title: `Navigate to working context`,
       actionType: "navigate",
       riskTier: "LOW",
       requiresApproval: false,
-      target: apps,
+      target: navigationTarget,
       status: "pending",
     },
     {
       id: crypto.randomUUID(),
-      title: "Collect current performance context",
+      title: "Extract current page state",
       actionType: "extract",
       riskTier: "LOW",
       requiresApproval: false,
@@ -140,31 +210,16 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
     },
     {
       id: crypto.randomUUID(),
-      title: "Prepare optimized CTA and creative direction",
-      actionType: "type",
-      riskTier: "MEDIUM",
-      requiresApproval: payload.trustMode !== "run",
-      status: "pending",
-      value: "Create high-intent CTA variant",
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Apply campaign/post updates",
-      actionType: "click",
-      riskTier: "HIGH",
-      requiresApproval: true,
-      status: "pending",
-      target: "Publish/Save action",
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Verify final state and log evidence",
+      title: "Verify goal progress and completion state",
       actionType: "verify",
       riskTier: "LOW",
       requiresApproval: false,
+      value: successCriteria.join(" | "),
       status: "pending",
     },
-  ];
+  );
+
+  return steps;
 }
 
 async function issueWorkerTokenForSession(input: {
@@ -226,6 +281,8 @@ async function issueWorkerTokenForSession(input: {
 
 function getInitialOutput(payload: LiveRunPayload) {
   const steps = createDefaultPlan(payload);
+  const appName = inferAppName(payload);
+  const successCriteria = deriveSuccessCriteria(payload.goal, appName);
   const events: LiveRunEvent[] = [
     {
       id: crypto.randomUUID(),
@@ -252,8 +309,69 @@ function getInitialOutput(payload: LiveRunPayload) {
       tokenExpiresAt: null as string | null,
       commands: [] as WorkerCommand[],
     },
+    memory: {
+      missionGoal: payload.goal,
+      successCriteria,
+      timeline: [] as Array<{ at: string; note: string; kind: string }>,
+      blockers: [] as Array<{ at: string; blocker: string; detail?: string }>,
+      replans: [] as Array<{ at: string; reason: string; action: string }>,
+    },
     framePreview: "Planner initialized. Nexrel AI building execution plan.",
   };
+}
+
+function appendMemoryNote(
+  output: any,
+  note: { kind: string; note: string; blocker?: string; detail?: string },
+) {
+  const next = { ...(output || {}) };
+  const memory = { ...(next.memory || {}) };
+  const timeline = Array.isArray(memory.timeline) ? [...memory.timeline] : [];
+  const blockers = Array.isArray(memory.blockers) ? [...memory.blockers] : [];
+  timeline.push({
+    at: new Date().toISOString(),
+    kind: note.kind,
+    note: note.note,
+  });
+  if (note.blocker) {
+    blockers.push({
+      at: new Date().toISOString(),
+      blocker: note.blocker,
+      detail: note.detail,
+    });
+  }
+  memory.timeline = timeline.slice(-120);
+  memory.blockers = blockers.slice(-50);
+  next.memory = memory;
+  return next;
+}
+
+function classifyFailure(
+  detail: string,
+):
+  | "invalid_url"
+  | "missing_app"
+  | "login_wall"
+  | "two_factor"
+  | "captcha"
+  | "selector_drift"
+  | "unknown" {
+  const text = String(detail || "").toLowerCase();
+  if (text.includes("invalid url") || text.includes("cannot navigate"))
+    return "invalid_url";
+  if (text.includes("unable to find application")) return "missing_app";
+  if (text.includes("auth/signin") || text.includes("login"))
+    return "login_wall";
+  if (
+    text.includes("2fa") ||
+    text.includes("two-factor") ||
+    text.includes("otp")
+  )
+    return "two_factor";
+  if (text.includes("captcha")) return "captcha";
+  if (text.includes("selector") || text.includes("timeout"))
+    return "selector_drift";
+  return "unknown";
 }
 
 function sha256(value: string): string {
@@ -652,6 +770,12 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           source: "ai_plan",
           attempt: 1,
           maxAttempts: 2,
+          meta: {
+            goal: String((session.input as any)?.goal || ""),
+            successCriteria: Array.isArray(output?.memory?.successCriteria)
+              ? output.memory.successCriteria
+              : [],
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -663,6 +787,10 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           createdAt: new Date().toISOString(),
         };
         merged = appendEvent({ ...merged, worker }, commandEvent);
+        merged = appendMemoryNote(merged, {
+          kind: "command_enqueued",
+          note: `${currentStep.actionType} queued for worker`,
+        });
         await db.aIJob.update({
           where: { id: session.id },
           data: { output: merged },
@@ -714,7 +842,11 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
     message: `Step completed: ${currentStep.title}`,
     createdAt: new Date().toISOString(),
   };
-  const merged = appendEvent(output, completeEvent);
+  let merged = appendEvent(output, completeEvent);
+  merged = appendMemoryNote(merged, {
+    kind: "step_completed",
+    note: currentStep.title,
+  });
 
   await db.aIJob.update({
     where: { id: session.id },
@@ -856,6 +988,8 @@ export async function workerAckCommand(
   command.status = payload.status;
   command.detail = payload.detail;
   command.updatedAt = new Date().toISOString();
+  const failureType =
+    payload.status === "failed" ? classifyFailure(payload.detail || "") : null;
 
   const step = steps.find((s) => s.id === command.stepId);
   if (step) {
@@ -864,20 +998,73 @@ export async function workerAckCommand(
       step.result = payload.detail || "Worker completed step";
       output.currentStepId = null;
       output.sessionState = "running";
+      Object.assign(
+        output,
+        appendMemoryNote(output, {
+          kind: "command_completed",
+          note: `${command.actionType} completed`,
+        }),
+      );
     } else {
+      if (failureType === "two_factor" || failureType === "captcha") {
+        step.status = "awaiting_approval";
+        step.result = payload.detail || "Human verification required";
+        output.currentStepId = step.id;
+        output.sessionState = "awaiting_approval";
+        const humanEvent: LiveRunEvent = {
+          id: crypto.randomUUID(),
+          type: "approval_required",
+          message:
+            "Human intervention required (2FA/CAPTCHA). Please complete verification and approve resume.",
+          createdAt: new Date().toISOString(),
+        };
+        const mergedHuman = appendEvent(output, humanEvent);
+        const mergedMemory = appendMemoryNote(mergedHuman, {
+          kind: "human_intervention",
+          note: "Paused for 2FA/CAPTCHA",
+          blocker: failureType,
+          detail: payload.detail,
+        });
+        await db.aIJob.update({
+          where: { id: session.id },
+          data: {
+            output: mergedMemory,
+            status: AIJobStatus.RUNNING,
+          },
+        });
+        await logRunEvent(ctx, session.id, humanEvent);
+        return getLiveRun(ctx, session.id);
+      }
+
       const attempt = Number(command.attempt || 1);
       const maxAttempts = Number(command.maxAttempts || 2);
       if (
         String(command.source || "ai_plan") === "ai_plan" &&
         attempt < maxAttempts
       ) {
+        const fallbackMeta = { ...(command.meta || {}) };
+        let fallbackActionType = command.actionType;
+        let fallbackTarget = command.target;
+        if (failureType === "invalid_url") {
+          fallbackActionType = "navigate";
+          fallbackTarget = `https://www.google.com/search?q=${encodeURIComponent(String(command.target || command.value || ""))}`;
+          fallbackMeta.replanned = true;
+        }
+        if (failureType === "missing_app") {
+          fallbackActionType = "open_app";
+          fallbackTarget = "Google Chrome";
+          fallbackMeta.replanned = true;
+        }
         const retry: WorkerCommand = {
           ...command,
           commandId: crypto.randomUUID(),
+          actionType: fallbackActionType,
+          target: fallbackTarget,
           status: "queued",
           detail: `Retry ${attempt + 1}/${maxAttempts} after: ${payload.detail || "worker failure"}`,
           attempt: attempt + 1,
           maxAttempts,
+          meta: fallbackMeta,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -886,10 +1073,28 @@ export async function workerAckCommand(
         step.result = payload.detail || "Retrying after worker failure";
         output.currentStepId = step.id;
         output.sessionState = "running";
+        Object.assign(
+          output,
+          appendMemoryNote(output, {
+            kind: "replan",
+            note: `Replanned ${command.actionType} after ${failureType || "failure"}`,
+            blocker: failureType || "unknown",
+            detail: payload.detail,
+          }),
+        );
       } else {
         step.status = "failed";
         step.result = payload.detail || "Worker failed step";
         output.sessionState = "failed";
+        Object.assign(
+          output,
+          appendMemoryNote(output, {
+            kind: "command_failed",
+            note: `${command.actionType} failed permanently`,
+            blocker: failureType || "unknown",
+            detail: payload.detail,
+          }),
+        );
       }
     }
   }

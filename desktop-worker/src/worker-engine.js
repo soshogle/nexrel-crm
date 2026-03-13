@@ -15,11 +15,34 @@ function normalizeUrl(value) {
   return trimmed;
 }
 
-function buildLiveConsoleUrl(baseUrl, sessionId) {
-  const normalizedBase = String(baseUrl || "").replace(/\/+$/, "");
-  const sid = encodeURIComponent(String(sessionId || ""));
-  if (!normalizedBase || !sid) return "about:blank";
-  return `${normalizedBase}/dashboard/ai-employees/live-console/${sid}`;
+function resolveNavigateTarget(value) {
+  const raw = String(value || "").trim();
+  const normalized = normalizeUrl(raw);
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  if (!raw) return "";
+  return `https://www.google.com/search?q=${encodeURIComponent(raw)}`;
+}
+
+function normalizeAppName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const lower = raw.toLowerCase();
+  if (lower.includes("spotify")) return "Spotify";
+  if (lower.includes("slack")) return "Slack";
+  if (lower.includes("zoom")) return "zoom.us";
+  if (lower.includes("notion")) return "Notion";
+  if (lower.includes("chrome")) return "Google Chrome";
+  if (lower.includes("safari")) return "Safari";
+  if (lower.startsWith("open ")) {
+    return raw.replace(/^open\s+/i, "").trim();
+  }
+  return raw;
+}
+
+function buildWorkerStartUrl(config) {
+  const explicit = normalizeUrl(config?.startUrl || "");
+  if (/^https?:\/\//i.test(explicit)) return explicit;
+  return "about:blank";
 }
 
 class WorkerEngine extends EventEmitter {
@@ -155,13 +178,10 @@ class WorkerEngine extends EventEmitter {
     }
 
     this.page = await this.context.newPage();
-    await this.page.goto(
-      buildLiveConsoleUrl(this.config.baseUrl, this.config.sessionId),
-      {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      },
-    );
+    await this.page.goto(buildWorkerStartUrl(this.config), {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
     this.log("warn", "Reopened browser page after it was closed");
   }
 
@@ -178,7 +198,7 @@ class WorkerEngine extends EventEmitter {
   }
 
   async executeOpenApp(command) {
-    const appName = String(command.target || command.value || "").trim();
+    const appName = normalizeAppName(command.target || command.value || "");
     if (!appName) throw new Error("open_app command missing app name");
     const platform = os.platform();
     if (platform === "darwin") {
@@ -218,7 +238,7 @@ class WorkerEngine extends EventEmitter {
     if (!this.page) throw new Error("Browser page is not initialized");
 
     if (command.actionType === "navigate") {
-      const url = normalizeUrl(
+      const url = resolveNavigateTarget(
         command?.meta?.url || command.target || command.value || "",
       );
       if (!url) throw new Error("navigate command missing URL");
@@ -237,9 +257,20 @@ class WorkerEngine extends EventEmitter {
         return `Clicked at (${Math.round(clickX)}, ${Math.round(clickY)})`;
       }
       const selector = String(command.target || "").trim();
-      if (!selector) throw new Error("click command missing selector");
-      await this.page.locator(selector).first().click({ timeout: 20000 });
-      return `Clicked ${selector}`;
+      if (selector) {
+        await this.page.locator(selector).first().click({ timeout: 20000 });
+        return `Clicked ${selector}`;
+      }
+
+      const textLabel = String(command.value || "").trim();
+      if (textLabel) {
+        await this.page.getByText(textLabel, { exact: false }).first().click({
+          timeout: 20000,
+        });
+        return `Clicked text ${textLabel}`;
+      }
+
+      throw new Error("click command missing selector or label");
     }
 
     if (command.actionType === "type") {
@@ -260,6 +291,13 @@ class WorkerEngine extends EventEmitter {
           .fill(value, { timeout: 20000 });
         return `Typed into ${selector}`;
       }
+      if (command?.meta?.label) {
+        await this.page
+          .getByLabel(String(command.meta.label), { exact: false })
+          .first()
+          .fill(value, { timeout: 20000 });
+        return `Typed via label ${command.meta.label}`;
+      }
       await this.page.keyboard.type(value, { delay: 15 });
       return "Typed via keyboard fallback";
     }
@@ -271,7 +309,23 @@ class WorkerEngine extends EventEmitter {
 
     if (command.actionType === "verify") {
       await this.page.waitForLoadState("domcontentloaded", { timeout: 15000 });
-      return `Verified ${this.page.url()}`;
+      const currentUrl = this.page.url();
+      const bodyText = await this.page
+        .locator("body")
+        .innerText()
+        .catch(() => "");
+      const body = String(bodyText || "").toLowerCase();
+      if (body.includes("captcha")) {
+        throw new Error(`captcha challenge detected at ${currentUrl}`);
+      }
+      if (
+        body.includes("two-factor") ||
+        body.includes("2fa") ||
+        body.includes("verification code")
+      ) {
+        throw new Error(`2FA verification required at ${currentUrl}`);
+      }
+      return `Verified ${currentUrl}`;
     }
 
     throw new Error(`Unsupported browser action: ${command.actionType}`);
@@ -293,6 +347,7 @@ class WorkerEngine extends EventEmitter {
           type: "jpeg",
           quality: this.liveBoost ? 55 : this.isBursting() ? 48 : 36,
           fullPage: false,
+          timeout: 5000,
         });
         frameImageDataUrl = `data:image/jpeg;base64,${shot.toString("base64")}`;
       } catch (error) {
@@ -305,6 +360,7 @@ class WorkerEngine extends EventEmitter {
                 type: "jpeg",
                 quality: this.liveBoost ? 55 : this.isBursting() ? 48 : 36,
                 fullPage: false,
+                timeout: 5000,
               });
               frameImageDataUrl = `data:image/jpeg;base64,${retry.toString("base64")}`;
             } catch (retryError) {
@@ -476,13 +532,10 @@ class WorkerEngine extends EventEmitter {
       viewport: { width: 1600, height: 940 },
     });
     this.page = await this.context.newPage();
-    await this.page.goto(
-      buildLiveConsoleUrl(config.baseUrl, config.sessionId),
-      {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      },
-    );
+    await this.page.goto(buildWorkerStartUrl(config), {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
 
     this.running = true;
     this.log("info", "Desktop worker started", {
