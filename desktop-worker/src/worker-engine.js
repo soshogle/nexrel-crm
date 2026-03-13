@@ -33,6 +33,11 @@ class WorkerEngine extends EventEmitter {
     this.heartbeatTimer = null;
     this.pollTimer = null;
     this.polling = false;
+    this.stopping = false;
+    this.liveBoost = false;
+    this.burstUntil = 0;
+    this.heartbeatLoop = null;
+    this.pollLoop = null;
   }
 
   log(level, message, meta = null) {
@@ -53,6 +58,68 @@ class WorkerEngine extends EventEmitter {
     });
   }
 
+  markBurst(ms = 12000) {
+    this.burstUntil = Math.max(this.burstUntil, Date.now() + ms);
+  }
+
+  isBursting() {
+    return Date.now() < this.burstUntil;
+  }
+
+  getHeartbeatInterval() {
+    if (this.liveBoost) return 350;
+    if (this.isBursting()) return 650;
+    return Number(this.config?.heartbeatMs || 2200);
+  }
+
+  getPollInterval() {
+    if (this.liveBoost) return 450;
+    if (this.isBursting()) return 700;
+    return Number(this.config?.pollMs || 1500);
+  }
+
+  clearLoops() {
+    if (this.heartbeatLoop) clearTimeout(this.heartbeatLoop);
+    if (this.pollLoop) clearTimeout(this.pollLoop);
+    this.heartbeatLoop = null;
+    this.pollLoop = null;
+  }
+
+  scheduleHeartbeatLoop() {
+    if (!this.running) return;
+    const wait = this.getHeartbeatInterval();
+    this.heartbeatLoop = setTimeout(async () => {
+      if (!this.running) return;
+      try {
+        await this.sendHeartbeat();
+      } catch (error) {
+        await this.handleBridgeFailure("Heartbeat", error);
+        this.log("error", "Heartbeat failed", {
+          error: error?.message || String(error),
+        });
+      } finally {
+        this.scheduleHeartbeatLoop();
+      }
+    }, wait);
+  }
+
+  schedulePollLoop() {
+    if (!this.running) return;
+    const wait = this.getPollInterval();
+    this.pollLoop = setTimeout(async () => {
+      if (!this.running) return;
+      try {
+        await this.processQueue();
+      } catch (error) {
+        this.log("error", "Queue run failed", {
+          error: error?.message || String(error),
+        });
+      } finally {
+        this.schedulePollLoop();
+      }
+    }, wait);
+  }
+
   async postBridge(body) {
     const response = await fetch(
       `${this.config.baseUrl}/api/ai-employees/live-run/${encodeURIComponent(this.config.sessionId)}/worker-open`,
@@ -67,11 +134,47 @@ class WorkerEngine extends EventEmitter {
     );
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.success) {
-      throw new Error(
+      const error = new Error(
         payload.error || `Bridge request failed (${response.status})`,
       );
+      if (response.status === 401) error.code = "UNAUTHORIZED";
+      throw error;
     }
     return payload;
+  }
+
+  async ensurePageReady() {
+    if (!this.running || !this.config) return;
+    if (this.page && !this.page.isClosed()) return;
+
+    if (!this.browser || !this.context) {
+      this.browser = await this.launchBrowser(this.config.headed);
+      this.context = await this.browser.newContext({
+        viewport: { width: 1600, height: 940 },
+      });
+    }
+
+    this.page = await this.context.newPage();
+    await this.page.goto(
+      buildLiveConsoleUrl(this.config.baseUrl, this.config.sessionId),
+      {
+        waitUntil: "domcontentloaded",
+        timeout: 60000,
+      },
+    );
+    this.log("warn", "Reopened browser page after it was closed");
+  }
+
+  async handleBridgeFailure(scope, error) {
+    if (error?.code !== "UNAUTHORIZED") return;
+    this.log("error", `${scope} failed`, {
+      error:
+        "Unauthorized worker token. Generate a new Desktop Key and reconnect.",
+    });
+    if (!this.stopping) {
+      await this.stop();
+      this.status({ running: false, state: "error" });
+    }
   }
 
   async executeOpenApp(command) {
@@ -111,6 +214,7 @@ class WorkerEngine extends EventEmitter {
   }
 
   async executeBrowserCommand(command) {
+    await this.ensurePageReady();
     if (!this.page) throw new Error("Browser page is not initialized");
 
     if (command.actionType === "navigate") {
@@ -181,23 +285,41 @@ class WorkerEngine extends EventEmitter {
   }
 
   async sendHeartbeat() {
+    await this.ensurePageReady();
     let frameImageDataUrl = undefined;
     if (this.page) {
       try {
         const shot = await this.page.screenshot({
           type: "jpeg",
-          quality: 45,
+          quality: this.liveBoost ? 55 : this.isBursting() ? 48 : 36,
           fullPage: false,
         });
         frameImageDataUrl = `data:image/jpeg;base64,${shot.toString("base64")}`;
       } catch (error) {
-        this.log("warn", "Screenshot capture failed", {
-          error: error?.message || String(error),
-        });
+        const message = error?.message || String(error);
+        if (/has been closed|Target page, context or browser/i.test(message)) {
+          await this.ensurePageReady().catch(() => undefined);
+          if (this.page && !this.page.isClosed()) {
+            try {
+              const retry = await this.page.screenshot({
+                type: "jpeg",
+                quality: this.liveBoost ? 55 : this.isBursting() ? 48 : 36,
+                fullPage: false,
+              });
+              frameImageDataUrl = `data:image/jpeg;base64,${retry.toString("base64")}`;
+            } catch (retryError) {
+              this.log("warn", "Screenshot capture failed", {
+                error: retryError?.message || String(retryError),
+              });
+            }
+          }
+        } else {
+          this.log("warn", "Screenshot capture failed", { error: message });
+        }
       }
     }
 
-    await this.postBridge({
+    const payload = await this.postBridge({
       action: "heartbeat",
       status: "online",
       framePreview: `Desktop worker active at ${new Date().toLocaleTimeString()}`,
@@ -213,6 +335,14 @@ class WorkerEngine extends EventEmitter {
         "run_command",
       ],
     });
+    const nextBoost = Boolean(payload?.session?.output?.worker?.liveBoost);
+    if (nextBoost !== this.liveBoost) {
+      this.liveBoost = nextBoost;
+      this.log(
+        "info",
+        this.liveBoost ? "Live Boost enabled" : "Live Boost disabled",
+      );
+    }
     this.status({ running: true, state: "online" });
   }
 
@@ -222,8 +352,10 @@ class WorkerEngine extends EventEmitter {
     try {
       const pulled = await this.postBridge({ action: "pull_commands" });
       const commands = Array.isArray(pulled.commands) ? pulled.commands : [];
+      if (commands.length > 0) this.markBurst(15000);
       for (const command of commands) {
         try {
+          this.markBurst(15000);
           this.log("info", `Executing ${command.actionType}`, {
             commandId: command.commandId,
           });
@@ -236,17 +368,30 @@ class WorkerEngine extends EventEmitter {
           });
           this.log("info", `Completed ${command.commandId}`, { detail });
         } catch (error) {
+          if (error?.code === "UNAUTHORIZED") {
+            await this.handleBridgeFailure("Command execution", error);
+            throw error;
+          }
           const detail = error?.message || "Command execution failed";
-          await this.postBridge({
-            action: "ack_command",
-            commandId: command.commandId,
-            status: "failed",
-            detail,
-          });
+          try {
+            await this.postBridge({
+              action: "ack_command",
+              commandId: command.commandId,
+              status: "failed",
+              detail,
+            });
+          } catch (ackError) {
+            await this.handleBridgeFailure("Command acknowledge", ackError);
+            this.log("error", `Failed to acknowledge ${command.commandId}`, {
+              error: ackError?.message || String(ackError),
+            });
+            throw ackError;
+          }
           this.log("error", `Failed ${command.commandId}`, { detail });
         }
       }
     } catch (error) {
+      await this.handleBridgeFailure("Queue polling", error);
       this.log("error", "Queue polling failed", {
         error: error?.message || String(error),
       });
@@ -320,9 +465,11 @@ class WorkerEngine extends EventEmitter {
 
     this.config = {
       ...config,
-      heartbeatMs: Number(config.heartbeatMs || 5000),
-      pollMs: Number(config.pollMs || 2200),
+      heartbeatMs: Number(config.heartbeatMs || 2200),
+      pollMs: Number(config.pollMs || 1500),
     };
+    this.liveBoost = false;
+    this.burstUntil = 0;
 
     this.browser = await this.launchBrowser(config.headed);
     this.context = await this.browser.newContext({
@@ -345,29 +492,21 @@ class WorkerEngine extends EventEmitter {
 
     await this.sendHeartbeat();
     await this.processQueue();
-
-    this.heartbeatTimer = setInterval(() => {
-      this.sendHeartbeat().catch((error) => {
-        this.log("error", "Heartbeat failed", {
-          error: error?.message || String(error),
-        });
-      });
-    }, this.config.heartbeatMs);
-
-    this.pollTimer = setInterval(() => {
-      this.processQueue().catch((error) => {
-        this.log("error", "Queue run failed", {
-          error: error?.message || String(error),
-        });
-      });
-    }, this.config.pollMs);
+    this.scheduleHeartbeatLoop();
+    this.schedulePollLoop();
   }
 
   async stop() {
-    if (!this.running) return;
+    if (this.stopping) return;
+    this.stopping = true;
+    if (!this.running) {
+      this.stopping = false;
+      return;
+    }
     this.running = false;
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     if (this.pollTimer) clearInterval(this.pollTimer);
+    this.clearLoops();
     this.heartbeatTimer = null;
     this.pollTimer = null;
     this.polling = false;
@@ -379,6 +518,7 @@ class WorkerEngine extends EventEmitter {
     this.page = null;
     this.status({ running: false, state: "idle" });
     this.log("info", "Desktop worker stopped");
+    this.stopping = false;
   }
 
   getState() {

@@ -123,7 +123,7 @@ export default function LiveConsolePage() {
         await tick();
       }
       await load();
-    }, 2000);
+    }, 1200);
     return () => clearInterval(interval);
   }, [sessionId, session?.output?.sessionState]);
 
@@ -198,6 +198,7 @@ export default function LiveConsolePage() {
   const worker = session?.output?.worker || {};
   const workerRequired = Boolean(worker?.required);
   const workerConnected = Boolean(worker?.connected);
+  const liveBoost = Boolean(worker?.liveBoost);
   const pendingCommands = Array.isArray(worker?.commands)
     ? worker.commands.filter((c: any) => c.status === "queued").length
     : 0;
@@ -241,6 +242,26 @@ export default function LiveConsolePage() {
       `/dashboard/agent-command-center/desktop-worker?sessionId=${encodeURIComponent(sessionId)}`,
     );
   };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    if (!workerRequired) return;
+
+    fetch(`/api/ai-employees/live-run/${sessionId}/live-boost`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    }).catch(() => undefined);
+
+    return () => {
+      fetch(`/api/ai-employees/live-run/${sessionId}/live-boost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: false }),
+        keepalive: true,
+      }).catch(() => undefined);
+    };
+  }, [sessionId, workerRequired]);
 
   const queueWorkerCommand = async (payload: {
     actionType: string;
@@ -355,6 +376,14 @@ export default function LiveConsolePage() {
                     Optional
                   </Badge>
                 )}
+                {workerRequired ? (
+                  <Badge
+                    variant="outline"
+                    className={liveBoost ? "text-cyan-600" : "text-zinc-600"}
+                  >
+                    {liveBoost ? "Live Boost On" : "Live Boost Off"}
+                  </Badge>
+                ) : null}
               </div>
               <div className="text-xs text-zinc-400">
                 Pending commands: {pendingCommands}

@@ -74,7 +74,7 @@ export async function GET(
         } catch (error: any) {
           send("error", { message: error?.message || "Stream failed" });
         }
-      }, 1500);
+      }, 1000);
 
       request.signal.addEventListener("abort", () => {
         clearInterval(interval);

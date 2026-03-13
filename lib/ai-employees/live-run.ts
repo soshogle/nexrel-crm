@@ -86,6 +86,8 @@ type WorkerCommand = {
   detail?: string;
   source?: "ai_plan" | "owner_remote";
   meta?: Record<string, any>;
+  attempt?: number;
+  maxAttempts?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -244,6 +246,7 @@ function getInitialOutput(payload: LiveRunPayload) {
     worker: {
       required: payload.executionTarget === "owner_desktop",
       connected: false,
+      liveBoost: false,
       lastHeartbeatAt: null as string | null,
       tokenHash: null as string | null,
       tokenExpiresAt: null as string | null,
@@ -646,6 +649,9 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           target: currentStep.target,
           value: currentStep.value,
           status: "queued",
+          source: "ai_plan",
+          attempt: 1,
+          maxAttempts: 2,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -783,6 +789,7 @@ export async function workerHeartbeat(
       ? payload.capabilities
       : output?.worker?.capabilities || [],
     status: payload.status || output?.worker?.status || "online",
+    liveBoost: Boolean(output?.worker?.liveBoost),
     frameImageDataUrl:
       typeof payload.frameImageDataUrl === "string"
         ? payload.frameImageDataUrl
@@ -858,9 +865,32 @@ export async function workerAckCommand(
       output.currentStepId = null;
       output.sessionState = "running";
     } else {
-      step.status = "failed";
-      step.result = payload.detail || "Worker failed step";
-      output.sessionState = "failed";
+      const attempt = Number(command.attempt || 1);
+      const maxAttempts = Number(command.maxAttempts || 2);
+      if (
+        String(command.source || "ai_plan") === "ai_plan" &&
+        attempt < maxAttempts
+      ) {
+        const retry: WorkerCommand = {
+          ...command,
+          commandId: crypto.randomUUID(),
+          status: "queued",
+          detail: `Retry ${attempt + 1}/${maxAttempts} after: ${payload.detail || "worker failure"}`,
+          attempt: attempt + 1,
+          maxAttempts,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        commands.push(retry);
+        step.status = "running";
+        step.result = payload.detail || "Retrying after worker failure";
+        output.currentStepId = step.id;
+        output.sessionState = "running";
+      } else {
+        step.status = "failed";
+        step.result = payload.detail || "Worker failed step";
+        output.sessionState = "failed";
+      }
     }
   }
 
@@ -929,6 +959,8 @@ export async function enqueueWorkerCommand(
     status: "queued",
     source: input.source || "owner_remote",
     meta: input.meta || undefined,
+    attempt: 1,
+    maxAttempts: 1,
     createdAt: now,
     updatedAt: now,
   };
@@ -954,6 +986,26 @@ export async function enqueueWorkerCommand(
   });
   await logRunEvent(ctx, session.id, event);
   return { commandId: command.commandId };
+}
+
+export async function setWorkerLiveBoost(
+  ctx: LiveRunContext,
+  sessionId: string,
+  enabled: boolean,
+) {
+  const db = getCrmDb(ctx);
+  const session = await getLiveRun(ctx, sessionId);
+  if (!session) throw new Error("Live run session not found");
+
+  const output = { ...((session.output || {}) as any) };
+  output.worker = {
+    ...(output.worker || {}),
+    required: true,
+    liveBoost: Boolean(enabled),
+  };
+
+  await db.aIJob.update({ where: { id: session.id }, data: { output } });
+  return { liveBoost: Boolean(enabled) };
 }
 
 export async function listLiveRunDevices(ctx: LiveRunContext) {
