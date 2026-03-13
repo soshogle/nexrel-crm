@@ -2,6 +2,8 @@ const baseUrlInput = document.getElementById("baseUrl");
 const sessionIdInput = document.getElementById("sessionId");
 const userIdInput = document.getElementById("userId");
 const tokenInput = document.getElementById("token");
+const connectionCodeInput = document.getElementById("connectionCode");
+const applyCodeBtn = document.getElementById("applyCodeBtn");
 const headedInput = document.getElementById("headed");
 const autoExecuteInput = document.getElementById("autoExecute");
 const allowLocalCommandsInput = document.getElementById("allowLocalCommands");
@@ -51,6 +53,59 @@ function appendLog(line, meta) {
   logList.prepend(item);
 }
 
+function decodeBase64Url(input) {
+  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  return atob(padded);
+}
+
+function parseConnectionCode(raw) {
+  const value = String(raw || "").trim();
+  if (!value) throw new Error("Connection code is empty");
+
+  let payload = value;
+  if (value.startsWith("nexrel://")) {
+    const url = new URL(value);
+    payload = url.searchParams.get("c") || "";
+  }
+
+  const candidates = [payload];
+  try {
+    candidates.push(decodeBase64Url(payload));
+  } catch {}
+
+  for (const candidate of candidates) {
+    try {
+      const data = JSON.parse(candidate);
+      const parsed = {
+        baseUrl: String(data.baseUrl || data.base_url || "").trim(),
+        sessionId: String(data.sessionId || data.session_id || "").trim(),
+        userId: String(data.userId || data.user_id || "").trim(),
+        token: String(
+          data.token || data.workerToken || data.worker_token || "",
+        ).trim(),
+      };
+      if (parsed.baseUrl && parsed.sessionId && parsed.userId && parsed.token) {
+        return parsed;
+      }
+    } catch {}
+  }
+
+  throw new Error("Invalid connection code");
+}
+
+function applyConnectionCode(raw) {
+  const parsed = parseConnectionCode(raw);
+  baseUrlInput.value = parsed.baseUrl;
+  sessionIdInput.value = parsed.sessionId;
+  userIdInput.value = parsed.userId;
+  tokenInput.value = parsed.token;
+  appendLog(
+    "Connection code applied",
+    `${parsed.baseUrl} · ${parsed.sessionId}`,
+  );
+}
+
 async function hydrate() {
   const config = await window.desktopWorker.getConfig();
   baseUrlInput.value = config.baseUrl || "";
@@ -70,6 +125,17 @@ saveBtn.addEventListener("click", async () => {
   const config = getFormValue();
   await window.desktopWorker.saveConfig(config);
   appendLog("Configuration saved");
+});
+
+applyCodeBtn.addEventListener("click", () => {
+  try {
+    applyConnectionCode(connectionCodeInput.value);
+  } catch (error) {
+    appendLog(
+      "Failed to apply connection code",
+      error?.message || String(error),
+    );
+  }
 });
 
 startBtn.addEventListener("click", async () => {

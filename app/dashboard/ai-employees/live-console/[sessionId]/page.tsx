@@ -193,6 +193,33 @@ export default function LiveConsolePage() {
   const executionTarget = String(
     session?.input?.executionTarget || "cloud_browser",
   );
+  const connectionCode = useMemo(() => {
+    if (!workerToken || !sessionId) return "";
+    const ownerId = String(session?.userId || "").trim();
+    if (!ownerId) return "";
+    const origin =
+      typeof window === "undefined"
+        ? "https://www.soshogle.com"
+        : window.location.origin;
+    const payload = {
+      baseUrl: origin,
+      sessionId,
+      userId: ownerId,
+      token: workerToken,
+    };
+    return btoa(JSON.stringify(payload))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  }, [session?.userId, sessionId, workerToken]);
+
+  const copyConnectionCode = async () => {
+    if (!connectionCode) return;
+    await navigator.clipboard
+      .writeText(connectionCode)
+      .then(() => toast.success("Connection code copied"))
+      .catch(() => toast.error("Failed to copy connection code"));
+  };
 
   return (
     <div className="min-h-full p-6 space-y-4 text-zinc-100">
@@ -312,6 +339,16 @@ export default function LiveConsolePage() {
                       Copy Token
                     </Button>
                   ) : null}
+                  {connectionCode ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={copyConnectionCode}
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1" />
+                      Copy Connection Code
+                    </Button>
+                  ) : null}
                   <Button
                     size="sm"
                     variant="outline"
@@ -336,6 +373,12 @@ export default function LiveConsolePage() {
                     <p className="text-xs font-mono break-all text-zinc-100">
                       {workerToken}
                     </p>
+                    {connectionCode ? (
+                      <p className="text-[11px] text-zinc-500 mt-2">
+                        Tip: use "Copy Connection Code" and paste once in the
+                        desktop app.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
