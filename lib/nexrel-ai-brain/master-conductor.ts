@@ -4,6 +4,8 @@ import {
   type OperatorAction,
 } from "@/lib/nexrel-ai-brain/operator";
 import { logNexrelAIDecision } from "@/lib/nexrel-ai-brain/decision-log";
+import { ensureBusinessBrainProfile } from "@/lib/nexrel-ai-brain/business-profile";
+import { buildNexrelAIMemoryContext } from "@/lib/nexrel-ai-brain/memory";
 
 function isTrue(value: string | undefined): boolean {
   return value === "true";
@@ -166,6 +168,20 @@ export async function runMasterConductorPreflight(input: {
     ctx,
     dryRun: !isMasterConductorEnforced(),
   });
+  const profile = await ensureBusinessBrainProfile({
+    ctx,
+    actorUserId: input.userId,
+  });
+  const memory = await buildNexrelAIMemoryContext({ ctx, windowDays: 30 });
+
+  const why = [
+    `surface:${input.surface || "assistant"}`,
+    `mode:${operatorResult.mode}`,
+    `requested_actions:${requestedActions.length}`,
+    `denied:${operatorResult.deniedActions.length}`,
+    `pending_approvals:${operatorResult.pendingApprovals.length}`,
+    `memory_snippets:${memory.snippets.length}`,
+  ];
 
   if (!isMasterConductorEnforced()) {
     await logNexrelAIDecision({
@@ -175,8 +191,37 @@ export async function runMasterConductorPreflight(input: {
       enforced: false,
       allowed: true,
       mode: operatorResult.mode,
+      why,
+      businessProfileRef: {
+        profileId: profile.profileId,
+        updatedAt: profile.updatedAt,
+        source: profile.source,
+      },
+      memoryRef: {
+        memoryId: memory.memoryId,
+        generatedAt: memory.generatedAt,
+        sourceCounts: memory.sourceCounts,
+      },
       deniedActions: operatorResult.deniedActions,
       pendingApprovals: operatorResult.pendingApprovals,
+      predictedImpact: {
+        leadVelocity: operatorResult.executedActions.length,
+        conversionLift:
+          operatorResult.pendingApprovals.length > 0
+            ? 1.5
+            : operatorResult.deniedActions.length > 0
+              ? -0.5
+              : 0.8,
+        riskScore: Math.min(
+          1,
+          Number(
+            (
+              operatorResult.deniedActions.length * 0.2 +
+              operatorResult.pendingApprovals.length * 0.15
+            ).toFixed(2),
+          ),
+        ),
+      },
     });
     return {
       enforced: false,
@@ -197,8 +242,37 @@ export async function runMasterConductorPreflight(input: {
     enforced: true,
     allowed: !blocked,
     mode: operatorResult.mode,
+    why,
+    businessProfileRef: {
+      profileId: profile.profileId,
+      updatedAt: profile.updatedAt,
+      source: profile.source,
+    },
+    memoryRef: {
+      memoryId: memory.memoryId,
+      generatedAt: memory.generatedAt,
+      sourceCounts: memory.sourceCounts,
+    },
     deniedActions: operatorResult.deniedActions,
     pendingApprovals: operatorResult.pendingApprovals,
+    predictedImpact: {
+      leadVelocity: operatorResult.executedActions.length,
+      conversionLift:
+        operatorResult.pendingApprovals.length > 0
+          ? 1.5
+          : operatorResult.deniedActions.length > 0
+            ? -0.5
+            : 0.8,
+      riskScore: Math.min(
+        1,
+        Number(
+          (
+            operatorResult.deniedActions.length * 0.2 +
+            operatorResult.pendingApprovals.length * 0.15
+          ).toFixed(2),
+        ),
+      ),
+    },
   });
 
   return {
@@ -229,6 +303,19 @@ export async function runMasterConductorOperatorPreflight(input: {
     ctx,
     dryRun: !isMasterConductorEnforced(),
   });
+  const profile = await ensureBusinessBrainProfile({
+    ctx,
+    actorUserId: input.userId,
+  });
+  const memory = await buildNexrelAIMemoryContext({ ctx, windowDays: 30 });
+  const why = [
+    `surface:${input.surface}`,
+    `mode:${operatorResult.mode}`,
+    `objective:${input.objective.slice(0, 120)}`,
+    `requested_actions:${input.requestedActions.length}`,
+    `denied:${operatorResult.deniedActions.length}`,
+    `memory_snippets:${memory.snippets.length}`,
+  ];
 
   if (!isMasterConductorEnforced()) {
     await logNexrelAIDecision({
@@ -238,8 +325,37 @@ export async function runMasterConductorOperatorPreflight(input: {
       enforced: false,
       allowed: true,
       mode: operatorResult.mode,
+      why,
+      businessProfileRef: {
+        profileId: profile.profileId,
+        updatedAt: profile.updatedAt,
+        source: profile.source,
+      },
+      memoryRef: {
+        memoryId: memory.memoryId,
+        generatedAt: memory.generatedAt,
+        sourceCounts: memory.sourceCounts,
+      },
       deniedActions: operatorResult.deniedActions,
       pendingApprovals: operatorResult.pendingApprovals,
+      predictedImpact: {
+        leadVelocity: operatorResult.executedActions.length,
+        conversionLift:
+          operatorResult.pendingApprovals.length > 0
+            ? 1.3
+            : operatorResult.deniedActions.length > 0
+              ? -0.4
+              : 0.7,
+        riskScore: Math.min(
+          1,
+          Number(
+            (
+              operatorResult.deniedActions.length * 0.2 +
+              operatorResult.pendingApprovals.length * 0.15
+            ).toFixed(2),
+          ),
+        ),
+      },
     });
     return {
       enforced: false,
@@ -260,8 +376,37 @@ export async function runMasterConductorOperatorPreflight(input: {
     enforced: true,
     allowed: !blocked,
     mode: operatorResult.mode,
+    why,
+    businessProfileRef: {
+      profileId: profile.profileId,
+      updatedAt: profile.updatedAt,
+      source: profile.source,
+    },
+    memoryRef: {
+      memoryId: memory.memoryId,
+      generatedAt: memory.generatedAt,
+      sourceCounts: memory.sourceCounts,
+    },
     deniedActions: operatorResult.deniedActions,
     pendingApprovals: operatorResult.pendingApprovals,
+    predictedImpact: {
+      leadVelocity: operatorResult.executedActions.length,
+      conversionLift:
+        operatorResult.pendingApprovals.length > 0
+          ? 1.3
+          : operatorResult.deniedActions.length > 0
+            ? -0.4
+            : 0.7,
+      riskScore: Math.min(
+        1,
+        Number(
+          (
+            operatorResult.deniedActions.length * 0.2 +
+            operatorResult.pendingApprovals.length * 0.15
+          ).toFixed(2),
+        ),
+      ),
+    },
   });
 
   return {

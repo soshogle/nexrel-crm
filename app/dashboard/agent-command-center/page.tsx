@@ -17,6 +17,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { AgentCard } from "@/components/command-center/agent-card";
 
 const HERO_IMG =
@@ -66,6 +67,59 @@ type AutonomySnapshot = {
       dailyAdLaunches: number;
     };
     updatedAt: string | null;
+  };
+};
+
+type BusinessProfile = {
+  profileId: string;
+  updatedAt: string;
+  source: string;
+  offers: string[];
+  icp: {
+    audience: string;
+    location: string;
+    channels: string[];
+    demographics?: string;
+  };
+  constraints: {
+    budget: string;
+    compliance: string[];
+    allowedChannels: string[];
+  };
+  goals: {
+    primary: string[];
+    horizon: "30d" | "90d" | "180d";
+  };
+};
+
+type ExplainabilityPreview = {
+  id: string;
+  objective: string;
+  surface: string;
+  allowed: boolean;
+  why: string[];
+  predictedImpact: {
+    leadVelocity?: number;
+    conversionLift?: number;
+    riskScore?: number;
+  } | null;
+};
+
+type MemorySnapshot = {
+  memoryId: string;
+  generatedAt: string;
+  windowDays: number;
+  snippets: Array<{
+    kind: string;
+    title: string;
+    detail: string;
+    score: number;
+  }>;
+  sourceCounts: {
+    decisions: number;
+    outcomes: number;
+    crmEvents: number;
+    profiles: number;
   };
 };
 
@@ -163,6 +217,18 @@ export default function AgentCommandCenterPage() {
   const [allowPaidLaunch, setAllowPaidLaunch] = useState(false);
   const [lastRunResult, setLastRunResult] = useState<any>(null);
   const [savingControl, setSavingControl] = useState(false);
+  const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [profileDraft, setProfileDraft] = useState({
+    offers: "",
+    audience: "",
+    goals: "",
+    constraints: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [explainability, setExplainability] = useState<ExplainabilityPreview[]>(
+    [],
+  );
+  const [memory, setMemory] = useState<MemorySnapshot | null>(null);
 
   const loadSnapshot = async () => {
     setLoading(true);
@@ -170,6 +236,30 @@ export default function AgentCommandCenterPage() {
       const res = await fetch("/api/agent-command-center/autonomy");
       const data = await res.json();
       if (data?.success) setSnapshot(data);
+
+      const [profileRes, explainRes, memoryRes] = await Promise.all([
+        fetch("/api/agent-command-center/business-profile"),
+        fetch("/api/agent-command-center/explainability?limit=5"),
+        fetch("/api/agent-command-center/memory?windowDays=30"),
+      ]);
+      const profileData = await profileRes.json().catch(() => ({}));
+      if (profileData?.success && profileData?.profile) {
+        const next = profileData.profile as BusinessProfile;
+        setProfile(next);
+        setProfileDraft({
+          offers: (next.offers || []).join(", "),
+          audience: next.icp?.audience || "",
+          goals: (next.goals?.primary || []).join("\n"),
+          constraints: `${next.constraints?.budget || ""}${(next.constraints?.allowedChannels || []).length ? `\nAllowed channels: ${next.constraints.allowedChannels.join(", ")}` : ""}`,
+        });
+      }
+
+      const explainData = await explainRes.json().catch(() => ({}));
+      setExplainability(
+        Array.isArray(explainData?.decisions) ? explainData.decisions : [],
+      );
+      const memoryData = await memoryRes.json().catch(() => ({}));
+      setMemory(memoryData?.success ? memoryData.memory : null);
     } finally {
       setLoading(false);
     }
@@ -214,6 +304,38 @@ export default function AgentCommandCenterPage() {
       await loadSnapshot();
     } finally {
       setSavingControl(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      await fetch("/api/agent-command-center/business-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason: "owner_profile_edit_from_command_center",
+          profile: {
+            offers: profileDraft.offers
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean),
+            icp: { audience: profileDraft.audience },
+            goals: {
+              primary: profileDraft.goals
+                .split("\n")
+                .map((v) => v.trim())
+                .filter(Boolean),
+            },
+            constraints: {
+              budget: profileDraft.constraints.split("\n")[0] || "",
+            },
+          },
+        }),
+      });
+      await loadSnapshot();
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -357,6 +479,64 @@ export default function AgentCommandCenterPage() {
         <div className="glass-panel rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
+              <h2 className="text-lg font-semibold">Memory Layer Snapshot</h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Durable multi-week memory used in planning and policy decisions.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/agent-command-center/memory"
+              className="text-xs text-amber-300 hover:text-amber-200"
+            >
+              Open memory layer
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-3 text-xs">
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+              <p className="text-zinc-400">Decisions</p>
+              <p className="font-semibold text-zinc-100">
+                {memory?.sourceCounts.decisions ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+              <p className="text-zinc-400">Outcomes</p>
+              <p className="font-semibold text-zinc-100">
+                {memory?.sourceCounts.outcomes ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+              <p className="text-zinc-400">CRM events</p>
+              <p className="font-semibold text-zinc-100">
+                {memory?.sourceCounts.crmEvents ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+              <p className="text-zinc-400">Profile snapshots</p>
+              <p className="font-semibold text-zinc-100">
+                {memory?.sourceCounts.profiles ?? 0}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {(memory?.snippets || []).slice(0, 3).map((snippet, index) => (
+              <div
+                key={`${snippet.kind}-${index}`}
+                className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3"
+              >
+                <p className="text-xs text-zinc-300">{snippet.title}</p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  {snippet.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
               <h2 className="text-lg font-semibold">
                 Owner Oversight Controls
               </h2>
@@ -469,6 +649,135 @@ export default function AgentCommandCenterPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Persistent Business Brain Profile
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Profile powers Nexrel AI planning across offers, ICP,
+                constraints, and goals.
+              </p>
+            </div>
+            <p className="text-[11px] text-zinc-500">
+              {profile?.updatedAt
+                ? `Updated ${new Date(profile.updatedAt).toLocaleString()} (${profile.source})`
+                : "No profile yet"}
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-zinc-400 mb-1">
+                Offers (comma-separated)
+              </p>
+              <Textarea
+                value={profileDraft.offers}
+                onChange={(e) =>
+                  setProfileDraft((prev) => ({
+                    ...prev,
+                    offers: e.target.value,
+                  }))
+                }
+                className="min-h-[84px] bg-zinc-900/60 border-zinc-700 text-zinc-100"
+              />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 mb-1">ICP audience</p>
+              <Textarea
+                value={profileDraft.audience}
+                onChange={(e) =>
+                  setProfileDraft((prev) => ({
+                    ...prev,
+                    audience: e.target.value,
+                  }))
+                }
+                className="min-h-[84px] bg-zinc-900/60 border-zinc-700 text-zinc-100"
+              />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 mb-1">Goals (one per line)</p>
+              <Textarea
+                value={profileDraft.goals}
+                onChange={(e) =>
+                  setProfileDraft((prev) => ({
+                    ...prev,
+                    goals: e.target.value,
+                  }))
+                }
+                className="min-h-[84px] bg-zinc-900/60 border-zinc-700 text-zinc-100"
+              />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 mb-1">
+                Constraints / budget notes
+              </p>
+              <Textarea
+                value={profileDraft.constraints}
+                onChange={(e) =>
+                  setProfileDraft((prev) => ({
+                    ...prev,
+                    constraints: e.target.value,
+                  }))
+                }
+                className="min-h-[84px] bg-zinc-900/60 border-zinc-700 text-zinc-100"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={saveProfile}
+              disabled={savingProfile}
+              className="bg-amber-500 text-zinc-900 hover:bg-amber-400"
+            >
+              {savingProfile ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Save Business Profile
+            </Button>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold">Explainability Snapshot</h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Latest orchestration decisions with "why" and expected impact.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/agent-command-center/explainability"
+              className="text-xs text-amber-300 hover:text-amber-200"
+            >
+              Open full explainability view
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {explainability.map((row) => (
+              <div
+                key={row.id}
+                className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3"
+              >
+                <p className="text-xs text-zinc-300">
+                  {row.surface} · {row.allowed ? "allowed" : "blocked"}
+                </p>
+                <p className="text-sm text-zinc-100 mt-1">{row.objective}</p>
+                {row.why?.length ? (
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    Why: {row.why.join(" | ")}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+            {!loading && explainability.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                No explainability records yet.
+              </p>
+            ) : null}
           </div>
         </div>
 

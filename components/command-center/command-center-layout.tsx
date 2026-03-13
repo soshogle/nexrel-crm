@@ -11,6 +11,8 @@ import {
   Flame,
   ShieldCheck,
   History,
+  Lightbulb,
+  BrainCircuit,
   Zap,
   ChevronLeft,
   ChevronRight,
@@ -47,6 +49,16 @@ const navItems = [
     path: "/dashboard/agent-command-center/approvals",
     label: "Approvals Inbox",
     icon: ShieldCheck,
+  },
+  {
+    path: "/dashboard/agent-command-center/memory",
+    label: "Memory Layer",
+    icon: BrainCircuit,
+  },
+  {
+    path: "/dashboard/agent-command-center/explainability",
+    label: "Explainability",
+    icon: Lightbulb,
   },
   {
     path: "/dashboard/agent-command-center/audit",

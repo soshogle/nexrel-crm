@@ -33,6 +33,20 @@ function summarize(item: AuditItem): string {
     const mode = item?.metadata?.mode || "operation";
     return `Nexrel AI executed ${mode}`;
   }
+  if (item.entityType === "NEXREL_AI_BRAIN_DECISION") {
+    const objective = item?.metadata?.objective || "decision";
+    const status = item?.metadata?.allowed ? "allowed" : "blocked";
+    return `Decision ${status}: ${objective}`;
+  }
+  if (item.entityType === "NEXREL_AI_BRAIN_OUTCOME") {
+    const actual = item?.metadata?.actual || {};
+    const sent = Number(actual?.sent || 0);
+    const failed = Number(actual?.failed || 0);
+    return `Outcome recorded (sent ${sent}, failed ${failed})`;
+  }
+  if (item.entityType === "NEXREL_AI_BRAIN_PROFILE") {
+    return "Business brain profile updated";
+  }
   if (item.entityType === "AUTONOMY_DRAFT_ACTION") {
     return "Draft-only action generated (crawl mode)";
   }
@@ -110,6 +124,12 @@ export default function AuditTimelinePage() {
             </div>
             {item.errorMessage ? (
               <p className="text-xs text-red-300 mt-2">{item.errorMessage}</p>
+            ) : null}
+            {Array.isArray(item?.metadata?.why) &&
+            item.metadata.why.length > 0 ? (
+              <p className="text-[11px] text-zinc-400 mt-2">
+                Why: {item.metadata.why.join(" | ")}
+              </p>
             ) : null}
           </motion.div>
         ))}

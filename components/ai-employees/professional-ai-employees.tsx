@@ -5,15 +5,21 @@
  * Available to ALL users
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Bot,
   Play,
@@ -24,16 +30,17 @@ import {
   Mic,
   Settings,
   Phone,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   PROFESSIONAL_EMPLOYEE_CONFIGS,
   PROFESSIONAL_EMPLOYEE_TYPES,
   type ProfessionalAIEmployeeType,
-} from '@/lib/professional-ai-employees/config';
-import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
-import { ConnectPhoneDialog } from '@/components/shared/connect-phone-dialog';
-import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
+} from "@/lib/professional-ai-employees/config";
+import { TaskDashboardDialog } from "@/components/ai-employees/task-dashboard-dialog";
+import { LiveRunDialog } from "@/components/ai-employees/live-run-dialog";
+import { ConnectPhoneDialog } from "@/components/shared/connect-phone-dialog";
+import PurchasePhoneNumberDialog from "@/components/voice-agents/purchase-phone-number-dialog";
 
 interface ProvisionedAgent {
   id: string;
@@ -47,18 +54,18 @@ interface ProvisionedAgent {
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'All', count: 12 },
-  { id: 'finance', label: 'Finance', count: 2 },
-  { id: 'technology', label: 'Technology', count: 2 },
-  { id: 'legal', label: 'Legal', count: 1 },
-  { id: 'research', label: 'Research', count: 1 },
-  { id: 'marketing', label: 'Marketing', count: 2 },
-  { id: 'sales', label: 'Sales', count: 1 },
-  { id: 'support', label: 'Support', count: 1 },
-  { id: 'hr', label: 'HR', count: 1 },
-  { id: 'analytics', label: 'Analytics', count: 1 },
-  { id: 'content', label: 'Content', count: 1 },
-  { id: 'operations', label: 'Operations', count: 1 },
+  { id: "all", label: "All", count: 12 },
+  { id: "finance", label: "Finance", count: 2 },
+  { id: "technology", label: "Technology", count: 2 },
+  { id: "legal", label: "Legal", count: 1 },
+  { id: "research", label: "Research", count: 1 },
+  { id: "marketing", label: "Marketing", count: 2 },
+  { id: "sales", label: "Sales", count: 1 },
+  { id: "support", label: "Support", count: 1 },
+  { id: "hr", label: "HR", count: 1 },
+  { id: "analytics", label: "Analytics", count: 1 },
+  { id: "content", label: "Content", count: 1 },
+  { id: "operations", label: "Operations", count: 1 },
 ];
 
 const PROFESSIONAL_EMPLOYEES = PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
@@ -80,21 +87,28 @@ const PROFESSIONAL_EMPLOYEES = PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
   };
 });
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'AGENCY_ADMIN', 'BUSINESS_OWNER', 'ADMIN'];
+const ADMIN_ROLES = ["SUPER_ADMIN", "AGENCY_ADMIN", "BUSINESS_OWNER", "ADMIN"];
 
 export function ProfessionalAIEmployees() {
   const { data: session } = useSession();
-  const isAdmin = ADMIN_ROLES.includes((session?.user as any)?.role || '');
-  const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
+  const isAdmin = ADMIN_ROLES.includes((session?.user as any)?.role || "");
+  const [provisionedAgents, setProvisionedAgents] = useState<
+    ProvisionedAgent[]
+  >([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedEmployee, setSelectedEmployee] = useState<(typeof PROFESSIONAL_EMPLOYEES)[0] | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedEmployee, setSelectedEmployee] = useState<
+    (typeof PROFESSIONAL_EMPLOYEES)[0] | null
+  >(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
+  const [showLiveRun, setShowLiveRun] = useState(false);
   const [showConnectPhone, setShowConnectPhone] = useState(false);
-  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<(typeof PROFESSIONAL_EMPLOYEES)[0] | null>(null);
+  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<
+    (typeof PROFESSIONAL_EMPLOYEES)[0] | null
+  >(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
 
@@ -105,13 +119,13 @@ export function ProfessionalAIEmployees() {
   const fetchProvisionedAgents = async () => {
     setIsLoadingAgents(true);
     try {
-      const response = await fetch('/api/professional-ai-employees/provision');
+      const response = await fetch("/api/professional-ai-employees/provision");
       if (response.ok) {
         const data = await response.json();
         setProvisionedAgents(data.agents || []);
       }
     } catch (error) {
-      console.error('Failed to fetch provisioned agents:', error);
+      console.error("Failed to fetch provisioned agents:", error);
     } finally {
       setIsLoadingAgents(false);
     }
@@ -128,24 +142,33 @@ export function ProfessionalAIEmployees() {
     if (!agent) {
       setTestingAgentId(employeeId);
       try {
-        toast.loading('Setting up voice agent...', { id: 'test-agent' });
-        const res = await fetch('/api/professional-ai-employees/provision', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        toast.loading("Setting up voice agent...", { id: "test-agent" });
+        const res = await fetch("/api/professional-ai-employees/provision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ employeeTypes: [employeeId] }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success && data.agents?.length) {
-          toast.success('Voice agent ready!', { id: 'test-agent' });
+          toast.success("Voice agent ready!", { id: "test-agent" });
           setProvisionedAgents(data.agents);
-          agent = data.agents.find((a: ProvisionedAgent) => a.employeeType === employeeId);
+          agent = data.agents.find(
+            (a: ProvisionedAgent) => a.employeeType === employeeId,
+          );
         } else {
-          const errMsg = data.error || data.message || (res.status === 401 ? 'Please sign in' : 'Failed to set up agent');
-          toast.error(errMsg, { id: 'test-agent', duration: 6000 });
+          const errMsg =
+            data.error ||
+            data.message ||
+            (res.status === 401 ? "Please sign in" : "Failed to set up agent");
+          toast.error(errMsg, { id: "test-agent", duration: 6000 });
         }
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Network or server error';
-        toast.error(`Failed to set up agent: ${msg}`, { id: 'test-agent', duration: 6000 });
+        const msg =
+          error instanceof Error ? error.message : "Network or server error";
+        toast.error(`Failed to set up agent: ${msg}`, {
+          id: "test-agent",
+          duration: 6000,
+        });
       } finally {
         setTestingAgentId(null);
       }
@@ -153,8 +176,8 @@ export function ProfessionalAIEmployees() {
     if (agent?.id) {
       const params = new URLSearchParams({
         agentId: agent.id,
-        returnTo: 'ai-employees',
-        agentName: agent.name || '',
+        returnTo: "ai-employees",
+        agentName: agent.name || "",
       });
       window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
     }
@@ -167,15 +190,15 @@ export function ProfessionalAIEmployees() {
       if (agent?.id) {
         const params = new URLSearchParams({
           agentId: agent.id,
-          returnTo: 'ai-employees',
-          agentName: agent.name || '',
+          returnTo: "ai-employees",
+          agentName: agent.name || "",
         });
         window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
       } else {
-        toast.info('Provision this agent first to run it');
+        toast.info("Provision this agent first to run it");
       }
     } catch {
-      toast.error('Failed to run');
+      toast.error("Failed to run");
     } finally {
       setRunningEmployee(null);
     }
@@ -183,16 +206,21 @@ export function ProfessionalAIEmployees() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'bg-red-100 text-red-700 border-red-200';
-      case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'LOW': return 'bg-green-100 text-green-700 border-green-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case "URGENT":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "HIGH":
+        return "bg-orange-100 text-orange-700 border-orange-200";
+      case "MEDIUM":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      case "LOW":
+        return "bg-green-100 text-green-700 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
   const filteredEmployees =
-    selectedCategory === 'all'
+    selectedCategory === "all"
       ? PROFESSIONAL_EMPLOYEES
       : PROFESSIONAL_EMPLOYEES.filter((e) => e.category === selectedCategory);
 
@@ -205,11 +233,15 @@ export function ProfessionalAIEmployees() {
             Professional AI Experts
           </h2>
           <p className="text-gray-600 mt-1">
-            12 expert roles with deep domain expertise. Voice + text. Use in workflows and campaigns.
+            12 expert roles with deep domain expertise. Voice + text. Use in
+            workflows and campaigns.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
@@ -228,13 +260,22 @@ export function ProfessionalAIEmployees() {
         {CATEGORIES.map((cat) => (
           <Button
             key={cat.id}
-            variant={selectedCategory === cat.id ? 'default' : 'outline'}
+            variant={selectedCategory === cat.id ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedCategory(cat.id)}
-            className={selectedCategory === cat.id ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-200 hover:bg-purple-50'}
+            className={
+              selectedCategory === cat.id
+                ? "bg-purple-600 hover:bg-purple-700 text-white"
+                : "border-purple-200 hover:bg-purple-50"
+            }
           >
             {cat.label}
-            <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-700">{cat.count}</Badge>
+            <Badge
+              variant="secondary"
+              className="ml-2 bg-purple-100 text-purple-700"
+            >
+              {cat.count}
+            </Badge>
           </Button>
         ))}
       </div>
@@ -262,37 +303,67 @@ export function ProfessionalAIEmployees() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`p-2.5 rounded-xl bg-gradient-to-br ${employee.color}`}>
+                      <div
+                        className={`p-2.5 rounded-xl bg-gradient-to-br ${employee.color}`}
+                      >
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(employee.id) ? (
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-200">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />Ready
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-100 text-green-700 border-green-200"
+                          >
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Ready
                           </Badge>
                         ) : employee.voiceEnabled ? (
-                          <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
-                            <AlertCircle className="w-3 h-3 mr-1" />Not Provisioned
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-amber-100 text-amber-700 border-amber-200"
+                          >
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Not Provisioned
                           </Badge>
                         ) : null}
                       </div>
                     </div>
-                    <h3 className="font-bold text-gray-900 text-lg">{employee.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{employee.title}</p>
-                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">{employee.description}</p>
+                    <h3 className="font-bold text-gray-900 text-lg">
+                      {employee.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {employee.title}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">
+                      {employee.description}
+                    </p>
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-xs ${getPriorityColor(employee.priority)}`}>{employee.priority}</Badge>
+                      <Badge
+                        className={`text-xs ${getPriorityColor(employee.priority)}`}
+                      >
+                        {employee.priority}
+                      </Badge>
                       <div className="flex items-center gap-1">
-                        {isAgentProvisioned(employee.id) && employee.voiceEnabled && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
-                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-600 hover:bg-green-50' : 'text-gray-500 hover:bg-purple-50'}`}
-                            title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
-                          >
-                            <Phone className="w-4 h-4" />
-                          </button>
-                        )}
+                        {isAgentProvisioned(employee.id) &&
+                          employee.voiceEnabled && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConnectPhoneEmployee(employee);
+                                setShowConnectPhone(true);
+                              }}
+                              className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? "text-green-600 hover:bg-green-50" : "text-gray-500 hover:bg-purple-50"}`}
+                              title={
+                                getProvisionedAgent(employee.id)
+                                  ?.twilioPhoneNumber
+                                  ? "Change phone"
+                                  : "Connect phone"
+                              }
+                            >
+                              <Phone className="w-4 h-4" />
+                            </button>
+                          )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -303,7 +374,11 @@ export function ProfessionalAIEmployees() {
                           }}
                           disabled={isRunning}
                         >
-                          {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                          {isRunning ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -321,24 +396,36 @@ export function ProfessionalAIEmployees() {
             <>
               <DialogHeader>
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedEmployee.color}`}>
+                  <div
+                    className={`p-3 rounded-xl bg-gradient-to-br ${selectedEmployee.color}`}
+                  >
                     {(() => {
                       const IconComponent = selectedEmployee.icon;
                       return <IconComponent className="w-6 h-6 text-white" />;
                     })()}
                   </div>
                   <div>
-                    <DialogTitle className="text-xl text-gray-900">{selectedEmployee.name} - {selectedEmployee.title}</DialogTitle>
-                    <DialogDescription className="text-gray-600">{selectedEmployee.fullDescription}</DialogDescription>
+                    <DialogTitle className="text-xl text-gray-900">
+                      {selectedEmployee.name} - {selectedEmployee.title}
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-600">
+                      {selectedEmployee.fullDescription}
+                    </DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Capabilities</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Capabilities
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedEmployee.capabilities.map((c) => (
-                      <Badge key={c} variant="outline" className="bg-purple-50 text-gray-700 border-purple-200">
+                      <Badge
+                        key={c}
+                        variant="outline"
+                        className="bg-purple-50 text-gray-700 border-purple-200"
+                      >
                         {c}
                       </Badge>
                     ))}
@@ -350,7 +437,11 @@ export function ProfessionalAIEmployees() {
                     onClick={() => handleTestAgent(selectedEmployee.id)}
                     disabled={testingAgentId === selectedEmployee.id}
                   >
-                    {testingAgentId === selectedEmployee.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4 mr-2" />}
+                    {testingAgentId === selectedEmployee.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Mic className="w-4 h-4 mr-2" />
+                    )}
                     Talk to {selectedEmployee.name}
                   </Button>
                   {isAgentProvisioned(selectedEmployee.id) && (
@@ -363,7 +454,18 @@ export function ProfessionalAIEmployees() {
                       Manage Tasks
                     </Button>
                   )}
-                  <p className="text-xs text-gray-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history.</p>
+                  <Button
+                    variant="outline"
+                    className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                    onClick={() => setShowLiveRun(true)}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Live Run
+                  </Button>
+                  <p className="text-xs text-gray-500 w-full">
+                    Talk opens voice conversation. Manage Tasks: toggles,
+                    history.
+                  </p>
                 </div>
               </div>
             </>
@@ -383,19 +485,27 @@ export function ProfessionalAIEmployees() {
       {connectPhoneEmployee && (
         <ConnectPhoneDialog
           open={showConnectPhone}
-          onOpenChange={(open) => { if (!open) setConnectPhoneEmployee(null); setShowConnectPhone(open); }}
+          onOpenChange={(open) => {
+            if (!open) setConnectPhoneEmployee(null);
+            setShowConnectPhone(open);
+          }}
           agent={{
-            source: 'professional',
+            source: "professional",
             agentName: connectPhoneEmployee.name,
             employeeType: connectPhoneEmployee.id,
-            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)?.twilioPhoneNumber,
+            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)
+              ?.twilioPhoneNumber,
           }}
           onSuccess={() => {
             fetchProvisionedAgents();
             setShowConnectPhone(false);
             setConnectPhoneEmployee(null);
           }}
-          onPurchaseClick={() => { setShowConnectPhone(false); setConnectPhoneEmployee(null); setShowPurchaseDialog(true); }}
+          onPurchaseClick={() => {
+            setShowConnectPhone(false);
+            setConnectPhoneEmployee(null);
+            setShowPurchaseDialog(true);
+          }}
         />
       )}
       {selectedEmployee && getProvisionedAgent(selectedEmployee.id)?.id && (
@@ -407,6 +517,18 @@ export function ProfessionalAIEmployees() {
           employeeType={selectedEmployee.id}
           source="professional"
           isAdmin={isAdmin}
+        />
+      )}
+
+      {selectedEmployee && (
+        <LiveRunDialog
+          open={showLiveRun}
+          onOpenChange={setShowLiveRun}
+          employeeRef={
+            getProvisionedAgent(selectedEmployee.id)?.id || selectedEmployee.id
+          }
+          employeeType={selectedEmployee.id}
+          employeeName={selectedEmployee.name}
         />
       )}
     </div>

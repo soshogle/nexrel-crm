@@ -8,6 +8,22 @@ type DecisionLogInput = {
   enforced: boolean;
   allowed: boolean;
   mode?: string;
+  why?: string[];
+  businessProfileRef?: {
+    profileId: string;
+    updatedAt: string;
+    source: string;
+  };
+  memoryRef?: {
+    memoryId: string;
+    generatedAt: string;
+    sourceCounts: {
+      decisions: number;
+      outcomes: number;
+      crmEvents: number;
+      profiles: number;
+    };
+  };
   deniedActions?: Array<{ type: string; reason: string }>;
   pendingApprovals?: Array<{ jobId: string; type: string }>;
   predictedImpact?: {
@@ -36,6 +52,9 @@ export async function logNexrelAIDecision(input: DecisionLogInput) {
           mode: input.mode || null,
           deniedActions: input.deniedActions || [],
           pendingApprovals: input.pendingApprovals || [],
+          why: Array.isArray(input.why) ? input.why.slice(0, 8) : [],
+          businessProfileRef: input.businessProfileRef || null,
+          memoryRef: input.memoryRef || null,
           predictedImpact: input.predictedImpact || {
             leadVelocity: 0,
             conversionLift: 0,

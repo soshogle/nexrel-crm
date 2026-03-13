@@ -57,6 +57,7 @@ import { TwilioPhoneSelector } from "@/components/shared/twilio-phone-selector";
 import { ConnectPhoneDialog } from "@/components/shared/connect-phone-dialog";
 import PurchasePhoneNumberDialog from "@/components/voice-agents/purchase-phone-number-dialog";
 import { TaskDashboardDialog } from "@/components/ai-employees/task-dashboard-dialog";
+import { LiveRunDialog } from "@/components/ai-employees/live-run-dialog";
 import type { IndustryEmployeeConfig } from "@/lib/industry-ai-employees/types";
 import { getIndustryAIEmployeeModule } from "@/lib/industry-ai-employees/registry";
 import { cn } from "@/lib/utils";
@@ -201,6 +202,7 @@ export function IndustryAIEmployees({
   const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
   const [assigningPhone, setAssigningPhone] = useState<string | null>(null);
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
+  const [showLiveRun, setShowLiveRun] = useState(false);
   const [showConnectPhone, setShowConnectPhone] = useState(false);
   const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<
     (typeof employees)[0] | null
@@ -789,6 +791,18 @@ export function IndustryAIEmployees({
                           Manage Tasks
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowLiveRun(true);
+                        }}
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        Start Live Run
+                      </Button>
                       <p className="text-xs text-gray-500 w-full">
                         Talk opens voice conversation. Manage Tasks: toggles,
                         history, run.
@@ -824,6 +838,14 @@ export function IndustryAIEmployees({
                     Manage Tasks
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                  onClick={() => setShowLiveRun(true)}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Live Run
+                </Button>
                 <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={() => {
@@ -892,6 +914,18 @@ export function IndustryAIEmployees({
           source="industry"
           industry={industry}
           isAdmin={isAdmin}
+        />
+      )}
+
+      {selectedEmployee && (
+        <LiveRunDialog
+          open={showLiveRun}
+          onOpenChange={setShowLiveRun}
+          employeeRef={
+            getProvisionedAgent(selectedEmployee.id)?.id || selectedEmployee.id
+          }
+          employeeType={selectedEmployee.id}
+          employeeName={selectedEmployee.name}
         />
       )}
     </div>
