@@ -302,6 +302,17 @@ export default function LiveConsolePage() {
                       Copy Token
                     </Button>
                   ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/agent-command-center/desktop-worker?sessionId=${encodeURIComponent(sessionId)}`,
+                      )
+                    }
+                  >
+                    Open Desktop Worker
+                  </Button>
                 </div>
                 {workerToken ? (
                   <div className="rounded border border-zinc-200 bg-white p-2">

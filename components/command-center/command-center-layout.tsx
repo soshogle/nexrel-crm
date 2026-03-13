@@ -13,6 +13,7 @@ import {
   History,
   Lightbulb,
   BrainCircuit,
+  MonitorCog,
   Zap,
   ChevronLeft,
   ChevronRight,
@@ -49,6 +50,11 @@ const navItems = [
     path: "/dashboard/agent-command-center/approvals",
     label: "Approvals Inbox",
     icon: ShieldCheck,
+  },
+  {
+    path: "/dashboard/agent-command-center/desktop-worker",
+    label: "Desktop Worker",
+    icon: MonitorCog,
   },
   {
     path: "/dashboard/agent-command-center/memory",
