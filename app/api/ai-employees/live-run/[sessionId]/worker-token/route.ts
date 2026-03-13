@@ -6,7 +6,7 @@ import {
   resolveDalContext,
 } from "@/lib/context/industry-context";
 import { apiErrors } from "@/lib/api-error";
-import { mintWorkerToken } from "@/lib/ai-employees/live-run";
+import { mintWorkerTokenWithBaseUrl } from "@/lib/ai-employees/live-run";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,7 +24,14 @@ export async function POST(
     const ctx = getDalContextFromSession(session) ?? resolvedCtx;
     if (!ctx) return apiErrors.unauthorized();
 
-    const token = await mintWorkerToken(ctx, params.sessionId);
+    const body = await request.json().catch(() => ({}));
+    const baseUrl =
+      typeof body?.baseUrl === "string" ? String(body.baseUrl).trim() : "";
+    const token = await mintWorkerTokenWithBaseUrl(
+      ctx,
+      params.sessionId,
+      baseUrl,
+    );
     return NextResponse.json({ success: true, ...token });
   } catch (error: any) {
     console.error("[live-run] worker-token error", error);

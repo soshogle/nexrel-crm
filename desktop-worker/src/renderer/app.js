@@ -94,6 +94,23 @@ function parseConnectionCode(raw) {
   throw new Error("Invalid connection code");
 }
 
+function parseDesktopKey(raw) {
+  const token = String(raw || "").trim();
+  if (!token.startsWith("nxa.")) return null;
+  const parts = token.split(".");
+  if (parts.length < 3) return null;
+  try {
+    const payload = JSON.parse(decodeBase64Url(parts[1]));
+    return {
+      baseUrl: String(payload.baseUrl || "").trim(),
+      sessionId: String(payload.sessionId || "").trim(),
+      userId: String(payload.userId || "").trim(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function applyConnectionCode(raw) {
   const parsed = parseConnectionCode(raw);
   baseUrlInput.value = parsed.baseUrl;
@@ -104,6 +121,15 @@ function applyConnectionCode(raw) {
     "Connection code applied",
     `${parsed.baseUrl} · ${parsed.sessionId}`,
   );
+}
+
+function autoFillFromDesktopKey() {
+  const parsed = parseDesktopKey(tokenInput.value);
+  if (!parsed) return;
+  if (parsed.baseUrl) baseUrlInput.value = parsed.baseUrl;
+  if (parsed.sessionId) sessionIdInput.value = parsed.sessionId;
+  if (parsed.userId) userIdInput.value = parsed.userId;
+  appendLog("Desktop key decoded", `${parsed.baseUrl} · ${parsed.sessionId}`);
 }
 
 async function hydrate() {
@@ -138,7 +164,11 @@ applyCodeBtn.addEventListener("click", () => {
   }
 });
 
+tokenInput.addEventListener("change", autoFillFromDesktopKey);
+tokenInput.addEventListener("input", autoFillFromDesktopKey);
+
 startBtn.addEventListener("click", async () => {
+  autoFillFromDesktopKey();
   const config = getFormValue();
   await window.desktopWorker.saveConfig(config);
   try {

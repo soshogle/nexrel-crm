@@ -57,6 +57,10 @@ export async function POST(
           typeof body?.framePreview === "string"
             ? body.framePreview
             : undefined,
+        frameImageDataUrl:
+          typeof body?.frameImageDataUrl === "string"
+            ? body.frameImageDataUrl
+            : undefined,
         capabilities: Array.isArray(body?.capabilities)
           ? body.capabilities.map((v: any) => String(v))
           : undefined,

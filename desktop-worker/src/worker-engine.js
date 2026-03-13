@@ -114,7 +114,9 @@ class WorkerEngine extends EventEmitter {
     if (!this.page) throw new Error("Browser page is not initialized");
 
     if (command.actionType === "navigate") {
-      const url = normalizeUrl(command.target || command.value || "");
+      const url = normalizeUrl(
+        command?.meta?.url || command.target || command.value || "",
+      );
       if (!url) throw new Error("navigate command missing URL");
       await this.page.goto(url, {
         waitUntil: "domcontentloaded",
@@ -124,6 +126,12 @@ class WorkerEngine extends EventEmitter {
     }
 
     if (command.actionType === "click") {
+      const clickX = Number(command?.meta?.x);
+      const clickY = Number(command?.meta?.y);
+      if (Number.isFinite(clickX) && Number.isFinite(clickY)) {
+        await this.page.mouse.click(clickX, clickY);
+        return `Clicked at (${Math.round(clickX)}, ${Math.round(clickY)})`;
+      }
       const selector = String(command.target || "").trim();
       if (!selector) throw new Error("click command missing selector");
       await this.page.locator(selector).first().click({ timeout: 20000 });
@@ -132,7 +140,15 @@ class WorkerEngine extends EventEmitter {
 
     if (command.actionType === "type") {
       const selector = String(command.target || "").trim();
-      const value = String(command.value || "");
+      const value = String(command?.meta?.text || command.value || "");
+      if (!value) throw new Error("type command missing value");
+      const typeX = Number(command?.meta?.x);
+      const typeY = Number(command?.meta?.y);
+      if (Number.isFinite(typeX) && Number.isFinite(typeY)) {
+        await this.page.mouse.click(typeX, typeY);
+        await this.page.keyboard.type(value, { delay: 15 });
+        return `Typed at (${Math.round(typeX)}, ${Math.round(typeY)})`;
+      }
       if (selector) {
         await this.page
           .locator(selector)
@@ -165,10 +181,27 @@ class WorkerEngine extends EventEmitter {
   }
 
   async sendHeartbeat() {
+    let frameImageDataUrl = undefined;
+    if (this.page) {
+      try {
+        const shot = await this.page.screenshot({
+          type: "jpeg",
+          quality: 45,
+          fullPage: false,
+        });
+        frameImageDataUrl = `data:image/jpeg;base64,${shot.toString("base64")}`;
+      } catch (error) {
+        this.log("warn", "Screenshot capture failed", {
+          error: error?.message || String(error),
+        });
+      }
+    }
+
     await this.postBridge({
       action: "heartbeat",
       status: "online",
       framePreview: `Desktop worker active at ${new Date().toLocaleTimeString()}`,
+      frameImageDataUrl,
       capabilities: [
         "playwright",
         "navigate",

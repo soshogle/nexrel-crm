@@ -31,6 +31,10 @@ export default function LiveConsolePage() {
     string | null
   >(null);
   const [mintingToken, setMintingToken] = useState(false);
+  const [remoteUrl, setRemoteUrl] = useState("");
+  const [remoteSelector, setRemoteSelector] = useState("");
+  const [remoteText, setRemoteText] = useState("");
+  const [sendingRemote, setSendingRemote] = useState(false);
   const streamRef = useRef<EventSource | null>(null);
 
   const load = async () => {
@@ -144,6 +148,13 @@ export default function LiveConsolePage() {
         `/api/ai-employees/live-run/${sessionId}/worker-token`,
         {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseUrl:
+              typeof window === "undefined"
+                ? "https://www.soshogle.com"
+                : window.location.origin,
+          }),
         },
       );
       const data = await response.json().catch(() => ({}));
@@ -193,6 +204,7 @@ export default function LiveConsolePage() {
   const executionTarget = String(
     session?.input?.executionTarget || "cloud_browser",
   );
+  const workerFrameImage = String(worker?.frameImageDataUrl || "");
   const connectionCode = useMemo(() => {
     if (!workerToken || !sessionId) return "";
     const ownerId = String(session?.userId || "").trim();
@@ -228,6 +240,35 @@ export default function LiveConsolePage() {
     router.push(
       `/dashboard/agent-command-center/desktop-worker?sessionId=${encodeURIComponent(sessionId)}`,
     );
+  };
+
+  const queueWorkerCommand = async (payload: {
+    actionType: string;
+    target?: string;
+    value?: string;
+    meta?: Record<string, any>;
+  }) => {
+    setSendingRemote(true);
+    try {
+      const response = await fetch(
+        `/api/ai-employees/live-run/${sessionId}/worker-command`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || "Failed to queue command");
+      }
+      toast.success("Remote command queued");
+      await load();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to queue command");
+    } finally {
+      setSendingRemote(false);
+    }
   };
 
   return (
@@ -386,6 +427,103 @@ export default function LiveConsolePage() {
                     ) : null}
                   </div>
                 ) : null}
+                <div className="rounded border border-zinc-700 bg-zinc-950/80 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-zinc-200">
+                    Interactive Remote Control
+                  </p>
+                  <div className="rounded border border-zinc-800 bg-black/40 overflow-hidden">
+                    {workerFrameImage ? (
+                      <img
+                        src={workerFrameImage}
+                        alt="Remote desktop frame"
+                        className="w-full max-h-72 object-contain cursor-crosshair"
+                        onClick={(event) => {
+                          const rect = (
+                            event.currentTarget as HTMLImageElement
+                          ).getBoundingClientRect();
+                          const scaleX = 1600 / Math.max(rect.width, 1);
+                          const scaleY = 940 / Math.max(rect.height, 1);
+                          const x = Math.round(
+                            (event.clientX - rect.left) * scaleX,
+                          );
+                          const y = Math.round(
+                            (event.clientY - rect.top) * scaleY,
+                          );
+                          queueWorkerCommand({
+                            actionType: "click",
+                            meta: { x, y },
+                          });
+                        }}
+                      />
+                    ) : (
+                      <div className="h-56 flex items-center justify-center text-xs text-zinc-500">
+                        Waiting for worker frame...
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid md:grid-cols-[1fr_auto] gap-2">
+                    <input
+                      value={remoteUrl}
+                      onChange={(e) => setRemoteUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={sendingRemote || !remoteUrl.trim()}
+                      onClick={() =>
+                        queueWorkerCommand({
+                          actionType: "navigate",
+                          target: remoteUrl.trim(),
+                        })
+                      }
+                    >
+                      Navigate
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-[1fr_1fr_auto_auto] gap-2">
+                    <input
+                      value={remoteSelector}
+                      onChange={(e) => setRemoteSelector(e.target.value)}
+                      placeholder="CSS selector"
+                      className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                    />
+                    <input
+                      value={remoteText}
+                      onChange={(e) => setRemoteText(e.target.value)}
+                      placeholder="Text for type"
+                      className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={sendingRemote || !remoteSelector.trim()}
+                      onClick={() =>
+                        queueWorkerCommand({
+                          actionType: "click",
+                          target: remoteSelector.trim(),
+                        })
+                      }
+                    >
+                      Click
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={sendingRemote || !remoteText.trim()}
+                      onClick={() =>
+                        queueWorkerCommand({
+                          actionType: "type",
+                          target: remoteSelector.trim() || undefined,
+                          value: remoteText,
+                        })
+                      }
+                    >
+                      Type
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
               <p className="text-xs text-zinc-400">

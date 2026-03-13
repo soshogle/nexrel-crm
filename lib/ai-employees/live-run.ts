@@ -84,6 +84,8 @@ type WorkerCommand = {
   value?: string;
   status: "queued" | "running" | "completed" | "failed";
   detail?: string;
+  source?: "ai_plan" | "owner_remote";
+  meta?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 };
@@ -167,6 +169,7 @@ async function issueWorkerTokenForSession(input: {
   ctx: LiveRunContext;
   sessionId: string;
   forceRequired?: boolean;
+  baseUrl?: string | null;
 }) {
   const db = getCrmDb(input.ctx);
   const session = await db.aIJob.findFirst({
@@ -182,9 +185,17 @@ async function issueWorkerTokenForSession(input: {
   });
   if (!session) throw new Error("Live run session not found");
 
-  const token = randomBytes(24).toString("hex");
-  const tokenHash = sha256(token);
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const tokenSecret = randomBytes(24).toString("hex");
+  const tokenPayload = {
+    v: 1,
+    sessionId: session.id,
+    userId: input.ctx.userId,
+    baseUrl: String(input.baseUrl || "").trim() || null,
+    exp: expiresAt,
+  };
+  const token = `nxa.${Buffer.from(JSON.stringify(tokenPayload)).toString("base64url")}.${tokenSecret}`;
+  const tokenHash = sha256(token);
   const output = { ...((session.output || {}) as any) };
   output.worker = {
     ...(output.worker || {}),
@@ -720,6 +731,19 @@ export async function mintWorkerToken(ctx: LiveRunContext, sessionId: string) {
   });
 }
 
+export async function mintWorkerTokenWithBaseUrl(
+  ctx: LiveRunContext,
+  sessionId: string,
+  baseUrl?: string | null,
+) {
+  return issueWorkerTokenForSession({
+    ctx,
+    sessionId,
+    forceRequired: true,
+    baseUrl,
+  });
+}
+
 function assertWorkerToken(session: any, token: string) {
   const output = (session.output || {}) as any;
   const hash = output?.worker?.tokenHash;
@@ -734,7 +758,12 @@ export async function workerHeartbeat(
   ctx: LiveRunContext,
   sessionId: string,
   token: string,
-  payload: { framePreview?: string; capabilities?: string[]; status?: string },
+  payload: {
+    framePreview?: string;
+    frameImageDataUrl?: string;
+    capabilities?: string[];
+    status?: string;
+  },
 ) {
   const db = getCrmDb(ctx);
   const session = await getLiveRun(ctx, sessionId);
@@ -754,6 +783,10 @@ export async function workerHeartbeat(
       ? payload.capabilities
       : output?.worker?.capabilities || [],
     status: payload.status || output?.worker?.status || "online",
+    frameImageDataUrl:
+      typeof payload.frameImageDataUrl === "string"
+        ? payload.frameImageDataUrl
+        : output?.worker?.frameImageDataUrl || null,
   };
   if (payload.framePreview) output.framePreview = payload.framePreview;
 
@@ -864,6 +897,63 @@ export async function workerAckCommand(
   });
   await logRunEvent(ctx, session.id, event);
   return getLiveRun(ctx, session.id);
+}
+
+export async function enqueueWorkerCommand(
+  ctx: LiveRunContext,
+  sessionId: string,
+  input: {
+    actionType: WorkerCommand["actionType"];
+    target?: string;
+    value?: string;
+    meta?: Record<string, any>;
+    source?: "owner_remote";
+  },
+) {
+  const db = getCrmDb(ctx);
+  const session = await getLiveRun(ctx, sessionId);
+  if (!session) throw new Error("Live run session not found");
+
+  const output = { ...((session.output || {}) as any) };
+  const commands: WorkerCommand[] = Array.isArray(output?.worker?.commands)
+    ? [...output.worker.commands]
+    : [];
+
+  const now = new Date().toISOString();
+  const command: WorkerCommand = {
+    commandId: crypto.randomUUID(),
+    stepId: `owner_remote:${crypto.randomUUID()}`,
+    actionType: input.actionType,
+    target: input.target,
+    value: input.value,
+    status: "queued",
+    source: input.source || "owner_remote",
+    meta: input.meta || undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+  commands.push(command);
+
+  output.worker = {
+    ...(output.worker || {}),
+    required: true,
+    commands,
+  };
+
+  const event: LiveRunEvent = {
+    id: crypto.randomUUID(),
+    type: "command_enqueued",
+    message: `Owner queued ${command.actionType} command`,
+    createdAt: now,
+  };
+
+  const merged = appendEvent(output, event);
+  await db.aIJob.update({
+    where: { id: session.id },
+    data: { output: merged },
+  });
+  await logRunEvent(ctx, session.id, event);
+  return { commandId: command.commandId };
 }
 
 export async function listLiveRunDevices(ctx: LiveRunContext) {

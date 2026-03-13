@@ -31,7 +31,7 @@ export async function GET(
 
   const stream = new ReadableStream({
     start(controller) {
-      let sentCount = -1;
+      let sentSignature = "";
 
       const send = (event: string, data: any) => {
         controller.enqueue(
@@ -51,14 +51,23 @@ export async function GET(
 
           const output = (run.output || {}) as any;
           const events = Array.isArray(output.events) ? output.events : [];
-          if (events.length !== sentCount) {
-            sentCount = events.length;
+          const worker = output.worker || null;
+          const signature = JSON.stringify({
+            count: events.length,
+            progress: run.progress,
+            state: output.sessionState || "queued",
+            heartbeat: worker?.lastHeartbeatAt || null,
+            framePreview: output.framePreview || null,
+            frameImage: worker?.frameImageDataUrl || null,
+          });
+          if (signature !== sentSignature) {
+            sentSignature = signature;
             send("state", {
               sessionState: output.sessionState || "queued",
               progress: run.progress,
               framePreview: output.framePreview || null,
               steps: Array.isArray(output.steps) ? output.steps : [],
-              worker: output.worker || null,
+              worker,
               events,
             });
           }
