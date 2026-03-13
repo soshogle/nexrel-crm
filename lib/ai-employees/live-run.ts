@@ -30,7 +30,14 @@ type SessionState =
 type LiveRunStep = {
   id: string;
   title: string;
-  actionType: "navigate" | "click" | "type" | "extract" | "verify";
+  actionType:
+    | "navigate"
+    | "click"
+    | "type"
+    | "extract"
+    | "verify"
+    | "open_app"
+    | "run_command";
   riskTier: "LOW" | "MEDIUM" | "HIGH";
   requiresApproval: boolean;
   target?: string;
@@ -65,7 +72,14 @@ type LiveRunEvent = {
 type WorkerCommand = {
   commandId: string;
   stepId: string;
-  actionType: "navigate" | "click" | "type" | "extract" | "verify";
+  actionType:
+    | "navigate"
+    | "click"
+    | "type"
+    | "extract"
+    | "verify"
+    | "open_app"
+    | "run_command";
   target?: string;
   value?: string;
   status: "queued" | "running" | "completed" | "failed";
@@ -90,6 +104,19 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
       ? payload.targetApps.join(", ")
       : "assigned apps";
   return [
+    ...(payload.executionTarget === "owner_desktop"
+      ? [
+          {
+            id: crypto.randomUUID(),
+            title: "Open required local app workspace",
+            actionType: "open_app" as const,
+            riskTier: "LOW" as const,
+            requiresApproval: false,
+            target: payload.targetApps[0] || "Google Chrome",
+            status: "pending" as const,
+          },
+        ]
+      : []),
     {
       id: crypto.randomUUID(),
       title: `Open ${apps} and verify account state`,
@@ -134,6 +161,54 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
       status: "pending",
     },
   ];
+}
+
+async function issueWorkerTokenForSession(input: {
+  ctx: LiveRunContext;
+  sessionId: string;
+  forceRequired?: boolean;
+}) {
+  const db = getCrmDb(input.ctx);
+  const session = await db.aIJob.findFirst({
+    where: {
+      id: input.sessionId,
+      userId: input.ctx.userId,
+      jobType: "live_browser_session",
+    },
+    select: {
+      id: true,
+      output: true,
+    },
+  });
+  if (!session) throw new Error("Live run session not found");
+
+  const token = randomBytes(24).toString("hex");
+  const tokenHash = sha256(token);
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const output = { ...((session.output || {}) as any) };
+  output.worker = {
+    ...(output.worker || {}),
+    required:
+      typeof input.forceRequired === "boolean"
+        ? input.forceRequired
+        : Boolean(output?.worker?.required),
+    tokenHash,
+    tokenExpiresAt: expiresAt,
+    commands: Array.isArray(output?.worker?.commands)
+      ? output.worker.commands
+      : [],
+  };
+
+  await db.aIJob.update({
+    where: { id: session.id },
+    data: { output },
+  });
+
+  return {
+    token,
+    expiresAt,
+    sessionId: session.id,
+  };
 }
 
 function getInitialOutput(payload: LiveRunPayload) {
@@ -268,6 +343,20 @@ export async function startLiveRun(
   });
 
   await logRunEvent(ctx, job.id, output.events[0]);
+
+  if (payload.executionTarget === "owner_desktop") {
+    const workerToken = await issueWorkerTokenForSession({
+      ctx,
+      sessionId: job.id,
+      forceRequired: true,
+    });
+    return {
+      ...job,
+      workerToken: workerToken.token,
+      workerTokenExpiresAt: workerToken.expiresAt,
+    };
+  }
+
   return job;
 }
 
@@ -604,34 +693,11 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
 }
 
 export async function mintWorkerToken(ctx: LiveRunContext, sessionId: string) {
-  const db = getCrmDb(ctx);
-  const session = await getLiveRun(ctx, sessionId);
-  if (!session) throw new Error("Live run session not found");
-
-  const token = randomBytes(24).toString("hex");
-  const tokenHash = sha256(token);
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-  const output = { ...((session.output || {}) as any) };
-  output.worker = {
-    ...(output.worker || {}),
-    required: true,
-    tokenHash,
-    tokenExpiresAt: expiresAt,
-    commands: Array.isArray(output?.worker?.commands)
-      ? output.worker.commands
-      : [],
-  };
-
-  await db.aIJob.update({
-    where: { id: session.id },
-    data: { output },
+  return issueWorkerTokenForSession({
+    ctx,
+    sessionId,
+    forceRequired: true,
   });
-
-  return {
-    token,
-    expiresAt,
-    sessionId: session.id,
-  };
 }
 
 function assertWorkerToken(session: any, token: string) {

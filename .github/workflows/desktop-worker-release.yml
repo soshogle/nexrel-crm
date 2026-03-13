@@ -1,0 +1,72 @@
+name: Desktop Worker Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "desktop-worker-v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: desktop-worker
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+        working-directory: desktop-worker
+
+      - name: Build installer (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run dist:mac
+        working-directory: desktop-worker
+        env:
+          CSC_LINK: ${{ secrets.APPLE_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Build installer (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run dist:win
+        working-directory: desktop-worker
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-worker-${{ matrix.os }}
+          path: desktop-worker/dist/**
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/desktop-worker-v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**

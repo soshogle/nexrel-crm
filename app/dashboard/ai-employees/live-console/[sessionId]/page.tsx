@@ -56,6 +56,16 @@ export default function LiveConsolePage() {
 
   useEffect(() => {
     if (!sessionId) return;
+    const savedToken =
+      sessionStorage.getItem(`live-run-token:${sessionId}`) || "";
+    const savedExp =
+      sessionStorage.getItem(`live-run-token-exp:${sessionId}`) || "";
+    if (savedToken) setWorkerToken(savedToken);
+    if (savedExp) setWorkerTokenExpiresAt(savedExp);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
     const source = new EventSource(
       `/api/ai-employees/live-run/${sessionId}/events`,
     );
@@ -185,11 +195,11 @@ export default function LiveConsolePage() {
   );
 
   return (
-    <div className="p-6 space-y-4 text-zinc-100">
+    <div className="min-h-full p-6 space-y-4 text-zinc-100">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Live Console</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="text-2xl font-bold text-zinc-100">Live Console</h1>
+          <p className="text-sm text-zinc-400">
             Watch Nexrel AI execute step-by-step with owner controls.
           </p>
         </div>
@@ -220,22 +230,22 @@ export default function LiveConsolePage() {
       </div>
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-4">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-4">
+        <div className="rounded-xl border border-zinc-700 bg-zinc-900/70 p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-zinc-900">Live View</h2>
+            <h2 className="font-semibold text-zinc-100">Live View</h2>
             <Badge variant="outline" className="text-xs">
               {state}
             </Badge>
           </div>
-          <div className="h-80 rounded-lg border border-zinc-200 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_40%),linear-gradient(180deg,#ffffff,#f4f4f5)] p-5">
-            <p className="text-sm text-zinc-700">
+          <div className="h-80 rounded-lg border border-zinc-700 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.12),_transparent_35%),linear-gradient(180deg,#111827,#0a0a0a)] p-5">
+            <p className="text-sm text-zinc-200">
               {session?.output?.framePreview || "Preparing session..."}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {steps.map((step: any) => (
                 <div
                   key={step.id}
-                  className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-600"
+                  className="rounded-md border border-zinc-700 bg-zinc-900/70 px-2 py-1.5 text-xs text-zinc-300"
                 >
                   {step.title}
                 </div>
@@ -243,10 +253,10 @@ export default function LiveConsolePage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 space-y-2">
+          <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 space-y-2">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-zinc-900">
+                <h3 className="text-sm font-semibold text-zinc-100">
                   Worker Link
                 </h3>
                 <Badge variant="outline" className="text-xs">
@@ -269,14 +279,14 @@ export default function LiveConsolePage() {
                   </Badge>
                 )}
               </div>
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-zinc-400">
                 Pending commands: {pendingCommands}
               </div>
             </div>
 
             {workerRequired ? (
               <div className="space-y-2">
-                <div className="text-xs text-zinc-600">
+                <div className="text-xs text-zinc-300">
                   Last heartbeat:{" "}
                   {worker?.lastHeartbeatAt
                     ? new Date(worker.lastHeartbeatAt).toLocaleString()
@@ -315,22 +325,22 @@ export default function LiveConsolePage() {
                   </Button>
                 </div>
                 {workerToken ? (
-                  <div className="rounded border border-zinc-200 bg-white p-2">
-                    <p className="text-[11px] text-zinc-500 mb-1">
+                  <div className="rounded border border-zinc-700 bg-zinc-950/80 p-2">
+                    <p className="text-[11px] text-zinc-400 mb-1">
                       One-time worker token (expires{" "}
                       {workerTokenExpiresAt
                         ? new Date(workerTokenExpiresAt).toLocaleTimeString()
                         : "soon"}
                       )
                     </p>
-                    <p className="text-xs font-mono break-all text-zinc-800">
+                    <p className="text-xs font-mono break-all text-zinc-100">
                       {workerToken}
                     </p>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-zinc-400">
                 Session can run in simulated mode. Switch to Owner Desktop to
                 attach a local worker.
               </p>
@@ -389,25 +399,25 @@ export default function LiveConsolePage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-4">
-          <h2 className="font-semibold text-zinc-900">Telemetry</h2>
+        <div className="rounded-xl border border-zinc-700 bg-zinc-900/70 p-4 space-y-4">
+          <h2 className="font-semibold text-zinc-100">Telemetry</h2>
           <div className="space-y-2 max-h-[28rem] overflow-auto pr-1">
             {events.map((event: any) => (
               <div
                 key={event.id}
-                className="rounded-lg border border-zinc-200 p-3 bg-zinc-50"
+                className="rounded-lg border border-zinc-700 p-3 bg-zinc-900/60"
               >
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-400">
                   {event.type}
                 </p>
-                <p className="text-sm text-zinc-800 mt-1">{event.message}</p>
-                <p className="text-[11px] text-zinc-500 mt-1">
+                <p className="text-sm text-zinc-100 mt-1">{event.message}</p>
+                <p className="text-[11px] text-zinc-400 mt-1">
                   {new Date(event.createdAt).toLocaleString()}
                 </p>
               </div>
             ))}
             {events.length === 0 ? (
-              <p className="text-sm text-zinc-500">No events yet.</p>
+              <p className="text-sm text-zinc-400">No events yet.</p>
             ) : null}
           </div>
         </div>

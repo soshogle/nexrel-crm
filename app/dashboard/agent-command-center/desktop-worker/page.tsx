@@ -4,13 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Play, Pause, CheckCircle2, XCircle } from "lucide-react";
+import {
+  RefreshCw,
+  Play,
+  Pause,
+  CheckCircle2,
+  XCircle,
+  Copy,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type WorkerCommand = {
   commandId: string;
   stepId: string;
-  actionType: "navigate" | "click" | "type" | "extract" | "verify";
+  actionType:
+    | "navigate"
+    | "click"
+    | "type"
+    | "extract"
+    | "verify"
+    | "open_app"
+    | "run_command";
   target?: string;
   value?: string;
   status: "queued" | "running" | "completed" | "failed";
@@ -31,8 +45,20 @@ export default function DesktopWorkerPage() {
     "Desktop worker bridge ready.",
   );
   const [commands, setCommands] = useState<WorkerCommand[]>([]);
+  const [sessionOwnerId, setSessionOwnerId] = useState("");
   const heartbeatRef = useRef<number | null>(null);
   const pollRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/ai-employees/live-run/${sessionId}`)
+      .then((response) => response.json().catch(() => ({})))
+      .then((data) => {
+        const ownerId = String(data?.session?.userId || "");
+        if (ownerId) setSessionOwnerId(ownerId);
+      })
+      .catch(() => undefined);
+  }, [sessionId]);
 
   const bridge = async (payload: Record<string, any>) => {
     const response = await fetch("/api/ai-employees/live-run/desktop-bridge", {
@@ -172,6 +198,15 @@ export default function DesktopWorkerPage() {
     [commands],
   );
 
+  const localRunnerCommand = useMemo(() => {
+    const origin =
+      typeof window === "undefined"
+        ? "https://www.soshogle.com"
+        : window.location.origin;
+    if (!sessionId || !workerToken || !sessionOwnerId) return "";
+    return `NEXREL_ALLOW_LOCAL_COMMANDS=true npm run desktop-worker -- --baseUrl ${origin} --sessionId ${sessionId} --userId ${sessionOwnerId} --token ${workerToken}`;
+  }, [sessionId, workerToken, sessionOwnerId]);
+
   return (
     <div className="min-h-full px-8 py-6 text-zinc-100 space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -193,6 +228,41 @@ export default function DesktopWorkerPage() {
       </div>
 
       <div className="glass-panel rounded-xl p-5 space-y-4">
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+          <p className="text-sm font-semibold text-amber-200">
+            Native automation on another computer
+          </p>
+          <p className="text-xs text-zinc-300">
+            On the other machine, pull the latest repo, run npm install, then
+            start the worker command below. It launches Playwright and executes
+            commands automatically.
+          </p>
+          <div className="rounded-md border border-zinc-700 bg-zinc-950/70 p-2">
+            <p className="text-[11px] text-zinc-400 mb-1">Runner command</p>
+            <p className="text-xs text-zinc-100 font-mono break-all">
+              {localRunnerCommand ||
+                "Fill session ID + worker token to generate command"}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (!localRunnerCommand) {
+                toast.error("Missing session details for command");
+                return;
+              }
+              navigator.clipboard
+                .writeText(localRunnerCommand)
+                .then(() => toast.success("Runner command copied"))
+                .catch(() => toast.error("Failed to copy command"));
+            }}
+          >
+            <Copy className="w-3.5 h-3.5 mr-1" />
+            Copy Runner Command
+          </Button>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-zinc-400 mb-1">Live Session ID</p>

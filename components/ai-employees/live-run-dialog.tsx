@@ -98,7 +98,21 @@ export function LiveRunDialog({
         throw new Error(data?.error || "Failed to start live run");
       }
 
-      toast.success("Live run session started");
+      const token = String(data?.session?.workerToken || "");
+      const tokenExpiresAt = String(data?.session?.workerTokenExpiresAt || "");
+      if (executionTarget === "owner_desktop" && token) {
+        sessionStorage.setItem(`live-run-token:${data.session.id}`, token);
+        sessionStorage.setItem(
+          `live-run-token-exp:${data.session.id}`,
+          tokenExpiresAt,
+        );
+        await navigator.clipboard
+          .writeText(token)
+          .then(() => toast.success("Desktop key copied to clipboard"))
+          .catch(() => toast.success("Desktop key generated"));
+      } else {
+        toast.success("Live run session started");
+      }
       onOpenChange(false);
       router.push(`/dashboard/ai-employees/live-console/${data.session.id}`);
     } catch (error: any) {
@@ -110,10 +124,12 @@ export function LiveRunDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white border-2 border-purple-200/50">
+      <DialogContent className="max-w-2xl bg-zinc-950 border border-zinc-700 text-zinc-100">
         <DialogHeader>
-          <DialogTitle>Start Live Run - {employeeName}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-zinc-100">
+            Start Live Run - {employeeName}
+          </DialogTitle>
+          <DialogDescription className="text-zinc-400">
             OpenClaw will plan and execute a live mission while you watch and
             control approvals.
           </DialogDescription>
@@ -121,12 +137,12 @@ export function LiveRunDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Owner Goal</Label>
+            <Label className="text-zinc-200">Owner Goal</Label>
             <Input value={goal} onChange={(e) => setGoal(e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <Label>Target Apps</Label>
+            <Label className="text-zinc-200">Target Apps</Label>
             <Input
               value={targetApps}
               onChange={(e) => setTargetApps(e.target.value)}
@@ -135,7 +151,7 @@ export function LiveRunDialog({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Label className="w-full">Trust Mode</Label>
+            <Label className="w-full text-zinc-200">Trust Mode</Label>
             {(["crawl", "walk", "run"] as const).map((m) => (
               <Button
                 key={m}
@@ -143,7 +159,7 @@ export function LiveRunDialog({
                 className={
                   trustMode === m
                     ? "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400"
-                    : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-700 text-sm font-semibold hover:bg-zinc-100"
+                    : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
                 }
                 onClick={() => setTrustMode(m)}
               >
@@ -153,13 +169,13 @@ export function LiveRunDialog({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Label className="w-full">Execution Target</Label>
+            <Label className="w-full text-zinc-200">Execution Target</Label>
             <Button
               variant="ghost"
               className={
                 executionTarget === "cloud_browser"
                   ? "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400"
-                  : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-700 text-sm font-semibold hover:bg-zinc-100"
+                  : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
               }
               onClick={() => setExecutionTarget("cloud_browser")}
             >
@@ -170,7 +186,7 @@ export function LiveRunDialog({
               className={
                 executionTarget === "owner_desktop"
                   ? "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400"
-                  : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-700 text-sm font-semibold hover:bg-zinc-100"
+                  : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
               }
               onClick={() => setExecutionTarget("owner_desktop")}
             >
@@ -179,12 +195,17 @@ export function LiveRunDialog({
           </div>
 
           {executionTarget === "owner_desktop" && (
-            <div className="space-y-2">
-              <Label>Choose Desktop Device</Label>
+            <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <Label className="text-amber-200">Desktop Key Flow</Label>
+              <p className="text-xs text-zinc-300">
+                When you click start, Nexrel auto-generates the desktop key,
+                copies it, and opens the live console. Then paste that key on
+                the other computer to connect the local worker app.
+              </p>
               {devices.length === 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  No desktop agents registered yet. Register device via `POST
-                  /api/ai-employees/devices`.
+                <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 text-xs text-zinc-300">
+                  No registered desktop devices yet. This is optional now: you
+                  can still connect using the generated key.
                 </div>
               ) : (
                 <div className="grid gap-2">
@@ -196,16 +217,18 @@ export function LiveRunDialog({
                       className={`text-left rounded-lg border p-3 ${
                         deviceId === d.deviceId
                           ? "border-amber-400 bg-amber-50"
-                          : "border-zinc-200 bg-white"
+                          : "border-zinc-700 bg-zinc-900/60"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{d.label}</span>
+                        <span className="font-medium text-sm text-zinc-100">
+                          {d.label}
+                        </span>
                         <Badge variant="outline" className="text-xs">
                           {d.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-zinc-500 mt-1">
+                      <p className="text-xs text-zinc-400 mt-1">
                         {d.deviceId} · {d.os}
                       </p>
                     </button>
@@ -223,11 +246,7 @@ export function LiveRunDialog({
           <Button
             className="bg-amber-500 hover:bg-amber-400 text-zinc-900"
             onClick={startRun}
-            disabled={
-              isLoading ||
-              !goal ||
-              (executionTarget === "owner_desktop" && !deviceId)
-            }
+            disabled={isLoading || !goal}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

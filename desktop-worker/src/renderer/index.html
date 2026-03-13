@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexrel Desktop Worker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero panel">
+        <div>
+          <h1>Nexrel Desktop Worker</h1>
+          <p>
+            Connect this machine and run autonomous browser + local app tasks.
+          </p>
+        </div>
+        <div id="status-pill" class="status-pill idle">Disconnected</div>
+      </section>
+
+      <section class="panel form-grid">
+        <label>
+          Server URL
+          <input id="baseUrl" placeholder="https://www.soshogle.com" />
+        </label>
+        <label>
+          Session ID
+          <input id="sessionId" placeholder="Live run session id" />
+        </label>
+        <label>
+          Owner User ID
+          <input id="userId" placeholder="Owner user id" />
+        </label>
+        <label>
+          Desktop Key
+          <input id="token" placeholder="One-time worker token" />
+        </label>
+        <label>
+          <span>Run browser headed</span>
+          <input id="headed" type="checkbox" checked />
+        </label>
+        <label>
+          <span>Auto execute queue</span>
+          <input id="autoExecute" type="checkbox" checked />
+        </label>
+        <label>
+          <span>Allow local shell commands</span>
+          <input id="allowLocalCommands" type="checkbox" />
+        </label>
+        <label>
+          <span>Launch on startup</span>
+          <input id="runOnStartup" type="checkbox" />
+        </label>
+      </section>
+
+      <section class="panel actions">
+        <button id="saveBtn" class="btn ghost">Save</button>
+        <button id="startBtn" class="btn primary">Connect + Start</button>
+        <button id="stopBtn" class="btn danger">Stop</button>
+        <button id="openDocsBtn" class="btn ghost">Open Command Center</button>
+      </section>
+
+      <section class="panel logs">
+        <h2>Worker Logs</h2>
+        <div id="logList" class="log-list"></div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
