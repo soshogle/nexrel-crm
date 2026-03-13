@@ -9,6 +9,11 @@ type LiveRunContext = {
 
 type ExecutionTarget = "cloud_browser" | "owner_desktop";
 type TrustMode = "crawl" | "walk" | "run";
+type AutonomyLevel =
+  | "observe"
+  | "assist"
+  | "autonomous_low_risk"
+  | "autonomous_full";
 type StepStatus =
   | "pending"
   | "running"
@@ -96,11 +101,48 @@ type LiveRunPayload = {
   goal: string;
   targetApps: string[];
   trustMode: TrustMode;
+  autonomyLevel?: AutonomyLevel;
   executionTarget: ExecutionTarget;
   deviceId?: string | null;
   employeeType?: string;
   employeeName?: string;
 };
+
+function resolveAutonomyLevel(payload: LiveRunPayload): AutonomyLevel {
+  if (payload.autonomyLevel) return payload.autonomyLevel;
+  if (payload.trustMode === "crawl") return "observe";
+  if (payload.trustMode === "walk") return "assist";
+  return "autonomous_low_risk";
+}
+
+function shouldRequireApproval(
+  step: Pick<LiveRunStep, "actionType" | "riskTier">,
+  autonomy: AutonomyLevel,
+): boolean {
+  if (autonomy === "observe") return true;
+  if (autonomy === "assist") {
+    return (
+      step.riskTier !== "LOW" ||
+      step.actionType === "run_command" ||
+      step.actionType === "open_app"
+    );
+  }
+  if (autonomy === "autonomous_low_risk") {
+    return step.riskTier === "HIGH" || step.actionType === "run_command";
+  }
+  return false;
+}
+
+function retryBudgetFor(
+  autonomy: AutonomyLevel,
+  actionType: WorkerCommand["actionType"],
+): number {
+  if (autonomy === "observe") return 1;
+  if (autonomy === "assist") return actionType === "navigate" ? 2 : 1;
+  if (autonomy === "autonomous_low_risk")
+    return actionType === "run_command" ? 1 : 2;
+  return actionType === "run_command" ? 2 : 3;
+}
 
 function deriveSuccessCriteria(goal: string, appName: string): string[] {
   const criteria = [
@@ -140,8 +182,11 @@ function inferAppName(payload: LiveRunPayload): string {
     ["slack", "Slack"],
     ["zoom", "zoom.us"],
     ["notion", "Notion"],
+    ["calendar", "Calendar"],
+    ["outlook", "Microsoft Outlook"],
     ["excel", "Microsoft Excel"],
     ["google sheets", "Google Chrome"],
+    ["google calendar", "Google Chrome"],
     ["gmail", "Google Chrome"],
     ["chrome", "Google Chrome"],
     ["safari", "Safari"],
@@ -149,7 +194,30 @@ function inferAppName(payload: LiveRunPayload): string {
   for (const [needle, app] of aliases) {
     if (goal.includes(needle)) return app;
   }
+
+  const openAppMatch = goal.match(
+    /open\s+(?:my\s+)?([a-z0-9\s._-]+?)\s+app\b/i,
+  );
+  if (openAppMatch?.[1]) {
+    return openAppMatch[1]
+      .trim()
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
   return "Google Chrome";
+}
+
+function isOpenAppOnlyGoal(goal: string): boolean {
+  const text = String(goal || "")
+    .trim()
+    .toLowerCase();
+  if (!text) return false;
+  if (/^open\s+(?:my\s+)?[a-z0-9\s._-]+\s+app\.?$/.test(text)) return true;
+  if (/^open\s+(?:my\s+)?calendar\b/.test(text)) return true;
+  if (/^open\s+(?:my\s+)?outlook\b/.test(text)) return true;
+  return false;
 }
 
 function buildNavigationTarget(
@@ -157,6 +225,7 @@ function buildNavigationTarget(
   appName: string,
 ): string {
   const goal = String(payload.goal || "").trim();
+  if (isOpenAppOnlyGoal(goal)) return "";
   const directUrl = extractFirstUrl(goal);
   if (directUrl) return directUrl;
 
@@ -168,6 +237,10 @@ function buildNavigationTarget(
     return "https://open.spotify.com";
   }
 
+  if (appName.toLowerCase() === "calendar") {
+    return "";
+  }
+
   return `https://www.google.com/search?q=${encodeURIComponent(goal || appName)}`;
 }
 
@@ -175,48 +248,67 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
   const appName = inferAppName(payload);
   const navigationTarget = buildNavigationTarget(payload, appName);
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
+  const autonomy = resolveAutonomyLevel(payload);
 
   const steps: LiveRunStep[] = [];
 
   if (payload.executionTarget === "owner_desktop") {
-    steps.push({
+    const step: LiveRunStep = {
       id: crypto.randomUUID(),
       title: `Open ${appName}`,
       actionType: "open_app",
-      riskTier: "LOW",
+      riskTier: "MEDIUM",
       requiresApproval: false,
       target: appName,
       status: "pending",
-    });
+    };
+    step.requiresApproval = shouldRequireApproval(step, autonomy);
+    steps.push(step);
   }
 
   steps.push(
-    {
-      id: crypto.randomUUID(),
-      title: `Navigate to working context`,
-      actionType: "navigate",
-      riskTier: "LOW",
-      requiresApproval: false,
-      target: navigationTarget,
-      status: "pending",
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Extract current page state",
-      actionType: "extract",
-      riskTier: "LOW",
-      requiresApproval: false,
-      status: "pending",
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Verify goal progress and completion state",
-      actionType: "verify",
-      riskTier: "LOW",
-      requiresApproval: false,
-      value: successCriteria.join(" | "),
-      status: "pending",
-    },
+    ...(navigationTarget
+      ? [
+          (() => {
+            const step: LiveRunStep = {
+              id: crypto.randomUUID(),
+              title: `Navigate to working context`,
+              actionType: "navigate" as const,
+              riskTier: "LOW" as const,
+              requiresApproval: false,
+              target: navigationTarget,
+              status: "pending" as const,
+            };
+            step.requiresApproval = shouldRequireApproval(step, autonomy);
+            return step;
+          })(),
+        ]
+      : []),
+    (() => {
+      const step: LiveRunStep = {
+        id: crypto.randomUUID(),
+        title: "Extract current page state",
+        actionType: "extract",
+        riskTier: "LOW",
+        requiresApproval: false,
+        status: "pending",
+      };
+      step.requiresApproval = shouldRequireApproval(step, autonomy);
+      return step;
+    })(),
+    (() => {
+      const step: LiveRunStep = {
+        id: crypto.randomUUID(),
+        title: "Verify goal progress and completion state",
+        actionType: "verify",
+        riskTier: "MEDIUM",
+        requiresApproval: false,
+        value: successCriteria.join(" | "),
+        status: "pending",
+      };
+      step.requiresApproval = shouldRequireApproval(step, autonomy);
+      return step;
+    })(),
   );
 
   return steps;
@@ -283,6 +375,7 @@ function getInitialOutput(payload: LiveRunPayload) {
   const steps = createDefaultPlan(payload);
   const appName = inferAppName(payload);
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
+  const autonomyLevel = resolveAutonomyLevel(payload);
   const events: LiveRunEvent[] = [
     {
       id: crypto.randomUUID(),
@@ -311,6 +404,7 @@ function getInitialOutput(payload: LiveRunPayload) {
     },
     memory: {
       missionGoal: payload.goal,
+      autonomyLevel,
       successCriteria,
       timeline: [] as Array<{ at: string; note: string; kind: string }>,
       blockers: [] as Array<{ at: string; blocker: string; detail?: string }>,
@@ -769,7 +863,11 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           status: "queued",
           source: "ai_plan",
           attempt: 1,
-          maxAttempts: 2,
+          maxAttempts: retryBudgetFor(
+            (output?.memory?.autonomyLevel as AutonomyLevel) ||
+              resolveAutonomyLevel((session.input || {}) as LiveRunPayload),
+            currentStep.actionType,
+          ),
           meta: {
             goal: String((session.input as any)?.goal || ""),
             successCriteria: Array.isArray(output?.memory?.successCriteria)

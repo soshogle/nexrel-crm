@@ -30,6 +30,14 @@ export async function POST(
       ? body.targetApps.map((v: any) => String(v)).filter(Boolean)
       : [];
     const trustMode = String(body?.trustMode || "crawl").toLowerCase();
+    const autonomyLevel = String(
+      body?.autonomyLevel ||
+        (trustMode === "crawl"
+          ? "observe"
+          : trustMode === "walk"
+            ? "assist"
+            : "autonomous_low_risk"),
+    ).toLowerCase();
     const executionTarget = String(
       body?.executionTarget || "cloud_browser",
     ).toLowerCase();
@@ -48,10 +56,21 @@ export async function POST(
       );
     }
 
+    if (
+      !["observe", "assist", "autonomous_low_risk", "autonomous_full"].includes(
+        autonomyLevel,
+      )
+    ) {
+      return apiErrors.badRequest(
+        "autonomyLevel must be observe, assist, autonomous_low_risk, or autonomous_full",
+      );
+    }
+
     const created = await startLiveRun(ctx, params.id, {
       goal,
       targetApps,
       trustMode: trustMode as any,
+      autonomyLevel: autonomyLevel as any,
       executionTarget: executionTarget as any,
       deviceId: body?.deviceId ? String(body.deviceId) : null,
       employeeType: body?.employeeType ? String(body.employeeType) : undefined,

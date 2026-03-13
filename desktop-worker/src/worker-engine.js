@@ -31,6 +31,8 @@ function normalizeAppName(value) {
   if (lower.includes("slack")) return "Slack";
   if (lower.includes("zoom")) return "zoom.us";
   if (lower.includes("notion")) return "Notion";
+  if (lower.includes("calendar")) return "Calendar";
+  if (lower.includes("outlook")) return "Microsoft Outlook";
   if (lower.includes("chrome")) return "Google Chrome";
   if (lower.includes("safari")) return "Safari";
   if (lower.startsWith("open ")) {

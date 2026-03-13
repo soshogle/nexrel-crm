@@ -43,6 +43,9 @@ export function LiveRunDialog({
   );
   const [targetApps, setTargetApps] = useState("LinkedIn, Meta Ads");
   const [trustMode, setTrustMode] = useState<"crawl" | "walk" | "run">("crawl");
+  const [autonomyLevel, setAutonomyLevel] = useState<
+    "observe" | "assist" | "autonomous_low_risk" | "autonomous_full"
+  >("observe");
   const [executionTarget, setExecutionTarget] = useState<
     "cloud_browser" | "owner_desktop"
   >("cloud_browser");
@@ -85,6 +88,7 @@ export function LiveRunDialog({
             goal,
             targetApps: parsedApps,
             trustMode,
+            autonomyLevel,
             executionTarget,
             deviceId: executionTarget === "owner_desktop" ? deviceId : null,
             employeeType,
@@ -130,7 +134,7 @@ export function LiveRunDialog({
             Start Live Run - {employeeName}
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            OpenClaw will plan and execute a live mission while you watch and
+            Nexrel AI will plan and execute a live mission while you watch and
             control approvals.
           </DialogDescription>
         </DialogHeader>
@@ -164,6 +168,31 @@ export function LiveRunDialog({
                 onClick={() => setTrustMode(m)}
               >
                 {m.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Label className="w-full text-zinc-200">Autonomy Policy</Label>
+            {(
+              [
+                ["observe", "Observe"],
+                ["assist", "Assist"],
+                ["autonomous_low_risk", "Autonomous Low Risk"],
+                ["autonomous_full", "Autonomous Full"],
+              ] as const
+            ).map(([level, label]) => (
+              <Button
+                key={level}
+                variant="ghost"
+                className={
+                  autonomyLevel === level
+                    ? "px-4 py-2 rounded-lg bg-cyan-500 text-zinc-900 text-sm font-semibold hover:bg-cyan-400"
+                    : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
+                }
+                onClick={() => setAutonomyLevel(level)}
+              >
+                {label}
               </Button>
             ))}
           </div>
