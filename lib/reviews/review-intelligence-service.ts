@@ -6,11 +6,12 @@
  * - Review request orchestration via SMS/email
  */
 
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { getCrmDb, leadService } from '@/lib/dal';
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { getCrmDb, leadService } from "@/lib/dal";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
 
 interface ReviewAnalysis {
-  sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' | 'MIXED';
+  sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL" | "MIXED";
   sentimentScore: number; // -1.0 to 1.0
   themes: string[];
   summary: string;
@@ -37,7 +38,7 @@ export interface BrandInsightsReport {
   topStrengths: string[];
   topWeaknesses: string[];
   commonThemes: { theme: string; count: number; sentiment: string }[];
-  trendDirection: 'IMPROVING' | 'DECLINING' | 'STABLE';
+  trendDirection: "IMPROVING" | "DECLINING" | "STABLE";
   recentVsPastRating: { recent: number; past: number };
   responseRate: number;
   recommendations: string[];
@@ -67,26 +68,26 @@ export interface BrandInsightsReport {
 async function callOpenAI(
   systemPrompt: string,
   userPrompt: string,
-  jsonMode = true
+  jsonMode = true,
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
       temperature: 0.4,
       max_tokens: 1000,
-      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+      ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
     }),
   });
 
@@ -96,12 +97,12 @@ async function callOpenAI(
   }
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
+  return data.choices?.[0]?.message?.content || "";
 }
 
 export async function analyzeReviewSentiment(
   reviewText: string,
-  rating: number
+  rating: number,
 ): Promise<ReviewAnalysis> {
   const prompt = `Analyze this customer review and return JSON with:
 - "sentiment": one of "POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"
@@ -112,56 +113,68 @@ export async function analyzeReviewSentiment(
 Review (${rating}/5 stars): "${reviewText}"`;
 
   const raw = await callOpenAI(
-    'You are a review analysis AI. Return only valid JSON.',
-    prompt
+    "You are a review analysis AI. Return only valid JSON.",
+    prompt,
   );
 
   try {
     const parsed = JSON.parse(raw);
     return {
-      sentiment: parsed.sentiment || (rating >= 4 ? 'POSITIVE' : rating <= 2 ? 'NEGATIVE' : 'NEUTRAL'),
-      sentimentScore: typeof parsed.sentimentScore === 'number' ? parsed.sentimentScore : (rating - 3) / 2,
+      sentiment:
+        parsed.sentiment ||
+        (rating >= 4 ? "POSITIVE" : rating <= 2 ? "NEGATIVE" : "NEUTRAL"),
+      sentimentScore:
+        typeof parsed.sentimentScore === "number"
+          ? parsed.sentimentScore
+          : (rating - 3) / 2,
       themes: Array.isArray(parsed.themes) ? parsed.themes : [],
-      summary: parsed.summary || '',
+      summary: parsed.summary || "",
     };
   } catch {
     return {
-      sentiment: rating >= 4 ? 'POSITIVE' : rating <= 2 ? 'NEGATIVE' : 'NEUTRAL',
+      sentiment:
+        rating >= 4 ? "POSITIVE" : rating <= 2 ? "NEGATIVE" : "NEUTRAL",
       sentimentScore: (rating - 3) / 2,
       themes: [],
-      summary: reviewText?.slice(0, 100) || '',
+      summary: reviewText?.slice(0, 100) || "",
     };
   }
 }
 
 export async function generateAutoResponse(
-  review: { reviewText: string; rating: number; reviewerName?: string; source: string },
-  config: AutoResponseConfig
+  review: {
+    reviewText: string;
+    rating: number;
+    reviewerName?: string;
+    source: string;
+  },
+  config: AutoResponseConfig,
 ): Promise<string> {
-  const ownerLabel = config.includeOwnerName && config.ownerName
-    ? config.ownerName
-    : 'The Owner';
+  const ownerLabel =
+    config.includeOwnerName && config.ownerName
+      ? config.ownerName
+      : "The Owner";
 
   const prompt = `Write a response to this ${review.source} review on behalf of the business owner.
 
-Review by ${review.reviewerName || 'a customer'} (${review.rating}/5 stars):
+Review by ${review.reviewerName || "a customer"} (${review.rating}/5 stars):
 "${review.reviewText}"
 
 Response guidelines:
-- Tone: ${config.tone || 'professional'}
-${config.brandVoice ? `- Brand voice: ${config.brandVoice}` : ''}
-${config.alwaysThank !== false ? '- Always thank the reviewer' : ''}
-${config.addressNegativeConcerns !== false && review.rating <= 3 ? '- Address their specific concerns empathetically' : ''}
-${config.maxLength ? `- Maximum ${config.maxLength} words` : '- Keep it concise (50-150 words)'}
-${config.customInstructions ? `- Additional instructions: ${config.customInstructions}` : ''}
+- Tone: ${config.tone || "professional"}
+${config.brandVoice ? `- Brand voice: ${config.brandVoice}` : ""}
+${config.alwaysThank !== false ? "- Always thank the reviewer" : ""}
+${config.addressNegativeConcerns !== false && review.rating <= 3 ? "- Address their specific concerns empathetically" : ""}
+${config.maxLength ? `- Maximum ${config.maxLength} words` : "- Keep it concise (50-150 words)"}
+${config.customInstructions ? `- Additional instructions: ${config.customInstructions}` : ""}
 - Sign off as: ${ownerLabel}
 - Do NOT include a subject line
 
 Return JSON with: {"response": "the response text"}`;
 
   const raw = await callOpenAI(
-    'You are a professional business reputation manager. Write authentic, helpful review responses.',
-    prompt
+    "You are a professional business reputation manager. Write authentic, helpful review responses.",
+    prompt,
   );
 
   try {
@@ -172,17 +185,19 @@ Return JSON with: {"response": "the response text"}`;
   }
 }
 
-export async function generateBrandInsights(userId: string): Promise<BrandInsightsReport> {
+export async function generateBrandInsights(
+  userId: string,
+): Promise<BrandInsightsReport> {
   const db = getCrmDb(await resolveDalContext(userId));
   const reviews = await db.review.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: 500,
   });
 
   if (reviews.length === 0) {
     return {
-      overallSentiment: 'N/A',
+      overallSentiment: "N/A",
       satisfactionScore: 0,
       totalReviews: 0,
       averageRating: 0,
@@ -191,10 +206,10 @@ export async function generateBrandInsights(userId: string): Promise<BrandInsigh
       topStrengths: [],
       topWeaknesses: [],
       commonThemes: [],
-      trendDirection: 'STABLE',
+      trendDirection: "STABLE",
       recentVsPastRating: { recent: 0, past: 0 },
       responseRate: 0,
-      recommendations: ['Start collecting reviews to get brand insights.'],
+      recommendations: ["Start collecting reviews to get brand insights."],
     };
   }
 
@@ -218,19 +233,34 @@ export async function generateBrandInsights(userId: string): Promise<BrandInsigh
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
   const recent = reviews.filter((r) => r.createdAt >= thirtyDaysAgo);
   const past = reviews.filter((r) => r.createdAt < thirtyDaysAgo);
-  const recentAvg = recent.length > 0 ? recent.reduce((s, r) => s + r.rating, 0) / recent.length : avgRating;
-  const pastAvg = past.length > 0 ? past.reduce((s, r) => s + r.rating, 0) / past.length : avgRating;
-  const trendDirection = recentAvg > pastAvg + 0.2 ? 'IMPROVING' : recentAvg < pastAvg - 0.2 ? 'DECLINING' : 'STABLE';
+  const recentAvg =
+    recent.length > 0
+      ? recent.reduce((s, r) => s + r.rating, 0) / recent.length
+      : avgRating;
+  const pastAvg =
+    past.length > 0
+      ? past.reduce((s, r) => s + r.rating, 0) / past.length
+      : avgRating;
+  const trendDirection =
+    recentAvg > pastAvg + 0.2
+      ? "IMPROVING"
+      : recentAvg < pastAvg - 0.2
+        ? "DECLINING"
+        : "STABLE";
 
   // Response rate
-  const responded = reviews.filter((r) => r.ownerResponse || r.aiResponseStatus === 'PUBLISHED').length;
-  const responseRate = reviews.length > 0 ? (responded / reviews.length) * 100 : 0;
+  const responded = reviews.filter(
+    (r) => r.ownerResponse || r.aiResponseStatus === "PUBLISHED",
+  ).length;
+  const responseRate =
+    reviews.length > 0 ? (responded / reviews.length) * 100 : 0;
 
   // Theme aggregation from stored themes
   const themeMap = new Map<string, { count: number; sentimentSum: number }>();
   reviews.forEach((r) => {
     const themes = (r.themes as string[]) || [];
-    const score = r.sentimentScore ?? (r.rating >= 4 ? 0.5 : r.rating <= 2 ? -0.5 : 0);
+    const score =
+      r.sentimentScore ?? (r.rating >= 4 ? 0.5 : r.rating <= 2 ? -0.5 : 0);
     themes.forEach((t) => {
       const existing = themeMap.get(t) || { count: 0, sentimentSum: 0 };
       existing.count++;
@@ -243,17 +273,22 @@ export async function generateBrandInsights(userId: string): Promise<BrandInsigh
     .map(([theme, data]) => ({
       theme,
       count: data.count,
-      sentiment: data.sentimentSum / data.count > 0.1 ? 'POSITIVE' : data.sentimentSum / data.count < -0.1 ? 'NEGATIVE' : 'NEUTRAL',
+      sentiment:
+        data.sentimentSum / data.count > 0.1
+          ? "POSITIVE"
+          : data.sentimentSum / data.count < -0.1
+            ? "NEGATIVE"
+            : "NEUTRAL",
     }))
     .sort((a, b) => b.count - a.count);
 
   const topStrengths = sortedThemes
-    .filter((t) => t.sentiment === 'POSITIVE')
+    .filter((t) => t.sentiment === "POSITIVE")
     .slice(0, 5)
     .map((t) => t.theme);
 
   const topWeaknesses = sortedThemes
-    .filter((t) => t.sentiment === 'NEGATIVE')
+    .filter((t) => t.sentiment === "NEGATIVE")
     .slice(0, 5)
     .map((t) => t.theme);
 
@@ -266,23 +301,27 @@ export async function generateBrandInsights(userId: string): Promise<BrandInsigh
 - Total reviews: ${reviews.length}
 - Trend: ${trendDirection}
 - Response rate: ${responseRate.toFixed(0)}%
-- Top strengths: ${topStrengths.join(', ') || 'none identified'}
-- Top weaknesses: ${topWeaknesses.join(', ') || 'none identified'}
+- Top strengths: ${topStrengths.join(", ") || "none identified"}
+- Top weaknesses: ${topWeaknesses.join(", ") || "none identified"}
 - Rating distribution: 5★:${ratingDist[5]}, 4★:${ratingDist[4]}, 3★:${ratingDist[3]}, 2★:${ratingDist[2]}, 1★:${ratingDist[1]}
 
 Return JSON: {"recommendations": ["recommendation 1", ...]}`;
 
       const raw = await callOpenAI(
-        'You are a business reputation consultant. Give specific, actionable advice.',
-        prompt
+        "You are a business reputation consultant. Give specific, actionable advice.",
+        prompt,
       );
       const parsed = JSON.parse(raw);
       recommendations = parsed.recommendations || [];
     } catch {
       recommendations = [
-        responseRate < 50 ? 'Respond to more reviews — aim for 80%+ response rate.' : 'Keep up the great response rate!',
-        avgRating < 4 ? 'Focus on addressing common complaints to improve ratings.' : 'Maintain quality — your ratings are strong.',
-        'Ask satisfied customers to leave reviews on Google for maximum SEO impact.',
+        responseRate < 50
+          ? "Respond to more reviews — aim for 80%+ response rate."
+          : "Keep up the great response rate!",
+        avgRating < 4
+          ? "Focus on addressing common complaints to improve ratings."
+          : "Maintain quality — your ratings are strong.",
+        "Ask satisfied customers to leave reviews on Google for maximum SEO impact.",
       ];
     }
   }
@@ -290,31 +329,43 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
   const satisfactionScore = Math.round(
     ((avgRating / 5) * 0.5 +
       (responseRate / 100) * 0.2 +
-      (trendDirection === 'IMPROVING' ? 0.3 : trendDirection === 'STABLE' ? 0.2 : 0.1)) *
-    100
+      (trendDirection === "IMPROVING"
+        ? 0.3
+        : trendDirection === "STABLE"
+          ? 0.2
+          : 0.1)) *
+      100,
   );
 
   // ─── Web mentions from brand scans ─────────────────────────────────
-  let webMentions: BrandInsightsReport['webMentions'];
+  let webMentions: BrandInsightsReport["webMentions"];
   let lastScanAt: string | null = null;
 
   try {
     const lastScan = await db.brandScan.findFirst({
-      where: { userId, status: 'COMPLETED' },
-      orderBy: { completedAt: 'desc' },
+      where: { userId, status: "COMPLETED" },
+      orderBy: { completedAt: "desc" },
     });
     lastScanAt = lastScan?.completedAt?.toISOString() ?? null;
 
     const mentions = await db.brandMention.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 500,
     });
 
     if (mentions.length > 0) {
       const sourceBreakdown: Record<string, number> = {};
-      const sentimentBreakdown: Record<string, number> = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
-      const mentionThemeMap = new Map<string, { count: number; sentimentSum: number }>();
+      const sentimentBreakdown: Record<string, number> = {
+        POSITIVE: 0,
+        NEGATIVE: 0,
+        NEUTRAL: 0,
+        MIXED: 0,
+      };
+      const mentionThemeMap = new Map<
+        string,
+        { count: number; sentimentSum: number }
+      >();
       let totalScore = 0;
 
       for (const m of mentions) {
@@ -338,12 +389,18 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
         .map(([theme, data]) => ({
           theme,
           count: data.count,
-          sentiment: data.sentimentSum / data.count > 0.1 ? 'POSITIVE' : data.sentimentSum / data.count < -0.1 ? 'NEGATIVE' : 'NEUTRAL',
+          sentiment:
+            data.sentimentSum / data.count > 0.1
+              ? "POSITIVE"
+              : data.sentimentSum / data.count < -0.1
+                ? "NEGATIVE"
+                : "NEUTRAL",
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 15);
 
-      const avgWebScore = mentions.length > 0 ? totalScore / mentions.length : 0;
+      const avgWebScore =
+        mentions.length > 0 ? totalScore / mentions.length : 0;
 
       webMentions = {
         total: mentions.length,
@@ -361,16 +418,24 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
           createdAt: m.createdAt.toISOString(),
         })),
         topMentionThemes,
-        overallWebSentiment: avgWebScore > 0.2 ? 'POSITIVE' : avgWebScore < -0.2 ? 'NEGATIVE' : avgWebScore > 0.05 || avgWebScore < -0.05 ? 'MIXED' : 'NEUTRAL',
+        overallWebSentiment:
+          avgWebScore > 0.2
+            ? "POSITIVE"
+            : avgWebScore < -0.2
+              ? "NEGATIVE"
+              : avgWebScore > 0.05 || avgWebScore < -0.05
+                ? "MIXED"
+                : "NEUTRAL",
         overallWebSentimentScore: Math.round(avgWebScore * 100) / 100,
       };
     }
   } catch (e: any) {
-    console.warn('Failed to load web mentions for brand insights:', e.message);
+    console.warn("Failed to load web mentions for brand insights:", e.message);
   }
 
   return {
-    overallSentiment: avgRating >= 4 ? 'POSITIVE' : avgRating >= 3 ? 'MIXED' : 'NEGATIVE',
+    overallSentiment:
+      avgRating >= 4 ? "POSITIVE" : avgRating >= 3 ? "MIXED" : "NEGATIVE",
     satisfactionScore: Math.min(100, satisfactionScore),
     totalReviews: reviews.length,
     averageRating: Math.round(avgRating * 10) / 10,
@@ -394,63 +459,75 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
 export async function sendReviewRequest(
   userId: string,
   leadId: string,
-  method: 'SMS' | 'EMAIL' | 'BOTH',
+  method: "SMS" | "EMAIL" | "BOTH",
   reviewUrl?: string,
-  customMessage?: string
+  customMessage?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const ctx = await resolveDalContext(userId);
     const db = getCrmDb(ctx);
     const [user, lead] = await Promise.all([
-      db.user.findUnique({ where: { id: userId }, select: { name: true, legalEntityName: true } }),
+      db.user.findUnique({
+        where: { id: userId },
+        select: { name: true, legalEntityName: true },
+      }),
       leadService.findUnique(ctx, leadId),
     ]);
 
-    if (!lead) return { success: false, error: 'Lead not found' };
+    if (!lead) return { success: false, error: "Lead not found" };
 
-    const businessName = user?.legalEntityName || user?.name || 'Our Business';
-    const leadName = (lead as any).name ?? lead.contactPerson ?? lead.businessName ?? 'there';
-    const defaultMessage = `Hi ${leadName}! Thank you for choosing ${businessName}. We'd love to hear about your experience. Could you take a moment to leave us a review? ${reviewUrl || 'It would mean a lot to us!'}\n\nThank you!\n${user?.name || businessName}`;
+    const businessName = user?.legalEntityName || user?.name || "Our Business";
+    const leadName =
+      (lead as any).name ?? lead.contactPerson ?? lead.businessName ?? "there";
+    const defaultMessage = `Hi ${leadName}! Thank you for choosing ${businessName}. We'd love to hear about your experience. Could you take a moment to leave us a review? ${reviewUrl || "It would mean a lot to us!"}\n\nThank you!\n${user?.name || businessName}`;
     const message = customMessage || defaultMessage;
 
-    if ((method === 'SMS' || method === 'BOTH') && lead.phone) {
+    if ((method === "SMS" || method === "BOTH") && lead.phone) {
       try {
-        const smsRes = await fetch(`${process.env.NEXTAUTH_URL}/api/messaging/send-sms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+        const smsRes = await fetch(
+          `${process.env.NEXTAUTH_URL}/api/messaging/send-sms`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+            },
+            body: JSON.stringify({
+              to: lead.phone,
+              message,
+              userId,
+            }),
           },
-          body: JSON.stringify({
-            to: lead.phone,
-            message,
-            userId,
-          }),
-        });
-        if (!smsRes.ok) console.warn('Review request SMS failed:', await smsRes.text());
+        );
+        if (!smsRes.ok)
+          console.warn("Review request SMS failed:", await smsRes.text());
       } catch (e: any) {
-        console.warn('Review request SMS error:', e.message);
+        console.warn("Review request SMS error:", e.message);
       }
     }
 
-    if ((method === 'EMAIL' || method === 'BOTH') && lead.email) {
+    if ((method === "EMAIL" || method === "BOTH") && lead.email) {
       try {
-        const emailRes = await fetch(`${process.env.NEXTAUTH_URL}/api/messaging/send-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+        const emailRes = await fetch(
+          `${process.env.NEXTAUTH_URL}/api/messaging/send-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+            },
+            body: JSON.stringify({
+              to: lead.email,
+              subject: `How was your experience with ${businessName}?`,
+              html: `<p>${message.replace(/\n/g, "<br>")}</p>`,
+              userId,
+            }),
           },
-          body: JSON.stringify({
-            to: lead.email,
-            subject: `How was your experience with ${businessName}?`,
-            html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
-            userId,
-          }),
-        });
-        if (!emailRes.ok) console.warn('Review request email failed:', await emailRes.text());
+        );
+        if (!emailRes.ok)
+          console.warn("Review request email failed:", await emailRes.text());
       } catch (e: any) {
-        console.warn('Review request email error:', e.message);
+        console.warn("Review request email error:", e.message);
       }
     }
 
@@ -470,17 +547,22 @@ export async function processIncomingReview(
     reviewUrl?: string;
     platformReviewId?: string;
     leadId?: string;
-  }
+  },
 ): Promise<{ review: any; triggered: boolean }> {
   // Analyze sentiment
   const analysis = reviewData.reviewText
     ? await analyzeReviewSentiment(reviewData.reviewText, reviewData.rating)
     : {
-      sentiment: reviewData.rating >= 4 ? 'POSITIVE' : reviewData.rating <= 2 ? 'NEGATIVE' : 'NEUTRAL' as const,
-      sentimentScore: (reviewData.rating - 3) / 2,
-      themes: [] as string[],
-      summary: '',
-    };
+        sentiment:
+          reviewData.rating >= 4
+            ? "POSITIVE"
+            : reviewData.rating <= 2
+              ? "NEGATIVE"
+              : ("NEUTRAL" as const),
+        sentimentScore: (reviewData.rating - 3) / 2,
+        themes: [] as string[],
+        summary: "",
+      };
 
   const db = getCrmDb(await resolveDalContext(userId));
   // Create the review record
@@ -505,9 +587,30 @@ export async function processIncomingReview(
   // Fire workflow triggers
   let triggered = false;
   try {
-    const { workflowEngine } = await import('@/lib/workflow-engine');
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId,
+      surface: "reviews",
+      objective: `review_received_trigger:${review.id}`,
+      requestedActions: [
+        {
+          type: "DRAFT_CAMPAIGN_ARTIFACT",
+          riskTier: "LOW",
+          reason: "Review workflow trigger preflight",
+          payload: {
+            reviewId: review.id,
+            rating: reviewData.rating,
+            sentiment: analysis.sentiment,
+          },
+        },
+      ],
+    });
+    if (!preflight.allowed) {
+      return { review, triggered: false };
+    }
 
-    await workflowEngine.triggerWorkflow('REVIEW_RECEIVED' as any, {
+    const { workflowEngine } = await import("@/lib/workflow-engine");
+
+    await workflowEngine.triggerWorkflow("REVIEW_RECEIVED" as any, {
       userId,
       leadId: reviewData.leadId,
       variables: {
@@ -519,8 +622,8 @@ export async function processIncomingReview(
       },
     });
 
-    if (analysis.sentiment === 'POSITIVE' || reviewData.rating >= 4) {
-      await workflowEngine.triggerWorkflow('REVIEW_POSITIVE' as any, {
+    if (analysis.sentiment === "POSITIVE" || reviewData.rating >= 4) {
+      await workflowEngine.triggerWorkflow("REVIEW_POSITIVE" as any, {
         userId,
         leadId: reviewData.leadId,
         variables: {
@@ -531,8 +634,8 @@ export async function processIncomingReview(
       });
     }
 
-    if (analysis.sentiment === 'NEGATIVE' || reviewData.rating <= 2) {
-      await workflowEngine.triggerWorkflow('REVIEW_NEGATIVE' as any, {
+    if (analysis.sentiment === "NEGATIVE" || reviewData.rating <= 2) {
+      await workflowEngine.triggerWorkflow("REVIEW_NEGATIVE" as any, {
         userId,
         leadId: reviewData.leadId,
         variables: {
@@ -545,7 +648,7 @@ export async function processIncomingReview(
 
     triggered = true;
   } catch (e: any) {
-    console.warn('Review workflow trigger error (non-critical):', e.message);
+    console.warn("Review workflow trigger error (non-critical):", e.message);
   }
 
   return { review, triggered };

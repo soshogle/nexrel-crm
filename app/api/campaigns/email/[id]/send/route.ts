@@ -6,6 +6,8 @@ import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { EmailService } from "@/lib/email-service";
 import { emitCRMEvent } from "@/lib/crm-event-emitter";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -74,6 +76,7 @@ export async function POST(
     const emailService = new EmailService();
     let sentCount = 0;
     let failCount = 0;
+    let blockedCount = 0;
 
     for (const recipient of campaign.recipients) {
       const email = recipient.recipientEmail || recipient.lead?.email;
@@ -117,6 +120,33 @@ export async function POST(
       );
 
       try {
+        const preflight = await runMasterConductorOperatorPreflight({
+          userId: ctx.userId,
+          surface: "campaigns",
+          objective: `email_campaign_send:${params.id}`,
+          requestedActions: [
+            {
+              type: "MASS_OUTREACH",
+              riskTier: "HIGH",
+              reason: "Email campaign recipient dispatch preflight",
+              payload: {
+                campaignId: params.id,
+                recipientId: recipient.id,
+                email,
+              },
+            },
+          ],
+        });
+        if (!preflight.allowed) {
+          await db.emailCampaignDeal.update({
+            where: { id: recipient.id },
+            data: { status: "FAILED" },
+          });
+          blockedCount++;
+          failCount++;
+          continue;
+        }
+
         const sent = await emailService.sendEmail({
           to: email,
           subject: personalizedSubject,
@@ -157,6 +187,18 @@ export async function POST(
       entityId: params.id,
       entityType: "EmailCampaign",
       data: { sentCount, failCount },
+    });
+
+    await logNexrelAIExecutionOutcome({
+      userId: ctx.userId,
+      surface: "campaigns",
+      objective: `email_campaign_send:${params.id}`,
+      actual: {
+        processed: campaign.recipients.length,
+        sent: sentCount,
+        failed: failCount,
+        blocked: blockedCount,
+      },
     });
 
     return NextResponse.json({

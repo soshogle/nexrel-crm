@@ -253,7 +253,7 @@ const featureMappings = [
   { ext: "Meta Ads Manager", nx: "Meta Campaign Adapter (Trust-Gated)" },
   { ext: "Notion / Docs", nx: "Knowledge Base + Master Offer Doc" },
   { ext: "Social Posting Suites", nx: "Social Loop + Draft Publisher" },
-  { ext: "Cron Jobs", nx: "OpenClaw + Scheduler Worker" },
+  { ext: "Cron Jobs", nx: "Nexrel AI + Scheduler Worker" },
 ];
 
 export default function MarketingModulePage() {

@@ -1,26 +1,27 @@
-import { getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context';
-const db = getCrmDb({ userId: '', industry: null })
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+const db = getCrmDb({ userId: "", industry: null });
 
 interface TriggerContext {
   leadId: string;
   userId: string;
   triggerType:
-    | 'LEAD_CREATED'
-    | 'LEAD_STATUS'
-    | 'TAG_ADDED'
-    | 'FORM_SUBMITTED'
-    | 'DEAL_CREATED'
-    | 'DEAL_WON'
-    | 'REFERRAL_CREATED'
-    | 'REFERRAL_CONVERTED'
-    | 'SERVICE_COMPLETED'
-    | 'FEEDBACK_POSITIVE'
-    | 'WEBSITE_VOICE_AI_LEAD'
-    | 'WEBSITE_SECRET_REPORT_LEAD'
-    | 'WEBSITE_CONTACT_FORM_LEAD'
-    | 'TRIAL_ENDED'
-    | 'WORKFLOW_TASK_COMPLETED';
+    | "LEAD_CREATED"
+    | "LEAD_STATUS"
+    | "TAG_ADDED"
+    | "FORM_SUBMITTED"
+    | "DEAL_CREATED"
+    | "DEAL_WON"
+    | "REFERRAL_CREATED"
+    | "REFERRAL_CONVERTED"
+    | "SERVICE_COMPLETED"
+    | "FEEDBACK_POSITIVE"
+    | "WEBSITE_VOICE_AI_LEAD"
+    | "WEBSITE_SECRET_REPORT_LEAD"
+    | "WEBSITE_CONTACT_FORM_LEAD"
+    | "TRIAL_ENDED"
+    | "WORKFLOW_TASK_COMPLETED";
   metadata?: {
     oldStatus?: string;
     newStatus?: string;
@@ -40,16 +41,41 @@ export async function processCampaignTriggers(context: TriggerContext) {
   try {
     const { leadId, userId, triggerType, metadata } = context;
 
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId,
+      surface: "campaigns",
+      objective: `campaign_trigger:${triggerType}`,
+      requestedActions: [
+        {
+          type: "DRAFT_CAMPAIGN_ARTIFACT",
+          riskTier: "LOW",
+          reason: "Campaign enrollment trigger preflight",
+          payload: {
+            leadId,
+            triggerType,
+            metadata,
+          },
+        },
+      ],
+    });
+
+    if (!preflight.allowed) {
+      return {
+        emailCampaignsEnrolled: 0,
+        smsCampaignsEnrolled: 0,
+      };
+    }
+
     // Find all active campaigns with matching trigger types
     const emailCampaigns = await db.emailDripCampaign.findMany({
       where: {
         userId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         triggerType: triggerType as any,
       },
       include: {
         sequences: {
-          orderBy: { sequenceOrder: 'asc' as any },
+          orderBy: { sequenceOrder: "asc" as any },
           take: 1,
         },
       },
@@ -58,13 +84,13 @@ export async function processCampaignTriggers(context: TriggerContext) {
     const smsCampaigns = await db.smsCampaign.findMany({
       where: {
         userId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         isSequence: true,
         triggerType: triggerType,
       },
       include: {
         sequences: {
-          orderBy: { sequenceOrder: 'asc' as any },
+          orderBy: { sequenceOrder: "asc" as any },
           take: 1,
         },
       },
@@ -73,7 +99,9 @@ export async function processCampaignTriggers(context: TriggerContext) {
     // Enroll in email campaigns
     for (const campaign of emailCampaigns) {
       // Check if trigger conditions match
-      if (!shouldEnrollInCampaign(campaign.triggerConfig, triggerType, metadata)) {
+      if (
+        !shouldEnrollInCampaign(campaign.triggerConfig, triggerType, metadata)
+      ) {
         continue;
       }
 
@@ -111,7 +139,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       if (campaign.enableAbTesting && campaign.abTestConfig) {
         const config = campaign.abTestConfig as any;
         const random = Math.random() * 100;
-        abTestGroup = random < (config.splitPercentage || 50) ? 'A' : 'B';
+        abTestGroup = random < (config.splitPercentage || 50) ? "A" : "B";
       }
 
       // Enroll lead
@@ -119,7 +147,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
         data: {
           campaignId: campaign.id,
           leadId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           currentSequenceId: firstSequence.id,
           currentStep: 1,
           nextSendAt,
@@ -136,7 +164,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       });
 
       console.log(
-        `Auto-enrolled lead ${leadId} in email campaign ${campaign.id} via ${triggerType}`
+        `Auto-enrolled lead ${leadId} in email campaign ${campaign.id} via ${triggerType}`,
       );
     }
 
@@ -182,7 +210,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
         data: {
           campaignId: campaign.id,
           leadId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           currentSequenceId: firstSequence.id,
           currentStep: 1,
           nextSendAt,
@@ -198,7 +226,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       });
 
       console.log(
-        `Auto-enrolled lead ${leadId} in SMS campaign ${campaign.id} via ${triggerType}`
+        `Auto-enrolled lead ${leadId} in SMS campaign ${campaign.id} via ${triggerType}`,
       );
     }
 
@@ -207,7 +235,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       smsCampaignsEnrolled: smsCampaigns.length,
     };
   } catch (error) {
-    console.error('Error processing campaign triggers:', error);
+    console.error("Error processing campaign triggers:", error);
     throw error;
   }
 }
@@ -218,38 +246,44 @@ export async function processCampaignTriggers(context: TriggerContext) {
 function shouldEnrollInCampaign(
   triggerConfig: any,
   triggerType: string,
-  metadata?: TriggerContext['metadata']
+  metadata?: TriggerContext["metadata"],
 ): boolean {
   if (!triggerConfig) {
     return true; // No specific config, enroll by default
   }
 
   // For LEAD_STATUS trigger, check if status matches
-  if (triggerType === 'LEAD_STATUS' && triggerConfig.targetStatus) {
+  if (triggerType === "LEAD_STATUS" && triggerConfig.targetStatus) {
     return metadata?.newStatus === triggerConfig.targetStatus;
   }
 
   // For TAG_ADDED trigger, check if tag matches
-  if (triggerType === 'TAG_ADDED' && triggerConfig.targetTag) {
+  if (triggerType === "TAG_ADDED" && triggerConfig.targetTag) {
     return metadata?.tagName === triggerConfig.targetTag;
   }
 
   // For FORM_SUBMITTED trigger, check if form matches
-  if (triggerType === 'FORM_SUBMITTED' && triggerConfig.targetFormId) {
+  if (triggerType === "FORM_SUBMITTED" && triggerConfig.targetFormId) {
     return metadata?.formId === triggerConfig.targetFormId;
   }
 
   // For DEAL_WON trigger, check if deal stage matches
-  if (triggerType === 'DEAL_WON' && triggerConfig.targetDealStage) {
+  if (triggerType === "DEAL_WON" && triggerConfig.targetDealStage) {
     return metadata?.newStatus === triggerConfig.targetDealStage;
   }
 
   // For WORKFLOW_TASK_COMPLETED trigger, check if workflow/task matches
-  if (triggerType === 'WORKFLOW_TASK_COMPLETED') {
-    if (triggerConfig.targetWorkflowId && metadata?.workflowId !== triggerConfig.targetWorkflowId) {
+  if (triggerType === "WORKFLOW_TASK_COMPLETED") {
+    if (
+      triggerConfig.targetWorkflowId &&
+      metadata?.workflowId !== triggerConfig.targetWorkflowId
+    ) {
       return false;
     }
-    if (triggerConfig.targetTaskId && metadata?.taskId !== triggerConfig.targetTaskId) {
+    if (
+      triggerConfig.targetTaskId &&
+      metadata?.taskId !== triggerConfig.targetTaskId
+    ) {
       return false;
     }
   }
@@ -263,19 +297,19 @@ function shouldEnrollInCampaign(
 export async function triggerCampaignEnrollment(
   campaignId: string,
   leadIds: string[],
-  campaignType: 'email' | 'sms' = 'email'
+  campaignType: "email" | "sms" = "email",
 ) {
   try {
     let enrolled = 0;
     let skipped = 0;
 
     for (const leadId of leadIds) {
-      if (campaignType === 'email') {
+      if (campaignType === "email") {
         const campaign = await db.emailDripCampaign.findUnique({
           where: { id: campaignId },
           include: {
             sequences: {
-              orderBy: { sequenceOrder: 'asc' },
+              orderBy: { sequenceOrder: "asc" },
               take: 1,
             },
           },
@@ -314,14 +348,14 @@ export async function triggerCampaignEnrollment(
         if (campaign.enableAbTesting && campaign.abTestConfig) {
           const config = campaign.abTestConfig as any;
           const random = Math.random() * 100;
-          abTestGroup = random < (config.splitPercentage || 50) ? 'A' : 'B';
+          abTestGroup = random < (config.splitPercentage || 50) ? "A" : "B";
         }
 
         await db.emailDripEnrollment.create({
           data: {
             campaignId,
             leadId,
-            status: 'ACTIVE',
+            status: "ACTIVE",
             currentSequenceId: firstSequence.id,
             currentStep: 1,
             nextSendAt,
@@ -336,7 +370,7 @@ export async function triggerCampaignEnrollment(
           where: { id: campaignId },
           include: {
             sequences: {
-              orderBy: { sequenceOrder: 'asc' },
+              orderBy: { sequenceOrder: "asc" },
               take: 1,
             },
           },
@@ -373,7 +407,7 @@ export async function triggerCampaignEnrollment(
           data: {
             campaignId,
             leadId,
-            status: 'ACTIVE',
+            status: "ACTIVE",
             currentSequenceId: firstSequence.id,
             currentStep: 1,
             nextSendAt,
@@ -386,7 +420,7 @@ export async function triggerCampaignEnrollment(
 
     return { enrolled, skipped };
   } catch (error) {
-    console.error('Error triggering campaign enrollment:', error);
+    console.error("Error triggering campaign enrollment:", error);
     throw error;
   }
 }

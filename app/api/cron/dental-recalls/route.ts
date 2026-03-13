@@ -15,6 +15,8 @@ import {
   logJobTenant,
 } from "@/lib/ops/job-logger";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -112,6 +114,30 @@ export async function GET(request: NextRequest) {
           : `Hi ${patientName}, your ${recall.recallType} at ${clinicName} is due on ${dueDate}. Please call ${recall.clinic?.phone || "us"} to schedule.`;
 
         try {
+          const preflight = await runMasterConductorOperatorPreflight({
+            userId: tenant.id,
+            surface: "cron",
+            objective: "dental_recall_reminder",
+            requestedActions: [
+              {
+                type: "MASS_OUTREACH",
+                riskTier: "HIGH",
+                reason: "Dental recall reminder dispatch preflight",
+                payload: {
+                  recallId: recall.id,
+                  hasPhone: Boolean(phone),
+                  hasEmail: Boolean(email),
+                  status: recall.status,
+                },
+              },
+            ],
+          });
+          if (!preflight.allowed) {
+            errors++;
+            tenantErrors++;
+            continue;
+          }
+
           if (phone) {
             await sendSMS({ to: phone, message });
           }
@@ -148,6 +174,17 @@ export async function GET(request: NextRequest) {
           tenantErrors++;
         }
       }
+
+      await logNexrelAIExecutionOutcome({
+        userId: tenant.id,
+        surface: "cron",
+        objective: "dental_recall_reminder",
+        actual: {
+          processed: needsReminder.length,
+          sent: tenantRemindersSent,
+          failed: tenantErrors,
+        },
+      });
 
       if (
         tenantOverdueMarked > 0 ||

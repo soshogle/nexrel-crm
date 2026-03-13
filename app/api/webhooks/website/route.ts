@@ -13,6 +13,7 @@ import { workflowEngine } from "@/lib/workflow-engine";
 import { processWebsiteTriggers } from "@/lib/website-triggers";
 import { apiErrors } from "@/lib/api-error";
 import { authorizeWebsiteSecret } from "@/lib/website-secret-auth";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
 
 export async function POST(request: NextRequest) {
   try {
@@ -128,6 +129,32 @@ export async function POST(request: NextRequest) {
           { websiteId },
         );
       }
+    }
+
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId: website.userId,
+      surface: "websites",
+      objective: `website_event:${triggerType}`,
+      requestedActions: [
+        {
+          type: "DRAFT_CAMPAIGN_ARTIFACT",
+          riskTier: "LOW",
+          reason: "Website event workflow trigger preflight",
+          payload: {
+            triggerType,
+            websiteId,
+            eventType,
+          },
+        },
+      ],
+    });
+
+    if (!preflight.allowed) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "Blocked by Nexrel AI master conductor policy",
+      });
     }
 
     // Trigger workflows

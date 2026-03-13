@@ -251,7 +251,7 @@ export default function SocialModulePage() {
             <h2 className="text-lg font-semibold">Go Viral Studio</h2>
             <p className="text-xs text-zinc-400 mt-1">
               Approve, regenerate, and learn from image/video drafts powered by
-              OpenClaw viral mandate loops.
+              Nexrel AI viral mandate loops.
             </p>
           </div>
           <Link href="/dashboard/agent-command-center/social/go-viral">

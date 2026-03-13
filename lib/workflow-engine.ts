@@ -5,18 +5,35 @@
  * It handles action execution, delays, conditional logic, and error handling.
  */
 
-import { getCrmDb, leadService, dealService, taskService, conversationService, noteService, websiteService } from '@/lib/dal';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { workflowJobQueue } from './workflow-job-queue';
-import { conditionEvaluator, type ConditionalBranch } from './workflow-conditions';
-import { executeDentalAction } from './dental/workflow-actions';
-import { multiChannelOrchestrator } from './workflow-multi-channel';
-import { GmailService } from './messaging-sync/gmail-service';
-import { TwilioService } from './messaging-sync/twilio-service';
-import { FacebookService } from './messaging-sync/facebook-service';
-import { InstagramService } from './messaging-sync/instagram-service';
-import { WhatsAppService } from './messaging-sync/whatsapp-service';
-import { facebookMessengerService } from './facebook-messenger-service';
+import {
+  getCrmDb,
+  leadService,
+  dealService,
+  taskService,
+  conversationService,
+  noteService,
+  websiteService,
+} from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { workflowJobQueue } from "./workflow-job-queue";
+import {
+  conditionEvaluator,
+  type ConditionalBranch,
+} from "./workflow-conditions";
+import { executeDentalAction } from "./dental/workflow-actions";
+import { multiChannelOrchestrator } from "./workflow-multi-channel";
+import { GmailService } from "./messaging-sync/gmail-service";
+import { TwilioService } from "./messaging-sync/twilio-service";
+import { FacebookService } from "./messaging-sync/facebook-service";
+import { InstagramService } from "./messaging-sync/instagram-service";
+import { WhatsAppService } from "./messaging-sync/whatsapp-service";
+import { facebookMessengerService } from "./facebook-messenger-service";
+import {
+  isMasterConductorActive,
+  runMasterConductorOperatorPreflight,
+} from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
+import type { OperatorAction } from "@/lib/nexrel-ai-brain/operator";
 import type {
   Workflow,
   WorkflowAction,
@@ -25,8 +42,8 @@ import type {
   Lead,
   Deal,
   ConversationMessage,
-} from '@prisma/client';
-const db = getCrmDb({ userId: '', industry: null })
+} from "@prisma/client";
+const db = getCrmDb({ userId: "", industry: null });
 
 export interface ExecutionContext {
   userId: string;
@@ -53,7 +70,7 @@ export class WorkflowEngine {
   async triggerWorkflow(
     triggerType: string,
     context: ExecutionContext,
-    triggerData?: any
+    triggerData?: any,
   ): Promise<void> {
     const db = await getDb(context);
     try {
@@ -61,12 +78,12 @@ export class WorkflowEngine {
       const workflows = await db.workflow.findMany({
         where: {
           userId: context.userId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           triggerType: triggerType as any,
         },
         include: {
           actions: {
-            orderBy: { displayOrder: 'asc' },
+            orderBy: { displayOrder: "asc" },
           },
         },
       });
@@ -79,7 +96,7 @@ export class WorkflowEngine {
         }
       }
     } catch (error) {
-      console.error('Workflow trigger failed:', error);
+      console.error("Workflow trigger failed:", error);
     }
   }
 
@@ -89,24 +106,33 @@ export class WorkflowEngine {
   private shouldExecuteWorkflow(
     workflow: Workflow,
     context: ExecutionContext,
-    triggerData?: any
+    triggerData?: any,
   ): boolean {
     const config = workflow.triggerConfig as any;
 
     // Check channel type filter (if specified)
     // If channelTypes is specified, workflow only runs for those channels
     // If not specified, workflow runs for all channels (default behavior)
-    if (config?.channelTypes && Array.isArray(config.channelTypes) && config.channelTypes.length > 0) {
+    if (
+      config?.channelTypes &&
+      Array.isArray(config.channelTypes) &&
+      config.channelTypes.length > 0
+    ) {
       const messageChannelType = context.variables?.channelType;
       if (!messageChannelType) {
         // If no channel type in context, skip channel filtering (for non-message triggers)
         // But for message triggers, we need channel type
-        if (workflow.triggerType === 'MESSAGE_RECEIVED' || workflow.triggerType === 'MESSAGE_WITH_KEYWORDS') {
+        if (
+          workflow.triggerType === "MESSAGE_RECEIVED" ||
+          workflow.triggerType === "MESSAGE_WITH_KEYWORDS"
+        ) {
           return false; // Message triggers require channel type
         }
       } else {
         // Check if message channel matches allowed channels
-        const allowedChannels = config.channelTypes.map((ch: string) => ch.toUpperCase());
+        const allowedChannels = config.channelTypes.map((ch: string) =>
+          ch.toUpperCase(),
+        );
         if (!allowedChannels.includes(messageChannelType.toUpperCase())) {
           return false; // Channel doesn't match filter
         }
@@ -121,88 +147,110 @@ export class WorkflowEngine {
     let baseConditionMet = true;
 
     switch (workflow.triggerType) {
-      case 'MESSAGE_WITH_KEYWORDS':
-        baseConditionMet = this.checkKeywords(triggerData?.messageContent, config?.keywords);
+      case "MESSAGE_WITH_KEYWORDS":
+        baseConditionMet = this.checkKeywords(
+          triggerData?.messageContent,
+          config?.keywords,
+        );
         break;
-      
-      case 'LEAD_STATUS_CHANGED':
-        baseConditionMet = config?.toStatus ? triggerData?.newStatus === config.toStatus : true;
+
+      case "LEAD_STATUS_CHANGED":
+        baseConditionMet = config?.toStatus
+          ? triggerData?.newStatus === config.toStatus
+          : true;
         break;
-      
-      case 'DEAL_STAGE_CHANGED':
-        baseConditionMet = config?.toStageId ? triggerData?.newStageId === config.toStageId : true;
+
+      case "DEAL_STAGE_CHANGED":
+        baseConditionMet = config?.toStageId
+          ? triggerData?.newStageId === config.toStageId
+          : true;
         break;
-      
-      case 'WEBSITE_VISITOR':
-      case 'WEBSITE_FORM_SUBMITTED':
-      case 'WEBSITE_VOICE_AI_LEAD':
-      case 'WEBSITE_PAYMENT_RECEIVED':
-      case 'WEBSITE_BOOKING_CREATED':
-      case 'WEBSITE_CTA_CLICKED':
-      case 'WEBSITE_ORDER_CREATED':
-      case 'WEBSITE_REPEAT_CUSTOMER':
-      case 'WEBSITE_FIRST_TIME_CUSTOMER':
-      case 'WEBSITE_VISITOR_RETURNING':
-      case 'WEBSITE_VISITOR_ABANDONED_CART':
-      case 'WEBSITE_PRODUCT_LOW_STOCK':
-      case 'WEBSITE_PRODUCT_OUT_OF_STOCK':
-      case 'WEBSITE_PRODUCT_BACK_IN_STOCK':
+
+      case "WEBSITE_VISITOR":
+      case "WEBSITE_FORM_SUBMITTED":
+      case "WEBSITE_VOICE_AI_LEAD":
+      case "WEBSITE_PAYMENT_RECEIVED":
+      case "WEBSITE_BOOKING_CREATED":
+      case "WEBSITE_CTA_CLICKED":
+      case "WEBSITE_ORDER_CREATED":
+      case "WEBSITE_REPEAT_CUSTOMER":
+      case "WEBSITE_FIRST_TIME_CUSTOMER":
+      case "WEBSITE_VISITOR_RETURNING":
+      case "WEBSITE_VISITOR_ABANDONED_CART":
+      case "WEBSITE_PRODUCT_LOW_STOCK":
+      case "WEBSITE_PRODUCT_OUT_OF_STOCK":
+      case "WEBSITE_PRODUCT_BACK_IN_STOCK":
         baseConditionMet = true; // These triggers are met if website matches
         break;
-      
-      case 'WEBSITE_PAGE_VIEWED':
-      case 'WEBSITE_VISITOR_PAGE_VIEWED':
+
+      case "WEBSITE_PAGE_VIEWED":
+      case "WEBSITE_VISITOR_PAGE_VIEWED":
         baseConditionMet = config?.pagePath
           ? triggerData?.pagePath === config.pagePath
           : true;
         break;
 
-      case 'WEBSITE_PAYMENT_AMOUNT_THRESHOLD':
-      case 'WEBSITE_CART_VALUE_THRESHOLD':
-      case 'WEBSITE_DAILY_REVENUE_THRESHOLD':
+      case "WEBSITE_PAYMENT_AMOUNT_THRESHOLD":
+      case "WEBSITE_CART_VALUE_THRESHOLD":
+      case "WEBSITE_DAILY_REVENUE_THRESHOLD":
         baseConditionMet = this.checkAmountThreshold(
           triggerData?.amount || triggerData?.total || 0,
           config?.amount || config?.customAmount || 0,
-          config?.operator || 'greater_than'
+          config?.operator || "greater_than",
         );
         break;
 
-      case 'WEBSITE_CUSTOMER_TIER_CHANGED':
-        baseConditionMet = config?.toTier ? triggerData?.toTier === config.toTier : true;
-        break;
-
-      case 'WEBSITE_PRODUCT_PURCHASED':
-        baseConditionMet = config?.productId
-          ? triggerData?.productId === config.productId || triggerData?.items?.some((item: any) => item.productId === config.productId)
+      case "WEBSITE_CUSTOMER_TIER_CHANGED":
+        baseConditionMet = config?.toTier
+          ? triggerData?.toTier === config.toTier
           : true;
         break;
 
-      case 'WEBSITE_VISITOR_TIME_ON_SITE':
+      case "WEBSITE_PRODUCT_PURCHASED":
+        baseConditionMet = config?.productId
+          ? triggerData?.productId === config.productId ||
+            triggerData?.items?.some(
+              (item: any) => item.productId === config.productId,
+            )
+          : true;
+        break;
+
+      case "WEBSITE_VISITOR_TIME_ON_SITE":
         baseConditionMet = config?.minTime
           ? (triggerData?.timeOnSite || 0) >= config.minTime
           : true;
         break;
 
-      case 'WEBSITE_VISITOR_PAGES_VIEWED':
+      case "WEBSITE_VISITOR_PAGES_VIEWED":
         baseConditionMet = config?.minPages
           ? (triggerData?.pagesVisited?.length || 0) >= config.minPages
           : true;
         break;
 
-      case 'WEBSITE_REVENUE_MILESTONE':
-      case 'WEBSITE_ORDER_COUNT_MILESTONE':
+      case "WEBSITE_REVENUE_MILESTONE":
+      case "WEBSITE_ORDER_COUNT_MILESTONE":
         baseConditionMet = config?.milestone
-          ? (triggerData?.revenue || triggerData?.orderCount || 0) >= config.milestone
+          ? (triggerData?.revenue || triggerData?.orderCount || 0) >=
+            config.milestone
           : true;
         break;
-      
+
       default:
         baseConditionMet = true; // Execute for simple triggers
     }
 
     // Evaluate conditional logic if present
-    if (baseConditionMet && config?.conditions && Array.isArray(config.conditions) && config.conditions.length > 0) {
-      return this.evaluateConditionalLogic(config.conditions, triggerData, context);
+    if (
+      baseConditionMet &&
+      config?.conditions &&
+      Array.isArray(config.conditions) &&
+      config.conditions.length > 0
+    ) {
+      return this.evaluateConditionalLogic(
+        config.conditions,
+        triggerData,
+        context,
+      );
     }
 
     return baseConditionMet;
@@ -213,21 +261,27 @@ export class WorkflowEngine {
    */
   private checkKeywords(messageContent?: string, keywords?: string[]): boolean {
     if (!messageContent || !keywords?.length) return false;
-    
+
     const lowerContent = messageContent.toLowerCase();
-    return keywords.some(keyword => lowerContent.includes(keyword.toLowerCase()));
+    return keywords.some((keyword) =>
+      lowerContent.includes(keyword.toLowerCase()),
+    );
   }
 
   /**
    * Check amount threshold condition
    */
-  private checkAmountThreshold(amount: number, threshold: number, operator: string): boolean {
+  private checkAmountThreshold(
+    amount: number,
+    threshold: number,
+    operator: string,
+  ): boolean {
     switch (operator) {
-      case 'greater_than':
+      case "greater_than":
         return amount > threshold;
-      case 'less_than':
+      case "less_than":
         return amount < threshold;
-      case 'equals':
+      case "equals":
         return amount === threshold;
       default:
         return amount >= threshold;
@@ -238,9 +292,14 @@ export class WorkflowEngine {
    * Evaluate conditional logic (AND/OR conditions)
    */
   private evaluateConditionalLogic(
-    conditions: Array<{ field: string; operator: string; value: any; logic?: 'AND' | 'OR' }>,
+    conditions: Array<{
+      field: string;
+      operator: string;
+      value: any;
+      logic?: "AND" | "OR";
+    }>,
     triggerData: any,
-    context: ExecutionContext
+    context: ExecutionContext,
   ): boolean {
     if (conditions.length === 0) return true;
 
@@ -248,10 +307,14 @@ export class WorkflowEngine {
 
     for (let i = 1; i < conditions.length; i++) {
       const condition = conditions[i];
-      const conditionResult = this.evaluateCondition(condition, triggerData, context);
-      const logic = condition.logic || 'AND';
+      const conditionResult = this.evaluateCondition(
+        condition,
+        triggerData,
+        context,
+      );
+      const logic = condition.logic || "AND";
 
-      if (logic === 'AND') {
+      if (logic === "AND") {
         result = result && conditionResult;
       } else {
         result = result || conditionResult;
@@ -267,20 +330,26 @@ export class WorkflowEngine {
   private evaluateCondition(
     condition: { field: string; operator: string; value: any },
     triggerData: any,
-    context: ExecutionContext
+    context: ExecutionContext,
   ): boolean {
-    const fieldValue = this.getFieldValue(condition.field, triggerData, context);
+    const fieldValue = this.getFieldValue(
+      condition.field,
+      triggerData,
+      context,
+    );
     const conditionValue = condition.value;
 
     switch (condition.operator) {
-      case 'equals':
+      case "equals":
         return fieldValue == conditionValue; // Use == for type coercion
-      case 'greater_than':
+      case "greater_than":
         return Number(fieldValue) > Number(conditionValue);
-      case 'less_than':
+      case "less_than":
         return Number(fieldValue) < Number(conditionValue);
-      case 'contains':
-        return String(fieldValue).toLowerCase().includes(String(conditionValue).toLowerCase());
+      case "contains":
+        return String(fieldValue)
+          .toLowerCase()
+          .includes(String(conditionValue).toLowerCase());
       default:
         return true;
     }
@@ -289,7 +358,11 @@ export class WorkflowEngine {
   /**
    * Get field value from trigger data or context
    */
-  private getFieldValue(field: string, triggerData: any, context: ExecutionContext): any {
+  private getFieldValue(
+    field: string,
+    triggerData: any,
+    context: ExecutionContext,
+  ): any {
     // Check triggerData first
     if (triggerData?.[field] !== undefined) {
       return triggerData[field];
@@ -301,7 +374,7 @@ export class WorkflowEngine {
     }
 
     // Handle nested fields
-    const parts = field.split('.');
+    const parts = field.split(".");
     let value = triggerData || context.variables || {};
     for (const part of parts) {
       value = value?.[part];
@@ -316,7 +389,7 @@ export class WorkflowEngine {
    */
   private async enrollAndExecute(
     workflow: Workflow & { actions: WorkflowAction[] },
-    context: ExecutionContext
+    context: ExecutionContext,
   ): Promise<void> {
     const db = await getDb(context);
     try {
@@ -327,7 +400,7 @@ export class WorkflowEngine {
           userId: context.userId,
           leadId: context.leadId,
           dealId: context.dealId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
         },
       });
 
@@ -340,12 +413,12 @@ export class WorkflowEngine {
       await db.workflowEnrollment.update({
         where: { id: enrollment.id },
         data: {
-          status: 'COMPLETED',
+          status: "COMPLETED",
           completedAt: new Date(),
         },
       });
     } catch (error) {
-      console.error('Workflow execution failed:', error);
+      console.error("Workflow execution failed:", error);
       throw error;
     }
   }
@@ -356,7 +429,7 @@ export class WorkflowEngine {
   async executeAction(
     action: WorkflowAction,
     enrollment: WorkflowEnrollment,
-    context: ExecutionContext
+    context: ExecutionContext,
   ): Promise<any> {
     const db = await getDb(context);
     try {
@@ -365,24 +438,158 @@ export class WorkflowEngine {
         await workflowJobQueue.scheduleAction(
           enrollment.id,
           action.id,
-          action.delayMinutes
+          action.delayMinutes,
         );
-        return { action: 'scheduled', delayMinutes: action.delayMinutes };
+        return { action: "scheduled", delayMinutes: action.delayMinutes };
+      }
+
+      if (isMasterConductorActive()) {
+        const requestedActions = this.mapWorkflowActionToConductorActions(
+          action,
+          action.actionConfig as any,
+          context,
+        );
+        if (requestedActions.length > 0) {
+          const preflight = await runMasterConductorOperatorPreflight({
+            userId: context.userId,
+            surface: "workflows",
+            objective: `workflow_action:${String(action.type)}`,
+            requestedActions,
+          });
+          if (!preflight.allowed) {
+            throw new Error("Blocked by Nexrel AI master conductor policy");
+          }
+        }
       }
 
       // Execute the action based on type
-      const result = await this.executeActionByType(action, context, enrollment);
+      const result = await this.executeActionByType(
+        action,
+        context,
+        enrollment,
+      );
+
+      await logNexrelAIExecutionOutcome({
+        userId: context.userId,
+        surface: "workflows",
+        objective: `workflow_action:${String(action.type)}`,
+        actual: {
+          processed: 1,
+          sent: 1,
+          actionType: String(action.type),
+          enrollmentId: enrollment.id,
+          workflowId: enrollment.workflowId,
+        },
+      });
 
       // Handle conditional branching
-      if (action.type === 'CONDITIONAL_SPLIT') {
-        return await this.handleConditionalSplit(action, enrollment, context, result);
+      if (action.type === "CONDITIONAL_SPLIT") {
+        return await this.handleConditionalSplit(
+          action,
+          enrollment,
+          context,
+          result,
+        );
       }
 
       return result;
     } catch (error: any) {
-      console.error('Action execution failed:', error);
+      console.error("Action execution failed:", error);
+      await logNexrelAIExecutionOutcome({
+        userId: context.userId,
+        surface: "workflows",
+        objective: `workflow_action:${String(action.type)}`,
+        actual: {
+          processed: 1,
+          failed: 1,
+          actionType: String(action.type),
+          error: error?.message || "Execution failed",
+          enrollmentId: enrollment.id,
+          workflowId: enrollment.workflowId,
+        },
+      });
       throw error;
     }
+  }
+
+  private mapWorkflowActionToConductorActions(
+    action: WorkflowAction,
+    config: any,
+    context: ExecutionContext,
+  ): OperatorAction[] {
+    const actionType = String(action.type || "").toUpperCase();
+
+    if (actionType === "CREATE_TASK") {
+      return [
+        {
+          type: "CREATE_TASK",
+          riskTier: "LOW",
+          reason: "Workflow task creation preflight",
+          payload: {
+            title: String(config?.title || "Workflow Task"),
+            description: String(config?.description || ""),
+            priority: String(config?.priority || "MEDIUM"),
+          },
+        },
+      ];
+    }
+
+    if (actionType === "CHANGE_LEAD_STATUS" || actionType === "UPDATE_LEAD") {
+      return [
+        {
+          type: "UPDATE_LEAD_STATUS",
+          riskTier: "LOW",
+          reason: "Workflow lead update preflight",
+          payload: {
+            leadId: String(config?.leadId || context.leadId || ""),
+            status: String(config?.status || "CONTACTED"),
+          },
+        },
+      ];
+    }
+
+    if (actionType === "ADD_TAG") {
+      return [
+        {
+          type: "ADD_LEAD_TAG",
+          riskTier: "LOW",
+          reason: "Workflow add tag preflight",
+          payload: {
+            leadId: String(config?.leadId || context.leadId || ""),
+            tag: String(config?.tag || "WORKFLOW_TAG"),
+          },
+        },
+      ];
+    }
+
+    if (
+      actionType === "SEND_SMS" ||
+      actionType === "SEND_EMAIL" ||
+      actionType === "SEND_MESSAGE" ||
+      actionType === "AUTO_REPLY" ||
+      actionType === "MAKE_OUTBOUND_CALL"
+    ) {
+      return [
+        {
+          type: "MASS_OUTREACH",
+          riskTier: "HIGH",
+          reason: `Workflow outbound action preflight: ${actionType}`,
+          payload: {
+            channel:
+              actionType === "SEND_SMS"
+                ? "sms"
+                : actionType === "SEND_EMAIL"
+                  ? "email"
+                  : actionType === "MAKE_OUTBOUND_CALL"
+                    ? "voice"
+                    : "multi",
+            summary: JSON.stringify(config || {}).slice(0, 500),
+          },
+        },
+      ];
+    }
+
+    return [];
   }
 
   /**
@@ -392,32 +599,33 @@ export class WorkflowEngine {
     action: WorkflowAction,
     enrollment: WorkflowEnrollment,
     context: ExecutionContext,
-    evaluationData: any
+    evaluationData: any,
   ): Promise<any> {
     const branch = action.actionConfig as unknown as ConditionalBranch;
-    
+
     // Get lead/deal data for condition evaluation
     const data = await this.getContextData(context);
-    
+
     // Evaluate conditions
     const branchPath = conditionEvaluator.getBranchPath(branch, data);
-    
+
     // Get child actions to execute based on branch
-    const actionsToExecute = branchPath === 'true' 
-      ? await db.workflowAction.findMany({
-          where: { id: { in: branch.trueActions } },
-          orderBy: { displayOrder: 'asc' },
-        })
-      : await db.workflowAction.findMany({
-          where: { id: { in: branch.falseActions } },
-          orderBy: { displayOrder: 'asc' },
-        });
-    
+    const actionsToExecute =
+      branchPath === "true"
+        ? await db.workflowAction.findMany({
+            where: { id: { in: branch.trueActions } },
+            orderBy: { displayOrder: "asc" },
+          })
+        : await db.workflowAction.findMany({
+            where: { id: { in: branch.falseActions } },
+            orderBy: { displayOrder: "asc" },
+          });
+
     // Execute branch actions
     for (const childAction of actionsToExecute) {
       await this.executeAction(childAction, enrollment, context);
     }
-    
+
     return { branch: branchPath, actionsExecuted: actionsToExecute.length };
   }
 
@@ -431,11 +639,11 @@ export class WorkflowEngine {
     if (context.leadId) {
       data.lead = await leadService.findUnique(ctx, context.leadId);
     }
-    
+
     if (context.dealId) {
       data.deal = await dealService.findUnique(ctx, context.dealId);
     }
-    
+
     return data;
   }
 
@@ -445,114 +653,114 @@ export class WorkflowEngine {
   private async executeActionByType(
     action: WorkflowAction,
     context: ExecutionContext,
-    enrollment?: WorkflowEnrollment
+    enrollment?: WorkflowEnrollment,
   ): Promise<any> {
     const config = action.actionConfig as any;
     const actionType = action.type as string;
 
     switch (actionType) {
-      case 'CONDITIONAL_SPLIT':
+      case "CONDITIONAL_SPLIT":
         // This is handled in executeAction
-        return { action: 'conditional_evaluated' };
-      
-      case 'AI_GENERATE_MESSAGE':
+        return { action: "conditional_evaluated" };
+
+      case "AI_GENERATE_MESSAGE":
         return this.aiGenerateMessage(context, config);
-      
-      case 'AI_SCORE_LEAD':
+
+      case "AI_SCORE_LEAD":
         return this.aiScoreLead(context, config);
-      
-      case 'WEBHOOK':
+
+      case "WEBHOOK":
         return this.sendWebhook(context, config);
-      
-      case 'CREATE_LEAD_FROM_MESSAGE':
+
+      case "CREATE_LEAD_FROM_MESSAGE":
         return this.createLeadFromMessage(context, config);
-      
-      case 'CREATE_DEAL_FROM_LEAD':
+
+      case "CREATE_DEAL_FROM_LEAD":
         return this.createDealFromLead(context, config);
-      
-      case 'AUTO_REPLY':
-      case 'SEND_MESSAGE':
+
+      case "AUTO_REPLY":
+      case "SEND_MESSAGE":
         return this.sendMessage(context, config);
-      
-      case 'SEND_SMS':
+
+      case "SEND_SMS":
         return this.sendSMS(context, config);
-      
-      case 'SEND_EMAIL':
+
+      case "SEND_EMAIL":
         return this.sendEmail(context, config);
-      
-      case 'UPDATE_LEAD':
+
+      case "UPDATE_LEAD":
         return this.updateLead(context, config);
-      
-      case 'CHANGE_LEAD_STATUS':
+
+      case "CHANGE_LEAD_STATUS":
         return this.changeLeadStatus(context, config);
-      
-      case 'UPDATE_DEAL':
+
+      case "UPDATE_DEAL":
         return this.updateDeal(context, config);
-      
-      case 'MOVE_DEAL_STAGE':
+
+      case "MOVE_DEAL_STAGE":
         return this.moveDealStage(context, config);
-      
+
       // Dental-specific actions (Clinical)
-      case 'CREATE_TREATMENT_PLAN':
-      case 'UPDATE_ODONTOGRAM':
-      case 'SCHEDULE_FOLLOWUP_APPOINTMENT':
-      case 'SEND_TREATMENT_UPDATE_TO_PATIENT':
-      case 'CREATE_CLINICAL_NOTE':
-      case 'REQUEST_XRAY_REVIEW':
-      case 'GENERATE_TREATMENT_REPORT':
-      case 'UPDATE_TREATMENT_PLAN':
-      case 'LOG_PROCEDURE':
+      case "CREATE_TREATMENT_PLAN":
+      case "UPDATE_ODONTOGRAM":
+      case "SCHEDULE_FOLLOWUP_APPOINTMENT":
+      case "SEND_TREATMENT_UPDATE_TO_PATIENT":
+      case "CREATE_CLINICAL_NOTE":
+      case "REQUEST_XRAY_REVIEW":
+      case "GENERATE_TREATMENT_REPORT":
+      case "UPDATE_TREATMENT_PLAN":
+      case "LOG_PROCEDURE":
       // Dental-specific actions (Admin)
-      case 'SEND_APPOINTMENT_REMINDER':
-      case 'PROCESS_PAYMENT':
-      case 'SUBMIT_INSURANCE_CLAIM':
-      case 'GENERATE_INVOICE':
-      case 'UPDATE_PATIENT_INFO':
-      case 'CREATE_LAB_ORDER':
-      case 'GENERATE_PRODUCTION_REPORT':
-      case 'NOTIFY_TEAM_MEMBER':
-      case 'RESCHEDULE_APPOINTMENT':
-      case 'SEND_BILLING_REMINDER':
-      case 'UPDATE_APPOINTMENT_STATUS':
+      case "SEND_APPOINTMENT_REMINDER":
+      case "PROCESS_PAYMENT":
+      case "SUBMIT_INSURANCE_CLAIM":
+      case "GENERATE_INVOICE":
+      case "UPDATE_PATIENT_INFO":
+      case "CREATE_LAB_ORDER":
+      case "GENERATE_PRODUCTION_REPORT":
+      case "NOTIFY_TEAM_MEMBER":
+      case "RESCHEDULE_APPOINTMENT":
+      case "SEND_BILLING_REMINDER":
+      case "UPDATE_APPOINTMENT_STATUS":
       // Legacy dental actions (for backward compatibility)
-      case 'DENTAL_SEND_APPOINTMENT_REMINDER':
-      case 'DENTAL_SEND_TREATMENT_PLAN_NOTIFICATION':
-      case 'DENTAL_SEND_XRAY_NOTIFICATION':
-      case 'DENTAL_CREATE_FOLLOWUP_APPOINTMENT':
-      case 'DENTAL_SEND_INSURANCE_VERIFICATION_REQUEST':
-      case 'DENTAL_SEND_PAYMENT_REMINDER':
-      case 'DENTAL_CREATE_TREATMENT_TASK':
-      case 'DENTAL_SEND_POST_VISIT_FOLLOWUP':
-      case 'DENTAL_UPDATE_PATIENT_STATUS':
+      case "DENTAL_SEND_APPOINTMENT_REMINDER":
+      case "DENTAL_SEND_TREATMENT_PLAN_NOTIFICATION":
+      case "DENTAL_SEND_XRAY_NOTIFICATION":
+      case "DENTAL_CREATE_FOLLOWUP_APPOINTMENT":
+      case "DENTAL_SEND_INSURANCE_VERIFICATION_REQUEST":
+      case "DENTAL_SEND_PAYMENT_REMINDER":
+      case "DENTAL_CREATE_TREATMENT_TASK":
+      case "DENTAL_SEND_POST_VISIT_FOLLOWUP":
+      case "DENTAL_UPDATE_PATIENT_STATUS":
         return this.executeDentalAction(action, context, enrollment);
-      
-      case 'CREATE_TASK':
+
+      case "CREATE_TASK":
         return this.createTask(context, config);
-      
-      case 'NOTIFY_USER':
+
+      case "NOTIFY_USER":
         return this.notifyUser(context, config);
-      
-      case 'ADD_TAG':
+
+      case "ADD_TAG":
         return this.addTag(context, config);
-      
-      case 'WAIT_DELAY':
-        return { action: 'wait', duration: config.minutes };
-      
-      case 'MAKE_OUTBOUND_CALL':
+
+      case "WAIT_DELAY":
+        return { action: "wait", duration: config.minutes };
+
+      case "MAKE_OUTBOUND_CALL":
         return this.makeOutboundCall(context, config);
 
-      case 'REQUEST_REVIEW':
+      case "REQUEST_REVIEW":
         return this.requestReview(context, config);
 
-      case 'RESPOND_TO_REVIEW':
+      case "RESPOND_TO_REVIEW":
         return this.respondToReview(context, config);
 
-      case 'ANALYZE_REVIEWS':
+      case "ANALYZE_REVIEWS":
         return this.analyzeReviews(context);
 
       default:
         console.warn(`Unknown action type: ${action.type}`);
-        return { action: action.type, status: 'skipped' };
+        return { action: action.type, status: "skipped" };
     }
   }
 
@@ -561,7 +769,7 @@ export class WorkflowEngine {
    */
   private async createLeadFromMessage(context: ExecutionContext, config: any) {
     if (!context.conversationId) {
-      throw new Error('No conversation found for lead creation');
+      throw new Error("No conversation found for lead creation");
     }
 
     const ctx = await getCtx(context);
@@ -574,7 +782,7 @@ export class WorkflowEngine {
     });
 
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new Error("Conversation not found");
     }
 
     // Check if lead already exists for this contact
@@ -590,28 +798,35 @@ export class WorkflowEngine {
 
     if (existingLead) {
       // Link conversation to existing lead
-      await conversationService.update(ctx, context.conversationId, { leadId: existingLead.id } as any);
-      return { leadId: existingLead.id, action: 'linked_existing' };
+      await conversationService.update(ctx, context.conversationId, {
+        leadId: existingLead.id,
+      } as any);
+      return { leadId: existingLead.id, action: "linked_existing" };
     }
 
     // Create new lead
     const lead = await leadService.create(ctx, {
       businessName: conversation.contactName,
       contactPerson: conversation.contactName,
-      status: config.status || 'NEW',
-      source: config.source || 'messaging',
-      phone: conversation.channelConnection.channelType === 'SMS' || conversation.channelConnection.channelType === 'WHATSAPP'
-        ? conversation.contactIdentifier
-        : undefined,
-      email: conversation.channelConnection.channelType === 'EMAIL'
-        ? conversation.contactIdentifier
-        : undefined,
+      status: config.status || "NEW",
+      source: config.source || "messaging",
+      phone:
+        conversation.channelConnection.channelType === "SMS" ||
+        conversation.channelConnection.channelType === "WHATSAPP"
+          ? conversation.contactIdentifier
+          : undefined,
+      email:
+        conversation.channelConnection.channelType === "EMAIL"
+          ? conversation.contactIdentifier
+          : undefined,
     });
 
     // Link conversation to new lead
-    await conversationService.update(ctx, context.conversationId, { leadId: lead.id } as any);
+    await conversationService.update(ctx, context.conversationId, {
+      leadId: lead.id,
+    } as any);
 
-    return { leadId: lead.id, action: 'created' };
+    return { leadId: lead.id, action: "created" };
   }
 
   /**
@@ -619,7 +834,7 @@ export class WorkflowEngine {
    */
   private async createDealFromLead(context: ExecutionContext, config: any) {
     if (!context.leadId) {
-      throw new Error('No lead found for deal creation');
+      throw new Error("No lead found for deal creation");
     }
 
     const ctx = await getCtx(context);
@@ -628,7 +843,7 @@ export class WorkflowEngine {
     const lead = await leadService.findUnique(ctx, context.leadId);
 
     if (!lead) {
-      throw new Error('Lead not found');
+      throw new Error("Lead not found");
     }
 
     // Get default pipeline
@@ -639,14 +854,14 @@ export class WorkflowEngine {
       },
       include: {
         stages: {
-          orderBy: { displayOrder: 'asc' },
+          orderBy: { displayOrder: "asc" },
           take: 1,
         },
       },
     });
 
     if (!pipeline || !pipeline.stages[0]) {
-      throw new Error('No default pipeline found');
+      throw new Error("No default pipeline found");
     }
 
     // Create deal
@@ -654,9 +869,12 @@ export class WorkflowEngine {
       pipeline: { connect: { id: pipeline.id } },
       stage: { connect: { id: pipeline.stages[0].id } },
       lead: { connect: { id: lead.id } },
-      title: this.replaceVariables(config.title || '{{businessName}} - New Deal', lead),
+      title: this.replaceVariables(
+        config.title || "{{businessName}} - New Deal",
+        lead,
+      ),
       description: config.description,
-      priority: config.priority || 'MEDIUM',
+      priority: config.priority || "MEDIUM",
       value: config.value || 0,
     } as any);
 
@@ -665,12 +883,12 @@ export class WorkflowEngine {
       data: {
         dealId: deal.id,
         userId: context.userId,
-        type: 'CREATED',
-        description: 'Deal created automatically by workflow',
+        type: "CREATED",
+        description: "Deal created automatically by workflow",
       },
     });
 
-    return { dealId: deal.id, action: 'created' };
+    return { dealId: deal.id, action: "created" };
   }
 
   /**
@@ -678,27 +896,30 @@ export class WorkflowEngine {
    */
   private async sendMessage(context: ExecutionContext, config: any) {
     if (!context.conversationId) {
-      throw new Error('No conversation found');
+      throw new Error("No conversation found");
     }
 
     const db = await getDb(context);
     const conversation = await db.conversation.findUnique({
       where: { id: context.conversationId },
-      include: { 
+      include: {
         lead: true,
         channelConnection: true,
       },
     });
 
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new Error("Conversation not found");
     }
 
     if (!conversation.channelConnection) {
-      throw new Error('No channel connection found for conversation');
+      throw new Error("No channel connection found for conversation");
     }
 
-    const message = this.replaceVariables(config.message, conversation.lead || {});
+    const message = this.replaceVariables(
+      config.message,
+      conversation.lead || {},
+    );
     const connection = conversation.channelConnection;
     let externalMessageId: string | undefined;
 
@@ -707,8 +928,8 @@ export class WorkflowEngine {
       data: {
         conversationId: context.conversationId,
         userId: context.userId,
-        direction: 'OUTBOUND',
-        status: 'PENDING' as any,
+        direction: "OUTBOUND",
+        status: "PENDING" as any,
         content: message,
       },
     });
@@ -716,35 +937,35 @@ export class WorkflowEngine {
     // Route to appropriate service based on channel type
     try {
       switch (connection.channelType) {
-        case 'EMAIL':
+        case "EMAIL":
           if (!connection.accessToken) {
-            throw new Error('No access token for email');
+            throw new Error("No access token for email");
           }
           const gmailService = new GmailService(
             connection.accessToken,
-            connection.refreshToken || undefined
+            connection.refreshToken || undefined,
           );
           const threadId = conversation.metadata as any;
           externalMessageId = await gmailService.sendEmail({
             to: conversation.contactIdentifier,
-            subject: config.subject || 'Re: Previous conversation',
+            subject: config.subject || "Re: Previous conversation",
             body: message,
             threadId: threadId?.threadId,
           });
           break;
 
-        case 'SMS':
+        case "SMS":
           const providerData = connection.providerData as any;
           if (!providerData?.accountSid || !providerData?.authToken) {
-            throw new Error('Missing Soshogle Call credentials');
+            throw new Error("Missing Soshogle Call credentials");
           }
           if (!connection.channelIdentifier) {
-            throw new Error('Missing channel identifier for SMS');
+            throw new Error("Missing channel identifier for SMS");
           }
           const twilioService = new TwilioService(
             providerData.accountSid,
             providerData.authToken,
-            connection.channelIdentifier
+            connection.channelIdentifier,
           );
           externalMessageId = await twilioService.sendSMS({
             to: conversation.contactIdentifier,
@@ -752,9 +973,9 @@ export class WorkflowEngine {
           });
           break;
 
-        case 'FACEBOOK_MESSENGER':
+        case "FACEBOOK_MESSENGER":
           if (!connection.accessToken) {
-            throw new Error('No access token for Facebook');
+            throw new Error("No access token for Facebook");
           }
           // Use the new messenger service for direct messenger integration
           if (connection.channelIdentifier && conversation.contactIdentifier) {
@@ -765,14 +986,16 @@ export class WorkflowEngine {
               accessToken: connection.accessToken,
             });
             if (!result.success) {
-              throw new Error(result.error || 'Failed to send Messenger message');
+              throw new Error(
+                result.error || "Failed to send Messenger message",
+              );
             }
             externalMessageId = result.messageId;
           } else {
             // Fallback to old Facebook service if needed
             const facebookService = new FacebookService(
               connection.accessToken,
-              connection.providerAccountId!
+              connection.providerAccountId!,
             );
             externalMessageId = await facebookService.sendMessage({
               recipientId: conversation.contactIdentifier,
@@ -781,13 +1004,13 @@ export class WorkflowEngine {
           }
           break;
 
-        case 'INSTAGRAM':
+        case "INSTAGRAM":
           if (!connection.accessToken) {
-            throw new Error('No access token for Instagram');
+            throw new Error("No access token for Instagram");
           }
           const instagramService = new InstagramService(
             connection.accessToken,
-            connection.providerAccountId!
+            connection.providerAccountId!,
           );
           externalMessageId = await instagramService.sendMessage({
             recipientId: conversation.contactIdentifier,
@@ -795,15 +1018,15 @@ export class WorkflowEngine {
           });
           break;
 
-        case 'WHATSAPP':
+        case "WHATSAPP":
           if (!connection.accessToken) {
-            throw new Error('No access token for WhatsApp');
+            throw new Error("No access token for WhatsApp");
           }
           const whatsappProviderData = connection.providerData as any;
           const whatsappService = new WhatsAppService(
             connection.accessToken,
             connection.providerAccountId!,
-            whatsappProviderData?.businessAccountId
+            whatsappProviderData?.businessAccountId,
           );
           externalMessageId = await whatsappService.sendMessage({
             to: conversation.contactIdentifier,
@@ -812,7 +1035,9 @@ export class WorkflowEngine {
           break;
 
         default:
-          throw new Error(`Unsupported channel type: ${connection.channelType}`);
+          throw new Error(
+            `Unsupported channel type: ${connection.channelType}`,
+          );
       }
 
       // Update message record with external message ID and mark as sent
@@ -820,7 +1045,7 @@ export class WorkflowEngine {
         where: { id: conversationMessage.id },
         data: {
           externalMessageId,
-          status: 'SENT',
+          status: "SENT",
           sentAt: new Date(),
         },
       });
@@ -834,22 +1059,31 @@ export class WorkflowEngine {
         },
       });
 
-      return { messageId: conversationMessage.id, externalMessageId, action: 'sent' };
+      return {
+        messageId: conversationMessage.id,
+        externalMessageId,
+        action: "sent",
+      };
     } catch (error: any) {
-      console.error(`Error sending message via ${connection.channelType}:`, error);
-      
+      console.error(
+        `Error sending message via ${connection.channelType}:`,
+        error,
+      );
+
       // Update message record with error status
       await db.conversationMessage.update({
         where: { id: conversationMessage.id },
         data: {
-          status: 'FAILED',
+          status: "FAILED",
           providerData: {
             error: error.message,
           },
         },
       });
 
-      throw new Error(`Failed to send message via ${connection.channelType}: ${error.message}`);
+      throw new Error(
+        `Failed to send message via ${connection.channelType}: ${error.message}`,
+      );
     }
   }
 
@@ -858,18 +1092,20 @@ export class WorkflowEngine {
    */
   private async sendSMS(context: ExecutionContext, config: any) {
     const db = await getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
+    const lead = context.leadId
+      ? await leadService.findUnique(await getCtx(context), context.leadId!)
+      : null;
 
     if (!lead?.phone) {
-      throw new Error('No phone number found');
+      throw new Error("No phone number found");
     }
 
     const message = this.replaceVariables(config.message, lead);
 
-    const { sendSMS: twilioSendSMS } = await import('@/lib/twilio');
+    const { sendSMS: twilioSendSMS } = await import("@/lib/twilio");
     const result = await twilioSendSMS(lead.phone, message);
 
-    return { phone: lead.phone, sid: result.sid, action: 'sms_sent' };
+    return { phone: lead.phone, sid: result.sid, action: "sms_sent" };
   }
 
   /**
@@ -877,16 +1113,18 @@ export class WorkflowEngine {
    */
   private async sendEmail(context: ExecutionContext, config: any) {
     const db = await getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
+    const lead = context.leadId
+      ? await leadService.findUnique(await getCtx(context), context.leadId!)
+      : null;
 
     if (!lead?.email) {
-      throw new Error('No email found');
+      throw new Error("No email found");
     }
 
     const subject = this.replaceVariables(config.subject, lead);
     const message = this.replaceVariables(config.message, lead);
 
-    const { emailService } = await import('@/lib/email-service');
+    const { emailService } = await import("@/lib/email-service");
     await emailService.sendEmail({
       to: lead.email,
       subject,
@@ -894,7 +1132,7 @@ export class WorkflowEngine {
       userId: context.userId,
     });
 
-    return { email: lead.email, action: 'email_sent' };
+    return { email: lead.email, action: "email_sent" };
   }
 
   /**
@@ -902,16 +1140,21 @@ export class WorkflowEngine {
    */
   private async updateLead(context: ExecutionContext, config: any) {
     if (!context.leadId) {
-      throw new Error('No lead to update');
+      throw new Error("No lead to update");
     }
 
     const updateData: any = {};
     if (config.status) updateData.status = config.status;
-    if (config.businessCategory) updateData.businessCategory = config.businessCategory;
+    if (config.businessCategory)
+      updateData.businessCategory = config.businessCategory;
 
-    await leadService.update(await getCtx(context), context.leadId!, updateData);
+    await leadService.update(
+      await getCtx(context),
+      context.leadId!,
+      updateData,
+    );
 
-    return { leadId: context.leadId, action: 'updated' };
+    return { leadId: context.leadId, action: "updated" };
   }
 
   /**
@@ -919,10 +1162,12 @@ export class WorkflowEngine {
    */
   private async changeLeadStatus(context: ExecutionContext, config: any) {
     if (!context.leadId) {
-      throw new Error('No lead to update');
+      throw new Error("No lead to update");
     }
 
-    await leadService.update(await getCtx(context), context.leadId!, { status: config.status });
+    await leadService.update(await getCtx(context), context.leadId!, {
+      status: config.status,
+    });
 
     return { leadId: context.leadId, newStatus: config.status };
   }
@@ -932,7 +1177,7 @@ export class WorkflowEngine {
    */
   private async updateDeal(context: ExecutionContext, config: any) {
     if (!context.dealId) {
-      throw new Error('No deal to update');
+      throw new Error("No deal to update");
     }
 
     const db = await getDb(context);
@@ -945,7 +1190,7 @@ export class WorkflowEngine {
       data: updateData,
     });
 
-    return { dealId: context.dealId, action: 'updated' };
+    return { dealId: context.dealId, action: "updated" };
   }
 
   /**
@@ -953,7 +1198,7 @@ export class WorkflowEngine {
    */
   private async moveDealStage(context: ExecutionContext, config: any) {
     if (!context.dealId) {
-      throw new Error('No deal to move');
+      throw new Error("No deal to move");
     }
 
     const db = await getDb(context);
@@ -967,8 +1212,8 @@ export class WorkflowEngine {
       data: {
         dealId: context.dealId,
         userId: context.userId,
-        type: 'STAGE_CHANGED',
-        description: 'Stage changed automatically by workflow',
+        type: "STAGE_CHANGED",
+        description: "Stage changed automatically by workflow",
       },
     });
 
@@ -980,7 +1225,9 @@ export class WorkflowEngine {
    */
   private async createTask(context: ExecutionContext, config: any) {
     const db = await getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
+    const lead = context.leadId
+      ? await leadService.findUnique(await getCtx(context), context.leadId!)
+      : null;
 
     const dueDate = config.dueInDays
       ? new Date(Date.now() + config.dueInDays * 24 * 60 * 60 * 1000)
@@ -991,14 +1238,14 @@ export class WorkflowEngine {
         userId: context.userId,
         title: this.replaceVariables(config.title, lead || {}),
         description: config.description,
-        priority: config.priority || 'MEDIUM',
+        priority: config.priority || "MEDIUM",
         dueDate,
         leadId: context.leadId,
         dealId: context.dealId,
       },
     });
 
-    return { taskId: task.id, action: 'created' };
+    return { taskId: task.id, action: "created" };
   }
 
   /**
@@ -1012,18 +1259,18 @@ export class WorkflowEngine {
     });
 
     if (user?.email) {
-      const { emailService } = await import('@/lib/email-service');
+      const { emailService } = await import("@/lib/email-service");
       await emailService.sendEmail({
         to: user.email,
-        subject: config.subject || 'Workflow Notification',
+        subject: config.subject || "Workflow Notification",
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:#667eea;color:#fff;padding:20px 30px;border-radius:8px 8px 0 0;">
               <h2 style="margin:0;">Workflow Notification</h2>
             </div>
             <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
-              <p>${config.message || ''}</p>
-              ${context.leadId ? `<p style="margin-top:16px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard/leads/${context.leadId}" style="background:#667eea;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Lead</a></p>` : ''}
+              <p>${config.message || ""}</p>
+              ${context.leadId ? `<p style="margin-top:16px;"><a href="${process.env.NEXTAUTH_URL || ""}/dashboard/leads/${context.leadId}" style="background:#667eea;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Lead</a></p>` : ""}
             </div>
           </div>
         `,
@@ -1036,16 +1283,16 @@ export class WorkflowEngine {
       await (db as any).notification.create({
         data: {
           userId: context.userId,
-          title: config.subject || 'Workflow Notification',
-          message: config.message || '',
-          type: 'WORKFLOW',
+          title: config.subject || "Workflow Notification",
+          message: config.message || "",
+          type: "WORKFLOW",
         },
       });
     } catch {
       // Notification model may not exist yet — email was sent as fallback
     }
 
-    return { action: 'notified', message: config.message };
+    return { action: "notified", message: config.message };
   }
 
   /**
@@ -1053,90 +1300,113 @@ export class WorkflowEngine {
    */
   private async addTag(context: ExecutionContext, config: any) {
     if (!context.leadId || !config.tag) {
-      throw new Error('Lead ID and tag are required');
+      throw new Error("Lead ID and tag are required");
     }
 
     const ctx = await getCtx(context);
     const lead = await leadService.findUnique(ctx, context.leadId);
 
-    const existing: string[] = Array.isArray(lead?.tags) ? (lead!.tags as string[]) : [];
+    const existing: string[] = Array.isArray(lead?.tags)
+      ? (lead!.tags as string[])
+      : [];
     const tagsToAdd = Array.isArray(config.tag) ? config.tag : [config.tag];
     const merged = [...new Set([...existing, ...tagsToAdd])];
 
-    await leadService.update(await getCtx(context), context.leadId!, { tags: JSON.parse(JSON.stringify(merged)) });
+    await leadService.update(await getCtx(context), context.leadId!, {
+      tags: JSON.parse(JSON.stringify(merged)),
+    });
 
-    return { action: 'tagged', tag: config.tag, leadId: context.leadId };
+    return { action: "tagged", tag: config.tag, leadId: context.leadId };
   }
 
   /**
    * AI Generate Message
    */
-  private async aiGenerateMessage(context: ExecutionContext, config: any): Promise<any> {
+  private async aiGenerateMessage(
+    context: ExecutionContext,
+    config: any,
+  ): Promise<any> {
     const db = await getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!) : null;
+    const lead = context.leadId
+      ? await leadService.findUnique(await getCtx(context), context.leadId!)
+      : null;
 
     // Get user's language preference
     const user = await db.user.findUnique({
       where: { id: context.userId },
       select: { language: true },
     });
-    const userLanguage = user?.language || 'en';
-    
+    const userLanguage = user?.language || "en";
+
     // Language instructions for AI responses
     const languageInstructions: Record<string, string> = {
-      'en': 'CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.',
-      'fr': 'CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.',
-      'es': 'CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.',
-      'zh': '关键：您必须仅用中文生成消息。每个词都必须是中文。',
+      en: "CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.",
+      fr: "CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.",
+      es: "CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.",
+      zh: "关键：您必须仅用中文生成消息。每个词都必须是中文。",
     };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    const languageInstruction =
+      languageInstructions[userLanguage] || languageInstructions["en"];
 
-    const prompt = config.prompt || 'Generate a professional follow-up message';
-    const tone = config.tone || 'professional';
+    const prompt = config.prompt || "Generate a professional follow-up message";
+    const tone = config.tone || "professional";
 
     // Call AI API to generate message
     try {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not configured');
+        throw new Error("OPENAI_API_KEY not configured");
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: `${languageInstruction}\n\nYou are a ${tone} CRM assistant. Generate a brief, engaging message for: ${prompt}. Context: Lead name is ${lead?.contactPerson || "the lead"}, business is ${lead?.businessName || "their business"}.`,
+              },
+            ],
+            max_tokens: 200,
+          }),
         },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{
-            role: 'system',
-            content: `${languageInstruction}\n\nYou are a ${tone} CRM assistant. Generate a brief, engaging message for: ${prompt}. Context: Lead name is ${lead?.contactPerson || 'the lead'}, business is ${lead?.businessName || 'their business'}.`
-          }],
-          max_tokens: 200,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
       const data = await response.json();
-      const generatedMessage = data.choices?.[0]?.message?.content || 'Hello! Following up on our previous conversation.';
+      const generatedMessage =
+        data.choices?.[0]?.message?.content ||
+        "Hello! Following up on our previous conversation.";
 
-      return { message: generatedMessage, action: 'ai_generated' };
+      return { message: generatedMessage, action: "ai_generated" };
     } catch (error) {
-      console.error('AI message generation failed:', error);
-      return { message: 'Hello! Following up on our previous conversation.', action: 'fallback' };
+      console.error("AI message generation failed:", error);
+      return {
+        message: "Hello! Following up on our previous conversation.",
+        action: "fallback",
+      };
     }
   }
 
   /**
    * AI Score Lead
    */
-  private async aiScoreLead(context: ExecutionContext, config: any): Promise<any> {
+  private async aiScoreLead(
+    context: ExecutionContext,
+    config: any,
+  ): Promise<any> {
     if (!context.leadId) {
-      throw new Error('No lead to score');
+      throw new Error("No lead to score");
     }
 
     const db = await getDb(context);
@@ -1151,7 +1421,7 @@ export class WorkflowEngine {
     });
 
     if (!lead) {
-      throw new Error('Lead not found');
+      throw new Error("Lead not found");
     }
 
     // Simple lead scoring based on engagement
@@ -1168,7 +1438,10 @@ export class WorkflowEngine {
     if (lead.phone) score += 15;
 
     // Engagement scoring
-    const totalMessages = lead.conversations.reduce((sum, conv) => sum + conv.messages.length, 0);
+    const totalMessages = lead.conversations.reduce(
+      (sum, conv) => sum + conv.messages.length,
+      0,
+    );
     score += Math.min(totalMessages * 5, 30); // Max 30 points for engagement
 
     // Deal history
@@ -1186,15 +1459,18 @@ export class WorkflowEngine {
       },
     });
 
-    return { leadId: lead.id, score, action: 'scored' };
+    return { leadId: lead.id, score, action: "scored" };
   }
 
   /**
    * Send Webhook
    */
-  private async sendWebhook(context: ExecutionContext, config: any): Promise<any> {
+  private async sendWebhook(
+    context: ExecutionContext,
+    config: any,
+  ): Promise<any> {
     const url = config.url;
-    const method = config.method || 'POST';
+    const method = config.method || "POST";
     const payload = {
       ...config.payload,
       leadId: context.leadId,
@@ -1207,21 +1483,21 @@ export class WorkflowEngine {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(config.headers || {}),
         },
         body: JSON.stringify(payload),
       });
 
       return {
-        action: 'webhook_sent',
+        action: "webhook_sent",
         status: response.status,
         success: response.ok,
       };
     } catch (error: any) {
-      console.error('Webhook failed:', error);
+      console.error("Webhook failed:", error);
       return {
-        action: 'webhook_failed',
+        action: "webhook_failed",
         error: error.message,
       };
     }
@@ -1230,34 +1506,46 @@ export class WorkflowEngine {
   /**
    * Make outbound call via voice AI agent
    */
-  private async makeOutboundCall(context: ExecutionContext, config: any): Promise<any> {
+  private async makeOutboundCall(
+    context: ExecutionContext,
+    config: any,
+  ): Promise<any> {
     const db = await getDb(context);
-    const lead = context.leadId ? await leadService.findUnique(await getCtx(context), context.leadId!, { user: true } as any) : null;
+    const lead = context.leadId
+      ? await leadService.findUnique(await getCtx(context), context.leadId!, {
+          user: true,
+        } as any)
+      : null;
 
     if (!lead?.phone) {
-      throw new Error('No phone number found for lead');
+      throw new Error("No phone number found for lead");
     }
 
     // Get default active voice agent for user
     const voiceAgent = await db.voiceAgent.findFirst({
       where: {
         userId: context.userId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         elevenLabsAgentId: { not: null },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!voiceAgent) {
-      throw new Error('No active voice agent found');
+      throw new Error("No active voice agent found");
     }
 
     // Replace variables in purpose and notes
-    const purpose = this.replaceVariables(config.purpose || 'Workflow call', lead);
-    const notes = config.notes ? this.replaceVariables(config.notes, lead) : null;
+    const purpose = this.replaceVariables(
+      config.purpose || "Workflow call",
+      lead,
+    );
+    const notes = config.notes
+      ? this.replaceVariables(config.notes, lead)
+      : null;
 
-    const contactName = lead.contactPerson || lead.businessName || 'Contact';
-    
+    const contactName = lead.contactPerson || lead.businessName || "Contact";
+
     // Create outbound call record
     const outboundCall = await db.outboundCall.create({
       data: {
@@ -1266,8 +1554,10 @@ export class WorkflowEngine {
         leadId: lead.id,
         name: contactName,
         phoneNumber: lead.phone,
-        status: config.immediate !== false ? 'IN_PROGRESS' : 'SCHEDULED',
-        scheduledFor: config.scheduledFor ? new Date(config.scheduledFor) : undefined,
+        status: config.immediate !== false ? "IN_PROGRESS" : "SCHEDULED",
+        scheduledFor: config.scheduledFor
+          ? new Date(config.scheduledFor)
+          : undefined,
         purpose: purpose,
         notes: notes,
       },
@@ -1276,10 +1566,10 @@ export class WorkflowEngine {
     // If immediate, initiate the call
     if (config.immediate !== false) {
       try {
-        const { elevenLabsService } = await import('./elevenlabs');
+        const { elevenLabsService } = await import("./elevenlabs");
         const callResult = await elevenLabsService.initiatePhoneCall(
           voiceAgent.elevenLabsAgentId!,
-          lead.phone
+          lead.phone,
         );
 
         // Create call log
@@ -1288,11 +1578,15 @@ export class WorkflowEngine {
             userId: context.userId,
             voiceAgentId: voiceAgent.id,
             leadId: lead.id,
-            direction: 'OUTBOUND',
-            status: 'INITIATED',
-            fromNumber: voiceAgent.twilioPhoneNumber || 'System',
+            direction: "OUTBOUND",
+            status: "INITIATED",
+            fromNumber: voiceAgent.twilioPhoneNumber || "System",
             toNumber: lead.phone,
-            elevenLabsConversationId: callResult.conversation_id || callResult.call_id || callResult.id || undefined,
+            elevenLabsConversationId:
+              callResult.conversation_id ||
+              callResult.call_id ||
+              callResult.id ||
+              undefined,
           },
         });
 
@@ -1300,24 +1594,24 @@ export class WorkflowEngine {
         await db.outboundCall.update({
           where: { id: outboundCall.id },
           data: {
-            status: 'IN_PROGRESS',
+            status: "IN_PROGRESS",
             callLogId: callLog.id,
             attemptCount: 1,
             lastAttemptAt: new Date(),
           },
         });
       } catch (callError: any) {
-        console.error('Error initiating call in workflow:', callError);
+        console.error("Error initiating call in workflow:", callError);
         await db.outboundCall.update({
           where: { id: outboundCall.id },
-          data: { status: 'FAILED' },
+          data: { status: "FAILED" },
         });
         throw new Error(`Failed to initiate call: ${callError.message}`);
       }
     }
 
     return {
-      action: 'call_initiated',
+      action: "call_initiated",
       outboundCallId: outboundCall.id,
       phone: lead.phone,
       contactName: contactName,
@@ -1328,19 +1622,19 @@ export class WorkflowEngine {
    * Replace variables in text with actual values
    */
   private replaceVariables(text: string, data: any): string {
-    if (!text) return '';
-    
+    if (!text) return "";
+
     return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
       // Map common variable names to lead fields
       const mapping: Record<string, string> = {
-        contactName: 'contactPerson',
-        contactPerson: 'contactPerson',
-        businessName: 'businessName',
-        email: 'email',
-        phone: 'phone',
-        leadId: 'id',
+        contactName: "contactPerson",
+        contactPerson: "contactPerson",
+        businessName: "businessName",
+        email: "email",
+        phone: "phone",
+        leadId: "id",
       };
-      
+
       const fieldName = mapping[key] || key;
       return data[fieldName] || match;
     });
@@ -1352,10 +1646,10 @@ export class WorkflowEngine {
   private async executeDentalAction(
     action: WorkflowAction,
     context: ExecutionContext,
-    enrollment?: WorkflowEnrollment
+    enrollment?: WorkflowEnrollment,
   ): Promise<any> {
     if (!enrollment) {
-      throw new Error('Enrollment is required for dental actions');
+      throw new Error("Enrollment is required for dental actions");
     }
     // Convert context to match dental workflow actions ExecutionContext type
     const dentalContext = {
@@ -1372,12 +1666,17 @@ export class WorkflowEngine {
    */
   private async createWebsite(context: ExecutionContext, config: any) {
     const db = await getDb(context);
-    const { resourceProvisioning } = await import('@/lib/website-builder/provisioning');
-    const { websiteBuilder } = await import('@/lib/website-builder/builder');
-    
-    const websiteName = this.replaceVariables(config.name || 'New Website', context.variables || {});
-    const type = config.type || 'SERVICE_TEMPLATE';
-    const templateType = config.templateType || 'SERVICE';
+    const { resourceProvisioning } = await import(
+      "@/lib/website-builder/provisioning"
+    );
+    const { websiteBuilder } = await import("@/lib/website-builder/builder");
+
+    const websiteName = this.replaceVariables(
+      config.name || "New Website",
+      context.variables || {},
+    );
+    const type = config.type || "SERVICE_TEMPLATE";
+    const templateType = config.templateType || "SERVICE";
     const questionnaireAnswers = config.questionnaireAnswers || {};
 
     // Create website
@@ -1387,7 +1686,7 @@ export class WorkflowEngine {
         name: websiteName,
         type: type as any,
         templateType: templateType as any,
-        status: 'BUILDING',
+        status: "BUILDING",
         buildProgress: 0,
         structure: {},
         seoData: {},
@@ -1398,14 +1697,14 @@ export class WorkflowEngine {
     // Build website structure
     const structure = await websiteBuilder.buildFromQuestionnaire(
       questionnaireAnswers,
-      templateType as any
+      templateType as any,
     );
 
     // Generate websiteSecret for PRODUCT sites
     let websiteSecret: string | undefined;
-    if (templateType === 'PRODUCT') {
-      const crypto = await import('crypto');
-      websiteSecret = crypto.randomBytes(32).toString('hex');
+    if (templateType === "PRODUCT") {
+      const crypto = await import("crypto");
+      websiteSecret = crypto.randomBytes(32).toString("hex");
       await db.website.update({
         where: { id: website.id },
         data: { websiteSecret },
@@ -1417,7 +1716,7 @@ export class WorkflowEngine {
       website.id,
       websiteName,
       context.userId,
-      { templateType, websiteSecret, websiteName }
+      { templateType, websiteSecret, websiteName },
     );
 
     // Update website
@@ -1425,7 +1724,7 @@ export class WorkflowEngine {
       where: { id: website.id },
       data: {
         structure: structure as any,
-        status: 'READY',
+        status: "READY",
         buildProgress: 100,
         githubRepoUrl: provisioningResult.githubRepoUrl,
         neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
@@ -1435,7 +1734,7 @@ export class WorkflowEngine {
       },
     });
 
-    return { websiteId: website.id, action: 'created' };
+    return { websiteId: website.id, action: "created" };
   }
 
   /**
@@ -1444,7 +1743,7 @@ export class WorkflowEngine {
   private async updateWebsiteContent(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1456,7 +1755,7 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     const updates: any = {};
@@ -1474,7 +1773,7 @@ export class WorkflowEngine {
       data: updates,
     });
 
-    return { websiteId, action: 'updated' };
+    return { websiteId, action: "updated" };
   }
 
   /**
@@ -1483,7 +1782,7 @@ export class WorkflowEngine {
   private async addPaymentSection(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1495,40 +1794,42 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     // Ensure Stripe Connect is set up
-    const { websiteStripeConnect } = await import('@/lib/website-builder/stripe-connect');
+    const { websiteStripeConnect } = await import(
+      "@/lib/website-builder/stripe-connect"
+    );
     const stripeStatus = await websiteStripeConnect.getAccountStatus(websiteId);
 
     if (!stripeStatus.connected) {
       // Create onboarding link
       const onboardingLink = await websiteStripeConnect.createAccountLink(
         websiteId,
-        `${process.env.NEXTAUTH_URL}/dashboard/websites/${websiteId}`
+        `${process.env.NEXTAUTH_URL}/dashboard/websites/${websiteId}`,
       );
 
       // Store pending integration
       const integration = await db.websiteIntegration.create({
         data: {
           websiteId,
-          type: 'STRIPE',
+          type: "STRIPE",
           config: {
             amount: config.amount,
             description: config.description,
-            paymentType: config.paymentType || 'one-time',
+            paymentType: config.paymentType || "one-time",
             onboardingRequired: true,
             onboardingUrl: onboardingLink.onboardingUrl,
           },
-          status: 'PENDING' as any,
+          status: "PENDING" as any,
         },
       });
 
       return {
         websiteId,
         integrationId: integration.id,
-        action: 'payment_added',
+        action: "payment_added",
         onboardingRequired: true,
         onboardingUrl: onboardingLink.onboardingUrl,
       };
@@ -1538,13 +1839,13 @@ export class WorkflowEngine {
     const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
-        type: 'STRIPE',
+        type: "STRIPE",
         config: {
           amount: config.amount,
           description: config.description,
-          paymentType: config.paymentType || 'one-time',
+          paymentType: config.paymentType || "one-time",
         },
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
@@ -1553,7 +1854,7 @@ export class WorkflowEngine {
     if (structure.pages && structure.pages[0]) {
       structure.pages[0].components.push({
         id: `payment-${integration.id}`,
-        type: 'PaymentSection',
+        type: "PaymentSection",
         props: {
           integrationId: integration.id,
           websiteId,
@@ -1568,7 +1869,11 @@ export class WorkflowEngine {
       });
     }
 
-    return { websiteId, integrationId: integration.id, action: 'payment_added' };
+    return {
+      websiteId,
+      integrationId: integration.id,
+      action: "payment_added",
+    };
   }
 
   /**
@@ -1577,7 +1882,7 @@ export class WorkflowEngine {
   private async addBookingWidget(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1589,7 +1894,7 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     // Check if booking settings exist
@@ -1605,11 +1910,11 @@ export class WorkflowEngine {
           slotDuration: config.slotDuration || 30,
           requireApproval: config.requireApproval !== false,
           businessHours: config.businessHours || {
-            monday: { start: '09:00', end: '17:00' },
-            tuesday: { start: '09:00', end: '17:00' },
-            wednesday: { start: '09:00', end: '17:00' },
-            thursday: { start: '09:00', end: '17:00' },
-            friday: { start: '09:00', end: '17:00' },
+            monday: { start: "09:00", end: "17:00" },
+            tuesday: { start: "09:00", end: "17:00" },
+            wednesday: { start: "09:00", end: "17:00" },
+            thursday: { start: "09:00", end: "17:00" },
+            friday: { start: "09:00", end: "17:00" },
           },
         } as any,
       });
@@ -1619,13 +1924,13 @@ export class WorkflowEngine {
     const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
-        type: 'BOOKING',
+        type: "BOOKING",
         config: {
           services: config.services || [],
           availability: config.availability || {},
           slotDuration: bookingSettings?.slotDuration || 30,
         },
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
@@ -1634,7 +1939,7 @@ export class WorkflowEngine {
     if (structure.pages && structure.pages[0]) {
       structure.pages[0].components.push({
         id: `booking-${integration.id}`,
-        type: 'BookingWidget',
+        type: "BookingWidget",
         props: {
           integrationId: integration.id,
           websiteId,
@@ -1648,7 +1953,11 @@ export class WorkflowEngine {
       });
     }
 
-    return { websiteId, integrationId: integration.id, action: 'booking_added' };
+    return {
+      websiteId,
+      integrationId: integration.id,
+      action: "booking_added",
+    };
   }
 
   /**
@@ -1657,7 +1966,7 @@ export class WorkflowEngine {
   private async addLeadForm(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1669,22 +1978,22 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     // Create form integration
     const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
-        type: 'FORM',
+        type: "FORM",
         config: {
           fields: config.fields || [
-            { name: 'name', type: 'text', label: 'Name', required: true },
-            { name: 'email', type: 'email', label: 'Email', required: true },
+            { name: "name", type: "text", label: "Name", required: true },
+            { name: "email", type: "email", label: "Email", required: true },
           ],
           workflowTrigger: config.workflowTrigger || null,
         },
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
@@ -1693,7 +2002,7 @@ export class WorkflowEngine {
     if (structure.pages && structure.pages[0]) {
       structure.pages[0].components.push({
         id: `form-${integration.id}`,
-        type: 'LeadForm',
+        type: "LeadForm",
         props: {
           integrationId: integration.id,
           fields: config.fields || [],
@@ -1706,7 +2015,7 @@ export class WorkflowEngine {
       });
     }
 
-    return { websiteId, integrationId: integration.id, action: 'form_added' };
+    return { websiteId, integrationId: integration.id, action: "form_added" };
   }
 
   /**
@@ -1715,7 +2024,7 @@ export class WorkflowEngine {
   private async addCTAButton(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1727,20 +2036,20 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     // Create CTA integration
     const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
-        type: 'CTA',
+        type: "CTA",
         config: {
-          text: config.text || 'Get Started',
-          link: config.link || '/contact',
-          style: config.style || 'primary',
+          text: config.text || "Get Started",
+          link: config.link || "/contact",
+          style: config.style || "primary",
         },
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
@@ -1749,12 +2058,12 @@ export class WorkflowEngine {
     if (structure.pages && structure.pages[0]) {
       structure.pages[0].components.push({
         id: `cta-${integration.id}`,
-        type: 'CTAButton',
+        type: "CTAButton",
         props: {
           integrationId: integration.id,
-          text: config.text || 'Get Started',
-          link: config.link || '/contact',
-          style: config.style || 'primary',
+          text: config.text || "Get Started",
+          link: config.link || "/contact",
+          style: config.style || "primary",
         },
       });
 
@@ -1764,7 +2073,7 @@ export class WorkflowEngine {
       });
     }
 
-    return { websiteId, integrationId: integration.id, action: 'cta_added' };
+    return { websiteId, integrationId: integration.id, action: "cta_added" };
   }
 
   /**
@@ -1773,7 +2082,7 @@ export class WorkflowEngine {
   private async publishWebsite(context: ExecutionContext, config: any) {
     const websiteId = config.websiteId || context.variables?.websiteId;
     if (!websiteId) {
-      throw new Error('Website ID is required');
+      throw new Error("Website ID is required");
     }
 
     const db = await getDb(context);
@@ -1785,37 +2094,40 @@ export class WorkflowEngine {
     });
 
     if (!website) {
-      throw new Error('Website not found');
+      throw new Error("Website not found");
     }
 
     // Update website status to published
     await db.website.update({
       where: { id: websiteId },
       data: {
-        status: 'PUBLISHED',
+        status: "PUBLISHED",
         publishedAt: new Date(),
       },
     });
 
-    return { websiteId, action: 'published' };
+    return { websiteId, action: "published" };
   }
 
   /**
    * Send a review request to a lead via SMS/email
    */
   private async requestReview(context: ExecutionContext, config: any) {
-    if (!context.leadId) return { action: 'request_review', status: 'skipped', reason: 'no lead' };
+    if (!context.leadId)
+      return { action: "request_review", status: "skipped", reason: "no lead" };
 
-    const { sendReviewRequest } = await import('@/lib/reviews/review-intelligence-service');
+    const { sendReviewRequest } = await import(
+      "@/lib/reviews/review-intelligence-service"
+    );
     const result = await sendReviewRequest(
       context.userId,
       context.leadId,
-      config?.method || 'SMS',
+      config?.method || "SMS",
       config?.reviewUrl,
-      config?.customMessage
+      config?.customMessage,
     );
 
-    return { action: 'request_review', ...result };
+    return { action: "request_review", ...result };
   }
 
   /**
@@ -1823,14 +2135,26 @@ export class WorkflowEngine {
    */
   private async respondToReview(context: ExecutionContext, config: any) {
     const reviewId = (context.variables as any)?.reviewId;
-    if (!reviewId) return { action: 'respond_to_review', status: 'skipped', reason: 'no reviewId' };
+    if (!reviewId)
+      return {
+        action: "respond_to_review",
+        status: "skipped",
+        reason: "no reviewId",
+      };
 
     const db = await getDb(context);
-    const { generateAutoResponse } = await import('@/lib/reviews/review-intelligence-service');
+    const { generateAutoResponse } = await import(
+      "@/lib/reviews/review-intelligence-service"
+    );
     const review = await db.review.findFirst({
       where: { id: reviewId, userId: context.userId },
     });
-    if (!review) return { action: 'respond_to_review', status: 'skipped', reason: 'review not found' };
+    if (!review)
+      return {
+        action: "respond_to_review",
+        status: "skipped",
+        reason: "review not found",
+      };
 
     const user = await db.user.findUnique({
       where: { id: context.userId },
@@ -1838,25 +2162,48 @@ export class WorkflowEngine {
     });
 
     const draft = await generateAutoResponse(
-      { reviewText: review.reviewText || '', rating: review.rating, reviewerName: review.reviewerName || undefined, source: review.source },
-      { tone: config?.tone || 'professional', ownerName: user?.name || undefined, includeOwnerName: true, customInstructions: config?.customInstructions }
+      {
+        reviewText: review.reviewText || "",
+        rating: review.rating,
+        reviewerName: review.reviewerName || undefined,
+        source: review.source,
+      },
+      {
+        tone: config?.tone || "professional",
+        ownerName: user?.name || undefined,
+        includeOwnerName: true,
+        customInstructions: config?.customInstructions,
+      },
     );
 
     await db.review.update({
       where: { id: reviewId },
-      data: { aiResponseDraft: draft, aiResponseStatus: config?.autoApprove ? 'APPROVED' : 'PENDING' },
+      data: {
+        aiResponseDraft: draft,
+        aiResponseStatus: config?.autoApprove ? "APPROVED" : "PENDING",
+      },
     });
 
-    return { action: 'respond_to_review', reviewId, status: config?.autoApprove ? 'auto_approved' : 'draft_created' };
+    return {
+      action: "respond_to_review",
+      reviewId,
+      status: config?.autoApprove ? "auto_approved" : "draft_created",
+    };
   }
 
   /**
    * Run sentiment analysis on recent reviews
    */
   private async analyzeReviews(context: ExecutionContext) {
-    const { generateBrandInsights } = await import('@/lib/reviews/review-intelligence-service');
+    const { generateBrandInsights } = await import(
+      "@/lib/reviews/review-intelligence-service"
+    );
     const report = await generateBrandInsights(context.userId);
-    return { action: 'analyze_reviews', satisfactionScore: report.satisfactionScore, totalReviews: report.totalReviews };
+    return {
+      action: "analyze_reviews",
+      satisfactionScore: report.satisfactionScore,
+      totalReviews: report.totalReviews,
+    };
   }
 }
 

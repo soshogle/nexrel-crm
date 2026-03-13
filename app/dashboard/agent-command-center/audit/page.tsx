@@ -31,7 +31,7 @@ function summarize(item: AuditItem): string {
   }
   if (item.entityType === "OPENCLAW_OPERATION") {
     const mode = item?.metadata?.mode || "operation";
-    return `OpenClaw executed ${mode}`;
+    return `Nexrel AI executed ${mode}`;
   }
   if (item.entityType === "AUTONOMY_DRAFT_ACTION") {
     return "Draft-only action generated (crawl mode)";
@@ -58,6 +58,9 @@ export default function AuditTimelinePage() {
     load();
   }, []);
 
+  const primaryBtn =
+    "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400 transition-colors";
+
   return (
     <div className="min-h-full text-zinc-100 px-8 py-6 space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -68,11 +71,7 @@ export default function AuditTimelinePage() {
             autonomous runs.
           </p>
         </div>
-        <Button
-          onClick={load}
-          variant="outline"
-          className="border-zinc-600 text-zinc-200"
-        >
+        <Button onClick={load} className={primaryBtn}>
           {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
           Refresh
         </Button>

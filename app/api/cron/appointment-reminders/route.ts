@@ -16,6 +16,8 @@ import {
   logJobTenant,
 } from "@/lib/ops/job-logger";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -114,6 +116,29 @@ export async function GET(request: NextRequest) {
             : `Hi ${patientName}, your ${apptTypeName} at ${clinicName} is in 2 hours (${timeStr}). See you soon!`;
 
         try {
+          const preflight = await runMasterConductorOperatorPreflight({
+            userId: tenant.id,
+            surface: "cron",
+            objective: `appointment_reminder:${window.label}`,
+            requestedActions: [
+              {
+                type: "MASS_OUTREACH",
+                riskTier: "HIGH",
+                reason: "Appointment reminder dispatch preflight",
+                payload: {
+                  appointmentId: appt.id,
+                  hasPhone: Boolean(phone),
+                  hasEmail: Boolean(email),
+                  window: window.label,
+                },
+              },
+            ],
+          });
+          if (!preflight.allowed) {
+            errorIds.push(appt.id);
+            continue;
+          }
+
           if (phone) {
             await sendSMS({ to: phone, message: smsBody });
           }
@@ -165,6 +190,17 @@ export async function GET(request: NextRequest) {
       tenantSent += sentIds.length;
       tenantErrors += errorIds.length;
       tenantSkipped += skippedForWindow;
+
+      await logNexrelAIExecutionOutcome({
+        userId: tenant.id,
+        surface: "cron",
+        objective: `appointment_reminder:${window.label}`,
+        actual: {
+          processed: appointments.length,
+          sent: sentIds.length,
+          failed: errorIds.length,
+        },
+      });
     }
 
     if (tenantSent > 0 || tenantErrors > 0 || tenantSkipped > 0) {

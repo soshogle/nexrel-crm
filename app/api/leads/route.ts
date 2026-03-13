@@ -19,6 +19,8 @@ import {
 import { emitCRMEvent } from "@/lib/crm-event-emitter";
 import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 import { syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export async function GET(request: NextRequest) {
   try {
@@ -206,7 +208,40 @@ export async function POST(request: NextRequest) {
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
 
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId: session.user.id,
+      surface: "leads",
+      objective: "lead_create",
+      requestedActions: [
+        {
+          type: "CREATE_TASK",
+          riskTier: "LOW",
+          reason: "Lead creation preflight",
+          payload: {
+            businessName: data.businessName || null,
+            contactPerson: data.contactPerson || null,
+          },
+        },
+      ],
+    });
+    if (!preflight.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Blocked by Nexrel AI master conductor policy",
+        },
+        { status: 409 },
+      );
+    }
+
     const lead = await leadService.create(ctx, data);
+
+    await logNexrelAIExecutionOutcome({
+      userId: session.user.id,
+      surface: "leads",
+      objective: "lead_create",
+      actual: { processed: 1, sent: 1, failed: 0 },
+    });
 
     emitCRMEvent("lead_created", session.user.id, {
       entityId: lead.id,

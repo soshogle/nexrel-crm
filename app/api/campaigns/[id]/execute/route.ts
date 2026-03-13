@@ -1,19 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { campaignService, getCrmDb, leadService } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { emailService } from '@/lib/email-service';
-import { sendSMS } from '@/lib/twilio';
-import { apiErrors } from '@/lib/api-error';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { campaignService, getCrmDb, leadService } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { emailService } from "@/lib/email-service";
+import { sendSMS } from "@/lib/twilio";
+import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST /api/campaigns/[id]/execute - Execute/start campaign
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,22 +29,58 @@ export async function POST(
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
-    if (campaign.status === 'RUNNING') {
-      return apiErrors.badRequest('Campaign is already running');
+    if (campaign.status === "RUNNING") {
+      return apiErrors.badRequest("Campaign is already running");
     }
 
-    if (campaign.status === 'COMPLETED') {
-      return apiErrors.badRequest('Campaign is already completed');
+    if (campaign.status === "COMPLETED") {
+      return apiErrors.badRequest("Campaign is already completed");
+    }
+
+    const startPreflight = await runMasterConductorOperatorPreflight({
+      userId: ctx.userId,
+      surface: "campaigns",
+      objective: `campaign_start:${campaign.id}`,
+      requestedActions: [
+        {
+          type: "DRAFT_CAMPAIGN_ARTIFACT",
+          riskTier: "LOW",
+          reason: "Campaign start preflight",
+          payload: {
+            campaignId: campaign.id,
+            campaignType: campaign.type,
+            campaignName: campaign.name,
+          },
+        },
+      ],
+    });
+
+    if (!startPreflight.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Blocked by Nexrel AI master conductor policy",
+          preflight: {
+            deniedActions: startPreflight.operatorResult?.deniedActions || [],
+            pendingApprovals:
+              startPreflight.operatorResult?.pendingApprovals || [],
+            mode: startPreflight.operatorResult?.mode || "read_only",
+          },
+        },
+        { status: 409 },
+      );
     }
 
     // Get recipients based on targetAudience
     const recipients = await getRecipients(ctx, campaign.targetAudience as any);
 
     if (recipients.length === 0) {
-      return apiErrors.badRequest('No recipients found matching the target audience');
+      return apiErrors.badRequest(
+        "No recipients found matching the target audience",
+      );
     }
 
     // Create campaign messages for each recipient
@@ -53,7 +91,7 @@ export async function POST(
       recipientEmail: recipient.email,
       recipientPhone: recipient.phone,
       recipientName: recipient.name,
-      status: 'PENDING',
+      status: "PENDING",
     }));
 
     const db = getCrmDb(ctx);
@@ -65,7 +103,7 @@ export async function POST(
       db.campaign.update({
         where: { id: params.id },
         data: {
-          status: 'RUNNING',
+          status: "RUNNING",
           totalRecipients: recipients.length,
           lastRunAt: new Date(),
         },
@@ -74,25 +112,28 @@ export async function POST(
 
     // Start async processing (in real app, this would be a queue/worker)
     // For now, we'll mark it as running and process messages gradually
-    processCampaignMessages(campaign.id, getDalContextFromSession(session)!).catch((error) => {
-      console.error('Error processing campaign messages:', error);
+    processCampaignMessages(
+      campaign.id,
+      getDalContextFromSession(session)!,
+    ).catch((error) => {
+      console.error("Error processing campaign messages:", error);
     });
 
     return NextResponse.json({
       success: true,
       recipientsCount: recipients.length,
-      message: 'Campaign execution started',
+      message: "Campaign execution started",
     });
   } catch (error: any) {
-    console.error('Error executing campaign:', error);
-    return apiErrors.internal(error.message || 'Failed to execute campaign');
+    console.error("Error executing campaign:", error);
+    return apiErrors.internal(error.message || "Failed to execute campaign");
   }
 }
 
 // POST /api/campaigns/[id]/execute?action=pause - Pause campaign
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,51 +145,59 @@ export async function PATCH(
     if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action');
+    const action = searchParams.get("action");
 
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return apiErrors.notFound('Campaign not found');
+      return apiErrors.notFound("Campaign not found");
     }
 
-    if (action === 'pause') {
-      if (campaign.status !== 'RUNNING') {
-        return apiErrors.badRequest('Can only pause running campaigns');
+    if (action === "pause") {
+      if (campaign.status !== "RUNNING") {
+        return apiErrors.badRequest("Can only pause running campaigns");
       }
 
-      await campaignService.update(ctx, params.id, { status: 'PAUSED' });
+      await campaignService.update(ctx, params.id, { status: "PAUSED" });
 
-      return NextResponse.json({ success: true, message: 'Campaign paused' });
+      return NextResponse.json({ success: true, message: "Campaign paused" });
     }
 
-    if (action === 'resume') {
-      if (campaign.status !== 'PAUSED') {
-        return apiErrors.badRequest('Can only resume paused campaigns');
+    if (action === "resume") {
+      if (campaign.status !== "PAUSED") {
+        return apiErrors.badRequest("Can only resume paused campaigns");
       }
 
-      await campaignService.update(ctx, params.id, { status: 'RUNNING' });
+      await campaignService.update(ctx, params.id, { status: "RUNNING" });
 
       // Resume processing
       processCampaignMessages(campaign.id, ctx).catch((error) => {
-        console.error('Error resuming campaign:', error);
+        console.error("Error resuming campaign:", error);
       });
 
-      return NextResponse.json({ success: true, message: 'Campaign resumed' });
+      return NextResponse.json({ success: true, message: "Campaign resumed" });
     }
 
-    return apiErrors.badRequest('Invalid action');
+    return apiErrors.badRequest("Invalid action");
   } catch (error: any) {
-    console.error('Error updating campaign status:', error);
-    return apiErrors.internal(error.message || 'Failed to update campaign');
+    console.error("Error updating campaign status:", error);
+    return apiErrors.internal(error.message || "Failed to update campaign");
   }
 }
 
 // Helper: Get recipients based on target audience filters
 async function getRecipients(
   ctx: { userId: string; industry?: string | null },
-  targetAudience: any
-): Promise<Array<{ id: string; type: 'LEAD'; email?: string | null; phone?: string | null; name: string }>> {
+  targetAudience: any,
+): Promise<
+  Array<{
+    id: string;
+    type: "LEAD";
+    email?: string | null;
+    phone?: string | null;
+    name: string;
+  }>
+> {
   const recipients: any[] = [];
 
   // Get leads
@@ -176,11 +225,11 @@ async function getRecipients(
       .filter((lead) => lead.email || lead.phone)
       .map((lead) => ({
         id: lead.id,
-        type: 'LEAD' as const,
+        type: "LEAD" as const,
         email: lead.email,
         phone: lead.phone,
         name: lead.contactPerson || lead.businessName,
-      }))
+      })),
   );
 
   return recipients;
@@ -189,9 +238,11 @@ async function getRecipients(
 // Helper: Process campaign messages (simulate sending)
 async function processCampaignMessages(
   campaignId: string,
-  ctx: { userId: string; industry?: string | null }
+  ctx: { userId: string; industry?: string | null },
 ) {
-  console.log(`🚀 Starting campaign message processing for campaign: ${campaignId}`);
+  console.log(
+    `🚀 Starting campaign message processing for campaign: ${campaignId}`,
+  );
 
   const db = getCrmDb(ctx as any);
 
@@ -199,7 +250,7 @@ async function processCampaignMessages(
   const campaign = await campaignService.findUnique(ctx as any, campaignId);
 
   if (!campaign) {
-    console.error('Campaign not found');
+    console.error("Campaign not found");
     return;
   }
 
@@ -207,38 +258,77 @@ async function processCampaignMessages(
   const pendingMessages = await db.campaignMessage.findMany({
     where: {
       campaignId,
-      status: 'PENDING',
+      status: "PENDING",
     },
     take: 10, // Process in batches
   });
 
   console.log(`Processing ${pendingMessages.length} messages`);
+  let sent = 0;
+  let failed = 0;
+  let blocked = 0;
 
   for (const message of pendingMessages) {
     try {
+      const outboundPreflight = await runMasterConductorOperatorPreflight({
+        userId: ctx.userId,
+        surface: "campaigns",
+        objective: `campaign_dispatch:${campaignId}`,
+        requestedActions: [
+          {
+            type: "MASS_OUTREACH",
+            riskTier: "HIGH",
+            reason: "Campaign message dispatch preflight",
+            payload: {
+              campaignId,
+              recipientId: message.recipientId,
+              hasEmail: Boolean(message.recipientEmail),
+              hasPhone: Boolean(message.recipientPhone),
+            },
+          },
+        ],
+      });
+
+      if (!outboundPreflight.allowed) {
+        await db.campaignMessage.update({
+          where: { id: message.id },
+          data: {
+            status: "FAILED",
+            errorMessage: "Blocked by Nexrel AI master conductor policy",
+          },
+        });
+        blocked += 1;
+        failed += 1;
+        continue;
+      }
+
       // For EMAIL campaigns
       if (
-        (campaign.type === 'EMAIL' || campaign.type === 'MULTI_CHANNEL') &&
+        (campaign.type === "EMAIL" || campaign.type === "MULTI_CHANNEL") &&
         message.recipientEmail
       ) {
-        const firstName = message.recipientName?.split(' ')[0] || '';
-        const lastName = message.recipientName?.split(' ').slice(1).join(' ') || '';
-        const personalizedBody = personalizeContent(campaign.emailBody || '', {
-          name: message.recipientName || '',
+        const firstName = message.recipientName?.split(" ")[0] || "";
+        const lastName =
+          message.recipientName?.split(" ").slice(1).join(" ") || "";
+        const personalizedBody = personalizeContent(campaign.emailBody || "", {
+          name: message.recipientName || "",
           firstName,
           lastName,
-          email: message.recipientEmail || '',
-          businessName: message.recipientName || '',
-          contactPerson: message.recipientName || '',
+          email: message.recipientEmail || "",
+          businessName: message.recipientName || "",
+          contactPerson: message.recipientName || "",
         });
-        const personalizedSubject = personalizeContent(campaign.emailSubject || campaign.name, {
-          name: message.recipientName || '',
-          firstName,
-          lastName,
-          email: message.recipientEmail || '',
-          businessName: message.recipientName || '',
-          contactPerson: message.recipientName || '',
-        });
+        const personalizedSubject = personalizeContent(
+          campaign.emailSubject || campaign.name,
+          {
+            name: message.recipientName || "",
+            firstName,
+            lastName,
+            email: message.recipientEmail || "",
+            businessName: message.recipientName || "",
+            contactPerson: message.recipientName || "",
+          },
+        );
 
         await emailService.sendEmail({
           to: message.recipientEmail,
@@ -250,18 +340,19 @@ async function processCampaignMessages(
 
       // For SMS campaigns
       if (
-        (campaign.type === 'SMS' || campaign.type === 'MULTI_CHANNEL') &&
+        (campaign.type === "SMS" || campaign.type === "MULTI_CHANNEL") &&
         message.recipientPhone
       ) {
-        const firstName = message.recipientName?.split(' ')[0] || '';
-        const lastName = message.recipientName?.split(' ').slice(1).join(' ') || '';
-        const personalizedSms = personalizeContent(campaign.smsTemplate || '', {
-          name: message.recipientName || '',
+        const firstName = message.recipientName?.split(" ")[0] || "";
+        const lastName =
+          message.recipientName?.split(" ").slice(1).join(" ") || "";
+        const personalizedSms = personalizeContent(campaign.smsTemplate || "", {
+          name: message.recipientName || "",
           firstName,
           lastName,
-          email: message.recipientEmail || '',
-          businessName: message.recipientName || '',
-          contactPerson: message.recipientName || '',
+          email: message.recipientEmail || "",
+          businessName: message.recipientName || "",
+          contactPerson: message.recipientName || "",
         });
 
         try {
@@ -273,7 +364,7 @@ async function processCampaignMessages(
 
       // For VOICE_CALL campaigns
       if (
-        (campaign.type === 'VOICE_CALL' || campaign.type === 'MULTI_CHANNEL') &&
+        (campaign.type === "VOICE_CALL" || campaign.type === "MULTI_CHANNEL") &&
         message.recipientPhone &&
         campaign.voiceAgentId
       ) {
@@ -284,11 +375,11 @@ async function processCampaignMessages(
               userId: ctx.userId,
               voiceAgentId: campaign.voiceAgentId,
               leadId: message.recipientId,
-              name: message.recipientName || 'Unknown',
+              name: message.recipientName || "Unknown",
               phoneNumber: message.recipientPhone,
               purpose: campaign.name,
-              notes: campaign.callScript || '',
-              status: 'SCHEDULED',
+              notes: campaign.callScript || "",
+              status: "SCHEDULED",
               scheduledFor: new Date(),
             },
           });
@@ -297,10 +388,11 @@ async function processCampaignMessages(
           await db.campaignMessage.update({
             where: { id: message.id },
             data: {
-              status: 'SENT',
+              status: "SENT",
               sentAt: new Date(),
             },
           });
+          sent += 1;
 
           console.log(`📞 Scheduled voice call to: ${message.recipientPhone}`);
           console.log(`   Campaign: ${campaign.name}`);
@@ -310,10 +402,14 @@ async function processCampaignMessages(
           await db.campaignMessage.update({
             where: { id: message.id },
             data: {
-              status: 'FAILED',
-              errorMessage: callError instanceof Error ? callError.message : 'Failed to schedule call',
+              status: "FAILED",
+              errorMessage:
+                callError instanceof Error
+                  ? callError.message
+                  : "Failed to schedule call",
             },
           });
+          failed += 1;
           continue;
         }
       }
@@ -322,7 +418,7 @@ async function processCampaignMessages(
       await db.campaignMessage.update({
         where: { id: message.id },
         data: {
-          status: 'SENT',
+          status: "SENT",
           sentAt: new Date(),
           deliveredAt: new Date(), // Simulate immediate delivery
         },
@@ -336,23 +432,38 @@ async function processCampaignMessages(
           deliveredCount: { increment: 1 },
         },
       });
+      sent += 1;
     } catch (error) {
       console.error(`Error processing message ${message.id}:`, error);
       await db.campaignMessage.update({
         where: { id: message.id },
         data: {
-          status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          status: "FAILED",
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
         },
       });
+      failed += 1;
     }
   }
+
+  await logNexrelAIExecutionOutcome({
+    userId: ctx.userId,
+    surface: "campaigns",
+    objective: `campaign_dispatch:${campaignId}`,
+    actual: {
+      processed: pendingMessages.length,
+      sent,
+      failed,
+      blocked,
+    },
+  });
 
   // Check if more messages to process
   const remainingMessages = await db.campaignMessage.count({
     where: {
       campaignId,
-      status: 'PENDING',
+      status: "PENDING",
     },
   });
 
@@ -366,18 +477,18 @@ async function processCampaignMessages(
     await db.campaign.update({
       where: { id: campaignId },
       data: {
-        status: 'COMPLETED',
+        status: "COMPLETED",
       },
     });
 
     // Calculate final analytics
     const stats = await db.campaignMessage.groupBy({
-      by: ['status'],
+      by: ["status"],
       where: { campaignId },
       _count: true,
     });
 
-    const delivered = stats.find((s) => s.status === 'DELIVERED')?._count || 0;
+    const delivered = stats.find((s) => s.status === "DELIVERED")?._count || 0;
     const total = await db.campaignMessage.count({ where: { campaignId } });
 
     await db.campaign.update({
@@ -390,12 +501,15 @@ async function processCampaignMessages(
   }
 }
 
-function personalizeContent(content: string, vars: Record<string, string>): string {
-  if (!content) return '';
+function personalizeContent(
+  content: string,
+  vars: Record<string, string>,
+): string {
+  if (!content) return "";
   let result = content;
   for (const [key, value] of Object.entries(vars)) {
-    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
-    const singlePattern = new RegExp(`\\{${key}\\}`, 'gi');
+    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, "gi");
+    const singlePattern = new RegExp(`\\{${key}\\}`, "gi");
     result = result.replace(doublePattern, value).replace(singlePattern, value);
   }
   return result;

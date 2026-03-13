@@ -10,6 +10,7 @@ import * as website from "./handlers/website";
 import * as tasksWorkflows from "./handlers/tasks-workflows";
 import * as analyticsReports from "./handlers/analytics-reports";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -382,6 +383,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const preflight = await runMasterConductorPreflight({
+      userId: user.id,
+      action,
+      parameters: parameters || {},
+      surface: "assistant",
+    });
+
+    if (!preflight.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Blocked by Nexrel AI master conductor policy",
+          action,
+          preflight: {
+            enforced: preflight.enforced,
+            deniedActions: preflight.operatorResult?.deniedActions || [],
+            pendingApprovals: preflight.operatorResult?.pendingApprovals || [],
+            mode: preflight.operatorResult?.mode || "read_only",
+          },
+          timestamp: new Date().toISOString(),
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await handler(user.id, parameters || {});
 
     if ((result as any)?.error || (result as any)?.success === false) {
@@ -402,6 +428,16 @@ export async function POST(req: NextRequest) {
       success: true,
       action,
       result,
+      preflight:
+        preflight.skipped || !preflight.operatorResult
+          ? null
+          : {
+              enforced: preflight.enforced,
+              mode: preflight.operatorResult.mode,
+              executedActions: preflight.operatorResult.executedActions.length,
+              pendingApprovals:
+                preflight.operatorResult.pendingApprovals.length,
+            },
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

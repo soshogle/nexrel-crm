@@ -20,6 +20,8 @@ import {
   logJobTenant,
 } from "@/lib/ops/job-logger";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,6 +52,33 @@ export async function GET(req: NextRequest) {
 
       for (const sms of pending) {
         try {
+          const outboundPreflight = await runMasterConductorOperatorPreflight({
+            userId: ctx.userId,
+            surface: "cron",
+            objective: `scheduled_sms_dispatch:${sms.id}`,
+            requestedActions: [
+              {
+                type: "MASS_OUTREACH",
+                riskTier: "HIGH",
+                reason: "Scheduled SMS dispatch preflight",
+                payload: {
+                  scheduledSmsId: sms.id,
+                  toPhone: sms.toPhone,
+                  message: sms.message?.slice(0, 200),
+                },
+              },
+            ],
+          });
+
+          if (!outboundPreflight.allowed) {
+            await getCrmDb(ctx).scheduledSms.update({
+              where: { id: sms.id },
+              data: { status: "FAILED" },
+            });
+            failed++;
+            continue;
+          }
+
           const result = await sendSMS({
             userId: sms.userId,
             contactName: sms.toName || "Contact",
@@ -80,6 +109,17 @@ export async function GET(req: NextRequest) {
           failed++;
         }
       }
+
+      await logNexrelAIExecutionOutcome({
+        userId: ctx.userId,
+        surface: "cron",
+        objective: "scheduled_sms_process",
+        actual: {
+          processed: pending.length,
+          sent,
+          failed,
+        },
+      });
 
       return { processed: pending.length, sent, failed };
     }

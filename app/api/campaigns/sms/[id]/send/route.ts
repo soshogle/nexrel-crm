@@ -6,6 +6,8 @@ import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { sendSMS } from "@/lib/twilio";
 import { emitCRMEvent } from "@/lib/crm-event-emitter";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -73,6 +75,7 @@ export async function POST(
 
     let sentCount = 0;
     let failCount = 0;
+    let blockedCount = 0;
 
     for (const recipient of campaign.recipients) {
       const phone = recipient.recipientPhone || recipient.lead?.phone;
@@ -109,6 +112,33 @@ export async function POST(
       );
 
       try {
+        const preflight = await runMasterConductorOperatorPreflight({
+          userId: ctx.userId,
+          surface: "campaigns",
+          objective: `sms_campaign_send:${params.id}`,
+          requestedActions: [
+            {
+              type: "MASS_OUTREACH",
+              riskTier: "HIGH",
+              reason: "SMS campaign recipient dispatch preflight",
+              payload: {
+                campaignId: params.id,
+                recipientId: recipient.id,
+                phone,
+              },
+            },
+          ],
+        });
+        if (!preflight.allowed) {
+          await db.smsCampaignDeal.update({
+            where: { id: recipient.id },
+            data: { status: "FAILED" },
+          });
+          blockedCount++;
+          failCount++;
+          continue;
+        }
+
         const result = await sendSMS(phone, personalizedMessage);
 
         await db.smsCampaignDeal.update({
@@ -149,6 +179,18 @@ export async function POST(
       entityId: params.id,
       entityType: "SmsCampaign",
       data: { sentCount, failCount },
+    });
+
+    await logNexrelAIExecutionOutcome({
+      userId: ctx.userId,
+      surface: "campaigns",
+      objective: `sms_campaign_send:${params.id}`,
+      actual: {
+        processed: campaign.recipients.length,
+        sent: sentCount,
+        failed: failCount,
+        blocked: blockedCount,
+      },
     });
 
     return NextResponse.json({

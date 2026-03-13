@@ -20,6 +20,8 @@ import {
   logJobTenant,
 } from "@/lib/ops/job-logger";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,6 +52,33 @@ export async function GET(req: NextRequest) {
 
       for (const email of pending) {
         try {
+          const outboundPreflight = await runMasterConductorOperatorPreflight({
+            userId: ctx.userId,
+            surface: "cron",
+            objective: `scheduled_email_dispatch:${email.id}`,
+            requestedActions: [
+              {
+                type: "MASS_OUTREACH",
+                riskTier: "HIGH",
+                reason: "Scheduled email dispatch preflight",
+                payload: {
+                  scheduledEmailId: email.id,
+                  toEmail: email.toEmail,
+                  subject: email.subject,
+                },
+              },
+            ],
+          });
+
+          if (!outboundPreflight.allowed) {
+            await getCrmDb(ctx).scheduledEmail.update({
+              where: { id: email.id },
+              data: { status: "FAILED" },
+            });
+            failed++;
+            continue;
+          }
+
           const emailService = new EmailService();
           const success = await emailService.sendEmail({
             to: email.toEmail,
@@ -81,6 +110,17 @@ export async function GET(req: NextRequest) {
           failed++;
         }
       }
+
+      await logNexrelAIExecutionOutcome({
+        userId: ctx.userId,
+        surface: "cron",
+        objective: "scheduled_emails_process",
+        actual: {
+          processed: pending.length,
+          sent,
+          failed,
+        },
+      });
 
       return { processed: pending.length, sent, failed };
     }

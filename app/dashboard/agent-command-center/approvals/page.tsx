@@ -54,6 +54,11 @@ export default function ApprovalsInboxPage() {
     }
   };
 
+  const primaryBtn =
+    "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400 transition-colors";
+  const secondaryBtn =
+    "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 text-sm font-semibold hover:bg-zinc-800/70 transition-colors";
+
   return (
     <div className="min-h-full text-zinc-100 px-8 py-6 space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -63,11 +68,7 @@ export default function ApprovalsInboxPage() {
             Review and approve high-risk autonomous actions before execution.
           </p>
         </div>
-        <Button
-          onClick={load}
-          variant="outline"
-          className="border-zinc-600 text-zinc-200"
-        >
+        <Button onClick={load} className={primaryBtn}>
           {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
           Refresh
         </Button>
@@ -104,7 +105,7 @@ export default function ApprovalsInboxPage() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => decide(item.id, "approve")}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className={primaryBtn}
                   disabled={busyJob === item.id}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -112,7 +113,7 @@ export default function ApprovalsInboxPage() {
                 </Button>
                 <Button
                   onClick={() => decide(item.id, "reject")}
-                  className="bg-red-600 hover:bg-red-500 text-white"
+                  className={secondaryBtn}
                   disabled={busyJob === item.id}
                 >
                   <XCircle className="w-4 h-4 mr-2" />

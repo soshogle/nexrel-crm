@@ -134,7 +134,7 @@ export async function GET(_req: NextRequest) {
   } catch (error: any) {
     console.error("[openclaw] health route error", error);
     return apiErrors.internal(
-      error?.message || "Failed to fetch OpenClaw health",
+      error?.message || "Failed to fetch Nexrel AI health",
     );
   }
 }

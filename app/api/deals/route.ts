@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { dealService, getCrmDb } from '@/lib/dal';
-import { getDalContextFromSession } from '@/lib/context/industry-context';
-import { workflowEngine } from '@/lib/workflow-engine';
-import { emitCRMEvent } from '@/lib/crm-event-emitter';
-import { apiErrors } from '@/lib/api-error';
-import { parsePagination, paginatedResponse } from '@/lib/api-utils';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { dealService, getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { workflowEngine } from "@/lib/workflow-engine";
+import { emitCRMEvent } from "@/lib/crm-event-emitter";
+import { apiErrors } from "@/lib/api-error";
+import { parsePagination, paginatedResponse } from "@/lib/api-utils";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,10 +52,10 @@ export async function GET(request: NextRequest) {
       dealService.count(ctx),
     ]);
 
-    return paginatedResponse(deals, total, pagination, 'deals');
+    return paginatedResponse(deals, total, pagination, "deals");
   } catch (error) {
-    console.error('Error fetching deals:', error);
-    return apiErrors.internal('Failed to fetch deals');
+    console.error("Error fetching deals:", error);
+    return apiErrors.internal("Failed to fetch deals");
   }
 }
 
@@ -86,52 +87,79 @@ export async function POST(request: NextRequest) {
 
     const deal = await dealService.create(ctx, {
       title,
-      description: description ?? '',
+      description: description ?? "",
       value: value ?? 0,
       pipelineId,
       stageId,
       leadId: leadId || null,
-      priority: (priority as any) || 'MEDIUM',
+      priority: (priority as any) || "MEDIUM",
       probability: stage?.probability ?? 0,
       expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
     } as any);
 
-    emitCRMEvent('deal_created', ctx.userId, { entityId: deal.id, entityType: 'Deal', data: { title, value } });
+    emitCRMEvent("deal_created", ctx.userId, {
+      entityId: deal.id,
+      entityType: "Deal",
+      data: { title, value },
+    });
 
     await getCrmDb(ctx).dealActivity.create({
       data: {
         dealId: deal.id,
         userId: ctx.userId,
-        type: 'CREATED',
+        type: "CREATED",
         description: `Deal created: ${title}`,
       },
     });
 
     try {
-      const { RelationshipHooks } = await import('@/lib/relationship-hooks');
+      const { RelationshipHooks } = await import("@/lib/relationship-hooks");
       await RelationshipHooks.onDealCreated({
         userId: ctx.userId,
         dealId: deal.id,
         leadId: leadId,
       });
     } catch (error) {
-      console.error('Error tracking deal relationships:', error);
+      console.error("Error tracking deal relationships:", error);
     }
 
-    workflowEngine.triggerWorkflow('DEAL_CREATED', {
+    runMasterConductorOperatorPreflight({
       userId: ctx.userId,
-      dealId: deal.id,
-      leadId: deal.leadId || undefined,
-      variables: {
-        dealTitle: title,
-        dealValue: value,
-        businessName: deal.lead?.businessName,
-      },
-    }).catch(err => console.error('Deal created workflow trigger failed:', err));
+      surface: "deals",
+      objective: `deal_created_trigger:${deal.id}`,
+      requestedActions: [
+        {
+          type: "DRAFT_CAMPAIGN_ARTIFACT",
+          riskTier: "LOW",
+          reason: "Deal created workflow trigger preflight",
+          payload: {
+            dealId: deal.id,
+            leadId: deal.leadId,
+            value,
+          },
+        },
+      ],
+    })
+      .then((preflight) => {
+        if (!preflight.allowed) return;
+        return workflowEngine.triggerWorkflow("DEAL_CREATED", {
+          userId: ctx.userId,
+          dealId: deal.id,
+          leadId: deal.leadId || undefined,
+          variables: {
+            dealTitle: title,
+            dealValue: value,
+            businessName: deal.lead?.businessName,
+          },
+        });
+      })
+      .catch((err) =>
+        console.error("Deal created workflow trigger failed:", err),
+      );
 
     return NextResponse.json(deal);
   } catch (error) {
-    console.error('Error creating deal:', error);
-    return apiErrors.internal('Failed to create deal');
+    console.error("Error creating deal:", error);
+    return apiErrors.internal("Failed to create deal");
   }
 }

@@ -11,6 +11,8 @@ import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { getCrmDb } from "@/lib/dal";
 import { leadService } from "@/lib/dal/lead-service";
 import { apiErrors } from "@/lib/api-error";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +38,29 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "send") {
+      const preflight = await runMasterConductorOperatorPreflight({
+        userId: session.user.id,
+        surface: "assistant",
+        objective: "confirm_sms_send",
+        requestedActions: [
+          {
+            type: "MASS_OUTREACH",
+            riskTier: "HIGH",
+            reason: "Assistant confirm SMS send preflight",
+            payload: { to, leadId, contactName },
+          },
+        ],
+      });
+      if (!preflight.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Blocked by Nexrel AI master conductor policy",
+          },
+          { status: 409 },
+        );
+      }
+
       const result = await sendSMS({
         userId: session.user.id,
         contactName,
@@ -47,6 +72,13 @@ export async function POST(req: NextRequest) {
       if (!result.success) {
         return apiErrors.badRequest(result.error || "Failed to send SMS");
       }
+
+      await logNexrelAIExecutionOutcome({
+        userId: session.user.id,
+        surface: "assistant",
+        objective: "confirm_sms_send",
+        actual: { processed: 1, sent: 1, failed: 0 },
+      });
 
       return NextResponse.json({
         success: true,
@@ -115,6 +147,13 @@ export async function POST(req: NextRequest) {
           scheduledFor: scheduledDate,
           status: "PENDING",
         },
+      });
+
+      await logNexrelAIExecutionOutcome({
+        userId: session.user.id,
+        surface: "assistant",
+        objective: "confirm_sms_schedule",
+        actual: { processed: 1, sent: 1, failed: 0 },
       });
 
       return NextResponse.json({

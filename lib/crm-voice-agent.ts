@@ -297,7 +297,7 @@ Available functions:
 - sms_leads: Text multiple leads. USE when user says "text all my leads from today", "SMS today's leads with [message]". Use period: "today" for leads created today.
 - email_leads: Email multiple leads. USE when user says "email all my leads from today", "send email to today's leads about [topic]". Use period: "today" for leads created today.
 - add_workflow_task: Add a step to the workflow. USE when user describes a step: "add send email", "add call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.
-- openclaw_operate: OpenClaw orchestration command for advanced automation modes. Use this for end-to-end chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, autonomous mode policy, team delegation, and customer-facing voice workflows.
+- openclaw_operate: Nexrel AI orchestration command for advanced automation modes. Use this for end-to-end chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, autonomous mode policy, team delegation, and customer-facing voice workflows.
 - create_task: Create a task. USE when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp". Requires title, optional dueDate/description.
 - list_tasks: List tasks. USE when user says "show my overdue tasks", "what's due today?", "my tasks". Use overdue: true for overdue.
 - complete_task: Mark task done. USE when user says "mark X as done", "complete the task". Use taskTitle to match.
@@ -326,7 +326,7 @@ WEBSITE BUILDER MODE: When in_website_builder dynamic variable is "true" (user i
 SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it describes the visible text on the user's screen (headings, labels, form fields, buttons). Use it to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.
 CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when available. When user is viewing a contact (active_lead_id), use it for add_note, create_deal. When viewing a deal (active_deal_id), use it for add_note, update_deal_stage.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
-For complex OpenClaw tasks, call openclaw_operate with the right mode:
+For complex Nexrel AI tasks, call openclaw_operate with the right mode:
 - work_ai_orchestrator
 - sales_squad
 - social_media_loop
@@ -1302,13 +1302,13 @@ ${getConfidentialityGuard()}`;
       {
         name: "openclaw_operate",
         description:
-          "Run OpenClaw advanced operations in one command: Work AI orchestration, Sales Squad, Social Media Loop, end-to-end execution chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, controlled autonomous mode, team ops delegation, and customer-facing voice workflows.",
+          "Run Nexrel AI advanced operations in one command: Work AI orchestration, Sales Squad, Social Media Loop, end-to-end execution chains, approval-by-voice, daily command center, meeting/call intelligence, performance coaching, vertical playbooks, controlled autonomous mode, team ops delegation, and customer-facing voice workflows.",
         parameters: {
           type: "object",
           properties: {
             mode: {
               type: "string",
-              description: "OpenClaw operation mode",
+              description: "Nexrel AI operation mode",
               enum: [
                 "work_ai_orchestrator",
                 "sales_squad",

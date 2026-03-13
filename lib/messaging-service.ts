@@ -3,9 +3,11 @@
  * Send SMS and email to single contacts or bulk by criteria
  */
 
-import { getCrmDb } from '@/lib/dal';
-import { resolveDalContext } from '@/lib/context/industry-context';
-import { EmailService } from '@/lib/email-service';
+import { getCrmDb } from "@/lib/dal";
+import { resolveDalContext } from "@/lib/context/industry-context";
+import { EmailService } from "@/lib/email-service";
+import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
+import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export interface SendSMSParams {
   userId: string;
@@ -29,7 +31,7 @@ export interface BulkMessagingParams {
   purpose: string;
   message: string;
   criteria?: {
-    period?: 'today' | 'yesterday' | 'last_7_days' | 'last_30_days';
+    period?: "today" | "yesterday" | "last_7_days" | "last_30_days";
     status?: string;
     limit?: number;
   };
@@ -41,30 +43,32 @@ export interface BulkMessagingParams {
 async function sendSMSWithConfig(
   to: string,
   message: string,
-  config: { accountSid: string; authToken: string; phoneNumber: string }
+  config: { accountSid: string; authToken: string; phoneNumber: string },
 ): Promise<{ sid: string; status: string }> {
-  const formattedTo = to.startsWith('+') ? to : `+1${to.replace(/\D/g, '')}`;
-  const auth = Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64');
+  const formattedTo = to.startsWith("+") ? to : `+1${to.replace(/\D/g, "")}`;
+  const auth = Buffer.from(`${config.accountSid}:${config.authToken}`).toString(
+    "base64",
+  );
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,
     {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         To: formattedTo,
         From: config.phoneNumber,
         Body: message,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to send SMS');
+    throw new Error(error.message || "Failed to send SMS");
   }
 
   const data = await response.json();
@@ -74,7 +78,9 @@ async function sendSMSWithConfig(
 /**
  * Send SMS to a single contact
  */
-export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function sendSMS(
+  params: SendSMSParams,
+): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, message, phoneNumber, leadId } = params;
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
@@ -87,12 +93,12 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
       where: {
         userId,
         OR: [
-          { contactPerson: { contains: contactName, mode: 'insensitive' } },
-          { businessName: { contains: contactName, mode: 'insensitive' } },
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
           ...(leadId ? [{ id: leadId }] : []),
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (lead) {
@@ -121,11 +127,32 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
   if (!user?.smsProviderConfigured || !user.smsProviderConfig) {
     return {
       success: false,
-      error: 'SMS provider not configured. Please configure Twilio in Settings.',
+      error:
+        "SMS provider not configured. Please configure Twilio in Settings.",
     };
   }
 
   try {
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId,
+      surface: "messaging",
+      objective: "send_sms",
+      requestedActions: [
+        {
+          type: "MASS_OUTREACH",
+          riskTier: "HIGH",
+          reason: "Messaging service SMS send preflight",
+          payload: { to: finalPhone, leadId: resolvedLeadId, contactName },
+        },
+      ],
+    });
+    if (!preflight.allowed) {
+      return {
+        success: false,
+        error: "Blocked by Nexrel AI master conductor policy",
+      };
+    }
+
     const config = JSON.parse(user.smsProviderConfig);
     const result = await sendSMSWithConfig(finalPhone, message, {
       accountSid: config.accountSid,
@@ -139,15 +166,26 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
   } catch (e: any) {
     return {
       success: false,
-      error: e?.message || 'Failed to send SMS',
+      error: e?.message || "Failed to send SMS",
     };
+  } finally {
+    await logNexrelAIExecutionOutcome({
+      userId,
+      surface: "messaging",
+      objective: "send_sms",
+      actual: {
+        processed: 1,
+      },
+    });
   }
 }
 
 /**
  * Send email to a single contact
  */
-export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function sendEmail(
+  params: SendEmailParams,
+): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, subject, body, email, leadId } = params;
   const ctx = await resolveDalContext(userId);
   const db = getCrmDb(ctx);
@@ -160,12 +198,12 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
       where: {
         userId,
         OR: [
-          { contactPerson: { contains: contactName, mode: 'insensitive' } },
-          { businessName: { contains: contactName, mode: 'insensitive' } },
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
           ...(leadId ? [{ id: leadId }] : []),
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (lead) {
@@ -186,9 +224,34 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     };
   }
 
-  const htmlBody = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;"><p>${body.replace(/\n/g, '<br>')}</p></div>`;
+  const htmlBody = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;"><p>${body.replace(/\n/g, "<br>")}</p></div>`;
 
   try {
+    const preflight = await runMasterConductorOperatorPreflight({
+      userId,
+      surface: "messaging",
+      objective: "send_email",
+      requestedActions: [
+        {
+          type: "MASS_OUTREACH",
+          riskTier: "HIGH",
+          reason: "Messaging service email send preflight",
+          payload: {
+            to: finalEmail,
+            leadId: resolvedLeadId,
+            contactName,
+            subject,
+          },
+        },
+      ],
+    });
+    if (!preflight.allowed) {
+      return {
+        success: false,
+        error: "Blocked by Nexrel AI master conductor policy",
+      };
+    }
+
     const emailService = new EmailService();
     const sent = await emailService.sendEmail({
       to: finalEmail,
@@ -201,7 +264,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     if (!sent) {
       return {
         success: false,
-        error: 'Failed to send email. Please check your email configuration.',
+        error: "Failed to send email. Please check your email configuration.",
       };
     }
 
@@ -212,8 +275,17 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
   } catch (e: any) {
     return {
       success: false,
-      error: e?.message || 'Failed to send email',
+      error: e?.message || "Failed to send email",
     };
+  } finally {
+    await logNexrelAIExecutionOutcome({
+      userId,
+      surface: "messaging",
+      objective: "send_email",
+      actual: {
+        processed: 1,
+      },
+    });
   }
 }
 
@@ -222,22 +294,22 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
  */
 async function getLeadsByCriteria(
   userId: string,
-  criteria: BulkMessagingParams['criteria'],
+  criteria: BulkMessagingParams["criteria"],
   requirePhone: boolean,
-  requireEmail: boolean
+  requireEmail: boolean,
 ) {
   const now = new Date();
   let startDate: Date | undefined;
   let endDate: Date | undefined;
 
-  if (criteria?.period === 'today') {
+  if (criteria?.period === "today") {
     startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (criteria?.period === 'yesterday') {
+  } else if (criteria?.period === "yesterday") {
     startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
     endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (criteria?.period === 'last_7_days') {
+  } else if (criteria?.period === "last_7_days") {
     startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  } else if (criteria?.period === 'last_30_days') {
+  } else if (criteria?.period === "last_30_days") {
     startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
 
@@ -254,7 +326,7 @@ async function getLeadsByCriteria(
   return getCrmDb(ctx).lead.findMany({
     where,
     take: criteria?.limit || 50,
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     select: {
       id: true,
       contactPerson: true,
@@ -283,7 +355,7 @@ export async function sendSMSToLeads(params: BulkMessagingParams): Promise<{
   if (withPhone.length === 0) {
     return {
       success: false,
-      error: 'No leads with phone numbers found',
+      error: "No leads with phone numbers found",
       sent: 0,
       failed: 0,
     };
@@ -294,13 +366,13 @@ export async function sendSMSToLeads(params: BulkMessagingParams): Promise<{
 
   for (const lead of withPhone) {
     const personalized = message
-      .replace(/\{name\}|\{contactPerson\}/gi, lead.contactPerson || 'there')
-      .replace(/\{businessName\}|\{company\}/gi, lead.businessName || 'there')
-      .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there');
+      .replace(/\{name\}|\{contactPerson\}/gi, lead.contactPerson || "there")
+      .replace(/\{businessName\}|\{company\}/gi, lead.businessName || "there")
+      .replace(/\{firstName\}/g, lead.contactPerson?.split(" ")[0] || "there");
 
     const result = await sendSMS({
       userId,
-      contactName: lead.contactPerson || lead.businessName || 'Contact',
+      contactName: lead.contactPerson || lead.businessName || "Contact",
       message: personalized,
       phoneNumber: lead.phone!,
       leadId: lead.id,
@@ -313,7 +385,7 @@ export async function sendSMSToLeads(params: BulkMessagingParams): Promise<{
 
   return {
     success: sent > 0,
-    message: `Sent ${sent} SMS${failed > 0 ? `, ${failed} failed` : ''}`,
+    message: `Sent ${sent} SMS${failed > 0 ? `, ${failed} failed` : ""}`,
     sent,
     failed,
   };
@@ -322,7 +394,9 @@ export async function sendSMSToLeads(params: BulkMessagingParams): Promise<{
 /**
  * Send email to multiple leads by criteria
  */
-export async function sendEmailToLeads(params: BulkMessagingParams & { subject: string }): Promise<{
+export async function sendEmailToLeads(
+  params: BulkMessagingParams & { subject: string },
+): Promise<{
   success: boolean;
   message?: string;
   error?: string;
@@ -338,7 +412,7 @@ export async function sendEmailToLeads(params: BulkMessagingParams & { subject: 
   if (withEmail.length === 0) {
     return {
       success: false,
-      error: 'No leads with email addresses found',
+      error: "No leads with email addresses found",
       sent: 0,
       failed: 0,
     };
@@ -349,13 +423,13 @@ export async function sendEmailToLeads(params: BulkMessagingParams & { subject: 
 
   for (const lead of withEmail) {
     const personalized = message
-      .replace(/\{name\}|\{contactPerson\}/gi, lead.contactPerson || 'there')
-      .replace(/\{businessName\}|\{company\}/gi, lead.businessName || 'there')
-      .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there');
+      .replace(/\{name\}|\{contactPerson\}/gi, lead.contactPerson || "there")
+      .replace(/\{businessName\}|\{company\}/gi, lead.businessName || "there")
+      .replace(/\{firstName\}/g, lead.contactPerson?.split(" ")[0] || "there");
 
     const result = await sendEmail({
       userId,
-      contactName: lead.contactPerson || lead.businessName || 'Contact',
+      contactName: lead.contactPerson || lead.businessName || "Contact",
       subject,
       body: personalized,
       email: lead.email!,
@@ -369,7 +443,7 @@ export async function sendEmailToLeads(params: BulkMessagingParams & { subject: 
 
   return {
     success: sent > 0,
-    message: `Sent ${sent} email${failed > 0 ? `, ${failed} failed` : ''}`,
+    message: `Sent ${sent} email${failed > 0 ? `, ${failed} failed` : ""}`,
     sent,
     failed,
   };

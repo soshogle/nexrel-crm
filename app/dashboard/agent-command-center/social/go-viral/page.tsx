@@ -126,6 +126,16 @@ export default function GoViralPage() {
     [insights],
   );
 
+  const tabClass = (active: boolean) =>
+    active
+      ? "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400 transition-colors"
+      : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 text-sm font-semibold hover:bg-zinc-800/70 transition-colors";
+
+  const actionClass =
+    "px-4 py-2 rounded-lg bg-amber-500 text-zinc-900 text-sm font-semibold hover:bg-amber-400 transition-colors";
+  const secondaryClass =
+    "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 text-sm font-semibold hover:bg-zinc-800/70 transition-colors";
+
   return (
     <div className="min-h-full text-zinc-100 px-8 py-6 space-y-6">
       <div className="glass-panel rounded-xl p-5">
@@ -134,7 +144,7 @@ export default function GoViralPage() {
           <h1 className="text-2xl font-bold">Go Viral</h1>
         </div>
         <p className="text-xs text-zinc-400 mt-1">
-          OpenClaw runs your viral mandate: generate, test, learn, and optimize
+          Nexrel AI runs your viral mandate: generate, test, learn, and optimize
           content to convert attention into leads.
         </p>
       </div>
@@ -175,53 +185,34 @@ export default function GoViralPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button
-            variant={kind === "image" ? "default" : "outline"}
+            variant="ghost"
             onClick={() => setKind("image")}
-            className={
-              kind === "image"
-                ? "bg-amber-500 text-zinc-900"
-                : "border-zinc-600 text-zinc-200"
-            }
+            className={tabClass(kind === "image")}
           >
             Image
           </Button>
           <Button
-            variant={kind === "video" ? "default" : "outline"}
+            variant="ghost"
             onClick={() => setKind("video")}
-            className={
-              kind === "video"
-                ? "bg-amber-500 text-zinc-900"
-                : "border-zinc-600 text-zinc-200"
-            }
+            className={tabClass(kind === "video")}
           >
             Video
           </Button>
           <Button
-            variant={model === "nanobanana" ? "default" : "outline"}
+            variant="ghost"
             onClick={() => setModel("nanobanana")}
-            className={
-              model === "nanobanana"
-                ? "bg-teal-500 text-zinc-900"
-                : "border-zinc-600 text-zinc-200"
-            }
+            className={tabClass(model === "nanobanana")}
           >
             NanoBanana
           </Button>
           <Button
-            variant={model === "gemini_pro" ? "default" : "outline"}
+            variant="ghost"
             onClick={() => setModel("gemini_pro")}
-            className={
-              model === "gemini_pro"
-                ? "bg-violet-500 text-zinc-100"
-                : "border-zinc-600 text-zinc-200"
-            }
+            className={tabClass(model === "gemini_pro")}
           >
             Gemini Pro
           </Button>
-          <Button
-            onClick={generate}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white"
-          >
+          <Button onClick={generate} className={actionClass}>
             {busyId === "generate" ? (
               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
             ) : null}
@@ -282,7 +273,7 @@ export default function GoViralPage() {
                     <Button
                       disabled={!!isBusy}
                       onClick={() => act(item.jobId, "approve")}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                      className={actionClass}
                     >
                       <CheckCircle2 className="w-4 h-4 mr-1" />
                       Approve
@@ -290,7 +281,7 @@ export default function GoViralPage() {
                     <Button
                       disabled={!!isBusy}
                       onClick={() => act(item.jobId, "reject")}
-                      className="bg-red-600 hover:bg-red-500 text-white"
+                      className={secondaryClass}
                     >
                       <XCircle className="w-4 h-4 mr-1" />
                       Reject
@@ -300,8 +291,8 @@ export default function GoViralPage() {
                       onClick={() =>
                         act(item.jobId, "regenerate", { model: asset.model })
                       }
-                      variant="outline"
-                      className="border-zinc-600 text-zinc-200"
+                      variant="ghost"
+                      className={secondaryClass}
                     >
                       <RefreshCw className="w-4 h-4 mr-1" />
                       Regenerate
@@ -315,8 +306,8 @@ export default function GoViralPage() {
                           leads: 3,
                         })
                       }
-                      variant="outline"
-                      className="border-zinc-600 text-zinc-200"
+                      variant="ghost"
+                      className={secondaryClass}
                     >
                       Log Performance
                     </Button>

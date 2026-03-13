@@ -38,7 +38,7 @@ async function ensureViralEmployee(ctx: GoViralContext) {
     employee = await db.aIEmployee.create({
       data: {
         userId: ctx.userId,
-        name: "OpenClaw Viral Director",
+        name: "Nexrel AI Viral Director",
         type: "COMMUNICATION_SPECIALIST",
         description:
           "Runs Go Viral mandate with performance-based creative iteration.",
@@ -77,46 +77,149 @@ function computeCaption(input: GenerateInput, hook: string) {
 }
 
 async function externalGenerate(
+  ctx: GoViralContext,
   model: GoViralModel,
   kind: GoViralKind,
   prompt: string,
 ): Promise<{ url: string; providerStatus: string }> {
-  const isImage = kind === "image";
-  if (model === "nanobanana" && process.env.NANOBANANA_GENERATE_URL) {
-    try {
-      const res = await fetch(process.env.NANOBANANA_GENERATE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, kind }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.url) {
-        return { url: String(data.url), providerStatus: "live" };
-      }
-    } catch {}
+  const db = getCrmDb(ctx);
+
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+  const [recentCalls, recentFailures] = await Promise.all([
+    db.auditLog.count({
+      where: {
+        userId: ctx.userId,
+        entityType: "GO_VIRAL_PROVIDER_CALL",
+        createdAt: { gte: oneMinuteAgo },
+      },
+    }),
+    db.auditLog.count({
+      where: {
+        userId: ctx.userId,
+        entityType: "GO_VIRAL_PROVIDER_FAILURE",
+        createdAt: { gte: fiveMinutesAgo },
+      },
+    }),
+  ]);
+
+  if (recentCalls >= 20) {
+    throw new Error("Go Viral rate limit reached. Retry in a minute.");
   }
 
-  if (model === "gemini_pro" && process.env.GEMINI_PRO_GENERATE_URL) {
-    try {
-      const res = await fetch(process.env.GEMINI_PRO_GENERATE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, kind }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.url) {
-        return { url: String(data.url), providerStatus: "live" };
-      }
-    } catch {}
+  if (recentFailures >= 10) {
+    throw new Error(
+      "Go Viral provider circuit open due to repeated failures. Retry shortly.",
+    );
   }
 
-  const seed = crypto.randomUUID();
-  return {
-    url: isImage
-      ? `https://picsum.photos/seed/${seed}/1024/1024`
-      : `https://picsum.photos/seed/${seed}/1280/720`,
-    providerStatus: "draft_placeholder",
+  const endpoint =
+    model === "nanobanana"
+      ? process.env.NANOBANANA_GENERATE_URL
+      : process.env.GEMINI_PRO_GENERATE_URL;
+
+  if (!endpoint) {
+    throw new Error(
+      model === "nanobanana"
+        ? "Missing NANOBANANA_GENERATE_URL for live generation"
+        : "Missing GEMINI_PRO_GENERATE_URL for live generation",
+    );
+  }
+
+  const apiKey =
+    model === "nanobanana"
+      ? process.env.NANOBANANA_API_KEY
+      : process.env.GEMINI_PRO_API_KEY;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
   };
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const maxAttempts = 3;
+  let lastError = "Unknown provider error";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ prompt, kind }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const error =
+          data?.error || `Provider request failed with status ${res.status}`;
+        lastError = error;
+        if (res.status < 500 && res.status !== 429) break;
+      } else {
+        const url = typeof data?.url === "string" ? data.url : "";
+        if (!url) {
+          lastError = "Provider response missing asset URL";
+        } else {
+          await db.auditLog.create({
+            data: {
+              userId: ctx.userId,
+              action: "SETTINGS_MODIFIED",
+              severity: "LOW",
+              entityType: "GO_VIRAL_PROVIDER_CALL",
+              entityId: crypto.randomUUID(),
+              metadata: {
+                model,
+                kind,
+                attempt,
+                providerStatus: "live",
+                endpoint,
+              },
+              success: true,
+            },
+          });
+          return { url, providerStatus: "live" };
+        }
+      }
+    } catch (error: any) {
+      clearTimeout(timeout);
+      lastError =
+        error?.name === "AbortError"
+          ? "Provider timeout"
+          : String(error?.message || error);
+    }
+
+    if (attempt < maxAttempts) {
+      const backoff =
+        400 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 150);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+
+  await db.auditLog.create({
+    data: {
+      userId: ctx.userId,
+      action: "SETTINGS_MODIFIED",
+      severity: "MEDIUM",
+      entityType: "GO_VIRAL_PROVIDER_FAILURE",
+      entityId: crypto.randomUUID(),
+      metadata: {
+        model,
+        kind,
+        endpoint,
+        error: lastError,
+      },
+      success: false,
+      errorMessage: lastError,
+    },
+  });
+
+  throw new Error(lastError);
 }
 
 export async function buildGoViralInsights(ctx: GoViralContext) {
@@ -188,7 +291,7 @@ export async function generateGoViralAsset(
   const prompt = buildPrompt(input, insights);
   const hook = computeHook(input, insights);
   const caption = computeCaption(input, hook);
-  const external = await externalGenerate(input.model, input.kind, prompt);
+  const external = await externalGenerate(ctx, input.model, input.kind, prompt);
 
   const created = await db.aIJob.create({
     data: {
