@@ -2,6 +2,7 @@ import { AIJobStatus, AIEmployeeType } from "@prisma/client";
 import { getCrmDb } from "@/lib/dal";
 import { createHash, randomBytes } from "crypto";
 import {
+  buildRecoveryPlan,
   classifyBlocker,
   classifyWorkflowTier,
   parseCommandEvidence,
@@ -1657,10 +1658,21 @@ export async function workerAckCommand(
       }
 
       const attempt = Number(command.attempt || 1);
-      const maxAttempts = Number(command.maxAttempts || 2);
+      const workflowTier =
+        (output?.memory?.workflowTier as "tier_1" | "tier_2" | "tier_3") ||
+        "tier_3";
+      const recoveryPlan = buildRecoveryPlan(
+        (failureType as any) || "unknown",
+        workflowTier,
+      );
+      const maxAttempts = Math.max(
+        Number(command.maxAttempts || 2),
+        Number(recoveryPlan.maxRetries || 0) + 1,
+      );
       if (
         String(command.source || "ai_plan") === "ai_plan" &&
-        attempt < maxAttempts
+        attempt < maxAttempts &&
+        recoveryPlan.strategy !== "escalate"
       ) {
         const fallbackMeta = { ...(command.meta || {}) };
         let fallbackActionType = command.actionType;
@@ -1688,6 +1700,7 @@ export async function workerAckCommand(
             ...fallbackMeta,
             retryBudget: maxAttempts,
             priorFailureType: failureType || "unknown",
+            recoveryPlan,
             strategyHints: Array.isArray(
               output?.memory?.historical?.strategyHints,
             )

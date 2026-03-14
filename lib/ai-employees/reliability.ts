@@ -121,3 +121,68 @@ export function parseCommandEvidence(
     return null;
   }
 }
+
+export type RecoveryPlan = {
+  strategy: "retry" | "replan" | "escalate";
+  maxRetries: number;
+  reason: string;
+};
+
+export function buildRecoveryPlan(
+  blocker: BlockerType,
+  tier: WorkflowTier,
+): RecoveryPlan {
+  if (shouldEscalateToHuman(blocker)) {
+    return {
+      strategy: "escalate",
+      maxRetries: 0,
+      reason: "Human-required blocker",
+    };
+  }
+
+  if (blocker === "invalid_url" || blocker === "missing_app") {
+    return {
+      strategy: "replan",
+      maxRetries: tier === "tier_1" ? 2 : 1,
+      reason: "Input or environment mismatch",
+    };
+  }
+
+  if (blocker === "selector_drift" || blocker === "modal_trap") {
+    return {
+      strategy: "retry",
+      maxRetries: tier === "tier_1" ? 3 : 2,
+      reason: "Likely transient UI variance",
+    };
+  }
+
+  if (blocker === "network_timeout") {
+    return {
+      strategy: "retry",
+      maxRetries: tier === "tier_3" ? 1 : 2,
+      reason: "Likely transient network latency",
+    };
+  }
+
+  return {
+    strategy: "replan",
+    maxRetries: tier === "tier_1" ? 2 : 1,
+    reason: "Unknown blocker fallback",
+  };
+}
+
+export type ReliabilityMetrics = {
+  successRate: number;
+  silentCompletionRate: number;
+  deterministicBlockerCoverage: number;
+  unknownEscalationSafetyRate: number;
+};
+
+export function meetsReliabilityGate(metrics: ReliabilityMetrics) {
+  return (
+    metrics.successRate >= 0.95 &&
+    metrics.silentCompletionRate <= 0 &&
+    metrics.deterministicBlockerCoverage >= 0.98 &&
+    metrics.unknownEscalationSafetyRate >= 0.99
+  );
+}

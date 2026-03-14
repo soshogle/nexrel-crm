@@ -1,6 +1,8 @@
 import {
+  buildRecoveryPlan,
   classifyBlocker,
   classifyWorkflowTier,
+  meetsReliabilityGate,
   shouldEscalateToHuman,
 } from "@/lib/ai-employees/reliability";
 
@@ -70,6 +72,32 @@ const blockerCases: Array<{
   },
 ];
 
+const recoveryCases: Array<{
+  id: string;
+  blocker: ReturnType<typeof classifyBlocker>;
+  tier: "tier_1" | "tier_2" | "tier_3";
+  strategy: "retry" | "replan" | "escalate";
+}> = [
+  {
+    id: "selector_drift_t1",
+    blocker: "selector_drift",
+    tier: "tier_1",
+    strategy: "retry",
+  },
+  {
+    id: "invalid_url_t2",
+    blocker: "invalid_url",
+    tier: "tier_2",
+    strategy: "replan",
+  },
+  {
+    id: "captcha_t1",
+    blocker: "captcha",
+    tier: "tier_1",
+    strategy: "escalate",
+  },
+];
+
 let failures = 0;
 
 for (const test of workflowCases) {
@@ -94,6 +122,27 @@ for (const test of blockerCases) {
       `[blocker:${test.id}] expected (${test.expected}, escalate=${test.escalate}), got (${actual}, escalate=${escalate})`,
     );
   }
+}
+
+for (const test of recoveryCases) {
+  const plan = buildRecoveryPlan(test.blocker, test.tier);
+  if (plan.strategy !== test.strategy) {
+    failures += 1;
+    console.error(
+      `[recovery:${test.id}] expected strategy ${test.strategy}, got ${plan.strategy}`,
+    );
+  }
+}
+
+const reliabilityGatePassed = meetsReliabilityGate({
+  successRate: 0.96,
+  silentCompletionRate: 0,
+  deterministicBlockerCoverage: 0.99,
+  unknownEscalationSafetyRate: 1,
+});
+if (!reliabilityGatePassed) {
+  failures += 1;
+  console.error("[gate] expected reliability gate to pass but it failed");
 }
 
 if (failures > 0) {
