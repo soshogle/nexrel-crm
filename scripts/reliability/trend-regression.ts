@@ -74,6 +74,29 @@ async function main() {
     );
   }
 
+  const outputDir = path.join(process.cwd(), "artifacts");
+  fs.mkdirSync(outputDir, { recursive: true });
+  const dbUrl = String(process.env.DATABASE_URL || "");
+  if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
+    const result = {
+      generatedAt: new Date().toISOString(),
+      windowDays: args.windowDays,
+      maxDrop: args.maxDrop,
+      minSamples: args.minSamples,
+      strict: args.strict,
+      current: { total: 0, successful: 0, successRate: 0 },
+      previous: { total: 0, successful: 0, successRate: 0 },
+      drop: 0,
+      pass: false,
+      note: "RELIABILITY_DATABASE_URL must be a postgres:// or postgresql:// connection string",
+    };
+    fs.writeFileSync(
+      path.join(outputDir, "reliability-trend-regression.json"),
+      JSON.stringify(result, null, 2),
+    );
+    throw new Error(result.note);
+  }
+
   const prisma = new PrismaClient();
 
   const now = Date.now();
@@ -124,8 +147,6 @@ async function main() {
       : `Insufficient samples current=${current.total}, previous=${previous.total}`,
   };
 
-  const outputDir = path.join(process.cwd(), "artifacts");
-  fs.mkdirSync(outputDir, { recursive: true });
   const outputFile = path.join(outputDir, "reliability-trend-regression.json");
   fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 

@@ -53,6 +53,31 @@ async function main() {
     );
   }
 
+  const outputDir = path.join(process.cwd(), "artifacts");
+  fs.mkdirSync(outputDir, { recursive: true });
+  const dbUrl = String(process.env.DATABASE_URL || "");
+  if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
+    const result = {
+      generatedAt: new Date().toISOString(),
+      windowDays: args.days,
+      targetSuccessRate: args.target,
+      minSamples: args.minSamples,
+      inScopeRuns: 0,
+      successfulRuns: 0,
+      failedRuns: 0,
+      successRate: 0,
+      pass: false,
+      notes:
+        "RELIABILITY_DATABASE_URL must be a postgres:// or postgresql:// connection string",
+      failedRunIds: [],
+    };
+    fs.writeFileSync(
+      path.join(outputDir, "reliability-live-run-kpis.json"),
+      JSON.stringify(result, null, 2),
+    );
+    throw new Error(result.notes);
+  }
+
   const prisma = new PrismaClient();
 
   const since = new Date(Date.now() - args.days * 24 * 60 * 60 * 1000);
@@ -113,8 +138,6 @@ async function main() {
     failedRunIds: failures.slice(0, 50).map((run) => run.id),
   };
 
-  const outputDir = path.join(process.cwd(), "artifacts");
-  fs.mkdirSync(outputDir, { recursive: true });
   const outputFile = path.join(outputDir, "reliability-live-run-kpis.json");
   fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 

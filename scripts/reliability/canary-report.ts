@@ -67,6 +67,34 @@ async function main() {
     );
   }
 
+  const artifactsDir = path.join(process.cwd(), "artifacts");
+  fs.mkdirSync(artifactsDir, { recursive: true });
+  const dbUrl = String(process.env.DATABASE_URL || "");
+  if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      sampleSize: args.sampleSize,
+      minSuccessRate: args.minSuccessRate,
+      strict: args.strict,
+      totalRuns: 0,
+      passedRuns: 0,
+      successRate: 0,
+      topBlockers: [{ blocker: "invalid_database_url", count: 1 }],
+      runs: [],
+      pass: false,
+      note: "RELIABILITY_DATABASE_URL must be a postgres:// or postgresql:// connection string",
+    };
+    fs.writeFileSync(
+      path.join(artifactsDir, "reliability-canary-report.json"),
+      JSON.stringify(report, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(artifactsDir, "reliability-canary-report.md"),
+      "# Canary Report\n\n- Pass: false\n- Top Blocker: invalid_database_url\n",
+    );
+    throw new Error(report.note);
+  }
+
   const prisma = new PrismaClient();
   const rows = await prisma.aIJob.findMany({
     where: {
@@ -112,8 +140,6 @@ async function main() {
     pass: runs.length === 0 ? !args.strict : successRate >= args.minSuccessRate,
   };
 
-  const artifactsDir = path.join(process.cwd(), "artifacts");
-  fs.mkdirSync(artifactsDir, { recursive: true });
   fs.writeFileSync(
     path.join(artifactsDir, "reliability-canary-report.json"),
     JSON.stringify(report, null, 2),
