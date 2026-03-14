@@ -34,6 +34,12 @@ jobs:
           DATABASE_URL: ${{ secrets.RELIABILITY_DATABASE_URL }}
         run: npm run reliability:kpis -- --days=7 --target=0.95 --min-samples=10 --strict=true
 
+      - name: Trend regression gate (week-over-week)
+        if: ${{ secrets.RELIABILITY_DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.RELIABILITY_DATABASE_URL }}
+        run: npm run reliability:trend -- --window-days=7 --max-drop=0.03 --min-samples=10 --strict=true
+
       - name: Build reliability summary
         if: always()
         run: npm run reliability:summary
@@ -52,6 +58,14 @@ jobs:
         with:
           name: reliability-live-run-kpis
           path: artifacts/reliability-live-run-kpis.json
+          if-no-files-found: ignore
+
+      - name: Upload trend regression artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-trend-regression
+          path: artifacts/reliability-trend-regression.json
           if-no-files-found: ignore
 
       - name: Upload reliability summary artifact

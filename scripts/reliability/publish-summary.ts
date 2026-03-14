@@ -25,6 +25,9 @@ async function main() {
   const kpis = readJson(
     path.join(artifactsDir, "reliability-live-run-kpis.json"),
   );
+  const trend = readJson(
+    path.join(artifactsDir, "reliability-trend-regression.json"),
+  );
 
   const lines: string[] = [];
   lines.push("# Reliability Summary");
@@ -68,6 +71,20 @@ async function main() {
     lines.push(`- Target: ${pct(kpis.targetSuccessRate)}`);
     lines.push(`- Pass: ${String(kpis.pass)}`);
     if (kpis.notes) lines.push(`- Notes: ${kpis.notes}`);
+  }
+
+  lines.push("");
+  lines.push("## Trend Regression");
+  if (!trend) {
+    lines.push("- No trend regression artifact found.");
+  } else {
+    lines.push(`- Window Days: ${trend.windowDays}`);
+    lines.push(`- Current Success Rate: ${pct(trend?.current?.successRate)}`);
+    lines.push(`- Previous Success Rate: ${pct(trend?.previous?.successRate)}`);
+    lines.push(`- Drop: ${pct(trend?.drop)}`);
+    lines.push(`- Max Allowed Drop: ${pct(trend?.maxDrop)}`);
+    lines.push(`- Pass: ${String(trend?.pass)}`);
+    if (trend?.note) lines.push(`- Notes: ${trend.note}`);
   }
 
   const outputFile = path.join(artifactsDir, "reliability-summary.md");
