@@ -27,3 +27,11 @@ jobs:
 
       - name: Reliability regression gate
         run: npm run reliability:gate
+
+      - name: Upload acceptance matrix artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-acceptance-matrix
+          path: artifacts/reliability-acceptance-matrix.json
+          if-no-files-found: ignore

@@ -103,7 +103,8 @@ export function shouldEscalateToHuman(blocker: BlockerType): boolean {
   return (
     blocker === "two_factor" ||
     blocker === "captcha" ||
-    blocker === "permission_denied"
+    blocker === "permission_denied" ||
+    blocker === "unknown"
   );
 }
 
@@ -161,6 +162,14 @@ export function buildRecoveryPlan(
       strategy: "retry",
       maxRetries: tier === "tier_3" ? 1 : 2,
       reason: "Likely transient network latency",
+    };
+  }
+
+  if (blocker === "unknown") {
+    return {
+      strategy: "escalate",
+      maxRetries: 0,
+      reason: "Unknown blocker safety escalation",
     };
   }
 

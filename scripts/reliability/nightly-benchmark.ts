@@ -71,6 +71,12 @@ const blockerCases: Array<{
     expected: "permission_denied",
     escalate: true,
   },
+  {
+    id: "unknown_error",
+    detail: "Something unexpected happened in runtime",
+    expected: "unknown",
+    escalate: true,
+  },
 ];
 
 const recoveryCases: Array<{
@@ -100,6 +106,9 @@ const recoveryCases: Array<{
 ];
 
 let failures = 0;
+let workflowPass = 0;
+let blockerPass = 0;
+let recoveryPass = 0;
 
 for (const test of workflowCases) {
   const actual = classifyWorkflowTier({
@@ -112,6 +121,7 @@ for (const test of workflowCases) {
       `[workflow:${test.id}] expected ${test.expectedTier}, got ${actual}`,
     );
   }
+  if (actual === test.expectedTier) workflowPass += 1;
 }
 
 for (const test of blockerCases) {
@@ -123,6 +133,7 @@ for (const test of blockerCases) {
       `[blocker:${test.id}] expected (${test.expected}, escalate=${test.escalate}), got (${actual}, escalate=${escalate})`,
     );
   }
+  if (actual === test.expected && escalate === test.escalate) blockerPass += 1;
 }
 
 for (const test of recoveryCases) {
@@ -133,13 +144,26 @@ for (const test of recoveryCases) {
       `[recovery:${test.id}] expected strategy ${test.strategy}, got ${plan.strategy}`,
     );
   }
+  if (plan.strategy === test.strategy) recoveryPass += 1;
 }
 
+const totalChecks =
+  workflowCases.length + blockerCases.length + recoveryCases.length;
+const passedChecks = workflowPass + blockerPass + recoveryPass;
+const deterministicBlockerCoverage =
+  blockerCases.length === 0 ? 1 : blockerPass / blockerCases.length;
+const unknownEscalationSafetyRate = (() => {
+  const unknown = blockerCases.filter((c) => c.expected === "unknown");
+  if (unknown.length === 0) return 1;
+  const safe = unknown.filter((c) => shouldEscalateToHuman(c.expected)).length;
+  return safe / unknown.length;
+})();
+
 const reliabilityGatePassed = meetsReliabilityGate({
-  successRate: 0.96,
+  successRate: passedChecks / Math.max(totalChecks, 1),
   silentCompletionRate: 0,
-  deterministicBlockerCoverage: 0.99,
-  unknownEscalationSafetyRate: 1,
+  deterministicBlockerCoverage,
+  unknownEscalationSafetyRate,
 });
 if (!reliabilityGatePassed) {
   failures += 1;
