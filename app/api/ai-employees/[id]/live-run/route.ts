@@ -41,6 +41,9 @@ export async function POST(
     const executionTarget = String(
       body?.executionTarget || "cloud_browser",
     ).toLowerCase();
+    const executionRuntime = String(
+      body?.executionRuntime || "openclaw",
+    ).toLowerCase();
 
     if (!goal) {
       return apiErrors.badRequest("goal is required");
@@ -53,6 +56,12 @@ export async function POST(
     if (!["cloud_browser", "owner_desktop"].includes(executionTarget)) {
       return apiErrors.badRequest(
         "executionTarget must be cloud_browser or owner_desktop",
+      );
+    }
+
+    if (!["openclaw", "legacy_worker"].includes(executionRuntime)) {
+      return apiErrors.badRequest(
+        "executionRuntime must be openclaw or legacy_worker",
       );
     }
 
@@ -71,6 +80,7 @@ export async function POST(
       targetApps,
       trustMode: trustMode as any,
       autonomyLevel: autonomyLevel as any,
+      executionRuntime: executionRuntime as any,
       executionTarget: executionTarget as any,
       deviceId: body?.deviceId ? String(body.deviceId) : null,
       employeeType: body?.employeeType ? String(body.employeeType) : undefined,

@@ -477,6 +477,21 @@ class WorkerEngine extends EventEmitter {
     return this.executeBrowserCommand(command);
   }
 
+  formatCommandDetail(command, detail, status = "completed") {
+    const runtime = String(command?.meta?.executionRuntime || "legacy_worker");
+    const objective = String(command?.meta?.goal || "").slice(0, 240);
+    const evidence = {
+      status,
+      runtime,
+      actionType: command?.actionType,
+      timestamp: new Date().toISOString(),
+      pageUrl: this.page && !this.page.isClosed() ? this.page.url() : null,
+      objective,
+      detail: String(detail || "").slice(0, 500),
+    };
+    return JSON.stringify(evidence);
+  }
+
   async sendHeartbeat() {
     await this.ensurePageReady();
     let frameImageDataUrl = undefined;
@@ -587,25 +602,37 @@ class WorkerEngine extends EventEmitter {
             commandId: command.commandId,
           });
           const detail = await this.executeCommand(command);
+          const formattedDetail = this.formatCommandDetail(
+            command,
+            detail,
+            "completed",
+          );
           await this.postBridge({
             action: "ack_command",
             commandId: command.commandId,
             status: "completed",
-            detail,
+            detail: formattedDetail,
           });
-          this.log("info", `Completed ${command.commandId}`, { detail });
+          this.log("info", `Completed ${command.commandId}`, {
+            detail: formattedDetail,
+          });
         } catch (error) {
           if (error?.code === "UNAUTHORIZED") {
             await this.handleBridgeFailure("Command execution", error);
             throw error;
           }
           const detail = error?.message || "Command execution failed";
+          const formattedDetail = this.formatCommandDetail(
+            command,
+            detail,
+            "failed",
+          );
           try {
             await this.postBridge({
               action: "ack_command",
               commandId: command.commandId,
               status: "failed",
-              detail,
+              detail: formattedDetail,
             });
           } catch (ackError) {
             await this.handleBridgeFailure("Command acknowledge", ackError);
@@ -614,7 +641,9 @@ class WorkerEngine extends EventEmitter {
             });
             throw ackError;
           }
-          this.log("error", `Failed ${command.commandId}`, { detail });
+          this.log("error", `Failed ${command.commandId}`, {
+            detail: formattedDetail,
+          });
         }
       }
     } catch (error) {

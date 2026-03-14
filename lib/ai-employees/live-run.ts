@@ -8,6 +8,7 @@ type LiveRunContext = {
 };
 
 type ExecutionTarget = "cloud_browser" | "owner_desktop";
+type ExecutionRuntime = "openclaw" | "legacy_worker";
 type TrustMode = "crawl" | "walk" | "run";
 type AutonomyLevel =
   | "observe"
@@ -103,11 +104,17 @@ type LiveRunPayload = {
   targetApps: string[];
   trustMode: TrustMode;
   autonomyLevel?: AutonomyLevel;
+  executionRuntime?: ExecutionRuntime;
   executionTarget: ExecutionTarget;
   deviceId?: string | null;
   employeeType?: string;
   employeeName?: string;
 };
+
+function resolveExecutionRuntime(payload: LiveRunPayload): ExecutionRuntime {
+  if (payload.executionRuntime === "legacy_worker") return "legacy_worker";
+  return "openclaw";
+}
 
 function resolveAutonomyLevel(payload: LiveRunPayload): AutonomyLevel {
   if (payload.autonomyLevel) return payload.autonomyLevel;
@@ -291,6 +298,148 @@ function buildCalendarEventFromGoal(goal: string) {
   };
 }
 
+function buildObjectiveContract(
+  payload: LiveRunPayload,
+  successCriteria: string[],
+) {
+  return {
+    objective: payload.goal,
+    targetApps: payload.targetApps,
+    verification: successCriteria,
+    constraints: {
+      obeyPolicies: true,
+      requireEvidence: true,
+      avoidIrreversibleActionsWithoutApproval: true,
+    },
+  };
+}
+
+function extractAllowedDomains(payload: LiveRunPayload): string[] {
+  const values = [payload.goal, ...(payload.targetApps || [])]
+    .map((v) => String(v || ""))
+    .filter(Boolean);
+  const domains = new Set<string>();
+
+  for (const value of values) {
+    const matches = value.match(/https?:\/\/[^\s,]+/gi) || [];
+    for (const url of matches) {
+      try {
+        domains.add(new URL(url).hostname.toLowerCase());
+      } catch {}
+    }
+
+    if (/\bgoogle\s*calendar\b/i.test(value))
+      domains.add("calendar.google.com");
+    if (/\bgmail\b/i.test(value)) domains.add("mail.google.com");
+    if (/\bspotify\b/i.test(value)) domains.add("open.spotify.com");
+  }
+
+  return Array.from(domains);
+}
+
+function buildControlPolicy(payload: LiveRunPayload, autonomy: AutonomyLevel) {
+  return {
+    allowedActionTypes: [
+      "open_app",
+      "navigate",
+      "click",
+      "type",
+      "extract",
+      "verify",
+    ],
+    allowRunCommand: false,
+    allowedDomains: extractAllowedDomains(payload),
+    allowedApps: (payload.targetApps || []).map((v) => String(v || "").trim()),
+    requireApprovalForOutOfPolicy: true,
+    autonomy,
+  };
+}
+
+function getPolicy(output: any, input: LiveRunPayload) {
+  if (output?.memory?.controlPlane?.policy)
+    return output.memory.controlPlane.policy;
+  return buildControlPolicy(input, resolveAutonomyLevel(input));
+}
+
+function parseHostname(target?: string) {
+  const raw = String(target || "").trim();
+  if (!raw) return "";
+  try {
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return new URL(normalized).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function assessPolicy(
+  policy: any,
+  command: Pick<WorkerCommand, "actionType" | "target" | "value">,
+) {
+  const allowedActionTypes = Array.isArray(policy?.allowedActionTypes)
+    ? policy.allowedActionTypes
+    : [];
+  if (!allowedActionTypes.includes(command.actionType)) {
+    return {
+      allowed: false,
+      reason: `Action ${command.actionType} is outside current policy`,
+    };
+  }
+
+  if (command.actionType === "run_command" && !policy?.allowRunCommand) {
+    return {
+      allowed: false,
+      reason: "Local shell commands are blocked by policy",
+    };
+  }
+
+  if (command.actionType === "navigate") {
+    const allowedDomains = Array.isArray(policy?.allowedDomains)
+      ? policy.allowedDomains.map((v: string) => String(v).toLowerCase())
+      : [];
+    if (allowedDomains.length > 0) {
+      const host = parseHostname(command.target || command.value);
+      if (
+        host &&
+        !allowedDomains.some((domain: string) => host.endsWith(domain))
+      ) {
+        return {
+          allowed: false,
+          reason: `Navigation domain ${host} is outside allowed scope`,
+        };
+      }
+    }
+  }
+
+  if (command.actionType === "open_app") {
+    const allowedApps = Array.isArray(policy?.allowedApps)
+      ? policy.allowedApps
+          .map((v: string) =>
+            String(v || "")
+              .trim()
+              .toLowerCase(),
+          )
+          .filter(Boolean)
+      : [];
+    if (allowedApps.length > 0) {
+      const app = String(command.target || command.value || "")
+        .trim()
+        .toLowerCase();
+      if (
+        app &&
+        !allowedApps.some((allowed: string) => app.includes(allowed))
+      ) {
+        return {
+          allowed: false,
+          reason: `App ${command.target || command.value || "unknown"} is outside allowed app scope`,
+        };
+      }
+    }
+  }
+
+  return { allowed: true };
+}
+
 function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
   const appName = inferAppName(payload);
   const openAppOnly = isOpenAppOnlyGoal(payload.goal);
@@ -433,6 +582,9 @@ function getInitialOutput(payload: LiveRunPayload) {
   const appName = inferAppName(payload);
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
   const autonomyLevel = resolveAutonomyLevel(payload);
+  const executionRuntime = resolveExecutionRuntime(payload);
+  const objectiveContract = buildObjectiveContract(payload, successCriteria);
+  const policy = buildControlPolicy(payload, autonomyLevel);
   const events: LiveRunEvent[] = [
     {
       id: crypto.randomUUID(),
@@ -462,12 +614,24 @@ function getInitialOutput(payload: LiveRunPayload) {
     memory: {
       missionGoal: payload.goal,
       autonomyLevel,
+      executionRuntime,
+      objectiveContract,
+      controlPlane: {
+        auth: true,
+        policies: true,
+        audit: true,
+        verification: true,
+        policy,
+      },
       successCriteria,
       timeline: [] as Array<{ at: string; note: string; kind: string }>,
       blockers: [] as Array<{ at: string; blocker: string; detail?: string }>,
       replans: [] as Array<{ at: string; reason: string; action: string }>,
     },
-    framePreview: "Planner initialized. Nexrel AI building execution plan.",
+    framePreview:
+      executionRuntime === "openclaw"
+        ? "OpenClaw runtime initialized. Building autonomous execution plan."
+        : "Planner initialized. Nexrel AI building execution plan.",
   };
 }
 
@@ -615,8 +779,12 @@ export async function startLiveRun(
   payload: LiveRunPayload,
 ) {
   const db = getCrmDb(ctx);
-  const employee = await resolveEmployee(ctx, employeeRef, payload);
-  const output = getInitialOutput(payload);
+  const normalizedPayload: LiveRunPayload = {
+    ...payload,
+    executionRuntime: resolveExecutionRuntime(payload),
+  };
+  const employee = await resolveEmployee(ctx, employeeRef, normalizedPayload);
+  const output = getInitialOutput(normalizedPayload);
 
   const job = await db.aIJob.create({
     data: {
@@ -628,7 +796,7 @@ export async function startLiveRun(
       progress: 5,
       startedAt: new Date(),
       input: {
-        ...payload,
+        ...normalizedPayload,
         employeeRef,
         missionType: "nexrel_ai_live_run",
       },
@@ -647,7 +815,7 @@ export async function startLiveRun(
 
   await logRunEvent(ctx, job.id, output.events[0]);
 
-  if (payload.executionTarget === "owner_desktop") {
+  if (normalizedPayload.executionTarget === "owner_desktop") {
     const workerToken = await issueWorkerTokenForSession({
       ctx,
       sessionId: job.id,
@@ -911,6 +1079,40 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           c.status !== "failed",
       );
       if (!hasCommand) {
+        const policy = getPolicy(
+          output,
+          (session.input || {}) as LiveRunPayload,
+        );
+        const policyCheck = assessPolicy(policy, {
+          actionType: currentStep.actionType,
+          target: currentStep.target,
+          value: currentStep.value,
+        });
+        if (!policyCheck.allowed) {
+          currentStep.status = "awaiting_approval";
+          output.currentStepId = currentStep.id;
+          output.sessionState = "awaiting_approval";
+          output.framePreview = `Policy check required: ${policyCheck.reason}`;
+          output.steps = steps;
+          const policyEvent: LiveRunEvent = {
+            id: crypto.randomUUID(),
+            type: "approval_required",
+            message: `Policy approval required: ${policyCheck.reason}`,
+            createdAt: new Date().toISOString(),
+          };
+          const blocked = appendMemoryNote(appendEvent(output, policyEvent), {
+            kind: "policy_gate",
+            note: policyCheck.reason || "Policy requires approval",
+            blocker: "policy",
+          });
+          await db.aIJob.update({
+            where: { id: session.id },
+            data: { output: blocked, status: AIJobStatus.RUNNING },
+          });
+          await logRunEvent(ctx, session.id, policyEvent);
+          return getLiveRun(ctx, session.id);
+        }
+
         const command: WorkerCommand = {
           commandId: crypto.randomUUID(),
           stepId: currentStep.id,
@@ -927,7 +1129,22 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           ),
           meta: {
             ...(currentStep.meta || {}),
+            executionRuntime:
+              (output?.memory?.executionRuntime as ExecutionRuntime) ||
+              resolveExecutionRuntime((session.input || {}) as LiveRunPayload),
+            autonomyLevel:
+              (output?.memory?.autonomyLevel as AutonomyLevel) ||
+              resolveAutonomyLevel((session.input || {}) as LiveRunPayload),
             goal: String((session.input as any)?.goal || ""),
+            objectiveContract:
+              output?.memory?.objectiveContract ||
+              buildObjectiveContract(
+                (session.input || {}) as LiveRunPayload,
+                Array.isArray(output?.memory?.successCriteria)
+                  ? output.memory.successCriteria
+                  : [],
+              ),
+            policy,
             successCriteria: Array.isArray(output?.memory?.successCriteria)
               ? output.memory.successCriteria
               : [],
@@ -1350,6 +1567,15 @@ export async function enqueueWorkerCommand(
   if (!session) throw new Error("Live run session not found");
 
   const output = { ...((session.output || {}) as any) };
+  const policy = getPolicy(output, (session.input || {}) as LiveRunPayload);
+  const policyCheck = assessPolicy(policy, {
+    actionType: input.actionType,
+    target: input.target,
+    value: input.value,
+  });
+  if (!policyCheck.allowed) {
+    throw new Error(policyCheck.reason || "Command blocked by policy");
+  }
   const commands: WorkerCommand[] = Array.isArray(output?.worker?.commands)
     ? [...output.worker.commands]
     : [];
@@ -1363,7 +1589,13 @@ export async function enqueueWorkerCommand(
     value: input.value,
     status: "queued",
     source: input.source || "owner_remote",
-    meta: input.meta || undefined,
+    meta: {
+      ...(input.meta || {}),
+      policy,
+      executionRuntime:
+        (output?.memory?.executionRuntime as ExecutionRuntime) || "openclaw",
+      objectiveContract: output?.memory?.objectiveContract || undefined,
+    },
     attempt: 1,
     maxAttempts: 1,
     createdAt: now,
