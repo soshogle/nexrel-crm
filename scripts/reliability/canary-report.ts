@@ -5,6 +5,7 @@ import {
   classifyBlocker,
   parseCommandEvidence,
 } from "@/lib/ai-employees/reliability";
+import { resolveReliabilityDbUrl } from "./db-url";
 
 type Args = {
   sampleSize: number;
@@ -69,7 +70,7 @@ async function main() {
 
   const artifactsDir = path.join(process.cwd(), "artifacts");
   fs.mkdirSync(artifactsDir, { recursive: true });
-  const dbUrl = String(process.env.DATABASE_URL || "");
+  const dbUrl = resolveReliabilityDbUrl(process.env.DATABASE_URL);
   if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
     const report = {
       generatedAt: new Date().toISOString(),
@@ -94,6 +95,7 @@ async function main() {
     );
     throw new Error(report.note);
   }
+  process.env.DATABASE_URL = dbUrl;
 
   const prisma = new PrismaClient();
   const rows = await prisma.aIJob.findMany({

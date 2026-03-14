@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
+import { resolveReliabilityDbUrl } from "./db-url";
 
 type Args = {
   windowDays: number;
@@ -76,7 +77,7 @@ async function main() {
 
   const outputDir = path.join(process.cwd(), "artifacts");
   fs.mkdirSync(outputDir, { recursive: true });
-  const dbUrl = String(process.env.DATABASE_URL || "");
+  const dbUrl = resolveReliabilityDbUrl(process.env.DATABASE_URL);
   if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
     const result = {
       generatedAt: new Date().toISOString(),
@@ -96,6 +97,7 @@ async function main() {
     );
     throw new Error(result.note);
   }
+  process.env.DATABASE_URL = dbUrl;
 
   const prisma = new PrismaClient();
 
