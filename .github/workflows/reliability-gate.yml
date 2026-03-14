@@ -34,6 +34,10 @@ jobs:
           DATABASE_URL: ${{ secrets.RELIABILITY_DATABASE_URL }}
         run: npm run reliability:kpis -- --days=7 --target=0.95 --min-samples=10 --strict=true
 
+      - name: Build reliability summary
+        if: always()
+        run: npm run reliability:summary
+
       - name: Upload acceptance matrix artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,4 +52,12 @@ jobs:
         with:
           name: reliability-live-run-kpis
           path: artifacts/reliability-live-run-kpis.json
+          if-no-files-found: ignore
+
+      - name: Upload reliability summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-summary
+          path: artifacts/reliability-summary.md
           if-no-files-found: ignore

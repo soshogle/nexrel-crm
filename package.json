@@ -67,6 +67,7 @@
     "reliability:nightly": "tsx scripts/reliability/nightly-benchmark.ts",
     "reliability:matrix": "tsx scripts/reliability/acceptance-matrix.ts",
     "reliability:kpis": "tsx scripts/reliability/live-run-kpis.ts",
+    "reliability:summary": "tsx scripts/reliability/publish-summary.ts",
     "reliability:gate": "npm run typecheck && npm run reliability:nightly && npm run reliability:matrix",
     "tenancy:attestation:weekly": "tsx scripts/tenancy/generate-tenant-db-mapping-attestation.ts",
     "tenancy:migrate-existing-owners": "tsx scripts/tenancy/migrate-existing-owners-to-dedicated-db.ts"

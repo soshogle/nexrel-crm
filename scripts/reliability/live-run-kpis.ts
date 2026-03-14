@@ -43,6 +43,16 @@ function hasOutcomeEvidence(output: any): boolean {
 
 async function main() {
   const args = parseArgs();
+  if (!process.env.DATABASE_URL && process.env.RELIABILITY_DATABASE_URL) {
+    process.env.DATABASE_URL = process.env.RELIABILITY_DATABASE_URL;
+  }
+
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL is required for reliability:kpis (or set RELIABILITY_DATABASE_URL)",
+    );
+  }
+
   const prisma = new PrismaClient();
 
   const since = new Date(Date.now() - args.days * 24 * 60 * 60 * 1000);
