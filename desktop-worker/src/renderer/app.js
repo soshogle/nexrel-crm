@@ -135,6 +135,7 @@ function applyConnectionCode(raw) {
   sessionIdInput.value = parsed.sessionId;
   userIdInput.value = parsed.userId;
   tokenInput.value = parsed.token;
+  headedInput.checked = false;
   appendLog(
     "Connection code applied",
     `${parsed.baseUrl} · ${parsed.sessionId}`,

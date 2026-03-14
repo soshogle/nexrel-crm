@@ -45,7 +45,7 @@ export function LiveRunDialog({
   const [trustMode, setTrustMode] = useState<"crawl" | "walk" | "run">("crawl");
   const [autonomyLevel, setAutonomyLevel] = useState<
     "observe" | "assist" | "autonomous_low_risk" | "autonomous_full"
-  >("observe");
+  >("autonomous_low_risk");
   const [executionTarget, setExecutionTarget] = useState<
     "cloud_browser" | "owner_desktop"
   >("cloud_browser");

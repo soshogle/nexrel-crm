@@ -68,6 +68,7 @@ class WorkerEngine extends EventEmitter {
     this.cachedFrameImageDataUrl = null;
     this.lastDesktopCaptureWarnAt = 0;
     this.preferDesktopCapture = false;
+    this.desktopCaptureBlocked = false;
   }
 
   log(level, message, meta = null) {
@@ -132,6 +133,15 @@ class WorkerEngine extends EventEmitter {
       if (!bytes || bytes.length === 0) return null;
       return `data:image/jpeg;base64,${bytes.toString("base64")}`;
     } catch (error) {
+      const message = error?.message || String(error);
+      if (
+        /not permitted|not authorized|permission|operation not permitted/i.test(
+          message,
+        )
+      ) {
+        this.desktopCaptureBlocked = true;
+        this.preferDesktopCapture = false;
+      }
       const now = Date.now();
       if (now - this.lastDesktopCaptureWarnAt > 30000) {
         this.lastDesktopCaptureWarnAt = now;
@@ -139,7 +149,7 @@ class WorkerEngine extends EventEmitter {
           "warn",
           "Desktop capture unavailable, falling back to browser frame",
           {
-            error: error?.message || String(error),
+            error: message,
           },
         );
       }
@@ -473,6 +483,7 @@ class WorkerEngine extends EventEmitter {
 
     const now = Date.now();
     const shouldCaptureDesktop =
+      !this.desktopCaptureBlocked &&
       now - this.lastDesktopCaptureAt >= this.getDesktopCaptureInterval();
     if (shouldCaptureDesktop) {
       this.lastDesktopCaptureAt = now;
@@ -494,7 +505,11 @@ class WorkerEngine extends EventEmitter {
       frameImageDataUrl = this.cachedFrameImageDataUrl;
     }
 
-    if (!frameImageDataUrl && this.page && !this.preferDesktopCapture) {
+    if (
+      !frameImageDataUrl &&
+      this.page &&
+      (!this.preferDesktopCapture || this.desktopCaptureBlocked)
+    ) {
       try {
         const shot = await this.page.screenshot({
           type: "jpeg",
@@ -682,6 +697,7 @@ class WorkerEngine extends EventEmitter {
     this.liveBoost = false;
     this.burstUntil = 0;
     this.preferDesktopCapture = os.platform() === "darwin";
+    this.desktopCaptureBlocked = false;
 
     this.browser = await this.launchBrowser(config.headed);
     this.context = await this.browser.newContext({
