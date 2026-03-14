@@ -9,6 +9,10 @@ import {
   parseCommandEvidence,
   shouldEscalateToHuman,
 } from "@/lib/ai-employees/reliability";
+import {
+  buildCommandEnvelope,
+  type CommandRiskTier,
+} from "@/lib/ai-employees/command-envelope";
 
 type LiveRunContext = {
   userId: string;
@@ -72,6 +76,7 @@ type LiveRunEvent = {
     | "step_completed"
     | "paused"
     | "resumed"
+    | "interrupted"
     | "approval_required"
     | "approved"
     | "rejected"
@@ -88,6 +93,7 @@ type LiveRunEvent = {
     commandId?: string;
     source?: string;
   };
+  meta?: Record<string, any>;
 };
 
 type WorkerCommand = {
@@ -1090,7 +1096,14 @@ function appendEvent(output: any, event: LiveRunEvent) {
 export async function controlLiveRun(
   ctx: LiveRunContext,
   sessionId: string,
-  action: "pause" | "resume" | "approve" | "reject" | "takeover" | "stop",
+  action:
+    | "pause"
+    | "resume"
+    | "approve"
+    | "reject"
+    | "takeover"
+    | "interrupt"
+    | "stop",
 ) {
   const db = getCrmDb(ctx);
   const session = await getLiveRun(ctx, sessionId);
@@ -1118,11 +1131,22 @@ export async function controlLiveRun(
     };
   } else if (action === "resume") {
     output.paused = false;
+    output.takeover = false;
     state = "running";
     event = {
       id: crypto.randomUUID(),
       type: "resumed",
       message: "Owner resumed live run",
+      createdAt: new Date().toISOString(),
+    };
+  } else if (action === "interrupt") {
+    output.paused = true;
+    output.takeover = true;
+    state = "takeover";
+    event = {
+      id: crypto.randomUUID(),
+      type: "interrupted",
+      message: "Live run interrupted by owner",
       createdAt: new Date().toISOString(),
     };
   } else if (action === "takeover") {
@@ -1174,9 +1198,11 @@ export async function controlLiveRun(
   output.framePreview =
     action === "pause"
       ? "Session paused by owner"
-      : action === "stop"
-        ? "Session stopped"
-        : output.framePreview;
+      : action === "interrupt"
+        ? "Session interrupted. Owner takeover active."
+        : action === "stop"
+          ? "Session stopped"
+          : output.framePreview;
 
   const mergedOutput = appendEvent(output, event);
 
@@ -1896,6 +1922,10 @@ export async function enqueueWorkerCommand(
     value?: string;
     meta?: Record<string, any>;
     source?: "owner_remote";
+    idempotencyKey?: string;
+    correlationId?: string;
+    riskTier?: CommandRiskTier;
+    requiresApproval?: boolean;
   },
 ) {
   const db = getCrmDb(ctx);
@@ -1916,6 +1946,41 @@ export async function enqueueWorkerCommand(
     ? [...output.worker.commands]
     : [];
 
+  const correlationId = String(input.correlationId || crypto.randomUUID());
+  const idempotencyKey = String(input.idempotencyKey || "").trim();
+  const riskTier = (input.riskTier || "MEDIUM") as CommandRiskTier;
+  const requiresApproval = Boolean(input.requiresApproval);
+
+  if (idempotencyKey) {
+    const existing = commands.find(
+      (cmd) =>
+        String(cmd?.meta?.idempotencyKey || "") === idempotencyKey &&
+        cmd.actionType === input.actionType &&
+        cmd.target === input.target &&
+        cmd.value === input.value &&
+        cmd.status !== "failed",
+    );
+    if (existing) {
+      return {
+        commandId: existing.commandId,
+        deduped: true,
+        correlationId,
+      };
+    }
+  }
+
+  const envelope = buildCommandEnvelope({
+    sessionId,
+    userId: ctx.userId,
+    actionType: input.actionType,
+    target: input.target,
+    value: input.value,
+    riskTier,
+    requiresApproval,
+    correlationId,
+    idempotencyKey: idempotencyKey || undefined,
+  });
+
   const now = new Date().toISOString();
   const command: WorkerCommand = {
     commandId: crypto.randomUUID(),
@@ -1927,6 +1992,11 @@ export async function enqueueWorkerCommand(
     source: input.source || "owner_remote",
     meta: {
       ...(input.meta || {}),
+      correlationId,
+      idempotencyKey: idempotencyKey || undefined,
+      riskTier,
+      requiresApproval,
+      envelope,
       policy,
       executionRuntime:
         (output?.memory?.executionRuntime as ExecutionRuntime) || "openclaw",
@@ -1954,7 +2024,14 @@ export async function enqueueWorkerCommand(
     trace: {
       stepId: command.stepId,
       commandId: command.commandId,
-      source: "owner_remote",
+      source: "command_bus",
+    },
+    meta: {
+      correlationId,
+      idempotencyKey: idempotencyKey || null,
+      riskTier,
+      requiresApproval,
+      policyDecision: "allowed",
     },
   };
 
@@ -1964,7 +2041,7 @@ export async function enqueueWorkerCommand(
     data: { output: merged },
   });
   await logRunEvent(ctx, session.id, event);
-  return { commandId: command.commandId };
+  return { commandId: command.commandId, deduped: false, correlationId };
 }
 
 export async function setWorkerLiveBoost(

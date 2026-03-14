@@ -17,6 +17,7 @@ import {
   Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { buildAiTarget } from "@/lib/ai-employees/ai-targets";
 
 export default function LiveConsolePage() {
   const params = useParams<{ sessionId: string }>();
@@ -35,6 +36,11 @@ export default function LiveConsolePage() {
   const [remoteSelector, setRemoteSelector] = useState("");
   const [remoteText, setRemoteText] = useState("");
   const [sendingRemote, setSendingRemote] = useState(false);
+  const [agentFlags, setAgentFlags] = useState<{
+    visionFallback: boolean;
+    voiceDuplex: boolean;
+  }>({ visionFallback: false, voiceDuplex: false });
+  const [visionHint, setVisionHint] = useState("");
   const streamRef = useRef<EventSource | null>(null);
 
   const load = async () => {
@@ -57,6 +63,21 @@ export default function LiveConsolePage() {
   useEffect(() => {
     load();
   }, [sessionId]);
+
+  useEffect(() => {
+    fetch("/api/nexrel-ai/health")
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data: any) => {
+        const flags = data?.readiness?.agentSystem?.flags || {};
+        setAgentFlags({
+          visionFallback: flags.visionFallback === true,
+          voiceDuplex: flags.voiceDuplex === true,
+        });
+      })
+      .catch(() => {
+        setAgentFlags({ visionFallback: false, voiceDuplex: false });
+      });
+  }, []);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -271,11 +292,23 @@ export default function LiveConsolePage() {
   }) => {
     setSendingRemote(true);
     try {
+      const idempotencyKey =
+        [
+          sessionId,
+          payload.actionType,
+          payload.target || "",
+          payload.value || "",
+        ].join(":") || crypto.randomUUID();
+      const correlationId = crypto.randomUUID();
       const response = await fetch(
         `/api/ai-employees/live-run/${sessionId}/worker-command`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-idempotency-key": idempotencyKey,
+            "x-correlation-id": correlationId,
+          },
           body: JSON.stringify(payload),
         },
       );
@@ -283,10 +316,66 @@ export default function LiveConsolePage() {
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || "Failed to queue command");
       }
-      toast.success("Remote command queued");
+      toast.success(
+        data?.deduped ? "Duplicate command ignored" : "Remote command queued",
+      );
       await load();
     } catch (error: any) {
       toast.error(error?.message || "Failed to queue command");
+    } finally {
+      setSendingRemote(false);
+    }
+  };
+
+  const queueVisionFallbackCommand = async (payload: {
+    actionType: "click" | "type";
+    x: number;
+    y: number;
+    text?: string;
+  }) => {
+    setSendingRemote(true);
+    try {
+      const idempotencyKey = [
+        sessionId,
+        "vision",
+        payload.actionType,
+        String(payload.x),
+        String(payload.y),
+        payload.text || "",
+      ].join(":");
+      const correlationId = crypto.randomUUID();
+      const response = await fetch(
+        `/api/ai-employees/live-run/${sessionId}/vision-fallback`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-idempotency-key": idempotencyKey,
+            "x-correlation-id": correlationId,
+          },
+          body: JSON.stringify({
+            actionType: payload.actionType,
+            x: payload.x,
+            y: payload.y,
+            text: payload.text,
+            targetHint: visionHint || undefined,
+          }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success) {
+        throw new Error(
+          data?.error || "Failed to queue vision fallback command",
+        );
+      }
+      toast.success(
+        data?.deduped
+          ? "Vision command already queued"
+          : "Vision command queued",
+      );
+      await load();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to queue vision command");
     } finally {
       setSendingRemote(false);
     }
@@ -322,10 +411,15 @@ export default function LiveConsolePage() {
           <Button
             variant="outline"
             onClick={() => router.push("/dashboard/ai-employees")}
+            {...buildAiTarget("live_console.back")}
           >
             Back
           </Button>
-          <Button variant="outline" onClick={load}>
+          <Button
+            variant="outline"
+            onClick={load}
+            {...buildAiTarget("live_console.refresh")}
+          >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
@@ -392,6 +486,16 @@ export default function LiveConsolePage() {
                     {liveBoost ? "Live Boost On" : "Live Boost Off"}
                   </Badge>
                 ) : null}
+                {agentFlags.visionFallback ? (
+                  <Badge variant="outline" className="text-indigo-600">
+                    Vision Fallback Enabled
+                  </Badge>
+                ) : null}
+                {agentFlags.voiceDuplex ? (
+                  <Badge variant="outline" className="text-sky-600">
+                    Duplex Interrupt Enabled
+                  </Badge>
+                ) : null}
               </div>
               <div className="text-xs text-zinc-400">
                 Pending commands: {pendingCommands}
@@ -412,6 +516,7 @@ export default function LiveConsolePage() {
                     variant="outline"
                     disabled={mintingToken}
                     onClick={mintToken}
+                    {...buildAiTarget("live_console.worker.generate_token")}
                   >
                     <KeyRound className="w-3.5 h-3.5 mr-1" />
                     {mintingToken ? "Generating..." : "Generate Worker Token"}
@@ -421,6 +526,7 @@ export default function LiveConsolePage() {
                       size="sm"
                       variant="outline"
                       onClick={copyWorkerToken}
+                      {...buildAiTarget("live_console.worker.copy_token")}
                     >
                       <Copy className="w-3.5 h-3.5 mr-1" />
                       Copy Token
@@ -431,6 +537,9 @@ export default function LiveConsolePage() {
                       size="sm"
                       variant="outline"
                       onClick={copyConnectionCode}
+                      {...buildAiTarget(
+                        "live_console.worker.copy_connection_code",
+                      )}
                     >
                       <Copy className="w-3.5 h-3.5 mr-1" />
                       Copy Connection Code
@@ -440,6 +549,9 @@ export default function LiveConsolePage() {
                     size="sm"
                     variant="outline"
                     onClick={openDesktopWorkerBridge}
+                    {...buildAiTarget(
+                      "live_console.worker.open_desktop_bridge",
+                    )}
                   >
                     Open Desktop Worker
                   </Button>
@@ -486,6 +598,14 @@ export default function LiveConsolePage() {
                           const y = Math.round(
                             (event.clientY - rect.top) * scaleY,
                           );
+                          if (agentFlags.visionFallback) {
+                            queueVisionFallbackCommand({
+                              actionType: "click",
+                              x,
+                              y,
+                            });
+                            return;
+                          }
                           queueWorkerCommand({
                             actionType: "click",
                             meta: { x, y },
@@ -499,11 +619,29 @@ export default function LiveConsolePage() {
                     )}
                   </div>
                   <div className="grid md:grid-cols-[1fr_auto] gap-2">
+                    {agentFlags.visionFallback ? (
+                      <input
+                        value={visionHint}
+                        onChange={(e) => setVisionHint(e.target.value)}
+                        placeholder="Vision hint (optional)"
+                        className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                        {...buildAiTarget("live_console.vision.hint_input")}
+                      />
+                    ) : null}
+                  </div>
+                  {agentFlags.visionFallback ? (
+                    <div className="text-[11px] text-zinc-500">
+                      Vision mode is on. Clicking the frame queues a
+                      coordinate-based command with fallback metadata.
+                    </div>
+                  ) : null}
+                  <div className="grid md:grid-cols-[1fr_auto] gap-2">
                     <input
                       value={remoteUrl}
                       onChange={(e) => setRemoteUrl(e.target.value)}
                       placeholder="https://example.com"
                       className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                      {...buildAiTarget("live_console.remote.url_input")}
                     />
                     <Button
                       size="sm"
@@ -515,6 +653,7 @@ export default function LiveConsolePage() {
                           target: remoteUrl.trim(),
                         })
                       }
+                      {...buildAiTarget("live_console.remote.navigate")}
                     >
                       Navigate
                     </Button>
@@ -525,12 +664,14 @@ export default function LiveConsolePage() {
                       onChange={(e) => setRemoteSelector(e.target.value)}
                       placeholder="CSS selector"
                       className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                      {...buildAiTarget("live_console.remote.selector_input")}
                     />
                     <input
                       value={remoteText}
                       onChange={(e) => setRemoteText(e.target.value)}
                       placeholder="Text for type"
                       className="h-9 rounded border border-zinc-700 bg-zinc-900/60 px-2 text-xs"
+                      {...buildAiTarget("live_console.remote.text_input")}
                     />
                     <Button
                       size="sm"
@@ -542,6 +683,7 @@ export default function LiveConsolePage() {
                           target: remoteSelector.trim(),
                         })
                       }
+                      {...buildAiTarget("live_console.remote.click")}
                     >
                       Click
                     </Button>
@@ -556,6 +698,7 @@ export default function LiveConsolePage() {
                           value: remoteText,
                         })
                       }
+                      {...buildAiTarget("live_console.remote.type")}
                     >
                       Type
                     </Button>
@@ -575,6 +718,7 @@ export default function LiveConsolePage() {
               onClick={() => control("pause")}
               className="bg-amber-500 hover:bg-amber-400 text-zinc-900"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.pause")}
             >
               <Pause className="w-4 h-4 mr-1" />
               Pause
@@ -583,6 +727,7 @@ export default function LiveConsolePage() {
               onClick={() => control("resume")}
               className="bg-emerald-600 hover:bg-emerald-500 text-white"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.resume")}
             >
               <Play className="w-4 h-4 mr-1" />
               Resume
@@ -591,6 +736,7 @@ export default function LiveConsolePage() {
               onClick={() => control("approve")}
               variant="outline"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.approve")}
             >
               <CheckCircle2 className="w-4 h-4 mr-1" />
               Approve Step
@@ -599,6 +745,7 @@ export default function LiveConsolePage() {
               onClick={() => control("reject")}
               variant="outline"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.reject")}
             >
               <XCircle className="w-4 h-4 mr-1" />
               Reject Step
@@ -607,14 +754,26 @@ export default function LiveConsolePage() {
               onClick={() => control("takeover")}
               variant="outline"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.takeover")}
             >
               <Hand className="w-4 h-4 mr-1" />
               Takeover
             </Button>
+            {agentFlags.voiceDuplex ? (
+              <Button
+                onClick={() => control("interrupt")}
+                variant="outline"
+                disabled={busy !== null}
+                {...buildAiTarget("live_console.control.interrupt")}
+              >
+                Interrupt
+              </Button>
+            ) : null}
             <Button
               onClick={() => control("stop")}
               className="bg-red-600 hover:bg-red-500 text-white"
               disabled={busy !== null}
+              {...buildAiTarget("live_console.control.stop")}
             >
               <Square className="w-4 h-4 mr-1" />
               Stop

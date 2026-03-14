@@ -7,6 +7,8 @@ import {
 } from "@/lib/context/industry-context";
 import { apiErrors } from "@/lib/api-error";
 import { startLiveRun } from "@/lib/ai-employees/live-run";
+import { assertAgentRunAllowed } from "@/lib/ai-employees/feature-flags";
+import { parseLiveRunPayload } from "@/lib/ai-employees/live-run-contract";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,67 +26,22 @@ export async function POST(
     const ctx = getDalContextFromSession(session) ?? resolvedCtx;
     if (!ctx) return apiErrors.unauthorized();
 
+    try {
+      assertAgentRunAllowed(ctx.userId);
+    } catch (error: any) {
+      return apiErrors.forbidden(
+        error?.message || "Agent run is currently disabled",
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
-    const goal = String(body?.goal || "Run owner mission").trim();
-    const targetApps = Array.isArray(body?.targetApps)
-      ? body.targetApps.map((v: any) => String(v)).filter(Boolean)
-      : [];
-    const trustMode = String(body?.trustMode || "crawl").toLowerCase();
-    const autonomyLevel = String(
-      body?.autonomyLevel ||
-        (trustMode === "crawl"
-          ? "observe"
-          : trustMode === "walk"
-            ? "assist"
-            : "autonomous_low_risk"),
-    ).toLowerCase();
-    const executionTarget = String(
-      body?.executionTarget || "cloud_browser",
-    ).toLowerCase();
-    const executionRuntime = String(
-      body?.executionRuntime || "openclaw",
-    ).toLowerCase();
-
-    if (!goal) {
-      return apiErrors.badRequest("goal is required");
-    }
-
-    if (!["crawl", "walk", "run"].includes(trustMode)) {
-      return apiErrors.badRequest("trustMode must be crawl, walk, or run");
-    }
-
-    if (!["cloud_browser", "owner_desktop"].includes(executionTarget)) {
-      return apiErrors.badRequest(
-        "executionTarget must be cloud_browser or owner_desktop",
-      );
-    }
-
-    if (!["openclaw", "legacy_worker"].includes(executionRuntime)) {
-      return apiErrors.badRequest(
-        "executionRuntime must be openclaw or legacy_worker",
-      );
-    }
-
-    if (
-      !["observe", "assist", "autonomous_low_risk", "autonomous_full"].includes(
-        autonomyLevel,
-      )
-    ) {
-      return apiErrors.badRequest(
-        "autonomyLevel must be observe, assist, autonomous_low_risk, or autonomous_full",
-      );
+    const parsed = parseLiveRunPayload(body);
+    if (!parsed.ok) {
+      return apiErrors.badRequest(parsed.error);
     }
 
     const created = await startLiveRun(ctx, params.id, {
-      goal,
-      targetApps,
-      trustMode: trustMode as any,
-      autonomyLevel: autonomyLevel as any,
-      executionRuntime: executionRuntime as any,
-      executionTarget: executionTarget as any,
-      deviceId: body?.deviceId ? String(body.deviceId) : null,
-      employeeType: body?.employeeType ? String(body.employeeType) : undefined,
-      employeeName: body?.employeeName ? String(body.employeeName) : undefined,
+      ...parsed.payload,
     });
 
     return NextResponse.json({ success: true, session: created });

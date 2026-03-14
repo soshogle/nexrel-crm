@@ -26,6 +26,23 @@ export async function POST(
     if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json().catch(() => ({}));
+    const idempotencyKey = String(
+      request.headers.get("x-idempotency-key") || body?.idempotencyKey || "",
+    ).trim();
+    const correlationId = String(
+      request.headers.get("x-correlation-id") || body?.correlationId || "",
+    ).trim();
+    const riskTierRaw = String(body?.riskTier || "MEDIUM").toUpperCase();
+    const riskTier = ["LOW", "MEDIUM", "HIGH"].includes(riskTierRaw)
+      ? (riskTierRaw as "LOW" | "MEDIUM" | "HIGH")
+      : "MEDIUM";
+    const requiresApproval = body?.requiresApproval === true;
+
+    if (riskTier === "HIGH" && !requiresApproval) {
+      return apiErrors.conflict(
+        "HIGH risk commands must set requiresApproval=true",
+      );
+    }
     const actionType = String(body?.actionType || "").trim() as any;
     if (
       ![
@@ -45,13 +62,38 @@ export async function POST(
       actionType,
       target: typeof body?.target === "string" ? body.target : undefined,
       value: typeof body?.value === "string" ? body.value : undefined,
-      meta: body?.meta && typeof body.meta === "object" ? body.meta : undefined,
       source: "owner_remote",
+      idempotencyKey: idempotencyKey || undefined,
+      correlationId: correlationId || undefined,
+      riskTier,
+      requiresApproval,
+      meta:
+        body?.meta && typeof body.meta === "object"
+          ? {
+              ...body.meta,
+              reliabilityHook: {
+                phase: "phase_4",
+                gate: "command_bus_risk_policy",
+                enforcedAt: new Date().toISOString(),
+              },
+            }
+          : {
+              reliabilityHook: {
+                phase: "phase_4",
+                gate: "command_bus_risk_policy",
+                enforcedAt: new Date().toISOString(),
+              },
+            },
     });
 
     return NextResponse.json({ success: true, ...data });
   } catch (error: any) {
     console.error("[live-run worker-command] error", error);
+    if (
+      /blocked by policy|approval required/i.test(String(error?.message || ""))
+    ) {
+      return apiErrors.conflict(error?.message || "Command blocked by policy");
+    }
     return apiErrors.internal(
       error?.message || "Failed to queue worker command",
     );

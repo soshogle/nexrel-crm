@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
+import { buildAiTarget } from "@/lib/ai-employees/ai-targets";
 
 type Device = {
   deviceId: string;
@@ -142,7 +143,11 @@ export function LiveRunDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-zinc-200">Owner Goal</Label>
-            <Input value={goal} onChange={(e) => setGoal(e.target.value)} />
+            <Input
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              {...buildAiTarget("live_run.goal_input")}
+            />
           </div>
 
           <div className="space-y-2">
@@ -151,6 +156,7 @@ export function LiveRunDialog({
               value={targetApps}
               onChange={(e) => setTargetApps(e.target.value)}
               placeholder="LinkedIn, Meta Ads, CRM"
+              {...buildAiTarget("live_run.target_apps_input")}
             />
           </div>
 
@@ -166,6 +172,7 @@ export function LiveRunDialog({
                     : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
                 }
                 onClick={() => setTrustMode(m)}
+                {...buildAiTarget(`live_run.trust_mode.${m}`)}
               >
                 {m.toUpperCase()}
               </Button>
@@ -191,6 +198,7 @@ export function LiveRunDialog({
                     : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
                 }
                 onClick={() => setAutonomyLevel(level)}
+                {...buildAiTarget(`live_run.autonomy_level.${level}`)}
               >
                 {label}
               </Button>
@@ -207,6 +215,7 @@ export function LiveRunDialog({
                   : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
               }
               onClick={() => setExecutionTarget("cloud_browser")}
+              {...buildAiTarget("live_run.execution_target.cloud_browser")}
             >
               Cloud Browser
             </Button>
@@ -218,6 +227,7 @@ export function LiveRunDialog({
                   : "px-4 py-2 rounded-lg border border-zinc-600 text-zinc-100 text-sm font-semibold hover:bg-zinc-800"
               }
               onClick={() => setExecutionTarget("owner_desktop")}
+              {...buildAiTarget("live_run.execution_target.owner_desktop")}
             >
               Owner Desktop
             </Button>
@@ -248,6 +258,7 @@ export function LiveRunDialog({
                           ? "border-amber-400 bg-amber-50"
                           : "border-zinc-700 bg-zinc-900/60"
                       }`}
+                      {...buildAiTarget(`live_run.device.${d.deviceId}`)}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm text-zinc-100">
@@ -269,13 +280,18 @@ export function LiveRunDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            {...buildAiTarget("live_run.cancel")}
+          >
             Cancel
           </Button>
           <Button
             className="bg-amber-500 hover:bg-amber-400 text-zinc-900"
             onClick={startRun}
             disabled={isLoading || !goal}
+            {...buildAiTarget("live_run.start")}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

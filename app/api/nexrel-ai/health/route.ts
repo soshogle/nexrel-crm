@@ -12,6 +12,12 @@ import {
   canRunWorkAiPhase,
   getNextPendingWorkAiPhase,
 } from "@/lib/work-ai-marketing";
+import {
+  getAgentContractVersion,
+  getAgentFeatureFlagsForApi,
+  getAgentRolloutSnapshot,
+  isAgentSystemWriteEnabled,
+} from "@/lib/ai-employees/feature-flags";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -100,6 +106,12 @@ export async function GET(_req: NextRequest) {
             reason: workAiGate && !workAiGate.ok ? workAiGate.reason : null,
           }
         : null,
+      agentSystem: {
+        contractVersion: getAgentContractVersion(),
+        writeModeEnabled: isAgentSystemWriteEnabled(),
+        flags: getAgentFeatureFlagsForApi(),
+        rollout: getAgentRolloutSnapshot(ctx.userId),
+      },
     };
 
     return NextResponse.json({

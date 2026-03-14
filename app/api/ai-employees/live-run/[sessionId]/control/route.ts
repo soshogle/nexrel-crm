@@ -7,6 +7,7 @@ import {
 } from "@/lib/context/industry-context";
 import { apiErrors } from "@/lib/api-error";
 import { controlLiveRun } from "@/lib/ai-employees/live-run";
+import { isAgentVoiceDuplexEnabled } from "@/lib/ai-employees/feature-flags";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,6 +18,7 @@ const ALLOWED_ACTIONS = new Set([
   "approve",
   "reject",
   "takeover",
+  "interrupt",
   "stop",
 ]);
 
@@ -37,6 +39,12 @@ export async function POST(
     const action = String(body?.action || "").toLowerCase();
     if (!ALLOWED_ACTIONS.has(action)) {
       return apiErrors.badRequest("Invalid control action");
+    }
+
+    if (action === "interrupt" && !isAgentVoiceDuplexEnabled()) {
+      return apiErrors.conflict(
+        "Voice duplex interrupt is disabled. Enable NEXREL_AGENT_VOICE_DUPLEX_ENABLED.",
+      );
     }
 
     const updated = await controlLiveRun(ctx, params.sessionId, action as any);

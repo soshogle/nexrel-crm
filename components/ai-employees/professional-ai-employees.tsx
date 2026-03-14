@@ -39,6 +39,7 @@ import {
 } from "@/lib/professional-ai-employees/config";
 import { TaskDashboardDialog } from "@/components/ai-employees/task-dashboard-dialog";
 import { LiveRunDialog } from "@/components/ai-employees/live-run-dialog";
+import { buildAiTarget } from "@/lib/ai-employees/ai-targets";
 import { ConnectPhoneDialog } from "@/components/shared/connect-phone-dialog";
 import PurchasePhoneNumberDialog from "@/components/voice-agents/purchase-phone-number-dialog";
 
@@ -458,6 +459,7 @@ export function ProfessionalAIEmployees() {
                     variant="outline"
                     className="border-purple-200 text-purple-600 hover:bg-purple-50"
                     onClick={() => setShowLiveRun(true)}
+                    {...buildAiTarget("employee_detail.start_live_run")}
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Start Live Run
