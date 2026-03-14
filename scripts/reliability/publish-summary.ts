@@ -28,6 +28,9 @@ async function main() {
   const trend = readJson(
     path.join(artifactsDir, "reliability-trend-regression.json"),
   );
+  const canary = readJson(
+    path.join(artifactsDir, "reliability-canary-report.json"),
+  );
 
   const lines: string[] = [];
   lines.push("# Reliability Summary");
@@ -85,6 +88,27 @@ async function main() {
     lines.push(`- Max Allowed Drop: ${pct(trend?.maxDrop)}`);
     lines.push(`- Pass: ${String(trend?.pass)}`);
     if (trend?.note) lines.push(`- Notes: ${trend.note}`);
+  }
+
+  lines.push("");
+  lines.push("## Canary (Latest Missions)");
+  if (!canary) {
+    lines.push("- No canary report artifact found.");
+  } else {
+    lines.push(`- Sample Size: ${canary.sampleSize}`);
+    lines.push(`- Runs Passed: ${canary.passedRuns}/${canary.totalRuns}`);
+    lines.push(`- Success Rate: ${pct(canary.successRate)}`);
+    lines.push(`- Minimum Target: ${pct(canary.minSuccessRate)}`);
+    lines.push(`- Pass: ${String(canary.pass)}`);
+    const topBlockers = Array.isArray(canary.topBlockers)
+      ? canary.topBlockers.slice(0, 3)
+      : [];
+    if (topBlockers.length > 0) {
+      lines.push("- Top Blockers:");
+      for (const blocker of topBlockers) {
+        lines.push(`  - ${blocker.blocker}: ${blocker.count}`);
+      }
+    }
   }
 
   const outputFile = path.join(artifactsDir, "reliability-summary.md");
