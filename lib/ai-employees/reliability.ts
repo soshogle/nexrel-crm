@@ -186,3 +186,36 @@ export function meetsReliabilityGate(metrics: ReliabilityMetrics) {
     metrics.unknownEscalationSafetyRate >= 0.99
   );
 }
+
+export type TierExecutionProfile = {
+  commandTimeoutMs: number;
+  retryBudget: number;
+  verifyDepth: "standard" | "deep";
+};
+
+export function buildTierExecutionProfile(
+  tier: WorkflowTier,
+  successRate: number,
+): TierExecutionProfile {
+  if (tier === "tier_1") {
+    return {
+      commandTimeoutMs: successRate >= 0.9 ? 25000 : 35000,
+      retryBudget: successRate >= 0.9 ? 3 : 4,
+      verifyDepth: "deep",
+    };
+  }
+
+  if (tier === "tier_2") {
+    return {
+      commandTimeoutMs: successRate >= 0.85 ? 28000 : 38000,
+      retryBudget: successRate >= 0.85 ? 2 : 3,
+      verifyDepth: "standard",
+    };
+  }
+
+  return {
+    commandTimeoutMs: successRate >= 0.8 ? 22000 : 30000,
+    retryBudget: successRate >= 0.8 ? 1 : 2,
+    verifyDepth: "standard",
+  };
+}

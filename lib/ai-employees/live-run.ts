@@ -2,6 +2,7 @@ import { AIJobStatus, AIEmployeeType } from "@prisma/client";
 import { getCrmDb } from "@/lib/dal";
 import { createHash, randomBytes } from "crypto";
 import {
+  buildTierExecutionProfile,
   buildRecoveryPlan,
   classifyBlocker,
   classifyWorkflowTier,
@@ -1330,6 +1331,10 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
                 ? output.memory.historical.strategyHints
                 : [],
             },
+            executionProfile: buildTierExecutionProfile(
+              ((output?.memory?.workflowTier as any) || "tier_3") as any,
+              Number(output?.memory?.historical?.successRate || 0.8),
+            ),
             successCriteria: Array.isArray(output?.memory?.successCriteria)
               ? output.memory.successCriteria
               : [],

@@ -1,4 +1,5 @@
 import {
+  buildTierExecutionProfile,
   buildRecoveryPlan,
   classifyBlocker,
   classifyWorkflowTier,
@@ -143,6 +144,14 @@ const reliabilityGatePassed = meetsReliabilityGate({
 if (!reliabilityGatePassed) {
   failures += 1;
   console.error("[gate] expected reliability gate to pass but it failed");
+}
+
+const tierProfile = buildTierExecutionProfile("tier_1", 0.96);
+if (tierProfile.verifyDepth !== "deep" || tierProfile.retryBudget < 3) {
+  failures += 1;
+  console.error(
+    `[profile] tier_1 expected deep verification and >=3 retries, got ${JSON.stringify(tierProfile)}`,
+  );
 }
 
 if (failures > 0) {

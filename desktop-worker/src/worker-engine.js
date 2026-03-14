@@ -48,6 +48,21 @@ function buildWorkerStartUrl(config) {
   return "about:blank";
 }
 
+const KEY_CODE_MAP = {
+  enter: 36,
+  return: 36,
+  tab: 48,
+  esc: 53,
+  escape: 53,
+  space: 49,
+  delete: 51,
+  backspace: 51,
+  left: 123,
+  right: 124,
+  down: 125,
+  up: 126,
+};
+
 class WorkerEngine extends EventEmitter {
   constructor() {
     super();
@@ -263,6 +278,19 @@ class WorkerEngine extends EventEmitter {
     const platform = os.platform();
     if (platform === "darwin") {
       await execFileAsync("open", ["-a", appName]);
+      const desktopKeys = Array.isArray(command?.meta?.desktopKeys)
+        ? command.meta.desktopKeys
+        : [];
+      const desktopText = String(command?.meta?.desktopText || "");
+      if (desktopKeys.length > 0 || desktopText) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        for (const key of desktopKeys) {
+          await this.runMacShortcut(String(key));
+        }
+        if (desktopText) {
+          await this.runMacTypeText(desktopText);
+        }
+      }
       const event = command?.meta?.calendarEvent;
       if (appName === "Calendar" && event) {
         const startDate = new Date(event.startAt || Date.now());
@@ -335,6 +363,56 @@ class WorkerEngine extends EventEmitter {
     }
     await execFileAsync("sh", ["-lc", appName]);
     return `Executed app launcher ${appName}`;
+  }
+
+  async runMacShortcut(shortcut) {
+    const parts = String(shortcut || "")
+      .split("+")
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    const key = parts[parts.length - 1];
+    const modifiers = parts.slice(0, -1);
+    const mappedModifiers = modifiers
+      .map((m) => {
+        if (m === "cmd" || m === "command") return "command down";
+        if (m === "ctrl" || m === "control") return "control down";
+        if (m === "shift") return "shift down";
+        if (m === "alt" || m === "option") return "option down";
+        return "";
+      })
+      .filter(Boolean);
+
+    const keyCode = KEY_CODE_MAP[key];
+    if (keyCode) {
+      const using = mappedModifiers.length
+        ? ` using {${mappedModifiers.join(", ")}}`
+        : "";
+      await execFileAsync("osascript", [
+        "-e",
+        `tell application "System Events" to key code ${keyCode}${using}`,
+      ]);
+      return;
+    }
+
+    const printableKey = key.length === 1 ? key : "";
+    if (!printableKey) return;
+    const using = mappedModifiers.length
+      ? ` using {${mappedModifiers.join(", ")}}`
+      : "";
+    await execFileAsync("osascript", [
+      "-e",
+      `tell application "System Events" to keystroke "${printableKey.replace(/"/g, '\\"')}"${using}`,
+    ]);
+  }
+
+  async runMacTypeText(text) {
+    const chunk = String(text || "").slice(0, 3000);
+    if (!chunk) return;
+    await execFileAsync("osascript", [
+      "-e",
+      `tell application "System Events" to keystroke "${chunk.replace(/"/g, '\\"')}"`,
+    ]);
   }
 
   async executeRunCommand(command) {
