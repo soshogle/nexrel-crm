@@ -146,6 +146,17 @@ if (!reliabilityGatePassed) {
   console.error("[gate] expected reliability gate to pass but it failed");
 }
 
+const reliabilityGateRejected = meetsReliabilityGate({
+  successRate: 0.93,
+  silentCompletionRate: 0.01,
+  deterministicBlockerCoverage: 0.95,
+  unknownEscalationSafetyRate: 0.97,
+});
+if (reliabilityGateRejected) {
+  failures += 1;
+  console.error("[gate] expected low metrics to fail but gate passed");
+}
+
 const tierProfile = buildTierExecutionProfile("tier_1", 0.96);
 if (tierProfile.verifyDepth !== "deep" || tierProfile.retryBudget < 3) {
   failures += 1;

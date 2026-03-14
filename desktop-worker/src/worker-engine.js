@@ -435,6 +435,16 @@ class WorkerEngine extends EventEmitter {
     return `Executed command: ${shellCommand}${snippet ? ` | ${snippet.slice(0, 240)}` : ""}`;
   }
 
+  getCommandTimeout(command, fallback = 20000) {
+    const fromProfile = Number(
+      command?.meta?.executionProfile?.commandTimeoutMs,
+    );
+    if (Number.isFinite(fromProfile) && fromProfile > 1000) {
+      return Math.min(fromProfile, 120000);
+    }
+    return fallback;
+  }
+
   classifyCommandError(message) {
     const text = String(message || "").toLowerCase();
     if (text.includes("captcha")) return "captcha";
@@ -519,7 +529,7 @@ class WorkerEngine extends EventEmitter {
       if (!url) throw new Error("navigate command missing URL");
       await this.page.goto(url, {
         waitUntil: "domcontentloaded",
-        timeout: 60000,
+        timeout: this.getCommandTimeout(command, 60000),
       });
       return `Navigated to ${url}`;
     }
@@ -534,7 +544,10 @@ class WorkerEngine extends EventEmitter {
       const selector = String(command.target || "").trim();
       if (selector) {
         try {
-          await this.page.locator(selector).first().click({ timeout: 20000 });
+          await this.page
+            .locator(selector)
+            .first()
+            .click({ timeout: this.getCommandTimeout(command, 20000) });
           return `Clicked ${selector}`;
         } catch {
           const safeText = selector
@@ -546,7 +559,7 @@ class WorkerEngine extends EventEmitter {
               .getByText(safeText, { exact: false })
               .first()
               .click({
-                timeout: 12000,
+                timeout: this.getCommandTimeout(command, 12000),
               });
             return `Clicked via text fallback ${safeText}`;
           }
@@ -556,9 +569,12 @@ class WorkerEngine extends EventEmitter {
 
       const textLabel = String(command.value || "").trim();
       if (textLabel) {
-        await this.page.getByText(textLabel, { exact: false }).first().click({
-          timeout: 20000,
-        });
+        await this.page
+          .getByText(textLabel, { exact: false })
+          .first()
+          .click({
+            timeout: this.getCommandTimeout(command, 20000),
+          });
         return `Clicked text ${textLabel}`;
       }
 
@@ -581,7 +597,7 @@ class WorkerEngine extends EventEmitter {
           await this.page
             .locator(selector)
             .first()
-            .fill(value, { timeout: 20000 });
+            .fill(value, { timeout: this.getCommandTimeout(command, 20000) });
           return `Typed into ${selector}`;
         } catch {
           const placeholder = selector
@@ -592,7 +608,7 @@ class WorkerEngine extends EventEmitter {
             await this.page
               .getByPlaceholder(placeholder, { exact: false })
               .first()
-              .fill(value, { timeout: 12000 });
+              .fill(value, { timeout: this.getCommandTimeout(command, 12000) });
             return `Typed via placeholder fallback ${placeholder}`;
           }
           throw new Error(`selector type failed for ${selector}`);
@@ -602,7 +618,7 @@ class WorkerEngine extends EventEmitter {
         await this.page
           .getByLabel(String(command.meta.label), { exact: false })
           .first()
-          .fill(value, { timeout: 20000 });
+          .fill(value, { timeout: this.getCommandTimeout(command, 20000) });
         return `Typed via label ${command.meta.label}`;
       }
       await this.page.keyboard.type(value, { delay: 15 });
@@ -619,7 +635,9 @@ class WorkerEngine extends EventEmitter {
     }
 
     if (command.actionType === "verify") {
-      await this.page.waitForLoadState("domcontentloaded", { timeout: 15000 });
+      await this.page.waitForLoadState("domcontentloaded", {
+        timeout: this.getCommandTimeout(command, 15000),
+      });
       const currentUrl = this.page.url();
       if (!currentUrl || currentUrl === "about:blank") {
         throw new Error("No active workspace loaded for verification");

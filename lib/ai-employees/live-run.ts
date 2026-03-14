@@ -738,6 +738,87 @@ function hasSufficientCompletionEvidence(output: any, steps: LiveRunStep[]) {
   return true;
 }
 
+function tokenizeObjective(text: string) {
+  const stopwords = new Set([
+    "open",
+    "create",
+    "update",
+    "with",
+    "from",
+    "that",
+    "this",
+    "into",
+    "then",
+    "your",
+    "my",
+    "and",
+    "the",
+    "for",
+    "app",
+  ]);
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 4 && !stopwords.has(token))
+    .slice(0, 6);
+}
+
+function verifyObjectiveOutcome(output: any, steps: LiveRunStep[]) {
+  const objective = String(output?.memory?.objectiveContract?.objective || "");
+  const runtime = String(output?.memory?.executionRuntime || "openclaw");
+
+  const completed = steps.filter((s) => s.status === "completed");
+  if (completed.length === 0) {
+    return { ok: false, reason: "No completed steps available" };
+  }
+
+  const failed = steps.find(
+    (s) => s.status === "failed" || s.status === "rejected",
+  );
+  if (failed) {
+    return {
+      ok: false,
+      reason: `Mission has unresolved failed step: ${failed.title}`,
+    };
+  }
+
+  if (runtime === "openclaw") {
+    const verifyStep = steps.find(
+      (s) => s.actionType === "verify" && s.status === "completed",
+    );
+    if (!verifyStep) {
+      return { ok: false, reason: "Missing completed verify step" };
+    }
+  }
+
+  const evidenceText = completed
+    .map((s) => {
+      const evidence = parseCommandEvidence(String(s.result || ""));
+      if (evidence) {
+        return `${evidence.detail || ""} ${evidence.pageUrl || ""}`;
+      }
+      return `${s.title} ${s.result || ""}`;
+    })
+    .join(" ")
+    .toLowerCase();
+
+  const objectiveTokens = tokenizeObjective(objective);
+  if (objectiveTokens.length > 0) {
+    const matched = objectiveTokens.filter((token) =>
+      evidenceText.includes(token),
+    );
+    if (matched.length === 0) {
+      return {
+        ok: false,
+        reason: "Outcome evidence does not match objective context",
+      };
+    }
+  }
+
+  return { ok: true, reason: "Objective verification passed" };
+}
+
 async function buildHistoricalMemory(
   db: ReturnType<typeof getCrmDb>,
   ctx: LiveRunContext,
@@ -1163,6 +1244,26 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
             output,
             status: AIJobStatus.RUNNING,
             progress: Math.max(session.progress || 0, 85),
+          },
+        });
+        return getLiveRun(ctx, session.id);
+      }
+
+      const outcome = verifyObjectiveOutcome(output, steps);
+      if (!outcome.ok) {
+        output.sessionState = "running";
+        output.framePreview = `Outcome verification pending: ${outcome.reason}`;
+        const guardedOutput = appendMemoryNote(output, {
+          kind: "outcome_verification",
+          note: outcome.reason,
+          blocker: "verification",
+        });
+        await db.aIJob.update({
+          where: { id: session.id },
+          data: {
+            output: guardedOutput,
+            status: AIJobStatus.RUNNING,
+            progress: Math.max(session.progress || 0, 90),
           },
         });
         return getLiveRun(ctx, session.id);
