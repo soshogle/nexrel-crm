@@ -8,7 +8,7 @@ Scope: Backend-only rollout, zero customer-facing UI label changes
 
 - Internal runtime/program name: `nexrel-ai-brain`
 - Public/customer-facing naming: `Nexrel AI Assistant` or existing Nexrel labels only
-- Forbidden in customer-facing strings, URLs, dashboards, docs, API payload labels: `openclaw`, `OpenClaw`
+- Forbidden in customer-facing strings, URLs, dashboards, docs, API payload labels: `nexrel_ai`, `Nexrel AI`
 - Third-party upstream usage is allowed only in internal architecture documentation and dependency metadata.
 
 ## Program Goal

@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-03-14T20:32:13.530Z",
+  "windowDays": 7,
+  "targetSuccessRate": 0.95,
+  "minSamples": 10,
+  "inScopeRuns": 0,
+  "successfulRuns": 0,
+  "failedRuns": 0,
+  "successRate": 0,
+  "pass": false,
+  "notes": "RELIABILITY_DATABASE_URL must be a postgres:// or postgresql:// connection string",
+  "failedRunIds": []
+}

@@ -222,7 +222,7 @@ export async function runAgentCommandCenterCycle(
       userId: ctx.userId,
       action: "SETTINGS_MODIFIED",
       severity: "LOW",
-      entityType: "OPENCLAW_OPERATION",
+      entityType: "NEXREL_AI_OPERATION",
       entityId: crypto.randomUUID(),
       metadata: {
         mode: "agent_command_center_cycle",

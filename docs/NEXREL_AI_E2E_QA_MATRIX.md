@@ -3,7 +3,7 @@
 ## Automated Checks Completed
 
 - `npm run -s typecheck`
-- `npx vitest run tests/unit/openclaw-voice.test.ts`
+- `npx vitest run tests/unit/nexrel-ai-voice.test.ts`
 
 ## Surface Coverage Checklist
 

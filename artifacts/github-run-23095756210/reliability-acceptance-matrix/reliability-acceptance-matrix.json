@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-03-14T20:32:12.952Z",
+  "total": 11,
+  "passed": 11,
+  "failed": 0,
+  "results": [
+    {
+      "id": "t1_calendar_appointment",
+      "objective": "Create an appointment in Calendar for tomorrow at 3pm",
+      "apps": [
+        "Calendar"
+      ],
+      "expectedTier": "tier_1",
+      "actualTier": "tier_1",
+      "pass": true
+    },
+    {
+      "id": "t1_gmail_followup",
+      "objective": "Draft a follow-up email in Gmail to the top lead",
+      "apps": [
+        "Gmail"
+      ],
+      "expectedTier": "tier_1",
+      "actualTier": "tier_1",
+      "pass": true
+    },
+    {
+      "id": "t2_notion_update",
+      "objective": "Update the sprint page in Notion with this week's blockers",
+      "apps": [
+        "Notion"
+      ],
+      "expectedTier": "tier_2",
+      "actualTier": "tier_2",
+      "pass": true
+    },
+    {
+      "id": "t2_drive_upload",
+      "objective": "Upload the weekly report file to Google Drive folder",
+      "apps": [
+        "Google Drive"
+      ],
+      "expectedTier": "tier_2",
+      "actualTier": "tier_2",
+      "pass": true
+    },
+    {
+      "id": "t2_slack_summary",
+      "objective": "Post a weekly delivery summary in Slack channel #ops",
+      "apps": [
+        "Slack"
+      ],
+      "expectedTier": "tier_2",
+      "actualTier": "tier_2",
+      "pass": true
+    },
+    {
+      "id": "t2_asana_sync",
+      "objective": "Update Asana task statuses for sprint board",
+      "apps": [
+        "Asana"
+      ],
+      "expectedTier": "tier_2",
+      "actualTier": "tier_2",
+      "pass": true
+    },
+    {
+      "id": "t2_dropbox_archive",
+      "objective": "Move signed contracts to Dropbox archive folder",
+      "apps": [
+        "Dropbox"
+      ],
+      "expectedTier": "tier_2",
+      "actualTier": "tier_2",
+      "pass": true
+    },
+    {
+      "id": "t3_long_tail",
+      "objective": "Use Desktop Studio Pro to process the dataset and export a summary",
+      "apps": [
+        "Desktop Studio Pro"
+      ],
+      "expectedTier": "tier_3",
+      "actualTier": "tier_3",
+      "pass": true
+    },
+    {
+      "id": "t3_legacy_erp",
+      "objective": "Use LegacyERP Client to reconcile invoice batches",
+      "apps": [
+        "LegacyERP Client"
+      ],
+      "expectedTier": "tier_3",
+      "actualTier": "tier_3",
+      "pass": true
+    },
+    {
+      "id": "t3_bespoke_qa_tool",
+      "objective": "Run regression pass in Bespoke QA Workbench and export log",
+      "apps": [
+        "Bespoke QA Workbench"
+      ],
+      "expectedTier": "tier_3",
+      "actualTier": "tier_3",
+      "pass": true
+    },
+    {
+      "id": "t3_vertical_desktop_suite",
+      "objective": "Generate utilization report from VerticalOps desktop suite",
+      "apps": [
+        "VerticalOps Desktop Suite"
+      ],
+      "expectedTier": "tier_3",
+      "actualTier": "tier_3",
+      "pass": true
+    }
+  ],
+  "kpis": {
+    "overallPassRate": 1,
+    "tierPassRates": {
+      "tier_1": 1,
+      "tier_2": 1,
+      "tier_3": 1
+    },
+    "minTierPassRate": 1
+  },
+  "gatePassed": true
+}

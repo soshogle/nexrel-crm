@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-03-14T20:32:14.719Z",
+  "sampleSize": 10,
+  "minSuccessRate": 0.95,
+  "strict": true,
+  "totalRuns": 0,
+  "passedRuns": 0,
+  "successRate": 0,
+  "topBlockers": [
+    {
+      "blocker": "invalid_database_url",
+      "count": 1
+    }
+  ],
+  "runs": [],
+  "pass": false,
+  "note": "RELIABILITY_DATABASE_URL must be a postgres:// or postgresql:// connection string"
+}

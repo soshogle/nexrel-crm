@@ -304,7 +304,7 @@ export async function generateGoViralAsset(
       input: {
         ...input,
         prompt,
-        createdBy: "openclaw_go_viral",
+        createdBy: "nexrel_ai_go_viral",
       },
       output: {
         asset: {
@@ -338,7 +338,7 @@ export async function generateGoViralAsset(
       userId: ctx.userId,
       action: "SETTINGS_MODIFIED",
       severity: "LOW",
-      entityType: "OPENCLAW_OPERATION",
+      entityType: "NEXREL_AI_OPERATION",
       entityId: created.id,
       metadata: {
         mode: "go_viral_mandate",

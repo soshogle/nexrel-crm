@@ -7,6 +7,10 @@ Configure these once in GitHub for automated KPI gating:
 - `RELIABILITY_DATABASE_URL`
   - Database URL that contains live-run production records.
   - Used by `scripts/reliability/live-run-kpis.ts` in CI.
+  - Accepted forms:
+    - `postgres://...` or `postgresql://...`
+    - `DATABASE_URL=postgres://...` or `RELIABILITY_DATABASE_URL=postgres://...`
+    - `jdbc:postgresql://...` (auto-normalized to `postgresql://...`)
 
 ## Workflows
 

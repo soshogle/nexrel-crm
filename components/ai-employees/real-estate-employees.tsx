@@ -4,21 +4,34 @@
  * Only visible for REAL_ESTATE industry users
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
   Zap,
   Home,
@@ -45,13 +58,13 @@ import {
   Bot,
   Sparkles,
   RefreshCw,
-  Mic
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
-import { ConnectPhoneDialog } from '@/components/shared/connect-phone-dialog';
-import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
-import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
+  Mic,
+} from "lucide-react";
+import { toast } from "sonner";
+import { TwilioPhoneSelector } from "@/components/shared/twilio-phone-selector";
+import { ConnectPhoneDialog } from "@/components/shared/connect-phone-dialog";
+import PurchasePhoneNumberDialog from "@/components/voice-agents/purchase-phone-number-dialog";
+import { TaskDashboardDialog } from "@/components/ai-employees/task-dashboard-dialog";
 
 // Types for provisioned agents
 interface ProvisionedAgent {
@@ -68,193 +81,277 @@ interface ProvisionedAgent {
 // Real Estate AI Employee definitions - matches REAIEmployeeType enum
 const RE_AI_EMPLOYEES = [
   {
-    id: 'RE_SPEED_TO_LEAD',
-    name: 'Sarah',
-    title: 'Speed to Lead Specialist',
+    id: "RE_SPEED_TO_LEAD",
+    name: "Sarah",
+    title: "Speed to Lead Specialist",
     icon: Zap,
-    color: 'from-yellow-500 to-orange-500',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/30',
-    description: 'Instant response to new leads (<60 sec)',
-    fullDescription: 'Instantly responds to new real estate inquiries within seconds. Makes immediate calls and sends personalized texts to capture leads before competitors.',
-    capabilities: ['Instant lead response', 'DNC verification', 'AI voice calls', 'SMS follow-up', 'Appointment booking'],
+    color: "from-yellow-500 to-orange-500",
+    bgColor: "bg-yellow-500/10",
+    borderColor: "border-yellow-500/30",
+    description: "Instant response to new leads (<60 sec)",
+    fullDescription:
+      "Instantly responds to new real estate inquiries within seconds. Makes immediate calls and sends personalized texts to capture leads before competitors.",
+    capabilities: [
+      "Instant lead response",
+      "DNC verification",
+      "AI voice calls",
+      "SMS follow-up",
+      "Appointment booking",
+    ],
     voiceEnabled: true,
-    priority: 'URGENT',
-    category: 'lead-capture'
+    priority: "URGENT",
+    category: "lead-capture",
   },
   {
-    id: 'RE_FSBO_OUTREACH',
-    name: 'Michael',
-    title: 'FSBO Outreach Specialist',
+    id: "RE_FSBO_OUTREACH",
+    name: "Michael",
+    title: "FSBO Outreach Specialist",
     icon: Home,
-    color: 'from-green-500 to-emerald-500',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/30',
-    description: 'DuProprio/FSBO outreach with scripts',
-    fullDescription: 'Proactively reaches out to For Sale By Owner listings from DuProprio, FSBO.com, and other sources. Uses consultative approach to convert FSBOs to listings.',
-    capabilities: ['FSBO scraping', 'DNC compliance', 'Consultative calls', 'Free CMA offers', 'Objection handling'],
+    color: "from-green-500 to-emerald-500",
+    bgColor: "bg-green-500/10",
+    borderColor: "border-green-500/30",
+    description: "DuProprio/FSBO outreach with scripts",
+    fullDescription:
+      "Proactively reaches out to For Sale By Owner listings from DuProprio, FSBO.com, and other sources. Uses consultative approach to convert FSBOs to listings.",
+    capabilities: [
+      "FSBO scraping",
+      "DNC compliance",
+      "Consultative calls",
+      "Free CMA offers",
+      "Objection handling",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'lead-capture'
+    priority: "MEDIUM",
+    category: "lead-capture",
   },
   {
-    id: 'RE_EXPIRED_OUTREACH',
-    name: 'Jessica',
-    title: 'Expired Listing Specialist',
+    id: "RE_EXPIRED_OUTREACH",
+    name: "Jessica",
+    title: "Expired Listing Specialist",
     icon: Clock,
-    color: 'from-red-500 to-rose-500',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/30',
-    description: 'Contacts expired listing owners',
-    fullDescription: 'Contacts owners of expired listings with empathy and a fresh marketing strategy. Identifies why the listing failed and presents solutions.',
-    capabilities: ['Expired data import', 'Empathetic scripts', 'Market analysis', 'Pricing strategy', 'Staging recommendations'],
+    color: "from-red-500 to-rose-500",
+    bgColor: "bg-red-500/10",
+    borderColor: "border-red-500/30",
+    description: "Contacts expired listing owners",
+    fullDescription:
+      "Contacts owners of expired listings with empathy and a fresh marketing strategy. Identifies why the listing failed and presents solutions.",
+    capabilities: [
+      "Expired data import",
+      "Empathetic scripts",
+      "Market analysis",
+      "Pricing strategy",
+      "Staging recommendations",
+    ],
     voiceEnabled: true,
-    priority: 'HIGH',
-    category: 'lead-capture'
+    priority: "HIGH",
+    category: "lead-capture",
   },
   {
-    id: 'RE_COLD_REACTIVATION',
-    name: 'Alex',
-    title: 'Lead Reactivation Specialist',
+    id: "RE_COLD_REACTIVATION",
+    name: "Alex",
+    title: "Lead Reactivation Specialist",
     icon: Users,
-    color: 'from-blue-500 to-cyan-500',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
-    description: 'Re-engages cold leads and past clients',
-    fullDescription: 'Re-engages cold leads who haven\'t responded in 30+ days. Uses market updates and new listings as conversation starters.',
-    capabilities: ['Cold lead detection', 'Market updates', 'New listing alerts', 'Multi-channel outreach', 'Referral requests'],
+    color: "from-blue-500 to-cyan-500",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/30",
+    description: "Re-engages cold leads and past clients",
+    fullDescription:
+      "Re-engages cold leads who haven't responded in 30+ days. Uses market updates and new listings as conversation starters.",
+    capabilities: [
+      "Cold lead detection",
+      "Market updates",
+      "New listing alerts",
+      "Multi-channel outreach",
+      "Referral requests",
+    ],
     voiceEnabled: true,
-    priority: 'LOW',
-    category: 'lead-capture'
+    priority: "LOW",
+    category: "lead-capture",
   },
   {
-    id: 'RE_DOCUMENT_CHASER',
-    name: 'Emma',
-    title: 'Document Coordinator',
+    id: "RE_DOCUMENT_CHASER",
+    name: "Emma",
+    title: "Document Coordinator",
     icon: FileText,
-    color: 'from-purple-500 to-violet-500',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/30',
-    description: 'Transaction document follow-up',
-    fullDescription: 'Follows up on missing documents during transactions. Sends reminders for signatures, inspections, and deadlines.',
-    capabilities: ['Document tracking', 'Deadline reminders', 'E-signature requests', 'Notary coordination', 'Closing alerts'],
+    color: "from-purple-500 to-violet-500",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/30",
+    description: "Transaction document follow-up",
+    fullDescription:
+      "Follows up on missing documents during transactions. Sends reminders for signatures, inspections, and deadlines.",
+    capabilities: [
+      "Document tracking",
+      "Deadline reminders",
+      "E-signature requests",
+      "Notary coordination",
+      "Closing alerts",
+    ],
     voiceEnabled: true,
-    priority: 'HIGH',
-    category: 'transaction'
+    priority: "HIGH",
+    category: "transaction",
   },
   {
-    id: 'RE_SHOWING_CONFIRM',
-    name: 'David',
-    title: 'Showing Coordinator',
+    id: "RE_SHOWING_CONFIRM",
+    name: "David",
+    title: "Showing Coordinator",
     icon: Calendar,
-    color: 'from-indigo-500 to-blue-500',
-    bgColor: 'bg-indigo-500/10',
-    borderColor: 'border-indigo-500/30',
-    description: 'Confirms showings, collects feedback',
-    fullDescription: 'Confirms property showings 24 hours and 2 hours before. Handles rescheduling and provides property access instructions.',
-    capabilities: ['Showing confirmations', 'Reschedule handling', 'Access instructions', 'Feedback collection', 'Hot buyer alerts'],
+    color: "from-indigo-500 to-blue-500",
+    bgColor: "bg-indigo-500/10",
+    borderColor: "border-indigo-500/30",
+    description: "Confirms showings, collects feedback",
+    fullDescription:
+      "Confirms property showings 24 hours and 2 hours before. Handles rescheduling and provides property access instructions.",
+    capabilities: [
+      "Showing confirmations",
+      "Reschedule handling",
+      "Access instructions",
+      "Feedback collection",
+      "Hot buyer alerts",
+    ],
     voiceEnabled: true,
-    priority: 'HIGH',
-    category: 'transaction'
+    priority: "HIGH",
+    category: "transaction",
   },
   {
-    id: 'RE_SPHERE_NURTURE',
-    name: 'Rachel',
-    title: 'Relationship Manager',
+    id: "RE_SPHERE_NURTURE",
+    name: "Rachel",
+    title: "Relationship Manager",
     icon: Heart,
-    color: 'from-pink-500 to-rose-500',
-    bgColor: 'bg-pink-500/10',
-    borderColor: 'border-pink-500/30',
-    description: 'Past client nurture campaigns',
-    fullDescription: 'Maintains relationships with past clients and sphere of influence. Sends market updates, home anniversary cards, and referral requests.',
-    capabilities: ['Home anniversaries', 'Market updates', 'Referral requests', 'Holiday outreach', 'Review automation'],
+    color: "from-pink-500 to-rose-500",
+    bgColor: "bg-pink-500/10",
+    borderColor: "border-pink-500/30",
+    description: "Past client nurture campaigns",
+    fullDescription:
+      "Maintains relationships with past clients and sphere of influence. Sends market updates, home anniversary cards, and referral requests.",
+    capabilities: [
+      "Home anniversaries",
+      "Market updates",
+      "Referral requests",
+      "Holiday outreach",
+      "Review automation",
+    ],
     voiceEnabled: true,
-    priority: 'LOW',
-    category: 'nurture'
+    priority: "LOW",
+    category: "nurture",
   },
   {
-    id: 'RE_BUYER_FOLLOWUP',
-    name: 'Chris',
-    title: 'Buyer Success Specialist',
+    id: "RE_BUYER_FOLLOWUP",
+    name: "Chris",
+    title: "Buyer Success Specialist",
     icon: Users,
-    color: 'from-teal-500 to-cyan-500',
-    bgColor: 'bg-teal-500/10',
-    borderColor: 'border-teal-500/30',
-    description: 'Follows up with active buyers',
-    fullDescription: 'Keeps buyers engaged, addresses concerns, and moves them toward making confident offers.',
-    capabilities: ['Buyer engagement', 'Concern resolution', 'Property matching', 'Offer preparation', 'Financing guidance'],
+    color: "from-teal-500 to-cyan-500",
+    bgColor: "bg-teal-500/10",
+    borderColor: "border-teal-500/30",
+    description: "Follows up with active buyers",
+    fullDescription:
+      "Keeps buyers engaged, addresses concerns, and moves them toward making confident offers.",
+    capabilities: [
+      "Buyer engagement",
+      "Concern resolution",
+      "Property matching",
+      "Offer preparation",
+      "Financing guidance",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'transaction'
+    priority: "MEDIUM",
+    category: "transaction",
   },
   {
-    id: 'RE_MARKET_UPDATE',
-    name: 'Jennifer',
-    title: 'Market Intelligence Analyst',
+    id: "RE_MARKET_UPDATE",
+    name: "Jennifer",
+    title: "Market Intelligence Analyst",
     icon: TrendingUp,
-    color: 'from-amber-500 to-yellow-500',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-    description: 'Personalized market updates',
-    fullDescription: 'Provides valuable market insights that position homeowners and buyers for success. Shares price trends and opportunities.',
-    capabilities: ['Market analysis', 'Price trends', 'Neighborhood insights', 'Investment tips', 'Timing recommendations'],
+    color: "from-amber-500 to-yellow-500",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/30",
+    description: "Personalized market updates",
+    fullDescription:
+      "Provides valuable market insights that position homeowners and buyers for success. Shares price trends and opportunities.",
+    capabilities: [
+      "Market analysis",
+      "Price trends",
+      "Neighborhood insights",
+      "Investment tips",
+      "Timing recommendations",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'reports'
+    priority: "MEDIUM",
+    category: "reports",
   },
   {
-    id: 'RE_STALE_DIAGNOSTIC',
-    name: 'Mark',
-    title: 'Listing Health Specialist',
+    id: "RE_STALE_DIAGNOSTIC",
+    name: "Mark",
+    title: "Listing Health Specialist",
     icon: Search,
-    color: 'from-orange-500 to-red-500',
-    bgColor: 'bg-orange-500/10',
-    borderColor: 'border-orange-500/30',
-    description: 'Analyzes stuck listings',
-    fullDescription: 'Analyzes listings that haven\'t sold after 21+ days. Identifies issues and generates action plans with scripts for seller conversations.',
-    capabilities: ['Pricing analysis', 'Photo assessment', 'Description optimization', 'Feedback patterns', 'Price reduction scripts'],
+    color: "from-orange-500 to-red-500",
+    bgColor: "bg-orange-500/10",
+    borderColor: "border-orange-500/30",
+    description: "Analyzes stuck listings",
+    fullDescription:
+      "Analyzes listings that haven't sold after 21+ days. Identifies issues and generates action plans with scripts for seller conversations.",
+    capabilities: [
+      "Pricing analysis",
+      "Photo assessment",
+      "Description optimization",
+      "Feedback patterns",
+      "Price reduction scripts",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'transaction'
+    priority: "MEDIUM",
+    category: "transaction",
   },
   {
-    id: 'RE_LISTING_BOOST',
-    name: 'Sophie',
-    title: 'Marketing Specialist',
+    id: "RE_LISTING_BOOST",
+    name: "Sophie",
+    title: "Marketing Specialist",
     icon: Presentation,
-    color: 'from-violet-500 to-purple-500',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/30',
-    description: 'Promotes listings to buyers',
-    fullDescription: 'Generates buyer interest and schedules showings for your listings through targeted outreach.',
-    capabilities: ['Buyer targeting', 'Listing promotion', 'Showing scheduling', 'Feature highlighting', 'Urgency creation'],
+    color: "from-violet-500 to-purple-500",
+    bgColor: "bg-violet-500/10",
+    borderColor: "border-violet-500/30",
+    description: "Promotes listings to buyers",
+    fullDescription:
+      "Generates buyer interest and schedules showings for your listings through targeted outreach.",
+    capabilities: [
+      "Buyer targeting",
+      "Listing promotion",
+      "Showing scheduling",
+      "Feature highlighting",
+      "Urgency creation",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'reports'
+    priority: "MEDIUM",
+    category: "reports",
   },
   {
-    id: 'RE_CMA_GENERATOR',
-    name: 'Daniel',
-    title: 'Valuation Specialist',
+    id: "RE_CMA_GENERATOR",
+    name: "Daniel",
+    title: "Valuation Specialist",
     icon: BarChart3,
-    color: 'from-slate-500 to-gray-500',
-    bgColor: 'bg-slate-500/10',
-    borderColor: 'border-slate-500/30',
-    description: 'CMA and property valuation',
-    fullDescription: 'Creates and presents comparative market analyses for pricing decisions. Helps sellers understand property value.',
-    capabilities: ['CMA generation', 'Comparable analysis', 'Pricing strategy', 'Value explanations', 'Listing recommendations'],
+    color: "from-slate-500 to-gray-500",
+    bgColor: "bg-slate-500/10",
+    borderColor: "border-slate-500/30",
+    description: "CMA and property valuation",
+    fullDescription:
+      "Creates and presents comparative market analyses for pricing decisions. Helps sellers understand property value.",
+    capabilities: [
+      "CMA generation",
+      "Comparable analysis",
+      "Pricing strategy",
+      "Value explanations",
+      "Listing recommendations",
+    ],
     voiceEnabled: true,
-    priority: 'MEDIUM',
-    category: 'reports'
-  }
+    priority: "MEDIUM",
+    category: "reports",
+  },
 ];
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Employees', count: 12 },
-  { id: 'lead-capture', label: 'Lead Capture', count: 4 },
-  { id: 'transaction', label: 'Transaction', count: 4 },
-  { id: 'nurture', label: 'Nurture', count: 1 },
-  { id: 'reports', label: 'Reports', count: 3 }
+  { id: "all", label: "All Employees", count: 12 },
+  { id: "lead-capture", label: "Lead Capture", count: 4 },
+  { id: "transaction", label: "Transaction", count: 4 },
+  { id: "nurture", label: "Nurture", count: 1 },
+  { id: "reports", label: "Reports", count: 3 },
 ];
 
 interface EmployeeStatus {
@@ -265,112 +362,186 @@ interface EmployeeStatus {
   successRate: number;
 }
 
-export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean }) {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedEmployee, setSelectedEmployee] = useState<typeof RE_AI_EMPLOYEES[0] | null>(null);
+export function RealEstateAIEmployees({
+  isAdmin = true,
+}: {
+  isAdmin?: boolean;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedEmployee, setSelectedEmployee] = useState<
+    (typeof RE_AI_EMPLOYEES)[0] | null
+  >(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
-  const [employeeStatuses, setEmployeeStatuses] = useState<Record<string, EmployeeStatus>>({});
-  
-  const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
+  const [employeeStatuses, setEmployeeStatuses] = useState<
+    Record<string, EmployeeStatus>
+  >({});
+
+  const [provisionedAgents, setProvisionedAgents] = useState<
+    ProvisionedAgent[]
+  >([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
-  const [autoRunSettings, setAutoRunSettings] = useState<Record<string, boolean>>({});
+  const [autoRunSettings, setAutoRunSettings] = useState<
+    Record<string, boolean>
+  >({});
   const [autoRunUpdating, setAutoRunUpdating] = useState<string | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
   const [showConnectPhone, setShowConnectPhone] = useState(false);
-  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<(typeof RE_AI_EMPLOYEES)[0] | null>(null);
+  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<
+    (typeof RE_AI_EMPLOYEES)[0] | null
+  >(null);
   const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
   const [assigningPhone, setAssigningPhone] = useState<string | null>(null);
+  const [canUseREProvision, setCanUseREProvision] = useState(false);
 
   // Fetch provisioned agents on mount
   useEffect(() => {
-    fetchProvisionedAgents();
+    let cancelled = false;
+
+    const bootstrapProvision = async () => {
+      try {
+        const contextRes = await fetch("/api/session/context");
+        const context = contextRes.ok
+          ? await contextRes.json().catch(() => null)
+          : null;
+        const isRealEstate = context?.industry === "REAL_ESTATE";
+        if (cancelled) return;
+        setCanUseREProvision(isRealEstate);
+        if (isRealEstate) {
+          await fetchProvisionedAgents(true);
+        } else {
+          setIsLoadingAgents(false);
+          setProvisionedAgents([]);
+        }
+      } catch {
+        if (cancelled) return;
+        setCanUseREProvision(false);
+        setIsLoadingAgents(false);
+      }
+    };
+
+    bootstrapProvision();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    fetch('/api/ai-employees/auto-run')
-      .then((res) => res.ok ? res.json() : { settings: {} })
+    fetch("/api/ai-employees/auto-run")
+      .then((res) => (res.ok ? res.json() : { settings: {} }))
       .then((data) => setAutoRunSettings(data.settings || {}))
       .catch(() => setAutoRunSettings({}));
   }, []);
 
-  const isAutoRunEnabled = (employeeType: string) => !!autoRunSettings[employeeType];
+  const isAutoRunEnabled = (employeeType: string) =>
+    !!autoRunSettings[employeeType];
 
   const router = useRouter();
 
-  const handleAutoRunChange = async (employeeType: string, enabled: boolean) => {
+  const handleAutoRunChange = async (
+    employeeType: string,
+    enabled: boolean,
+  ) => {
     setAutoRunUpdating(employeeType);
     try {
-      const res = await fetch('/api/ai-employees/auto-run', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai-employees/auto-run", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employeeType, autoRunEnabled: enabled }),
       });
       const data = res.ok ? await res.json() : null;
       if (res.ok) {
         setAutoRunSettings((prev) => ({ ...prev, [employeeType]: enabled }));
-        toast.success(enabled ? 'Auto-run enabled' : 'Auto-run disabled');
+        toast.success(enabled ? "Auto-run enabled" : "Auto-run disabled");
         if (enabled && data?.createdWorkflowId) {
-          router.push(`/dashboard/ai-employees?tab=workflows&openBuilder=1&draftId=${data.createdWorkflowId}`);
+          router.push(
+            `/dashboard/ai-employees?tab=workflows&openBuilder=1&draftId=${data.createdWorkflowId}`,
+          );
         }
       } else {
-        toast.error('Failed to update auto-run');
+        toast.error("Failed to update auto-run");
       }
     } catch {
-      toast.error('Failed to update auto-run');
+      toast.error("Failed to update auto-run");
     } finally {
       setAutoRunUpdating(null);
     }
   };
 
-  const fetchProvisionedAgents = async () => {
+  const fetchProvisionedAgents = async (allowWithoutGuard = false) => {
+    if (!allowWithoutGuard && !canUseREProvision) {
+      setIsLoadingAgents(false);
+      return;
+    }
+
     try {
       setIsLoadingAgents(true);
-      const response = await fetch('/api/real-estate/ai-employees/provision');
+      const response = await fetch("/api/real-estate/ai-employees/provision");
       if (response.ok) {
         const data = await response.json();
         setProvisionedAgents(data.agents || []);
       }
     } catch (error) {
-      console.error('Failed to fetch provisioned agents:', error);
+      console.error("Failed to fetch provisioned agents:", error);
     } finally {
       setIsLoadingAgents(false);
     }
   };
 
   const isAgentProvisioned = (employeeId: string): boolean => {
-    return provisionedAgents.some(a => a.employeeType === employeeId);
+    return provisionedAgents.some((a) => a.employeeType === employeeId);
   };
 
-  const getProvisionedAgent = (employeeId: string): ProvisionedAgent | undefined => {
-    return provisionedAgents.find(a => a.employeeType === employeeId);
+  const getProvisionedAgent = (
+    employeeId: string,
+  ): ProvisionedAgent | undefined => {
+    return provisionedAgents.find((a) => a.employeeType === employeeId);
   };
 
   const handleTestAgent = async (employeeId: string) => {
+    if (!canUseREProvision) {
+      toast.error("This feature is only available for Real Estate users");
+      return;
+    }
+
     let agent = getProvisionedAgent(employeeId);
     if (!agent) {
       setTestingAgentId(employeeId);
       try {
-        toast.loading('Setting up voice agent...', { id: 'test-agent' });
-        const res = await fetch('/api/real-estate/ai-employees/provision', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        toast.loading("Setting up voice agent...", { id: "test-agent" });
+        const res = await fetch("/api/real-estate/ai-employees/provision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ employeeTypes: [employeeId] }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success && data.agents?.length) {
-          toast.success('Voice agent ready!', { id: 'test-agent' });
+          toast.success("Voice agent ready!", { id: "test-agent" });
           setProvisionedAgents(data.agents);
-          agent = data.agents.find((a: ProvisionedAgent) => a.employeeType === employeeId);
+          agent = data.agents.find(
+            (a: ProvisionedAgent) => a.employeeType === employeeId,
+          );
         } else {
-          const errMsg = data.error || data.message || (res.status === 403 ? 'This feature is only available for Real Estate users' : res.status === 401 ? 'Please sign in' : 'Failed to set up agent');
-          toast.error(errMsg, { id: 'test-agent', duration: 6000 });
+          const errMsg =
+            data.error ||
+            data.message ||
+            (res.status === 403
+              ? "This feature is only available for Real Estate users"
+              : res.status === 401
+                ? "Please sign in"
+                : "Failed to set up agent");
+          toast.error(errMsg, { id: "test-agent", duration: 6000 });
         }
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Network or server error';
-        toast.error(`Failed to set up agent: ${msg}`, { id: 'test-agent', duration: 6000 });
+        const msg =
+          error instanceof Error ? error.message : "Network or server error";
+        toast.error(`Failed to set up agent: ${msg}`, {
+          id: "test-agent",
+          duration: 6000,
+        });
       } finally {
         setTestingAgentId(null);
       }
@@ -378,34 +549,35 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
     if (agent?.id) {
       const params = new URLSearchParams({
         agentId: agent.id,
-        returnTo: 'ai-employees',
-        agentName: agent.name || '',
+        returnTo: "ai-employees",
+        agentName: agent.name || "",
       });
       window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
     }
   };
 
   // Filter employees by category
-  const filteredEmployees = selectedCategory === 'all' 
-    ? RE_AI_EMPLOYEES 
-    : RE_AI_EMPLOYEES.filter(e => e.category === selectedCategory);
+  const filteredEmployees =
+    selectedCategory === "all"
+      ? RE_AI_EMPLOYEES
+      : RE_AI_EMPLOYEES.filter((e) => e.category === selectedCategory);
 
   const handleRunEmployee = async (employeeId: string) => {
     setRunningEmployee(employeeId);
     try {
-      const response = await fetch('/api/ai-employees/real-estate/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeType: employeeId })
+      const response = await fetch("/api/ai-employees/real-estate/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeType: employeeId }),
       });
-      
+
       if (response.ok) {
-        toast.success('AI Employee task started!');
+        toast.success("AI Employee task started!");
       } else {
-        throw new Error('Failed to start task');
+        throw new Error("Failed to start task");
       }
     } catch (error) {
-      toast.error('Failed to run AI Employee');
+      toast.error("Failed to run AI Employee");
     } finally {
       setRunningEmployee(null);
     }
@@ -417,24 +589,29 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
     if (current === phoneNumber.trim()) return;
     setAssigningPhone(employeeId);
     try {
-      const res = await fetch('/api/real-estate/ai-employees/assign-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeType: employeeId, phoneNumber: phoneNumber.trim() }),
+      const res = await fetch("/api/real-estate/ai-employees/assign-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeType: employeeId,
+          phoneNumber: phoneNumber.trim(),
+        }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success('Phone number assigned');
+        toast.success("Phone number assigned");
         setProvisionedAgents((prev) =>
           prev.map((a) =>
-            a.employeeType === employeeId ? { ...a, twilioPhoneNumber: data.twilioPhoneNumber } : a
-          )
+            a.employeeType === employeeId
+              ? { ...a, twilioPhoneNumber: data.twilioPhoneNumber }
+              : a,
+          ),
         );
       } else {
-        toast.error(data.error || 'Failed to assign phone');
+        toast.error(data.error || "Failed to assign phone");
       }
     } catch {
-      toast.error('Failed to assign phone');
+      toast.error("Failed to assign phone");
     } finally {
       setAssigningPhone(null);
     }
@@ -442,11 +619,16 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'bg-red-100 text-red-700 border-red-200';
-      case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'LOW': return 'bg-green-100 text-green-700 border-green-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case "URGENT":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "HIGH":
+        return "bg-orange-100 text-orange-700 border-orange-200";
+      case "MEDIUM":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      case "LOW":
+        return "bg-green-100 text-green-700 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -459,18 +641,26 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
             <Bot className="w-7 h-7 text-purple-400" />
             Real Estate AI Team
           </h2>
-          <p className="text-gray-600 mt-1">12 specialized AI employees with OACIQ compliance and multi-language support</p>
-          <p className="text-xs text-gray-500 mt-1">Auto-provisioned when you set Real Estate as your industry</p>
+          <p className="text-gray-600 mt-1">
+            12 specialized AI employees with OACIQ compliance and multi-language
+            support
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-provisioned when you set Real Estate as your industry
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
           <Button
             variant="ghost"
             size="sm"
-            onClick={fetchProvisionedAgents}
+            onClick={() => fetchProvisionedAgents()}
             className="text-gray-500 hover:text-gray-700"
           >
             <RefreshCw className="w-4 h-4" />
@@ -483,16 +673,22 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
         {CATEGORIES.map((cat) => (
           <Button
             key={cat.id}
-            variant={selectedCategory === cat.id ? 'default' : 'outline'}
+            variant={selectedCategory === cat.id ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedCategory(cat.id)}
-className={selectedCategory === cat.id
-              ? 'bg-purple-600 hover:bg-purple-700 text-white'
-              : 'border-purple-200 hover:bg-purple-50'
+            className={
+              selectedCategory === cat.id
+                ? "bg-purple-600 hover:bg-purple-700 text-white"
+                : "border-purple-200 hover:bg-purple-50"
             }
           >
             {cat.label}
-            <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-700">{cat.count}</Badge>
+            <Badge
+              variant="secondary"
+              className="ml-2 bg-purple-100 text-purple-700"
+            >
+              {cat.count}
+            </Badge>
           </Button>
         ))}
       </div>
@@ -513,7 +709,7 @@ className={selectedCategory === cat.id
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card 
+                <Card
                   className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
                   onClick={() => {
                     setSelectedEmployee(employee);
@@ -523,17 +719,25 @@ className={selectedCategory === cat.id
                   <CardContent className="p-4">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`p-2.5 rounded-xl bg-gradient-to-br ${employee.color}`}>
+                      <div
+                        className={`p-2.5 rounded-xl bg-gradient-to-br ${employee.color}`}
+                      >
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(employee.id) ? (
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-100 text-green-700 border-green-200"
+                          >
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             Ready
                           </Badge>
                         ) : employee.voiceEnabled ? (
-                          <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-amber-100 text-amber-700 border-amber-200"
+                          >
                             <AlertCircle className="w-3 h-3 mr-1" />
                             Not Provisioned
                           </Badge>
@@ -542,26 +746,44 @@ className={selectedCategory === cat.id
                     </div>
 
                     {/* Name & Title */}
-                    <h3 className="font-bold text-gray-900 text-lg">{employee.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{employee.title}</p>
-                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">{employee.description}</p>
+                    <h3 className="font-bold text-gray-900 text-lg">
+                      {employee.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {employee.title}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">
+                      {employee.description}
+                    </p>
 
                     {/* Priority & Status */}
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-xs ${getPriorityColor(employee.priority)}`}>
+                      <Badge
+                        className={`text-xs ${getPriorityColor(employee.priority)}`}
+                      >
                         {employee.priority}
                       </Badge>
                       <div className="flex items-center gap-1">
-                        {isAgentProvisioned(employee.id) && employee.voiceEnabled && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
-                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-600 hover:bg-green-50' : 'text-gray-500 hover:bg-purple-50'}`}
-                            title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
-                          >
-                            <Phone className="w-4 h-4" />
-                          </button>
-                        )}
+                        {isAgentProvisioned(employee.id) &&
+                          employee.voiceEnabled && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConnectPhoneEmployee(employee);
+                                setShowConnectPhone(true);
+                              }}
+                              className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? "text-green-600 hover:bg-green-50" : "text-gray-500 hover:bg-purple-50"}`}
+                              title={
+                                getProvisionedAgent(employee.id)
+                                  ?.twilioPhoneNumber
+                                  ? "Change phone"
+                                  : "Connect phone"
+                              }
+                            >
+                              <Phone className="w-4 h-4" />
+                            </button>
+                          )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -595,7 +817,9 @@ className={selectedCategory === cat.id
             <>
               <DialogHeader>
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedEmployee.color}`}>
+                  <div
+                    className={`p-3 rounded-xl bg-gradient-to-br ${selectedEmployee.color}`}
+                  >
                     <selectedEmployee.icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -612,10 +836,16 @@ className={selectedCategory === cat.id
               <div className="space-y-6 mt-4">
                 {/* Capabilities */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Capabilities</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Capabilities
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedEmployee.capabilities.map((cap, i) => (
-                      <Badge key={i} variant="secondary" className="bg-purple-50 text-gray-700 border border-purple-200">
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="bg-purple-50 text-gray-700 border border-purple-200"
+                      >
                         <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />
                         {cap}
                       </Badge>
@@ -629,23 +859,34 @@ className={selectedCategory === cat.id
                     <Settings className="w-5 h-5 text-slate-400" />
                     <div>
                       <p className="text-white font-medium">Auto-Run</p>
-                      <p className="text-xs text-gray-600">Automatically trigger on events</p>
+                      <p className="text-xs text-gray-600">
+                        Automatically trigger on events
+                      </p>
                     </div>
                   </div>
                   <Switch
-                    checked={selectedEmployee ? isAutoRunEnabled(selectedEmployee.id) : false}
-                    onCheckedChange={(checked) => selectedEmployee && handleAutoRunChange(selectedEmployee.id, !!checked)}
+                    checked={
+                      selectedEmployee
+                        ? isAutoRunEnabled(selectedEmployee.id)
+                        : false
+                    }
+                    onCheckedChange={(checked) =>
+                      selectedEmployee &&
+                      handleAutoRunChange(selectedEmployee.id, !!checked)
+                    }
                     disabled={!!autoRunUpdating}
                   />
                 </div>
 
                 {/* Voice Agent Status — Setup */}
                 {selectedEmployee.voiceEnabled && (
-                  <div className={`p-4 rounded-lg border ${
-                    isAgentProvisioned(selectedEmployee.id) 
-? 'bg-green-100 border-green-200'
-                      : 'bg-purple-50/50 border-purple-200'
-                  }`}>
+                  <div
+                    className={`p-4 rounded-lg border ${
+                      isAgentProvisioned(selectedEmployee.id)
+                        ? "bg-green-100 border-green-200"
+                        : "bg-purple-50/50 border-purple-200"
+                    }`}
+                  >
                     <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <Mic className="w-4 h-4" />
                       Setup — Voice Agent
@@ -653,80 +894,119 @@ className={selectedCategory === cat.id
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(selectedEmployee.id) ? (
-                          <><CheckCircle2 className="w-4 h-4 text-green-400" /><span className="text-green-400 font-medium">Voice Agent Ready</span></>
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            <span className="text-green-400 font-medium">
+                              Voice Agent Ready
+                            </span>
+                          </>
                         ) : (
-                          <><Mic className="w-4 h-4 text-gray-500" /><span className="text-gray-700 font-medium">Voice Agent</span></>
+                          <>
+                            <Mic className="w-4 h-4 text-gray-500" />
+                            <span className="text-gray-700 font-medium">
+                              Voice Agent
+                            </span>
+                          </>
                         )}
                       </div>
                       {isAgentProvisioned(selectedEmployee.id) && (
                         <Badge className="bg-green-100 text-green-700 border-green-200">
-                          {getProvisionedAgent(selectedEmployee.id)?.callCount || 0} calls
+                          {getProvisionedAgent(selectedEmployee.id)
+                            ?.callCount || 0}{" "}
+                          calls
                         </Badge>
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mb-3">
                       {isAgentProvisioned(selectedEmployee.id)
-                        ? 'Voice AI agent configured with OACIQ compliance. Test in browser or assign a phone for calls.'
-                        : 'Click Test Voice Agent to set up automatically on first use.'}
+                        ? "Voice AI agent configured with OACIQ compliance. Test in browser or assign a phone for calls."
+                        : "Click Test Voice Agent to set up automatically on first use."}
                     </p>
-                    {isAgentProvisioned(selectedEmployee.id) && !getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
-                      <div className="mt-3 pt-3 border-t border-purple-200">
-                        {isAdmin ? (
-                          <>
-                            <p className="text-xs text-amber-400 mb-2">This agent can make phone calls. Assign a number from your Soshogle Call account:</p>
-                            <TwilioPhoneSelector
-                              value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
-                              onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
-                              required={false}
-                              onPurchaseClick={() => setShowPurchaseDialog(true)}
-                              showPurchaseButton={true}
-                              refreshTrigger={phoneRefreshTrigger}
-                              label="Phone Number (for calls)"
-                              description="Select from your Soshogle Call account. Required for inbound/outbound calls."
-                            />
-                            {assigningPhone === selectedEmployee.id && (
-                              <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Assigning...
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-sm text-amber-400 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                            Admin rights required to assign a phone number to this agent. Please ask your administrator.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {isAgentProvisioned(selectedEmployee.id) && getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
-                      <div className="mt-3 pt-3 border-t border-purple-200">
-                        <TwilioPhoneSelector
-                          value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
-                          onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
-                          required={false}
-                          onPurchaseClick={() => setShowPurchaseDialog(true)}
-                          showPurchaseButton={true}
-                          refreshTrigger={phoneRefreshTrigger}
-                          label="Phone Number"
-                          description="Select from your Soshogle Call account. Assigned to agent in Soshogle Voice AI."
-                        />
-                        {assigningPhone === selectedEmployee.id && (
-                          <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Assigning...
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {isAgentProvisioned(selectedEmployee.id) &&
+                      !getProvisionedAgent(selectedEmployee.id)
+                        ?.twilioPhoneNumber && (
+                        <div className="mt-3 pt-3 border-t border-purple-200">
+                          {isAdmin ? (
+                            <>
+                              <p className="text-xs text-amber-400 mb-2">
+                                This agent can make phone calls. Assign a number
+                                from your Soshogle Call account:
+                              </p>
+                              <TwilioPhoneSelector
+                                value={
+                                  getProvisionedAgent(selectedEmployee.id)
+                                    ?.twilioPhoneNumber || ""
+                                }
+                                onChange={(v) =>
+                                  handleAssignPhone(selectedEmployee.id, v)
+                                }
+                                required={false}
+                                onPurchaseClick={() =>
+                                  setShowPurchaseDialog(true)
+                                }
+                                showPurchaseButton={true}
+                                refreshTrigger={phoneRefreshTrigger}
+                                label="Phone Number (for calls)"
+                                description="Select from your Soshogle Call account. Required for inbound/outbound calls."
+                              />
+                              {assigningPhone === selectedEmployee.id && (
+                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Assigning...
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-amber-400 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                              Admin rights required to assign a phone number to
+                              this agent. Please ask your administrator.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    {isAgentProvisioned(selectedEmployee.id) &&
+                      getProvisionedAgent(selectedEmployee.id)
+                        ?.twilioPhoneNumber && (
+                        <div className="mt-3 pt-3 border-t border-purple-200">
+                          <TwilioPhoneSelector
+                            value={
+                              getProvisionedAgent(selectedEmployee.id)
+                                ?.twilioPhoneNumber || ""
+                            }
+                            onChange={(v) =>
+                              handleAssignPhone(selectedEmployee.id, v)
+                            }
+                            required={false}
+                            onPurchaseClick={() => setShowPurchaseDialog(true)}
+                            showPurchaseButton={true}
+                            refreshTrigger={phoneRefreshTrigger}
+                            label="Phone Number"
+                            description="Select from your Soshogle Call account. Assigned to agent in Soshogle Voice AI."
+                          />
+                          {assigningPhone === selectedEmployee.id && (
+                            <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Assigning...
+                            </div>
+                          )}
+                        </div>
+                      )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTestAgent(selectedEmployee.id);
+                        }}
                         disabled={testingAgentId === selectedEmployee.id}
                       >
-                        {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Mic className="w-3 h-3 mr-1" />}
+                        {testingAgentId === selectedEmployee.id ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Mic className="w-3 h-3 mr-1" />
+                        )}
                         Talk to {selectedEmployee.name}
                       </Button>
                       {isAgentProvisioned(selectedEmployee.id) && (
@@ -734,36 +1014,56 @@ className={selectedCategory === cat.id
                           size="sm"
                           variant="outline"
                           className="border-purple-200 text-purple-600 hover:bg-purple-50"
-                          onClick={(e) => { e.stopPropagation(); setShowTaskDashboard(true); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowTaskDashboard(true);
+                          }}
                         >
                           <Settings className="w-3 h-3 mr-1" />
                           Manage Tasks
                         </Button>
                       )}
-                      <p className="text-xs text-gray-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history, run.</p>
+                      <p className="text-xs text-gray-500 w-full">
+                        Talk opens voice conversation. Manage Tasks: toggles,
+                        history, run.
+                      </p>
                     </div>
                   </div>
                 )}
-                
+
                 {/* OACIQ Compliance Note */}
                 <div className="p-4 bg-white/80 rounded-lg border-2 border-purple-200/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="w-4 h-4 text-purple-400" />
-                    <span className="text-purple-400 font-medium">OACIQ Compliant</span>
+                    <span className="text-purple-400 font-medium">
+                      OACIQ Compliant
+                    </span>
                   </div>
                   <p className="text-xs text-gray-600">
-                    This AI employee follows Quebec real estate regulations (OACIQ). It identifies as an AI assistant, handles personal information according to Law 25, and escalates compliance matters to human agents.
+                    This AI employee follows Quebec real estate regulations
+                    (OACIQ). It identifies as an AI assistant, handles personal
+                    information according to Law 25, and escalates compliance
+                    matters to human agents.
                   </p>
                 </div>
               </div>
 
               <DialogFooter className="mt-6">
-                <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="border-purple-200 text-gray-700 hover:bg-purple-50">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDetailDialog(false)}
+                  className="border-purple-200 text-gray-700 hover:bg-purple-50"
+                >
                   Close
                 </Button>
                 {isAgentProvisioned(selectedEmployee.id) && (
-                  <Button variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50" onClick={() => setShowTaskDashboard(true)}>
-                    <Settings className="w-4 h-4 mr-2" />Manage Tasks
+                  <Button
+                    variant="outline"
+                    className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                    onClick={() => setShowTaskDashboard(true)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Manage Tasks
                   </Button>
                 )}
                 <Button
@@ -773,7 +1073,8 @@ className={selectedCategory === cat.id
                     setShowDetailDialog(false);
                   }}
                 >
-                  <Mic className="w-4 h-4 mr-2" />Talk to {selectedEmployee.name}
+                  <Mic className="w-4 h-4 mr-2" />
+                  Talk to {selectedEmployee.name}
                 </Button>
               </DialogFooter>
             </>
@@ -787,7 +1088,10 @@ className={selectedCategory === cat.id
         onSuccess={(phoneNumber) => {
           setShowPurchaseDialog(false);
           setPhoneRefreshTrigger((n) => n + 1);
-          if (selectedEmployee?.voiceEnabled && isAgentProvisioned(selectedEmployee.id)) {
+          if (
+            selectedEmployee?.voiceEnabled &&
+            isAgentProvisioned(selectedEmployee.id)
+          ) {
             handleAssignPhone(selectedEmployee.id, phoneNumber);
           }
         }}
@@ -795,19 +1099,27 @@ className={selectedCategory === cat.id
       {connectPhoneEmployee && (
         <ConnectPhoneDialog
           open={showConnectPhone}
-          onOpenChange={(open) => { if (!open) setConnectPhoneEmployee(null); setShowConnectPhone(open); }}
+          onOpenChange={(open) => {
+            if (!open) setConnectPhoneEmployee(null);
+            setShowConnectPhone(open);
+          }}
           agent={{
-            source: 're',
+            source: "re",
             agentName: connectPhoneEmployee.name,
             employeeType: connectPhoneEmployee.id,
-            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)?.twilioPhoneNumber,
+            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)
+              ?.twilioPhoneNumber,
           }}
           onSuccess={() => {
             fetchProvisionedAgents();
             setShowConnectPhone(false);
             setConnectPhoneEmployee(null);
           }}
-          onPurchaseClick={() => { setShowConnectPhone(false); setConnectPhoneEmployee(null); setShowPurchaseDialog(true); }}
+          onPurchaseClick={() => {
+            setShowConnectPhone(false);
+            setConnectPhoneEmployee(null);
+            setShowPurchaseDialog(true);
+          }}
         />
       )}
 
@@ -833,17 +1145,17 @@ export function RealEstateAITeamWidget() {
   const handleQuickRun = async (employeeId: string) => {
     setRunningEmployee(employeeId);
     try {
-      const response = await fetch('/api/ai-employees/real-estate/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeType: employeeId })
+      const response = await fetch("/api/ai-employees/real-estate/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeType: employeeId }),
       });
-      
+
       if (response.ok) {
-        toast.success('Task started!');
+        toast.success("Task started!");
       }
     } catch (error) {
-      toast.error('Failed to start');
+      toast.error("Failed to start");
     } finally {
       setRunningEmployee(null);
     }
@@ -860,11 +1172,20 @@ export function RealEstateAITeamWidget() {
             <Bot className="w-5 h-5 text-purple-400" />
             AI Team
           </CardTitle>
-          <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300" asChild>
-            <a href="/dashboard/ai-employees?tab=re-team">View All <ChevronRight className="w-4 h-4 ml-1" /></a>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-purple-400 hover:text-purple-300"
+            asChild
+          >
+            <a href="/dashboard/ai-employees?tab=re-team">
+              View All <ChevronRight className="w-4 h-4 ml-1" />
+            </a>
           </Button>
         </div>
-        <CardDescription className="text-gray-600">Your automated real estate assistants</CardDescription>
+        <CardDescription className="text-gray-600">
+          Your automated real estate assistants
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -887,8 +1208,12 @@ export function RealEstateAITeamWidget() {
                     <Play className="w-3 h-3 text-gray-500 group-hover:text-purple-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </div>
-                <p className="text-sm font-medium text-gray-900">{employee.name}</p>
-                <p className="text-xs text-gray-600 truncate">{employee.title}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {employee.name}
+                </p>
+                <p className="text-xs text-gray-600 truncate">
+                  {employee.title}
+                </p>
               </button>
             );
           })}

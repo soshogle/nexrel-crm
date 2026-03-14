@@ -21,14 +21,14 @@ const MANDATES = [
     key: "sentiment_pulse",
     label: "Sentiment Pulse",
     maxAgeHours: 24,
-    checkEntityTypes: ["OPENCLAW_OPERATION", "NEXREL_AI_BRAIN_DECISION"],
+    checkEntityTypes: ["NEXREL_AI_OPERATION", "NEXREL_AI_BRAIN_DECISION"],
     checkModes: ["go_viral_mandate", "social_media_loop"],
   },
   {
     key: "autonomy_cycle",
     label: "Autonomy Revenue Cycle",
     maxAgeHours: 24,
-    checkEntityTypes: ["OPENCLAW_OPERATION"],
+    checkEntityTypes: ["NEXREL_AI_OPERATION"],
     checkModes: ["agent_command_center_cycle", "sales_squad"],
   },
   {

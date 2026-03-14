@@ -46,13 +46,13 @@ import {
   getLatestGovernanceBaselineSnapshot,
 } from "@/lib/nexrel-ai-brain/governance-analytics";
 import {
-  OPENCLAW_MODES,
-  buildOpenClawRecoverySuggestion,
+  NEXREL_AI_MODES,
+  buildNexrelAiRecoverySuggestion,
   getCustomerWorkflowSteps,
   getSalesSquadSteps,
   getSocialMediaLoopSteps,
   getVerticalPlaybookSteps,
-} from "@/lib/openclaw-voice";
+} from "@/lib/nexrel-ai-voice";
 import {
   buildAssetFactoryManifest,
   buildCampaignCommanderPlan,
@@ -299,9 +299,9 @@ export async function POST(req: NextRequest) {
         );
         break;
 
-      case "openclaw_operate":
+      case "nexrel_ai_operate":
       case "automation_operate":
-        result = await handleOpenClawOperate(
+        result = await handleNexrelAiOperate(
           userId,
           parameters || {},
           industry,
@@ -416,7 +416,7 @@ export async function POST(req: NextRequest) {
     console.log(`✅ [CRM Voice Functions] ${function_name} result:`, result);
 
     if (
-      function_name === "openclaw_operate" ||
+      function_name === "nexrel_ai_operate" ||
       function_name === "automation_operate"
     ) {
       try {
@@ -426,7 +426,7 @@ export async function POST(req: NextRequest) {
             userId,
             action: "SETTINGS_MODIFIED",
             severity: result?.success ? "LOW" : "MEDIUM",
-            entityType: "OPENCLAW_OPERATION",
+            entityType: "NEXREL_AI_OPERATION",
             entityId: crypto.randomUUID(),
             metadata: {
               mode: params?.mode || null,
@@ -1648,7 +1648,7 @@ async function persistWorkAiLaunch(
   });
 }
 
-async function handleOpenClawOperate(
+async function handleNexrelAiOperate(
   userId: string,
   params: any,
   industry: Industry | null,
@@ -2330,7 +2330,7 @@ async function handleOpenClawOperate(
       return {
         success: false,
         error: "contactName is required for execution_chain",
-        recovery: buildOpenClawRecoverySuggestion("name required", params),
+        recovery: buildNexrelAiRecoverySuggestion("name required", params),
       };
     }
 
@@ -2350,7 +2350,7 @@ async function handleOpenClawOperate(
         success: false,
         error: leadResult?.error || "Failed to create contact",
         checkpoints,
-        recovery: buildOpenClawRecoverySuggestion(
+        recovery: buildNexrelAiRecoverySuggestion(
           leadResult?.error || "",
           params,
         ),
@@ -2379,7 +2379,7 @@ async function handleOpenClawOperate(
         success: false,
         error: dealResult?.error || "Failed to create deal",
         checkpoints,
-        recovery: buildOpenClawRecoverySuggestion(
+        recovery: buildNexrelAiRecoverySuggestion(
           dealResult?.error || "",
           params,
         ),
@@ -2416,7 +2416,7 @@ async function handleOpenClawOperate(
         success: false,
         error: taskResult.error,
         checkpoints,
-        recovery: buildOpenClawRecoverySuggestion(taskResult.error, params),
+        recovery: buildNexrelAiRecoverySuggestion(taskResult.error, params),
       };
     }
     checkpoints.push({
@@ -2449,7 +2449,7 @@ async function handleOpenClawOperate(
         success: false,
         error: emailDraftResult.error,
         checkpoints,
-        recovery: buildOpenClawRecoverySuggestion(
+        recovery: buildNexrelAiRecoverySuggestion(
           emailDraftResult.error,
           params,
         ),
@@ -2678,7 +2678,7 @@ async function handleOpenClawOperate(
           autoCreated: true,
           aiSuggested: true,
           dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
-          tags: ["openclaw", "sales-squad"],
+          tags: ["nexrel_ai", "sales-squad"],
         },
       });
       tasksCreated += 1;
@@ -2932,7 +2932,7 @@ async function handleOpenClawOperate(
         userId,
         action: "SETTINGS_MODIFIED",
         severity: "MEDIUM",
-        entityType: "OPENCLAW_AUTONOMY_POLICY",
+        entityType: "NEXREL_AI_AUTONOMY_POLICY",
         entityId: crypto.randomUUID(),
         metadata: {
           enabled,
@@ -3020,7 +3020,7 @@ async function handleOpenClawOperate(
         status: "TODO",
         autoCreated: true,
         aiSuggested: true,
-        tags: ["openclaw", "social-loop"],
+        tags: ["nexrel_ai", "social-loop"],
       },
     });
 
@@ -3106,6 +3106,6 @@ async function handleOpenClawOperate(
 
   return {
     success: false,
-    error: `Unsupported mode. Use one of: ${OPENCLAW_MODES.join(", ")}`,
+    error: `Unsupported mode. Use one of: ${NEXREL_AI_MODES.join(", ")}`,
   };
 }

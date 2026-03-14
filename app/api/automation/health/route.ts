@@ -1,1 +1,1 @@
-export { GET, dynamic, runtime } from "@/app/api/openclaw/health/route";
+export { GET, dynamic, runtime } from "@/app/api/nexrel-ai/health/route";

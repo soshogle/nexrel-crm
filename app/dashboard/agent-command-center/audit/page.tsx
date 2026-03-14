@@ -29,7 +29,7 @@ function summarize(item: AuditItem): string {
   if (item.entityType === "NEXREL_AI_BRAIN_OPERATOR_REJECTION") {
     return "High-risk action rejected by owner";
   }
-  if (item.entityType === "OPENCLAW_OPERATION") {
+  if (item.entityType === "NEXREL_AI_OPERATION") {
     const mode = item?.metadata?.mode || "operation";
     return `Nexrel AI executed ${mode}`;
   }
