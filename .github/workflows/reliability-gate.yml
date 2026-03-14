@@ -32,18 +32,21 @@ jobs:
 
       - name: Live-run KPI gate (in-scope 95%+)
         if: ${{ env.RELIABILITY_DATABASE_URL != '' }}
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ env.RELIABILITY_DATABASE_URL }}
         run: npm run reliability:kpis -- --days=7 --target=0.95 --min-samples=10 --strict=true
 
       - name: Trend regression gate (week-over-week)
-        if: ${{ env.RELIABILITY_DATABASE_URL != '' }}
+        if: ${{ always() && env.RELIABILITY_DATABASE_URL != '' }}
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ env.RELIABILITY_DATABASE_URL }}
         run: npm run reliability:trend -- --window-days=7 --max-drop=0.03 --min-samples=10 --strict=true
 
       - name: Canary gate (latest 10 missions)
-        if: ${{ env.RELIABILITY_DATABASE_URL != '' }}
+        if: ${{ always() && env.RELIABILITY_DATABASE_URL != '' }}
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ env.RELIABILITY_DATABASE_URL }}
         run: npm run reliability:canary -- --sample-size=10 --min-success=0.95 --strict=true
@@ -51,6 +54,10 @@ jobs:
       - name: Build reliability summary
         if: always()
         run: npm run reliability:summary
+
+      - name: Enforce reliability gates
+        if: ${{ always() && env.RELIABILITY_DATABASE_URL != '' }}
+        run: npm run reliability:enforce
 
       - name: Upload acceptance matrix artifact
         if: always()

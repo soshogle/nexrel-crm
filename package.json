@@ -69,6 +69,7 @@
     "reliability:kpis": "tsx scripts/reliability/live-run-kpis.ts",
     "reliability:trend": "tsx scripts/reliability/trend-regression.ts",
     "reliability:canary": "tsx scripts/reliability/canary-report.ts",
+    "reliability:enforce": "tsx scripts/reliability/enforce-gates.ts",
     "reliability:summary": "tsx scripts/reliability/publish-summary.ts",
     "reliability:gate": "npm run typecheck && npm run reliability:nightly && npm run reliability:matrix",
     "tenancy:attestation:weekly": "tsx scripts/tenancy/generate-tenant-db-mapping-attestation.ts",
