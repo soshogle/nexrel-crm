@@ -2,6 +2,7 @@ const { EventEmitter } = require("events");
 const { chromium } = require("playwright");
 const os = require("os");
 const fs = require("fs");
+const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
@@ -63,6 +64,10 @@ class WorkerEngine extends EventEmitter {
     this.burstUntil = 0;
     this.heartbeatLoop = null;
     this.pollLoop = null;
+    this.lastDesktopCaptureAt = 0;
+    this.cachedFrameImageDataUrl = null;
+    this.lastDesktopCaptureWarnAt = 0;
+    this.preferDesktopCapture = false;
   }
 
   log(level, message, meta = null) {
@@ -101,6 +106,49 @@ class WorkerEngine extends EventEmitter {
     if (this.liveBoost) return 450;
     if (this.isBursting()) return 700;
     return Number(this.config?.pollMs || 1500);
+  }
+
+  getDesktopCaptureInterval() {
+    if (this.liveBoost) return 700;
+    if (this.isBursting()) return 900;
+    return 1500;
+  }
+
+  async captureDesktopFrame() {
+    const platform = os.platform();
+    if (platform !== "darwin") return null;
+
+    const tmpFile = path.join(
+      os.tmpdir(),
+      `nexrel-desktop-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
+    );
+
+    try {
+      await execFileAsync("screencapture", ["-x", "-t", "jpg", tmpFile], {
+        timeout: 4500,
+      });
+      if (!fs.existsSync(tmpFile)) return null;
+      const bytes = fs.readFileSync(tmpFile);
+      if (!bytes || bytes.length === 0) return null;
+      return `data:image/jpeg;base64,${bytes.toString("base64")}`;
+    } catch (error) {
+      const now = Date.now();
+      if (now - this.lastDesktopCaptureWarnAt > 30000) {
+        this.lastDesktopCaptureWarnAt = now;
+        this.log(
+          "warn",
+          "Desktop capture unavailable, falling back to browser frame",
+          {
+            error: error?.message || String(error),
+          },
+        );
+      }
+      return null;
+    } finally {
+      if (fs.existsSync(tmpFile)) {
+        fs.unlinkSync(tmpFile);
+      }
+    }
   }
 
   clearLoops() {
@@ -205,6 +253,70 @@ class WorkerEngine extends EventEmitter {
     const platform = os.platform();
     if (platform === "darwin") {
       await execFileAsync("open", ["-a", appName]);
+      const event = command?.meta?.calendarEvent;
+      if (appName === "Calendar" && event) {
+        const startDate = new Date(event.startAt || Date.now());
+        const endDate = new Date(
+          event.endAt || startDate.getTime() + 60 * 60 * 1000,
+        );
+        const title = String(event.title || "Nexrel Appointment").replace(
+          /"/g,
+          '\\"',
+        );
+        const notes = String(event.notes || "").replace(/"/g, '\\"');
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        const startMonth = monthNames[startDate.getMonth()];
+        const endMonth = monthNames[endDate.getMonth()];
+        await execFileAsync("osascript", [
+          "-e",
+          'tell application "Calendar"',
+          "-e",
+          "activate",
+          "-e",
+          "set targetCalendar to first calendar",
+          "-e",
+          "set startDate to (current date)",
+          "-e",
+          `set year of startDate to ${startDate.getFullYear()}`,
+          "-e",
+          `set month of startDate to ${startMonth}`,
+          "-e",
+          `set day of startDate to ${startDate.getDate()}`,
+          "-e",
+          `set time of startDate to ${startDate.getHours() * 3600 + startDate.getMinutes() * 60}`,
+          "-e",
+          "set endDate to (current date)",
+          "-e",
+          `set year of endDate to ${endDate.getFullYear()}`,
+          "-e",
+          `set month of endDate to ${endMonth}`,
+          "-e",
+          `set day of endDate to ${endDate.getDate()}`,
+          "-e",
+          `set time of endDate to ${endDate.getHours() * 3600 + endDate.getMinutes() * 60}`,
+          "-e",
+          'tell targetCalendar to set newEvent to make new event with properties {summary:"' +
+            `${title}` +
+            '", start date:startDate, end date:endDate}',
+          "-e",
+          'tell newEvent to set description to "' + `${notes}` + '"',
+          "-e",
+          "end tell",
+        ]);
+      }
       return `Opened app ${appName}`;
     }
     if (platform === "win32") {
@@ -358,7 +470,31 @@ class WorkerEngine extends EventEmitter {
   async sendHeartbeat() {
     await this.ensurePageReady();
     let frameImageDataUrl = undefined;
-    if (this.page) {
+
+    const now = Date.now();
+    const shouldCaptureDesktop =
+      now - this.lastDesktopCaptureAt >= this.getDesktopCaptureInterval();
+    if (shouldCaptureDesktop) {
+      this.lastDesktopCaptureAt = now;
+      const desktopImage = await this.captureDesktopFrame();
+      if (desktopImage) {
+        frameImageDataUrl = desktopImage;
+        this.cachedFrameImageDataUrl = desktopImage;
+        this.preferDesktopCapture = true;
+      }
+    } else if (this.cachedFrameImageDataUrl) {
+      frameImageDataUrl = this.cachedFrameImageDataUrl;
+    }
+
+    if (
+      !frameImageDataUrl &&
+      this.preferDesktopCapture &&
+      this.cachedFrameImageDataUrl
+    ) {
+      frameImageDataUrl = this.cachedFrameImageDataUrl;
+    }
+
+    if (!frameImageDataUrl && this.page && !this.preferDesktopCapture) {
       try {
         const shot = await this.page.screenshot({
           type: "jpeg",
@@ -367,6 +503,7 @@ class WorkerEngine extends EventEmitter {
           timeout: 5000,
         });
         frameImageDataUrl = `data:image/jpeg;base64,${shot.toString("base64")}`;
+        this.cachedFrameImageDataUrl = frameImageDataUrl;
       } catch (error) {
         const message = error?.message || String(error);
         if (/has been closed|Target page, context or browser/i.test(message)) {
@@ -380,6 +517,7 @@ class WorkerEngine extends EventEmitter {
                 timeout: 5000,
               });
               frameImageDataUrl = `data:image/jpeg;base64,${retry.toString("base64")}`;
+              this.cachedFrameImageDataUrl = frameImageDataUrl;
             } catch (retryError) {
               this.log("warn", "Screenshot capture failed", {
                 error: retryError?.message || String(retryError),
@@ -543,6 +681,7 @@ class WorkerEngine extends EventEmitter {
     };
     this.liveBoost = false;
     this.burstUntil = 0;
+    this.preferDesktopCapture = os.platform() === "darwin";
 
     this.browser = await this.launchBrowser(config.headed);
     this.context = await this.browser.newContext({

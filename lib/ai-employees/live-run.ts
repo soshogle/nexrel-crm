@@ -47,6 +47,7 @@ type LiveRunStep = {
   requiresApproval: boolean;
   target?: string;
   value?: string;
+  meta?: Record<string, any>;
   status: StepStatus;
   result?: string;
 };
@@ -244,6 +245,52 @@ function buildNavigationTarget(
   return `https://www.google.com/search?q=${encodeURIComponent(goal || appName)}`;
 }
 
+function buildCalendarEventFromGoal(goal: string) {
+  const raw = String(goal || "").trim();
+  const lower = raw.toLowerCase();
+  const wantsEvent =
+    /create|schedule|book|add/.test(lower) &&
+    /appointment|event|meeting/.test(lower);
+  if (!wantsEvent) return null;
+
+  const titleMatch = raw.match(
+    /(?:appointment|event|meeting)\s+(?:with|for)\s+([^,.]+)/i,
+  );
+  const title = titleMatch?.[1]
+    ? `Meeting with ${titleMatch[1].trim()}`
+    : "Nexrel Scheduled Appointment";
+
+  const now = new Date();
+  const start = new Date(now.getTime() + 60 * 60 * 1000);
+  start.setSeconds(0, 0);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+  const ampmMatch = raw.match(
+    /(?:at\s+)?(1[0-2]|0?[1-9])(?::([0-5][0-9]))?\s*(am|pm)/i,
+  );
+  if (ampmMatch) {
+    let hour = Number(ampmMatch[1]);
+    const minute = Number(ampmMatch[2] || "0");
+    const ampm = ampmMatch[3].toLowerCase();
+    if (ampm === "pm" && hour < 12) hour += 12;
+    if (ampm === "am" && hour === 12) hour = 0;
+    start.setHours(hour, minute, 0, 0);
+    end.setTime(start.getTime() + 60 * 60 * 1000);
+  }
+
+  if (/tomorrow/i.test(raw)) {
+    start.setDate(start.getDate() + 1);
+    end.setDate(end.getDate() + 1);
+  }
+
+  return {
+    title,
+    startAt: start.toISOString(),
+    endAt: end.toISOString(),
+    notes: `Created by Nexrel AI for goal: ${raw}`,
+  };
+}
+
 function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
   const appName = inferAppName(payload);
   const openAppOnly = isOpenAppOnlyGoal(payload.goal);
@@ -254,6 +301,10 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
   const steps: LiveRunStep[] = [];
 
   if (payload.executionTarget === "owner_desktop") {
+    const calendarEvent =
+      appName.toLowerCase() === "calendar"
+        ? buildCalendarEventFromGoal(payload.goal)
+        : null;
     const step: LiveRunStep = {
       id: crypto.randomUUID(),
       title: `Open ${appName}`,
@@ -261,6 +312,7 @@ function createDefaultPlan(payload: LiveRunPayload): LiveRunStep[] {
       riskTier: "MEDIUM",
       requiresApproval: false,
       target: appName,
+      meta: calendarEvent ? { calendarEvent } : undefined,
       status: "pending",
     };
     step.requiresApproval = shouldRequireApproval(step, autonomy);
@@ -874,6 +926,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
             currentStep.actionType,
           ),
           meta: {
+            ...(currentStep.meta || {}),
             goal: String((session.input as any)?.goal || ""),
             successCriteria: Array.isArray(output?.memory?.successCriteria)
               ? output.memory.successCriteria
