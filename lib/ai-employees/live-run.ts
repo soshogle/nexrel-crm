@@ -80,6 +80,12 @@ type LiveRunEvent = {
     | "error";
   message: string;
   createdAt: string;
+  trace?: {
+    seq?: number;
+    stepId?: string;
+    commandId?: string;
+    source?: string;
+  };
 };
 
 type WorkerCommand = {
@@ -150,12 +156,25 @@ function shouldRequireApproval(
 function retryBudgetFor(
   autonomy: AutonomyLevel,
   actionType: WorkerCommand["actionType"],
+  workflowTier: "tier_1" | "tier_2" | "tier_3" = "tier_3",
+  historicalSuccessRate = 0.8,
 ): number {
-  if (autonomy === "observe") return 1;
-  if (autonomy === "assist") return actionType === "navigate" ? 2 : 1;
-  if (autonomy === "autonomous_low_risk")
-    return actionType === "run_command" ? 1 : 2;
-  return actionType === "run_command" ? 2 : 3;
+  let budget = 1;
+  if (autonomy === "assist") budget = actionType === "navigate" ? 2 : 1;
+  if (autonomy === "autonomous_low_risk") {
+    budget = actionType === "run_command" ? 1 : 2;
+  }
+  if (autonomy === "autonomous_full") {
+    budget = actionType === "run_command" ? 2 : 3;
+  }
+
+  if (workflowTier === "tier_1") budget += 1;
+  if (workflowTier === "tier_3") budget -= 1;
+
+  if (historicalSuccessRate >= 0.92) budget += 1;
+  if (historicalSuccessRate < 0.65) budget -= 1;
+
+  return Math.max(1, Math.min(5, budget));
 }
 
 function deriveSuccessCriteria(goal: string, appName: string): string[] {
@@ -583,7 +602,16 @@ async function issueWorkerTokenForSession(input: {
   };
 }
 
-function getInitialOutput(payload: LiveRunPayload) {
+function getInitialOutput(
+  payload: LiveRunPayload,
+  historicalMemory?: {
+    priorRuns: number;
+    successRate: number;
+    blockerFrequency: Record<string, number>;
+    strategyHints: string[];
+    traceReplaySeed: string | null;
+  },
+) {
   const steps = createDefaultPlan(payload);
   const appName = inferAppName(payload);
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
@@ -633,6 +661,19 @@ function getInitialOutput(payload: LiveRunPayload) {
         audit: true,
         verification: true,
         policy,
+      },
+      historical: historicalMemory || {
+        priorRuns: 0,
+        successRate: 0.8,
+        blockerFrequency: {},
+        strategyHints: [],
+        traceReplaySeed: null,
+      },
+      traceReplay: {
+        traceId: crypto.randomUUID(),
+        seed: historicalMemory?.traceReplaySeed || null,
+        lastHash: "GENESIS",
+        lastSeq: 0,
       },
       successCriteria,
       timeline: [] as Array<{ at: string; note: string; kind: string }>,
@@ -693,6 +734,67 @@ function hasSufficientCompletionEvidence(output: any, steps: LiveRunStep[]) {
   }
 
   return true;
+}
+
+async function buildHistoricalMemory(
+  db: ReturnType<typeof getCrmDb>,
+  ctx: LiveRunContext,
+) {
+  const recent = await db.aIJob.findMany({
+    where: {
+      userId: ctx.userId,
+      jobType: "live_browser_session",
+    },
+    orderBy: { createdAt: "desc" },
+    take: 40,
+    select: {
+      status: true,
+      output: true,
+      input: true,
+      createdAt: true,
+    },
+  });
+
+  if (recent.length === 0) {
+    return {
+      priorRuns: 0,
+      successRate: 0.8,
+      blockerFrequency: {} as Record<string, number>,
+      strategyHints: [] as string[],
+      traceReplaySeed: null as string | null,
+    };
+  }
+
+  const successful = recent.filter(
+    (run) => run.status === AIJobStatus.COMPLETED,
+  ).length;
+  const blockerFrequency: Record<string, number> = {};
+  const strategyHints = new Set<string>();
+
+  for (const run of recent) {
+    const output = (run.output || {}) as any;
+    const memory = output?.memory || {};
+    const blockers = Array.isArray(memory.blockers) ? memory.blockers : [];
+    for (const blocker of blockers) {
+      const key = String(blocker?.blocker || "unknown");
+      blockerFrequency[key] = (blockerFrequency[key] || 0) + 1;
+    }
+    const timeline = Array.isArray(memory.timeline) ? memory.timeline : [];
+    for (const item of timeline) {
+      const note = String(item?.note || "");
+      if (/fallback|replan|recovered/i.test(note)) {
+        strategyHints.add(note.slice(0, 180));
+      }
+    }
+  }
+
+  return {
+    priorRuns: recent.length,
+    successRate: Math.max(0.1, successful / recent.length),
+    blockerFrequency,
+    strategyHints: Array.from(strategyHints).slice(0, 8),
+    traceReplaySeed: `replay-${recent[0].createdAt.toISOString()}`,
+  };
 }
 
 function sha256(value: string): string {
@@ -790,7 +892,8 @@ export async function startLiveRun(
     executionRuntime: resolveExecutionRuntime(payload),
   };
   const employee = await resolveEmployee(ctx, employeeRef, normalizedPayload);
-  const output = getInitialOutput(normalizedPayload);
+  const historicalMemory = await buildHistoricalMemory(db, ctx);
+  const output = getInitialOutput(normalizedPayload, historicalMemory);
 
   const job = await db.aIJob.create({
     data: {
@@ -862,7 +965,42 @@ export async function getLiveRun(ctx: LiveRunContext, sessionId: string) {
 
 function appendEvent(output: any, event: LiveRunEvent) {
   const next = { ...(output || {}) };
-  next.events = Array.isArray(next.events) ? [...next.events, event] : [event];
+  const existing = Array.isArray(next.events) ? [...next.events] : [];
+  const seq = existing.length + 1;
+  const previousHash = String(next?.memory?.traceReplay?.lastHash || "GENESIS");
+  const hashPayload = JSON.stringify({
+    previousHash,
+    seq,
+    id: event.id,
+    type: event.type,
+    message: event.message,
+    createdAt: event.createdAt,
+    stepId: event.trace?.stepId || null,
+    commandId: event.trace?.commandId || null,
+    source: event.trace?.source || null,
+  });
+  const hash = createHash("sha256").update(hashPayload).digest("hex");
+  const trace = {
+    ...(event.trace || {}),
+    seq,
+    previousHash,
+    hash,
+  };
+  event.trace = trace;
+  existing.push({ ...event, trace });
+  next.events = existing;
+
+  if (next?.memory?.traceReplay) {
+    const replay = { ...(next.memory.traceReplay || {}) };
+    replay.lastSeq = seq;
+    replay.lastEventType = event.type;
+    replay.lastEventAt = event.createdAt;
+    replay.lastHash = trace.hash;
+    next.memory = {
+      ...(next.memory || {}),
+      traceReplay: replay,
+    };
+  }
   return next;
 }
 
@@ -1062,6 +1200,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
         type: "approval_required",
         message: `Approval required for step: ${currentStep.title}`,
         createdAt: new Date().toISOString(),
+        trace: { stepId: currentStep.id, source: "policy_or_risk" },
       };
       const merged = appendEvent(output, event);
       await db.aIJob.update({
@@ -1082,6 +1221,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
       type: "step_started",
       message: `Step started: ${currentStep.title}`,
       createdAt: new Date().toISOString(),
+      trace: { stepId: currentStep.id, source: "planner" },
     };
     output.framePreview = `Nexrel AI is executing: ${currentStep.title}`;
     output.steps = steps;
@@ -1121,6 +1261,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
             type: "approval_required",
             message: `Policy approval required: ${policyCheck.reason}`,
             createdAt: new Date().toISOString(),
+            trace: { stepId: currentStep.id, source: "policy" },
           };
           const blocked = appendMemoryNote(appendEvent(output, policyEvent), {
             kind: "policy_gate",
@@ -1148,6 +1289,8 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
             (output?.memory?.autonomyLevel as AutonomyLevel) ||
               resolveAutonomyLevel((session.input || {}) as LiveRunPayload),
             currentStep.actionType,
+            (output?.memory?.workflowTier as any) || "tier_3",
+            Number(output?.memory?.historical?.successRate || 0.8),
           ),
           meta: {
             ...(currentStep.meta || {}),
@@ -1167,6 +1310,25 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
                   : [],
               ),
             policy,
+            retryBudget: retryBudgetFor(
+              (output?.memory?.autonomyLevel as AutonomyLevel) ||
+                resolveAutonomyLevel((session.input || {}) as LiveRunPayload),
+              currentStep.actionType,
+              (output?.memory?.workflowTier as any) || "tier_3",
+              Number(output?.memory?.historical?.successRate || 0.8),
+            ),
+            historical: {
+              successRate: Number(
+                output?.memory?.historical?.successRate || 0.8,
+              ),
+              blockerFrequency:
+                output?.memory?.historical?.blockerFrequency || {},
+              strategyHints: Array.isArray(
+                output?.memory?.historical?.strategyHints,
+              )
+                ? output.memory.historical.strategyHints
+                : [],
+            },
             successCriteria: Array.isArray(output?.memory?.successCriteria)
               ? output.memory.successCriteria
               : [],
@@ -1180,6 +1342,11 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
           type: "command_enqueued",
           message: `Command queued for worker: ${currentStep.title}`,
           createdAt: new Date().toISOString(),
+          trace: {
+            stepId: currentStep.id,
+            commandId: command.commandId,
+            source: "ai_plan",
+          },
         };
         merged = appendEvent({ ...merged, worker }, commandEvent);
         merged = appendMemoryNote(merged, {
@@ -1209,6 +1376,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
       message:
         `${currentStep.actionType.toUpperCase()} ${currentStep.target || currentStep.value || ""}`.trim(),
       createdAt: new Date().toISOString(),
+      trace: { stepId: currentStep.id, source: "inline_executor" },
     };
     merged = appendEvent(merged, actionEvent);
     await db.aIJob.update({
@@ -1280,6 +1448,7 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
     type: "step_completed",
     message: `Step completed: ${runningStep.title}`,
     createdAt: new Date().toISOString(),
+    trace: { stepId: runningStep.id, source: "executor" },
   };
   let merged = appendEvent(output, completeEvent);
   merged = appendMemoryNote(merged, {
@@ -1515,7 +1684,16 @@ export async function workerAckCommand(
           detail: `Retry ${attempt + 1}/${maxAttempts} after: ${payload.detail || "worker failure"}`,
           attempt: attempt + 1,
           maxAttempts,
-          meta: fallbackMeta,
+          meta: {
+            ...fallbackMeta,
+            retryBudget: maxAttempts,
+            priorFailureType: failureType || "unknown",
+            strategyHints: Array.isArray(
+              output?.memory?.historical?.strategyHints,
+            )
+              ? output.memory.historical.strategyHints
+              : [],
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -1558,6 +1736,11 @@ export async function workerAckCommand(
         ? `Worker completed command ${payload.commandId}`
         : `Worker failed command ${payload.commandId}`,
     createdAt: new Date().toISOString(),
+    trace: {
+      stepId: command.stepId,
+      commandId: payload.commandId,
+      source: "worker_ack",
+    },
   };
 
   output.steps = steps;
@@ -1629,6 +1812,7 @@ export async function enqueueWorkerCommand(
       executionRuntime:
         (output?.memory?.executionRuntime as ExecutionRuntime) || "openclaw",
       objectiveContract: output?.memory?.objectiveContract || undefined,
+      retryBudget: 1,
     },
     attempt: 1,
     maxAttempts: 1,
@@ -1648,6 +1832,11 @@ export async function enqueueWorkerCommand(
     type: "command_enqueued",
     message: `Owner queued ${command.actionType} command`,
     createdAt: now,
+    trace: {
+      stepId: command.stepId,
+      commandId: command.commandId,
+      source: "owner_remote",
+    },
   };
 
   const merged = appendEvent(output, event);
