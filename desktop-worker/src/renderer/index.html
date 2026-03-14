@@ -18,6 +18,31 @@
         <div id="status-pill" class="status-pill idle">Disconnected</div>
       </section>
 
+      <section id="permissionPanel" class="panel permissions hidden">
+        <div>
+          <h2>macOS permissions required</h2>
+          <p id="permissionText">
+            Screen Recording and Accessibility are required for full desktop
+            automation.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="openScreenSettingsBtn" class="btn ghost" type="button">
+            Open Screen Settings
+          </button>
+          <button
+            id="openAccessibilitySettingsBtn"
+            class="btn ghost"
+            type="button"
+          >
+            Open Accessibility Settings
+          </button>
+          <button id="refreshPermissionsBtn" class="btn ghost" type="button">
+            Recheck Permissions
+          </button>
+        </div>
+      </section>
+
       <section class="panel form-grid">
         <label class="full-width">
           One-Paste Connection Code

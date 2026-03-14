@@ -1,5 +1,11 @@
 const path = require("path");
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  systemPreferences,
+} = require("electron");
 const { WorkerEngine } = require("./worker-engine");
 const { loadConfig, saveConfig } = require("./store");
 
@@ -60,6 +66,38 @@ app.whenReady().then(() => {
 
   ipcMain.handle("worker:state", () => {
     return engine.getState();
+  });
+
+  ipcMain.handle("permissions:get", () => {
+    const platform = process.platform;
+    if (platform !== "darwin") {
+      return {
+        platform,
+        screen: "unsupported",
+        accessibility: "unsupported",
+      };
+    }
+
+    const screen = systemPreferences.getMediaAccessStatus("screen");
+    const accessibility = systemPreferences.isTrustedAccessibilityClient(false)
+      ? "granted"
+      : "denied";
+
+    return {
+      platform,
+      screen,
+      accessibility,
+    };
+  });
+
+  ipcMain.handle("permissions:open", async (_, area) => {
+    if (process.platform !== "darwin") return { ok: false };
+    const target =
+      area === "accessibility"
+        ? "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        : "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
+    await shell.openExternal(target);
+    return { ok: true };
   });
 
   ipcMain.handle("app:open-docs", async () => {

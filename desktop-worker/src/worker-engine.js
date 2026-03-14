@@ -483,6 +483,7 @@ class WorkerEngine extends EventEmitter {
 
     const now = Date.now();
     const shouldCaptureDesktop =
+      this.config?.desktopCaptureEnabled !== false &&
       !this.desktopCaptureBlocked &&
       now - this.lastDesktopCaptureAt >= this.getDesktopCaptureInterval();
     if (shouldCaptureDesktop) {
@@ -693,6 +694,7 @@ class WorkerEngine extends EventEmitter {
       ...config,
       heartbeatMs: Number(config.heartbeatMs || 2200),
       pollMs: Number(config.pollMs || 1500),
+      desktopCaptureEnabled: config.desktopCaptureEnabled !== false,
     };
     this.liveBoost = false;
     this.burstUntil = 0;

@@ -14,6 +14,15 @@ const stopBtn = document.getElementById("stopBtn");
 const openDocsBtn = document.getElementById("openDocsBtn");
 const logList = document.getElementById("logList");
 const statusPill = document.getElementById("status-pill");
+const permissionPanel = document.getElementById("permissionPanel");
+const permissionText = document.getElementById("permissionText");
+const openScreenSettingsBtn = document.getElementById("openScreenSettingsBtn");
+const openAccessibilitySettingsBtn = document.getElementById(
+  "openAccessibilitySettingsBtn",
+);
+const refreshPermissionsBtn = document.getElementById("refreshPermissionsBtn");
+
+let permissionState = null;
 
 function getFormValue() {
   return {
@@ -151,6 +160,37 @@ function autoFillFromDesktopKey() {
   appendLog("Desktop key decoded", `${parsed.baseUrl} · ${parsed.sessionId}`);
 }
 
+function renderPermissions(state) {
+  permissionState = state;
+  if (!permissionPanel || !permissionText) return;
+  if (!state || state.platform !== "darwin") {
+    permissionPanel.classList.add("hidden");
+    return;
+  }
+
+  const screenGranted = state.screen === "granted";
+  const accessibilityGranted = state.accessibility === "granted";
+  if (screenGranted && accessibilityGranted) {
+    permissionPanel.classList.add("hidden");
+    return;
+  }
+
+  permissionPanel.classList.remove("hidden");
+  permissionText.textContent =
+    `Screen Recording: ${state.screen}. Accessibility: ${state.accessibility}. ` +
+    "Grant both, then fully quit and reopen Nexrel Desktop Worker.";
+}
+
+async function refreshPermissions() {
+  try {
+    const state = await window.desktopWorker.getPermissions();
+    renderPermissions(state);
+    return state;
+  } catch {
+    return null;
+  }
+}
+
 async function hydrate() {
   const config = await window.desktopWorker.getConfig();
   baseUrlInput.value = config.baseUrl || "";
@@ -164,6 +204,7 @@ async function hydrate() {
 
   const state = await window.desktopWorker.getState();
   setStatus(state.running ? "online" : "idle");
+  await refreshPermissions();
 }
 
 saveBtn.addEventListener("click", async () => {
@@ -189,6 +230,18 @@ tokenInput.addEventListener("input", autoFillFromDesktopKey);
 startBtn.addEventListener("click", async () => {
   autoFillFromDesktopKey();
   const config = getFormValue();
+  const perms = await refreshPermissions();
+  const screenGranted =
+    perms?.platform !== "darwin" || perms?.screen === "granted";
+  const accessibilityGranted =
+    perms?.platform !== "darwin" || perms?.accessibility === "granted";
+  config.desktopCaptureEnabled = Boolean(screenGranted);
+  if (!screenGranted || !accessibilityGranted) {
+    appendLog(
+      "Permissions incomplete",
+      "Grant Screen Recording and Accessibility in macOS settings, then quit/reopen app.",
+    );
+  }
   await window.desktopWorker.saveConfig(config);
   try {
     await window.desktopWorker.startWorker(config);
@@ -208,6 +261,18 @@ stopBtn.addEventListener("click", async () => {
 
 openDocsBtn.addEventListener("click", () => {
   window.desktopWorker.openDocs();
+});
+
+openScreenSettingsBtn?.addEventListener("click", () => {
+  window.desktopWorker.openPermissionSettings("screen");
+});
+
+openAccessibilitySettingsBtn?.addEventListener("click", () => {
+  window.desktopWorker.openPermissionSettings("accessibility");
+});
+
+refreshPermissionsBtn?.addEventListener("click", () => {
+  refreshPermissions();
 });
 
 window.desktopWorker.onWorkerEvent((event) => {

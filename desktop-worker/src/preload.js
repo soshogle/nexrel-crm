@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld("desktopWorker", {
   startWorker: (input) => ipcRenderer.invoke("worker:start", input),
   stopWorker: () => ipcRenderer.invoke("worker:stop"),
   getState: () => ipcRenderer.invoke("worker:state"),
+  getPermissions: () => ipcRenderer.invoke("permissions:get"),
+  openPermissionSettings: (area) =>
+    ipcRenderer.invoke("permissions:open", area),
   openDocs: () => ipcRenderer.invoke("app:open-docs"),
   onWorkerEvent: (handler) => {
     const listener = (_, payload) => handler(payload);
