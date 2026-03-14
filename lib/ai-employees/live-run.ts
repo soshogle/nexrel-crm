@@ -1,6 +1,12 @@
 import { AIJobStatus, AIEmployeeType } from "@prisma/client";
 import { getCrmDb } from "@/lib/dal";
 import { createHash, randomBytes } from "crypto";
+import {
+  classifyBlocker,
+  classifyWorkflowTier,
+  parseCommandEvidence,
+  shouldEscalateToHuman,
+} from "@/lib/ai-employees/reliability";
 
 type LiveRunContext = {
   userId: string;
@@ -583,6 +589,10 @@ function getInitialOutput(payload: LiveRunPayload) {
   const successCriteria = deriveSuccessCriteria(payload.goal, appName);
   const autonomyLevel = resolveAutonomyLevel(payload);
   const executionRuntime = resolveExecutionRuntime(payload);
+  const workflowTier = classifyWorkflowTier({
+    goal: payload.goal,
+    targetApps: payload.targetApps,
+  });
   const objectiveContract = buildObjectiveContract(payload, successCriteria);
   const policy = buildControlPolicy(payload, autonomyLevel);
   const events: LiveRunEvent[] = [
@@ -615,6 +625,7 @@ function getInitialOutput(payload: LiveRunPayload) {
       missionGoal: payload.goal,
       autonomyLevel,
       executionRuntime,
+      workflowTier,
       objectiveContract,
       controlPlane: {
         auth: true,
@@ -661,32 +672,27 @@ function appendMemoryNote(
   return next;
 }
 
-function classifyFailure(
-  detail: string,
-):
-  | "invalid_url"
-  | "missing_app"
-  | "login_wall"
-  | "two_factor"
-  | "captcha"
-  | "selector_drift"
-  | "unknown" {
-  const text = String(detail || "").toLowerCase();
-  if (text.includes("invalid url") || text.includes("cannot navigate"))
-    return "invalid_url";
-  if (text.includes("unable to find application")) return "missing_app";
-  if (text.includes("auth/signin") || text.includes("login"))
-    return "login_wall";
-  if (
-    text.includes("2fa") ||
-    text.includes("two-factor") ||
-    text.includes("otp")
-  )
-    return "two_factor";
-  if (text.includes("captcha")) return "captcha";
-  if (text.includes("selector") || text.includes("timeout"))
-    return "selector_drift";
-  return "unknown";
+function hasSufficientCompletionEvidence(output: any, steps: LiveRunStep[]) {
+  const workerRequired = Boolean(output?.worker?.required);
+  if (!workerRequired) return true;
+  const runtime = String(output?.memory?.executionRuntime || "openclaw");
+  const completed = steps.filter((s) => s.status === "completed");
+  if (completed.length === 0) return false;
+
+  for (const step of completed) {
+    const evidence = parseCommandEvidence(String(step.result || ""));
+    if (!evidence) {
+      if (runtime === "legacy_worker" && String(step.result || "").trim()) {
+        continue;
+      }
+      return false;
+    }
+    if (String(evidence.status || "").toLowerCase() !== "completed") {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function sha256(value: string): string {
@@ -1006,6 +1012,22 @@ export async function tickLiveRun(ctx: LiveRunContext, sessionId: string) {
   if (!currentStep) {
     currentStep = steps.find((s) => s.status === "pending");
     if (!currentStep) {
+      const evidenceReady = hasSufficientCompletionEvidence(output, steps);
+      if (!evidenceReady) {
+        output.sessionState = "running";
+        output.framePreview =
+          "Awaiting evidence verification before mission completion.";
+        await db.aIJob.update({
+          where: { id: session.id },
+          data: {
+            output,
+            status: AIJobStatus.RUNNING,
+            progress: Math.max(session.progress || 0, 85),
+          },
+        });
+        return getLiveRun(ctx, session.id);
+      }
+
       state = "completed";
       output.sessionState = state;
       output.framePreview = "Mission completed successfully.";
@@ -1402,28 +1424,40 @@ export async function workerAckCommand(
 
   const command = commands.find((c) => c.commandId === payload.commandId);
   if (!command) throw new Error("Command not found");
+  const evidence = parseCommandEvidence(payload.detail || "");
+  const runtime = String(output?.memory?.executionRuntime || "openclaw");
   command.status = payload.status;
   command.detail = payload.detail;
   command.updatedAt = new Date().toISOString();
   const failureType =
-    payload.status === "failed" ? classifyFailure(payload.detail || "") : null;
+    payload.status === "failed"
+      ? String(evidence?.blockerClass || "").trim() ||
+        classifyBlocker(payload.detail || "")
+      : null;
 
   const step = steps.find((s) => s.id === command.stepId);
   if (step) {
     if (payload.status === "completed") {
-      step.status = "completed";
-      step.result = payload.detail || "Worker completed step";
-      output.currentStepId = null;
-      output.sessionState = "running";
-      Object.assign(
-        output,
-        appendMemoryNote(output, {
-          kind: "command_completed",
-          note: `${command.actionType} completed`,
-        }),
-      );
+      if (runtime === "openclaw" && !evidence) {
+        step.status = "failed";
+        step.result = "Missing structured execution evidence";
+        output.currentStepId = step.id;
+        output.sessionState = "failed";
+      } else {
+        step.status = "completed";
+        step.result = payload.detail || "Worker completed step";
+        output.currentStepId = null;
+        output.sessionState = "running";
+        Object.assign(
+          output,
+          appendMemoryNote(output, {
+            kind: "command_completed",
+            note: `${command.actionType} completed`,
+          }),
+        );
+      }
     } else {
-      if (failureType === "two_factor" || failureType === "captcha") {
+      if (failureType && shouldEscalateToHuman(failureType as any)) {
         step.status = "awaiting_approval";
         step.result = payload.detail || "Human verification required";
         output.currentStepId = step.id;
@@ -1432,13 +1466,13 @@ export async function workerAckCommand(
           id: crypto.randomUUID(),
           type: "approval_required",
           message:
-            "Human intervention required (2FA/CAPTCHA). Please complete verification and approve resume.",
+            "Human intervention required for blocker. Please resolve on desktop and approve resume.",
           createdAt: new Date().toISOString(),
         };
         const mergedHuman = appendEvent(output, humanEvent);
         const mergedMemory = appendMemoryNote(mergedHuman, {
           kind: "human_intervention",
-          note: "Paused for 2FA/CAPTCHA",
+          note: "Paused for human-required blocker",
           blocker: failureType,
           detail: payload.detail,
         });

@@ -357,6 +357,79 @@ class WorkerEngine extends EventEmitter {
     return `Executed command: ${shellCommand}${snippet ? ` | ${snippet.slice(0, 240)}` : ""}`;
   }
 
+  classifyCommandError(message) {
+    const text = String(message || "").toLowerCase();
+    if (text.includes("captcha")) return "captcha";
+    if (
+      text.includes("2fa") ||
+      text.includes("two-factor") ||
+      text.includes("verification code")
+    ) {
+      return "two_factor";
+    }
+    if (
+      text.includes("login wall") ||
+      text.includes("auth/signin") ||
+      text.includes("sign in")
+    ) {
+      return "login_wall";
+    }
+    if (text.includes("selector") || text.includes("strict mode violation")) {
+      return "selector_drift";
+    }
+    if (
+      text.includes("dialog") ||
+      text.includes("modal") ||
+      text.includes("popup")
+    ) {
+      return "modal_trap";
+    }
+    if (
+      text.includes("timeout") ||
+      text.includes("timed out") ||
+      text.includes("net::")
+    ) {
+      return "network_timeout";
+    }
+    if (
+      text.includes("permission") ||
+      text.includes("not permitted") ||
+      text.includes("access denied")
+    ) {
+      return "permission_denied";
+    }
+    if (text.includes("invalid url") || text.includes("cannot navigate")) {
+      return "invalid_url";
+    }
+    return "unknown";
+  }
+
+  isRecoverableErrorClass(errorClass) {
+    return (
+      errorClass === "selector_drift" ||
+      errorClass === "network_timeout" ||
+      errorClass === "modal_trap"
+    );
+  }
+
+  async applyRecovery(errorClass) {
+    if (!this.page || this.page.isClosed()) return;
+    if (errorClass === "modal_trap") {
+      await this.page.keyboard.press("Escape").catch(() => undefined);
+      await this.page.waitForTimeout(300).catch(() => undefined);
+      return;
+    }
+    if (errorClass === "network_timeout") {
+      await this.page
+        .reload({ waitUntil: "domcontentloaded", timeout: 15000 })
+        .catch(() => undefined);
+      return;
+    }
+    if (errorClass === "selector_drift") {
+      await this.page.waitForTimeout(450).catch(() => undefined);
+    }
+  }
+
   async executeBrowserCommand(command) {
     await this.ensurePageReady();
     if (!this.page) throw new Error("Browser page is not initialized");
@@ -382,8 +455,25 @@ class WorkerEngine extends EventEmitter {
       }
       const selector = String(command.target || "").trim();
       if (selector) {
-        await this.page.locator(selector).first().click({ timeout: 20000 });
-        return `Clicked ${selector}`;
+        try {
+          await this.page.locator(selector).first().click({ timeout: 20000 });
+          return `Clicked ${selector}`;
+        } catch {
+          const safeText = selector
+            .replace(/[#.>~:\[\]\(\)"'`]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          if (safeText) {
+            await this.page
+              .getByText(safeText, { exact: false })
+              .first()
+              .click({
+                timeout: 12000,
+              });
+            return `Clicked via text fallback ${safeText}`;
+          }
+          throw new Error(`selector click failed for ${selector}`);
+        }
       }
 
       const textLabel = String(command.value || "").trim();
@@ -409,11 +499,26 @@ class WorkerEngine extends EventEmitter {
         return `Typed at (${Math.round(typeX)}, ${Math.round(typeY)})`;
       }
       if (selector) {
-        await this.page
-          .locator(selector)
-          .first()
-          .fill(value, { timeout: 20000 });
-        return `Typed into ${selector}`;
+        try {
+          await this.page
+            .locator(selector)
+            .first()
+            .fill(value, { timeout: 20000 });
+          return `Typed into ${selector}`;
+        } catch {
+          const placeholder = selector
+            .replace(/[#.>~:\[\]\(\)"'`]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          if (placeholder) {
+            await this.page
+              .getByPlaceholder(placeholder, { exact: false })
+              .first()
+              .fill(value, { timeout: 12000 });
+            return `Typed via placeholder fallback ${placeholder}`;
+          }
+          throw new Error(`selector type failed for ${selector}`);
+        }
       }
       if (command?.meta?.label) {
         await this.page
@@ -480,6 +585,7 @@ class WorkerEngine extends EventEmitter {
   formatCommandDetail(command, detail, status = "completed") {
     const runtime = String(command?.meta?.executionRuntime || "legacy_worker");
     const objective = String(command?.meta?.goal || "").slice(0, 240);
+    const pageText = String(detail || "");
     const evidence = {
       status,
       runtime,
@@ -487,7 +593,9 @@ class WorkerEngine extends EventEmitter {
       timestamp: new Date().toISOString(),
       pageUrl: this.page && !this.page.isClosed() ? this.page.url() : null,
       objective,
-      detail: String(detail || "").slice(0, 500),
+      blockerClass:
+        status === "failed" ? this.classifyCommandError(pageText) : null,
+      detail: pageText.slice(0, 500),
     };
     return JSON.stringify(evidence);
   }
@@ -601,12 +709,53 @@ class WorkerEngine extends EventEmitter {
           this.log("info", `Executing ${command.actionType}`, {
             commandId: command.commandId,
           });
-          const detail = await this.executeCommand(command);
+          let detail = "";
+          let status = "completed";
+          const maxAttempts = Number(command?.meta?.retryBudget || 2);
+          for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+              detail = await this.executeCommand(command);
+              status = "completed";
+              break;
+            } catch (error) {
+              const message = error?.message || "Command execution failed";
+              const errorClass = this.classifyCommandError(message);
+              if (
+                attempt < maxAttempts &&
+                this.isRecoverableErrorClass(errorClass)
+              ) {
+                this.log("warn", `Recoverable failure on attempt ${attempt}`, {
+                  commandId: command.commandId,
+                  errorClass,
+                  message,
+                });
+                await this.applyRecovery(errorClass);
+                continue;
+              }
+              status = "failed";
+              detail = message;
+              break;
+            }
+          }
+
           const formattedDetail = this.formatCommandDetail(
             command,
             detail,
-            "completed",
+            status,
           );
+          if (status === "failed") {
+            await this.postBridge({
+              action: "ack_command",
+              commandId: command.commandId,
+              status: "failed",
+              detail: formattedDetail,
+            });
+            this.log("error", `Failed ${command.commandId}`, {
+              detail: formattedDetail,
+            });
+            continue;
+          }
+
           await this.postBridge({
             action: "ack_command",
             commandId: command.commandId,

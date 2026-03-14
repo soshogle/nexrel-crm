@@ -64,6 +64,8 @@
     "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts",
     "audit:dal": "tsx scripts/guardrails/audit-dal-routing.ts",
     "audit:dal:strict": "tsx scripts/guardrails/audit-dal-routing.ts --strict",
+    "reliability:nightly": "tsx scripts/reliability/nightly-benchmark.ts",
+    "reliability:gate": "npm run typecheck && npm run reliability:nightly",
     "tenancy:attestation:weekly": "tsx scripts/tenancy/generate-tenant-db-mapping-attestation.ts",
     "tenancy:migrate-existing-owners": "tsx scripts/tenancy/migrate-existing-owners-to-dedicated-db.ts"
   },

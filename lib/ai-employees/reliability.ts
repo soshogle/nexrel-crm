@@ -1,0 +1,123 @@
+export type WorkflowTier = "tier_1" | "tier_2" | "tier_3";
+
+export type BlockerType =
+  | "invalid_url"
+  | "missing_app"
+  | "login_wall"
+  | "two_factor"
+  | "captcha"
+  | "selector_drift"
+  | "modal_trap"
+  | "permission_denied"
+  | "network_timeout"
+  | "unknown";
+
+export function classifyWorkflowTier(input: {
+  goal: string;
+  targetApps?: string[];
+}): WorkflowTier {
+  const goal = String(input.goal || "").toLowerCase();
+  const apps = (input.targetApps || []).map((v) =>
+    String(v || "").toLowerCase(),
+  );
+  const corpus = `${goal} ${apps.join(" ")}`;
+
+  const tier1Keywords = [
+    "calendar",
+    "gmail",
+    "email",
+    "google sheets",
+    "sheets",
+    "crm",
+    "hubspot",
+    "salesforce",
+    "appointment",
+    "meeting",
+  ];
+  if (tier1Keywords.some((kw) => corpus.includes(kw))) return "tier_1";
+
+  const tier2Keywords = [
+    "slack",
+    "notion",
+    "asana",
+    "trello",
+    "drive",
+    "dropbox",
+    "analytics",
+    "ad manager",
+  ];
+  if (tier2Keywords.some((kw) => corpus.includes(kw))) return "tier_2";
+
+  return "tier_3";
+}
+
+export function classifyBlocker(detail: string): BlockerType {
+  const text = String(detail || "").toLowerCase();
+  if (text.includes("invalid url") || text.includes("cannot navigate")) {
+    return "invalid_url";
+  }
+  if (text.includes("unable to find application")) return "missing_app";
+  if (
+    text.includes("auth/signin") ||
+    text.includes("login wall") ||
+    text.includes("sign in")
+  ) {
+    return "login_wall";
+  }
+  if (
+    text.includes("2fa") ||
+    text.includes("two-factor") ||
+    text.includes("otp")
+  ) {
+    return "two_factor";
+  }
+  if (text.includes("captcha")) return "captcha";
+  if (text.includes("selector") || text.includes("strict mode violation")) {
+    return "selector_drift";
+  }
+  if (
+    text.includes("modal") ||
+    text.includes("dialog") ||
+    text.includes("popup")
+  ) {
+    return "modal_trap";
+  }
+  if (
+    text.includes("permission") ||
+    text.includes("not permitted") ||
+    text.includes("access denied")
+  ) {
+    return "permission_denied";
+  }
+  if (
+    text.includes("timeout") ||
+    text.includes("timed out") ||
+    text.includes("network")
+  ) {
+    return "network_timeout";
+  }
+  return "unknown";
+}
+
+export function shouldEscalateToHuman(blocker: BlockerType): boolean {
+  return (
+    blocker === "two_factor" ||
+    blocker === "captcha" ||
+    blocker === "permission_denied"
+  );
+}
+
+export function parseCommandEvidence(
+  detail: string,
+): Record<string, any> | null {
+  const text = String(detail || "").trim();
+  if (!text.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object")
+      return parsed as Record<string, any>;
+    return null;
+  } catch {
+    return null;
+  }
+}
