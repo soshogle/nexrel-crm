@@ -6,13 +6,13 @@
  * DELETE - Delete post (auth required)
  */
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getMetaDb } from "@/lib/db/meta-db";
-import { apiErrors } from "@/lib/api-error";
+import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
     }
 
     const [posts, total] = await Promise.all([
-      getMetaDb().blogPost.findMany({
+      prisma.blogPost.findMany({
         where,
         orderBy: { publishedAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      getMetaDb().blogPost.count({ where }),
+      prisma.blogPost.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -67,50 +67,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      title,
-      slug,
-      excerpt,
-      content,
-      category,
-      industry,
-      problemImage,
-      solutionImage,
-      readTime,
-    } = body;
+    const { title, slug, excerpt, content, category, industry, problemImage, solutionImage, readTime } = body;
 
     if (!title || !content || !category || !industry) {
-      return apiErrors.badRequest(
-        "title, content, category, and industry are required",
-      );
+      return apiErrors.badRequest("title, content, category, and industry are required");
     }
 
-    const finalSlug =
-      slug ||
-      title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
+    const finalSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-    const existing = await getMetaDb().blogPost.findUnique({
-      where: { slug: finalSlug },
-    });
+    const existing = await prisma.blogPost.findUnique({ where: { slug: finalSlug } });
     if (existing) {
       return apiErrors.conflict("A post with this slug already exists");
     }
 
     const wordCount = content.split(/\s+/).length;
-    const estimatedReadTime =
-      readTime || `${Math.max(1, Math.ceil(wordCount / 200))} min read`;
+    const estimatedReadTime = readTime || `${Math.max(1, Math.ceil(wordCount / 200))} min read`;
 
-    const post = await getMetaDb().blogPost.create({
+    const post = await prisma.blogPost.create({
       data: {
         userId: session.user.id,
         title,
         slug: finalSlug,
-        excerpt:
-          excerpt ||
-          content.substring(0, 160).replace(/[#*_\[\]]/g, "") + "...",
+        excerpt: excerpt || content.substring(0, 160).replace(/[#*_\[\]]/g, '') + '...',
         content,
         category,
         industry,
@@ -136,24 +114,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      id,
-      title,
-      slug,
-      excerpt,
-      content,
-      category,
-      industry,
-      problemImage,
-      solutionImage,
-      readTime,
-    } = body;
+    const { id, title, slug, excerpt, content, category, industry, problemImage, solutionImage, readTime } = body;
 
     if (!id) {
       return apiErrors.badRequest("id is required");
     }
 
-    const existing = await getMetaDb().blogPost.findUnique({ where: { id } });
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
     if (!existing) {
       return apiErrors.notFound("Post not found");
     }
@@ -162,9 +129,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (slug && slug !== existing.slug) {
-      const slugTaken = await getMetaDb().blogPost.findUnique({
-        where: { slug },
-      });
+      const slugTaken = await prisma.blogPost.findUnique({ where: { slug } });
       if (slugTaken) {
         return apiErrors.conflict("Slug already taken");
       }
@@ -187,7 +152,7 @@ export async function PUT(request: NextRequest) {
     if (solutionImage !== undefined) data.solutionImage = solutionImage;
     if (readTime !== undefined) data.readTime = readTime;
 
-    const post = await getMetaDb().blogPost.update({ where: { id }, data });
+    const post = await prisma.blogPost.update({ where: { id }, data });
 
     return NextResponse.json({ success: true, post });
   } catch (error: unknown) {
@@ -210,7 +175,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.badRequest("id is required");
     }
 
-    const existing = await getMetaDb().blogPost.findUnique({ where: { id } });
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
     if (!existing) {
       return apiErrors.notFound("Post not found");
     }
@@ -218,7 +183,7 @@ export async function DELETE(request: NextRequest) {
       return apiErrors.forbidden("You can only delete your own posts");
     }
 
-    await getMetaDb().blogPost.delete({ where: { id } });
+    await prisma.blogPost.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error("[Blog API] Delete error:", error);

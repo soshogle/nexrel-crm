@@ -23,36 +23,14 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [resolvedIndustry, setResolvedIndustry] = useState<string | null>(
-    ((session?.user as any)?.industry as string) || null,
-  );
 
-  const industry =
-    resolvedIndustry || ((session?.user as any)?.industry as string) || null;
+  const industry = (session?.user as any)?.industry || null;
   const config = getIndustryBookingConfig(industry);
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/auth/signin'); return; }
     if (status === 'authenticated') { fetchAppointments(); }
   }, [status, router]);
-
-  useEffect(() => {
-    const fromSession = ((session?.user as any)?.industry as string) || null;
-    if (fromSession) {
-      setResolvedIndustry(fromSession);
-      return;
-    }
-
-    if (status === 'authenticated') {
-      fetch('/api/session/context')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          const resolved = (data?.industry as string | null) || null;
-          if (resolved) setResolvedIndustry(resolved);
-        })
-        .catch(() => {});
-    }
-  }, [status, (session?.user as any)?.industry]);
 
   const fetchAppointments = async () => {
     try {
