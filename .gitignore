@@ -7,6 +7,7 @@ data/market-reports/
 # Temp / build artifacts (not for deployment)
 .tmp-*/
 owner-websites/**/data/xml/
+artifacts/github-run-*/
 
 # Owner websites - developed in their own repos (e.g. soshogle/darksword-armory)
 # Do NOT commit website code to nexrel-crm; commits go to the owner's GitHub repo
