@@ -79,31 +79,6 @@ export default function InventoryPage() {
     }
   }, [sessionStatus, hasInventoryAccess, userIndustry, router]);
 
-  // Show loading while checking access
-  if (
-    sessionStatus === "loading" ||
-    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
-  ) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Guard against unauthenticated state
-  if (sessionStatus === "unauthenticated" || !session) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            Please sign in to access inventory
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (!userIndustry) return;
     if (hasInventoryAccess) {
@@ -201,6 +176,31 @@ export default function InventoryPage() {
       toast.error(error?.message || "Failed to add item");
     }
   };
+
+  // Show loading while checking access
+  if (
+    sessionStatus === "loading" ||
+    (sessionStatus === "authenticated" && userIndustry && !hasInventoryAccess)
+  ) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state
+  if (sessionStatus === "unauthenticated" || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            Please sign in to access inventory
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const getStockStatusColor = (status: string) => {
     switch (status) {

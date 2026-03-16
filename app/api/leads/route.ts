@@ -4,8 +4,8 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { leadService } from "@/lib/dal";
+import { getRouteDb } from "@/lib/dal/get-route-db";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { detectLeadWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
 import { apiErrors } from "@/lib/api-error";
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const queryResult = LeadsGetQuerySchema.safeParse({
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
+    const db = getRouteDb(session);
 
     const lead = await leadService.create(ctx, data);
 
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger workflows on lead creation (RE and industry auto-run)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: { industry: true },
     });
@@ -136,9 +138,8 @@ export async function POST(request: NextRequest) {
         );
       });
     } else if (user?.industry) {
-      const { detectIndustryLeadWorkflowTriggers } = await import(
-        "@/lib/industry-workflows/lead-triggers"
-      );
+      const { detectIndustryLeadWorkflowTriggers } =
+        await import("@/lib/industry-workflows/lead-triggers");
       detectIndustryLeadWorkflowTriggers(
         session.user.id,
         lead.id,
