@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -162,14 +162,14 @@ export function IndustryAIEmployees({
   industry: Industry;
   isAdmin?: boolean;
 }) {
-  const module = getIndustryAIEmployeeModule(industry);
-  if (!module) return null;
-
-  const employees = Object.values(module.configs).map((c) => ({
-    ...c,
-    id: c.type,
-    priority: c.defaultPriority,
-  })) as Array<IndustryEmployeeConfig & { id: string; priority: string }>;
+  const industryModule = getIndustryAIEmployeeModule(industry);
+  const employees = industryModule
+    ? (Object.values(industryModule.configs).map((c) => ({
+        ...c,
+        id: c.type,
+        priority: c.defaultPriority,
+      })) as Array<IndustryEmployeeConfig & { id: string; priority: string }>)
+    : [];
 
   const categories = Array.from(new Set(employees.map((e) => e.category))).map(
     (cat) => ({
@@ -209,9 +209,26 @@ export function IndustryAIEmployees({
     (typeof employees)[0] | null
   >(null);
 
+  const fetchProvisionedAgents = useCallback(async () => {
+    try {
+      setIsLoadingAgents(true);
+      const response = await fetch(
+        `/api/industry-ai-employees/provision?industry=${industry}`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setProvisionedAgents(data.agents || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch provisioned agents:", error);
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  }, [industry]);
+
   useEffect(() => {
     fetchProvisionedAgents();
-  }, [industry]);
+  }, [fetchProvisionedAgents]);
 
   useEffect(() => {
     fetch(`/api/ai-employees/auto-run?industry=${industry}`)
@@ -225,6 +242,8 @@ export function IndustryAIEmployees({
     !!autoRunSettings[getAutoRunKey(employeeType)];
 
   const router = useRouter();
+
+  if (!industryModule) return null;
 
   const handleAutoRunChange = async (
     employeeType: string,
@@ -260,23 +279,6 @@ export function IndustryAIEmployees({
       toast.error("Failed to update auto-run");
     } finally {
       setAutoRunUpdating(null);
-    }
-  };
-
-  const fetchProvisionedAgents = async () => {
-    try {
-      setIsLoadingAgents(true);
-      const response = await fetch(
-        `/api/industry-ai-employees/provision?industry=${industry}`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setProvisionedAgents(data.agents || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch provisioned agents:", error);
-    } finally {
-      setIsLoadingAgents(false);
     }
   };
 

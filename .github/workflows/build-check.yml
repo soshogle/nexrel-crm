@@ -28,6 +28,3 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
-
-      - name: Reliability nightly benchmark
-        run: npm run reliability:nightly

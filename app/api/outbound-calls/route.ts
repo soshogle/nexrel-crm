@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getCrmDb } from "@/lib/dal";
-import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getRouteDb } from "@/lib/dal/get-route-db";
+import { initiateOutboundCall } from "@/lib/twilio";
 import { apiErrors } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
@@ -13,18 +13,25 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return apiErrors.unauthorized();
     }
-    const ctx = getDalContextFromSession(session);
-    if (!ctx) return apiErrors.unauthorized();
-    const db = getCrmDb(ctx);
+
+    const db = getRouteDb(session);
+
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return apiErrors.notFound("User not found");
+    }
 
     const { searchParams } = new URL(request.url);
     const voiceAgentId = searchParams.get("voiceAgentId");
     const status = searchParams.get("status");
 
-    const where: any = { userId: session.user.id };
+    const where: any = { userId: user.id };
     if (voiceAgentId) where.voiceAgentId = voiceAgentId;
     if (status) where.status = status;
 
@@ -75,12 +82,19 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return apiErrors.unauthorized();
     }
-    const ctx = getDalContextFromSession(session);
-    if (!ctx) return apiErrors.unauthorized();
-    const db = getCrmDb(ctx);
+
+    const db = getRouteDb(session);
+
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return apiErrors.notFound("User not found");
+    }
 
     const body = await request.json();
     const {
@@ -107,7 +121,7 @@ export async function POST(request: NextRequest) {
     const voiceAgent = await db.voiceAgent.findFirst({
       where: {
         id: voiceAgentId,
-        userId: session.user.id,
+        userId: user.id,
       },
     });
 
@@ -127,12 +141,11 @@ export async function POST(request: NextRequest) {
       "🔍 Validating agent exists in ElevenLabs:",
       voiceAgent.elevenLabsAgentId,
     );
-    const { elevenLabsProvisioning } = await import(
-      "@/lib/elevenlabs-provisioning"
-    );
+    const { elevenLabsProvisioning } =
+      await import("@/lib/elevenlabs-provisioning");
     const validation = await elevenLabsProvisioning.validateAgentSetup(
       voiceAgent.elevenLabsAgentId,
-      session.user.id,
+      user.id,
     );
 
     if (!validation.valid) {
@@ -158,7 +171,7 @@ export async function POST(request: NextRequest) {
     // Create outbound call record
     const outboundCall = await db.outboundCall.create({
       data: {
-        userId: session.user.id,
+        userId: user.id,
         voiceAgentId,
         leadId,
         name,
@@ -202,7 +215,7 @@ export async function POST(request: NextRequest) {
         // Create call log
         const callLog = await db.callLog.create({
           data: {
-            userId: session.user.id,
+            userId: user.id,
             voiceAgentId,
             leadId,
             direction: "OUTBOUND",
@@ -284,7 +297,7 @@ export async function POST(request: NextRequest) {
         // CRITICAL FIX: Create CallLog even for failed calls so users can see what went wrong
         const failedCallLog = await db.callLog.create({
           data: {
-            userId: session.user.id,
+            userId: user.id,
             voiceAgentId,
             leadId,
             direction: "OUTBOUND",

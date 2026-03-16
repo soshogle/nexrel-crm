@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getCrmDb } from "@/lib/dal";
-import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { getRouteDb } from "@/lib/dal/get-route-db";
 import { elevenLabsProvisioning } from "@/lib/elevenlabs-provisioning";
 import { generateReservationSystemPrompt } from "@/lib/voice-reservation-helper";
 import { VOICE_AGENT_LIMIT } from "@/lib/voice-agent-templates";
@@ -67,18 +66,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user?.id && !session?.user?.email) {
       return apiErrors.unauthorized();
     }
+    const db = getRouteDb(session);
 
-    const ctx = getDalContextFromSession(session);
-    if (!ctx) {
-      return apiErrors.unauthorized();
+    // Look up user from main DB (where provision writes agents). Prefer email for consistency across meta/main DB split.
+    let user = session.user.email
+      ? await db.user.findUnique({ where: { email: session.user.email } })
+      : null;
+    if (!user && session.user.id) {
+      user = await db.user.findUnique({ where: { id: session.user.id } });
     }
-    const db = getCrmDb(ctx);
-
-    const user = await db.user.findUnique({ where: { id: ctx.userId } });
-    const userId = user?.id ?? ctx.userId;
+    const userId = user?.id ?? session.user.id;
     if (!userId) {
       return apiErrors.notFound("User not found");
     }
@@ -274,21 +274,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return apiErrors.unauthorized();
-
-    const ctx = getDalContextFromSession(session);
-    if (!ctx) return apiErrors.unauthorized();
-    const db = getCrmDb(ctx);
+    if (!session?.user?.email) return apiErrors.unauthorized();
+    const db = getRouteDb(session);
 
     const user = await db.user.findUnique({
-      where: { id: ctx.userId },
+      where: { email: session.user.email },
     });
     if (!user) return apiErrors.notFound("User not found");
 
     // Enforce 12-agent limit (super admins bypass)
     if (user.role !== "SUPER_ADMIN") {
       const existingCount = await (db as any).voiceAgent.count({
-        where: { userId: ctx.userId },
+        where: { userId: user.id },
       });
       if (existingCount >= VOICE_AGENT_LIMIT) {
         return NextResponse.json(
@@ -313,27 +310,6 @@ export async function POST(request: NextRequest) {
       );
     }
     const body = parseResult.data;
-    const ownerPhone =
-      typeof user.phone === "string" && user.phone.trim().length > 0
-        ? user.phone.trim()
-        : null;
-    const requestedTransferPhone =
-      typeof body.transferPhone === "string" &&
-      body.transferPhone.trim().length > 0
-        ? body.transferPhone.trim()
-        : null;
-    const requestedBackupPhone =
-      typeof body.backupPhoneNumber === "string" &&
-      body.backupPhoneNumber.trim().length > 0
-        ? body.backupPhoneNumber.trim()
-        : null;
-
-    const fallbackFromOwnerProfile =
-      !requestedTransferPhone && !requestedBackupPhone;
-    const effectiveTransferPhone =
-      requestedTransferPhone || (fallbackFromOwnerProfile ? ownerPhone : null);
-    const effectiveBackupPhone =
-      requestedBackupPhone || (fallbackFromOwnerProfile ? ownerPhone : null);
 
     const knowledgeBaseTexts = Array.isArray(body.knowledgeBaseTexts)
       ? body.knowledgeBaseTexts.filter((t) => typeof t === "string" && t.trim())
@@ -371,9 +347,8 @@ export async function POST(request: NextRequest) {
 
     // Fetch user's language preference
     const userLanguage = user.language || body.language || "en";
-    const { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } = await import(
-      "@/lib/voice-languages"
-    );
+    const { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } =
+      await import("@/lib/voice-languages");
 
     // Build system prompt
     let systemPrompt = body.systemPrompt;
@@ -399,7 +374,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
     const agentType = body.type || "INBOUND";
     const agent = await (db as any).voiceAgent.create({
       data: {
-        userId: ctx.userId,
+        userId: user.id,
         name: body.name,
         description: body.description,
         type: agentType,
@@ -449,8 +424,8 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         googleCalendarId: body.googleCalendarId,
         availableHours: body.availableHours,
         appointmentDuration: body.appointmentDuration || 30,
-        transferPhone: effectiveTransferPhone,
-        backupPhoneNumber: effectiveBackupPhone,
+        transferPhone: body.transferPhone,
+        backupPhoneNumber: body.backupPhoneNumber,
         twilioPhoneNumber: body.twilioPhoneNumber,
         enableVoicemail: body.enableVoicemail || false,
         voicemailMessage: body.voicemailMessage,
@@ -477,7 +452,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
     if (knowledgeBaseFileIds.length > 0) {
       try {
         const ownedFiles = await (db as any).knowledgeBaseFile.findMany({
-          where: { id: { in: knowledgeBaseFileIds }, userId: ctx.userId },
+          where: { id: { in: knowledgeBaseFileIds }, userId: user.id },
           select: { id: true },
         });
         if (ownedFiles.length > 0) {
@@ -505,7 +480,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
     ];
 
     try {
-      const whereClause: any = { userId: ctx.userId };
+      const whereClause: any = { userId: user.id };
       if (knowledgeBaseFileIds.length > 0) {
         whereClause.id = { in: knowledgeBaseFileIds };
       }
@@ -539,7 +514,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
 
       // Import onboarding documents
       const userWithProgress: any = await db.user.findUnique({
-        where: { id: ctx.userId },
+        where: { id: user.id },
         select: { onboardingProgress: true },
       } as any);
 
@@ -666,7 +641,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : "
         language: "en",
         maxCallDuration: body.maxCallDuration,
         twilioPhoneNumber: body.twilioPhoneNumber,
-        userId: ctx.userId,
+        userId: user.id,
         voiceAgentId: agent.id,
       });
 

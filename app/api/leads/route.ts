@@ -5,11 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { leadService } from "@/lib/dal";
-import { getCrmDb } from "@/lib/dal/db";
-import {
-  getDalContextFromSession,
-  resolveDalContext,
-} from "@/lib/context/industry-context";
+import { getRouteDb } from "@/lib/dal/get-route-db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { detectLeadWorkflowTriggers } from "@/lib/real-estate/workflow-triggers";
 import { apiErrors } from "@/lib/api-error";
 import {
@@ -19,8 +16,6 @@ import {
 import { emitCRMEvent } from "@/lib/crm-event-emitter";
 import { parsePagination, paginatedResponse } from "@/lib/api-utils";
 import { syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
-import { runMasterConductorOperatorPreflight } from "@/lib/nexrel-ai-brain/master-conductor";
-import { logNexrelAIExecutionOutcome } from "@/lib/nexrel-ai-brain/decision-log";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,11 +25,9 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized();
     }
 
-    const resolvedCtx = await resolveDalContext(session.user.id).catch(
-      () => null,
-    );
-    const ctx = getDalContextFromSession(session) ?? resolvedCtx;
+    const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
+    const db = getRouteDb(session);
 
     const { searchParams } = new URL(request.url);
     const queryResult = LeadsGetQuerySchema.safeParse({
@@ -50,113 +43,23 @@ export async function GET(request: NextRequest) {
     const { status, search } = queryResult.data;
     const pagination = parsePagination(request);
 
-    const resolveScopedUserIds = async (
-      db: ReturnType<typeof getCrmDb>,
-    ): Promise<string[]> => {
-      const ids = new Set<string>([session.user.id, ctx.userId]);
-      if (session.user.email) {
-        const emailUser = await db.user.findFirst({
-          where: { email: session.user.email },
-          select: { id: true },
-        });
-        if (emailUser?.id) ids.add(emailUser.id);
-      }
-      if (session.user.role !== "BUSINESS_OWNER" && session.user.agencyId) {
-        try {
-          const owner = await db.user.findFirst({
-            where: {
-              agencyId: session.user.agencyId,
-              role: "BUSINESS_OWNER",
-            },
-            select: { id: true },
-          });
-          if (owner?.id) ids.add(owner.id);
-        } catch {
-          // Best effort only
-        }
-      }
-      return Array.from(ids);
-    };
-
-    const db = getCrmDb(ctx);
-    const scopedUserIds = await resolveScopedUserIds(db);
-    const where = {
-      userId:
-        scopedUserIds.length === 1 ? scopedUserIds[0] : { in: scopedUserIds },
-      ...(status && status !== "ALL" ? { status: status as any } : {}),
-      ...(search
-        ? {
-            OR: [
-              {
-                businessName: {
-                  contains: search,
-                  mode: "insensitive" as const,
-                },
-              },
-              {
-                contactPerson: {
-                  contains: search,
-                  mode: "insensitive" as const,
-                },
-              },
-              { email: { contains: search, mode: "insensitive" as const } },
-              { phone: { contains: search } },
-            ],
-          }
-        : {}),
-    };
-
-    let leads: any[] = [];
-    let total = 0;
-    try {
-      [leads, total] = await Promise.all([
-        db.lead.findMany({
-          where,
-          include: {
-            notes: { select: { id: true, createdAt: true } },
-            messages: { select: { id: true, createdAt: true } },
-          },
-          take: pagination.take,
-          skip: pagination.skip,
-          orderBy: [
-            { contactPerson: "asc" },
-            { businessName: "asc" },
-            { email: "asc" },
-            { createdAt: "desc" },
-          ],
-        }),
-        db.lead.count({ where }),
-      ]);
-    } catch {
-      [leads, total] = await Promise.all([
-        db.lead.findMany({
-          where,
-          select: {
-            id: true,
-            userId: true,
-            businessName: true,
-            contactPerson: true,
-            email: true,
-            phone: true,
-            status: true,
-            source: true,
-            city: true,
-            state: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-          take: pagination.take,
-          skip: pagination.skip,
-          orderBy: [
-            { contactPerson: "asc" },
-            { businessName: "asc" },
-            { email: "asc" },
-            { createdAt: "desc" },
-          ],
-        }),
-        db.lead.count({ where }),
-      ]);
-    }
+    const [leads, total] = await Promise.all([
+      leadService.findMany(ctx, {
+        status,
+        search,
+        take: pagination.take,
+        skip: pagination.skip,
+        orderBy: [
+          { contactPerson: "asc" },
+          { businessName: "asc" },
+          { email: "asc" },
+          { createdAt: "desc" },
+        ],
+      }),
+      leadService.count(ctx, {
+        ...(status && status !== "ALL" ? { status: status as any } : {}),
+      }),
+    ]);
 
     const isOrthoDemo =
       String(session.user.email || "")
@@ -207,41 +110,9 @@ export async function POST(request: NextRequest) {
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) return apiErrors.unauthorized();
-
-    const preflight = await runMasterConductorOperatorPreflight({
-      userId: session.user.id,
-      surface: "leads",
-      objective: "lead_create",
-      requestedActions: [
-        {
-          type: "CREATE_TASK",
-          riskTier: "LOW",
-          reason: "Lead creation preflight",
-          payload: {
-            businessName: data.businessName || null,
-            contactPerson: data.contactPerson || null,
-          },
-        },
-      ],
-    });
-    if (!preflight.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Blocked by Nexrel AI master conductor policy",
-        },
-        { status: 409 },
-      );
-    }
+    const db = getRouteDb(session);
 
     const lead = await leadService.create(ctx, data);
-
-    await logNexrelAIExecutionOutcome({
-      userId: session.user.id,
-      surface: "leads",
-      objective: "lead_create",
-      actual: { processed: 1, sent: 1, failed: 0 },
-    });
 
     emitCRMEvent("lead_created", session.user.id, {
       entityId: lead.id,
@@ -254,23 +125,25 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger workflows on lead creation (RE and industry auto-run)
-    const industry = ctx.industry;
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { industry: true },
+    });
 
-    if (industry === "REAL_ESTATE") {
+    if (user?.industry === "REAL_ESTATE") {
       detectLeadWorkflowTriggers(session.user.id, lead.id).catch((err) => {
         console.error(
           "[RE Workflow] Failed to trigger workflow for lead:",
           err,
         );
       });
-    } else if (industry) {
-      const { detectIndustryLeadWorkflowTriggers } = await import(
-        "@/lib/industry-workflows/lead-triggers"
-      );
+    } else if (user?.industry) {
+      const { detectIndustryLeadWorkflowTriggers } =
+        await import("@/lib/industry-workflows/lead-triggers");
       detectIndustryLeadWorkflowTriggers(
         session.user.id,
         lead.id,
-        industry,
+        user.industry,
       ).catch((err) => {
         console.error(
           "[Industry Workflow] Failed to trigger workflows for lead:",
