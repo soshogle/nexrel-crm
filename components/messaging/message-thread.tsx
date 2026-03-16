@@ -1,22 +1,30 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone, Video, MoreVertical, Check, CheckCheck, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatDistanceToNow, format } from 'date-fns';
-import { toast } from 'sonner';
-import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog';
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Send,
+  Paperclip,
+  Phone,
+  Video,
+  MoreVertical,
+  Check,
+  CheckCheck,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow, format } from "date-fns";
+import { toast } from "sonner";
+import { MakeCallDialog } from "@/components/voice-agents/make-call-dialog";
 
 interface Message {
   id: string;
   conversationId: string;
   content: string;
-  direction: 'INBOUND' | 'OUTBOUND';
-  status: 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+  direction: "INBOUND" | "OUTBOUND";
+  status: "SENDING" | "SENT" | "DELIVERED" | "READ" | "FAILED";
   sentAt: string;
   deliveredAt?: string;
   readAt?: string;
@@ -41,19 +49,95 @@ interface MessageThreadProps {
   onConversationNotFound?: () => void;
 }
 
-export function MessageThread({ conversationId, onConversationNotFound }: MessageThreadProps) {
+export function MessageThread({
+  conversationId,
+  onConversationNotFound,
+}: MessageThreadProps) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [conversationLoadFailed, setConversationLoadFailed] = useState(false);
   const [sending, setSending] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
-  const [smartReplies, setSmartReplies] = useState<{ id: string; label: string; text: string }[]>([]);
+  const [smartReplies, setSmartReplies] = useState<
+    { id: string; label: string; text: string }[]
+  >([]);
   const [showSmartReplies, setShowSmartReplies] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const loadConversation = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/messaging/conversations/${conversationId}`,
+      );
+      if (response.status === 404) {
+        toast.error("Conversation not found or no longer available");
+        onConversationNotFound?.();
+        setConversation(null);
+        return;
+      }
+      if (!response.ok) {
+        setConversationLoadFailed(true);
+        toast.error("Failed to load conversation");
+        return;
+      }
+      const data = await response.json();
+      if (!data?.conversation) {
+        setConversationLoadFailed(true);
+        return;
+      }
+      setConversation(data.conversation);
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+      setConversationLoadFailed(true);
+      toast.error("Failed to load conversation");
+    }
+  }, [conversationId, onConversationNotFound]);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/messaging/conversations/${conversationId}/messages`,
+      );
+      if (response.status === 404) {
+        onConversationNotFound?.();
+        setMessages([]);
+        return;
+      }
+      const data = await response.json();
+      setMessages(data.messages || []);
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, onConversationNotFound]);
+
+  const markAsRead = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/messaging/conversations/${conversationId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ markAsRead: true }),
+        },
+      );
+      if (response.status === 404) {
+        onConversationNotFound?.();
+      }
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+  }, [conversationId, onConversationNotFound]);
 
   useEffect(() => {
     if (conversationId) {
@@ -62,7 +146,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
       loadMessages();
       markAsRead();
     }
-  }, [conversationId]);
+  }, [conversationId, loadConversation, loadMessages, markAsRead]);
 
   // Auto-refresh messages every 5 seconds
   useEffect(() => {
@@ -73,101 +157,42 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
     }, 5000); // Refresh every 5 seconds
 
     return () => clearInterval(interval);
-  }, [conversationId]);
+  }, [conversationId, loadMessages]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const loadConversation = async () => {
-    try {
-      const response = await fetch(`/api/messaging/conversations/${conversationId}`);
-      if (response.status === 404) {
-        toast.error('Conversation not found or no longer available');
-        onConversationNotFound?.();
-        setConversation(null);
-        return;
-      }
-      if (!response.ok) {
-        setConversationLoadFailed(true);
-        toast.error('Failed to load conversation');
-        return;
-      }
-      const data = await response.json();
-      if (!data?.conversation) {
-        setConversationLoadFailed(true);
-        return;
-      }
-      setConversation(data.conversation);
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      setConversationLoadFailed(true);
-      toast.error('Failed to load conversation');
-    }
-  };
-
-  const loadMessages = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/messaging/conversations/${conversationId}/messages`);
-      if (response.status === 404) {
-        onConversationNotFound?.();
-        setMessages([]);
-        return;
-      }
-      const data = await response.json();
-      setMessages(data.messages || []);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async () => {
-    try {
-      const response = await fetch(`/api/messaging/conversations/${conversationId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAsRead: true }),
-      });
-      if (response.status === 404) {
-        onConversationNotFound?.();
-      }
-    } catch (error) {
-      console.error('Error marking as read:', error);
-    }
-  };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || sending) return;
 
     try {
       setSending(true);
-      const response = await fetch(`/api/messaging/conversations/${conversationId}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: newMessage.trim() }),
-      });
+      const response = await fetch(
+        `/api/messaging/conversations/${conversationId}/send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: newMessage.trim() }),
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || error.details || 'Failed to send message');
+        throw new Error(
+          error.message || error.details || "Failed to send message",
+        );
       }
 
       const data = await response.json();
-      
+
       // Add message to UI immediately
       setMessages([...messages, data.message]);
-      setNewMessage('');
-      toast.success('Message sent successfully');
+      setNewMessage("");
+      toast.success("Message sent successfully");
     } catch (error: any) {
-      console.error('Error sending message:', error);
-      toast.error(error.message || 'Failed to send message');
+      console.error("Error sending message:", error);
+      toast.error(error.message || "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -175,26 +200,26 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
 
   const handleVideoCallClick = () => {
     // Fallback to voice workflow until native video is integrated.
-    toast.info('Starting a voice call workflow for this contact');
+    toast.info("Starting a voice call workflow for this contact");
     setCallDialogOpen(true);
   };
 
   const handleMoreOptionsClick = async () => {
     try {
-      const identifier = conversation?.contactIdentifier || '';
+      const identifier = conversation?.contactIdentifier || "";
       if (!identifier) {
-        toast.info('No contact identifier available');
+        toast.info("No contact identifier available");
         return;
       }
       await navigator.clipboard.writeText(identifier);
-      toast.success('Contact identifier copied');
+      toast.success("Contact identifier copied");
     } catch {
-      toast.error('Failed to copy contact identifier');
+      toast.error("Failed to copy contact identifier");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -207,43 +232,45 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
     }
     setLoadingReplies(true);
     try {
-      const res = await fetch(`/api/smart-replies?conversationId=${conversationId}`);
+      const res = await fetch(
+        `/api/smart-replies?conversationId=${conversationId}`,
+      );
       const data = await res.json();
       if (res.ok && data.replies) {
         setSmartReplies(data.replies);
         setShowSmartReplies(true);
       } else {
-        toast.error('Could not load smart replies');
+        toast.error("Could not load smart replies");
       }
     } catch {
-      toast.error('Could not load smart replies');
+      toast.error("Could not load smart replies");
     } finally {
       setLoadingReplies(false);
     }
   };
 
-  const useSmartReply = (text: string) => {
+  const applySmartReply = (text: string) => {
     setNewMessage((prev) => (prev ? `${prev}\n\n${text}` : text));
     setShowSmartReplies(false);
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   const getMessageStatusIcon = (status: string) => {
     switch (status) {
-      case 'SENT':
+      case "SENT":
         return <Check className="h-3 w-3 text-white/80" />;
-      case 'DELIVERED':
-      case 'READ':
+      case "DELIVERED":
+      case "READ":
         return <CheckCheck className="h-3 w-3 text-white" />;
-      case 'FAILED':
+      case "FAILED":
         return <span className="text-purple-400 text-xs">!</span>;
       default:
         return null;
@@ -286,7 +313,9 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-gray-900">{conversation.contactName}</h3>
+            <h3 className="font-semibold text-gray-900">
+              {conversation.contactName}
+            </h3>
             <p className="text-sm text-gray-500">
               {conversation.contactIdentifier}
             </p>
@@ -294,8 +323,8 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
         </div>
 
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => setCallDialogOpen(true)}
             title="Make Voice AI Call"
@@ -303,16 +332,16 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
           >
             <Phone className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={handleVideoCallClick}
             title="Video call"
           >
             <Video className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={handleMoreOptionsClick}
             title="More options"
@@ -347,14 +376,15 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
         ) : (
           <div className="space-y-4">
             {messages.map((message, index) => {
-              const isOutbound = message.direction === 'OUTBOUND';
-              const showAvatar = index === 0 || 
+              const isOutbound = message.direction === "OUTBOUND";
+              const showAvatar =
+                index === 0 ||
                 messages[index - 1].direction !== message.direction;
 
               return (
                 <div
                   key={message.id}
-                  className={`flex gap-2 ${isOutbound ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-2 ${isOutbound ? "flex-row-reverse" : "flex-row"}`}
                 >
                   {showAvatar && !isOutbound && (
                     <Avatar className="h-8 w-8">
@@ -367,13 +397,13 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
                   {!showAvatar && !isOutbound && <div className="w-8" />}
 
                   <div
-                    className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'} max-w-[70%]`}
+                    className={`flex flex-col ${isOutbound ? "items-end" : "items-start"} max-w-[70%]`}
                   >
                     <div
                       className={`px-4 py-2 rounded-2xl ${
                         isOutbound
-                          ? 'bg-gradient-to-r from-[#7b42f6] to-[#5a2db3] text-white'
-                          : 'bg-white border border-gray-200'
+                          ? "bg-gradient-to-r from-[#7b42f6] to-[#5a2db3] text-white"
+                          : "bg-white border border-gray-200"
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">
@@ -382,7 +412,7 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
                     </div>
                     <div className="flex items-center gap-1 mt-1 px-2">
                       <span className="text-xs text-gray-500">
-                        {format(new Date(message.sentAt), 'HH:mm')}
+                        {format(new Date(message.sentAt), "HH:mm")}
                       </span>
                       {isOutbound && getMessageStatusIcon(message.status)}
                     </div>
@@ -405,12 +435,17 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
                 variant="outline"
                 size="sm"
                 className="h-auto py-1.5 px-2 text-xs"
-                onClick={() => useSmartReply(r.text)}
+                onClick={() => applySmartReply(r.text)}
               >
                 {r.label}
               </Button>
             ))}
-            <Button variant="ghost" size="sm" className="h-auto py-1.5 px-2 text-xs" onClick={() => setShowSmartReplies(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto py-1.5 px-2 text-xs"
+              onClick={() => setShowSmartReplies(false)}
+            >
               Close
             </Button>
           </div>
@@ -443,8 +478,8 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
             rows={1}
           />
 
-          <Button 
-            onClick={sendMessage} 
+          <Button
+            onClick={sendMessage}
             disabled={!newMessage.trim() || sending}
             size="icon"
             className="shrink-0 bg-gradient-to-r from-[#7b42f6] to-[#5a2db3] hover:from-[#7b42f6]/90 hover:to-[#5a2db3]/90 text-white border-0"
@@ -458,8 +493,8 @@ export function MessageThread({ conversationId, onConversationNotFound }: Messag
       <MakeCallDialog
         open={callDialogOpen}
         onOpenChange={setCallDialogOpen}
-        defaultName={conversation?.contactName || ''}
-        defaultPhone={conversation?.contactIdentifier || ''}
+        defaultName={conversation?.contactName || ""}
+        defaultPhone={conversation?.contactIdentifier || ""}
         defaultPurpose="Follow-up from message conversation"
       />
     </div>

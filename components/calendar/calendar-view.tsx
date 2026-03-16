@@ -1,13 +1,37 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, MapPin, User, Video, Phone } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, setHours, setMinutes, getHours, getMinutes } from 'date-fns'
-import { AppointmentDetailDialog } from './appointment-detail-dialog'
-import { toast } from 'sonner'
+import { useState, useEffect } from "react";
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Clock,
+  MapPin,
+  User,
+  Video,
+  Phone,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  addMonths,
+  subMonths,
+  isToday,
+  setHours,
+  setMinutes,
+  getHours,
+  getMinutes,
+} from "date-fns";
+import { AppointmentDetailDialog } from "./appointment-detail-dialog";
+import { toast } from "sonner";
 import {
   DndContext,
   DragEndEvent,
@@ -17,9 +41,9 @@ import {
   useSensors,
   PointerSensor,
   pointerWithin,
-} from '@dnd-kit/core'
-import { useDraggable, useDroppable } from '@dnd-kit/core'
-import type { Appointment } from '@/types/appointment';
+} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import type { Appointment } from "@/types/appointment";
 
 interface CalendarViewProps {
   appointments: Appointment[];
@@ -28,41 +52,54 @@ interface CalendarViewProps {
 }
 
 // Draggable Appointment Component
-function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons, onClick }: any) {
-  // Validate appointment data
-  if (!appointment || !appointment.id) {
-    console.warn('⚠️ Invalid appointment data in DraggableAppointment:', appointment)
-    return null
-  }
+function DraggableAppointment({
+  appointment,
+  meetingTypeColors,
+  meetingTypeIcons,
+  onClick,
+}: any) {
+  const isValidAppointment = Boolean(appointment && appointment.id);
 
   // Voice AI reservations can't be moved via PATCH - only booking appointments
   // Past appointments cannot be moved
-  const now = new Date()
-  const startTime = appointment.startTime ? new Date(appointment.startTime) : null
-  const isPast = startTime && !isNaN(startTime.getTime()) && startTime < now
-  const isDraggable = appointment.source !== 'VOICE_AI' && !isPast
+  const now = new Date();
+  const startTime = appointment?.startTime
+    ? new Date(appointment.startTime)
+    : null;
+  const isPast = startTime && !isNaN(startTime.getTime()) && startTime < now;
+  const isDraggable =
+    isValidAppointment && appointment.source !== "VOICE_AI" && !isPast;
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: appointment.id,
-    data: appointment,
-    disabled: !isDraggable,
-  })
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: String(appointment?.id ?? "invalid-appointment"),
+      data: appointment,
+      disabled: !isDraggable,
+    });
+
+  if (!isValidAppointment) {
+    console.warn(
+      "⚠️ Invalid appointment data in DraggableAppointment:",
+      appointment,
+    );
+    return null;
+  }
 
   // Safely get the meeting icon with fallback
-  const meetingType = appointment.meetingType || 'PHONE_CALL'
-  const MeetingIcon = meetingTypeIcons[meetingType] || MapPin
+  const meetingType = appointment.meetingType || "PHONE_CALL";
+  const MeetingIcon = meetingTypeIcons[meetingType] || MapPin;
 
   // Safely parse the date with error handling
-  let timeText = 'Invalid time'
+  let timeText = "Invalid time";
   try {
     if (appointment.startTime) {
-      const appointmentDate = new Date(appointment.startTime)
+      const appointmentDate = new Date(appointment.startTime);
       if (!isNaN(appointmentDate.getTime())) {
-        timeText = format(appointmentDate, 'HH:mm')
+        timeText = format(appointmentDate, "HH:mm");
       }
     }
   } catch (error) {
-    console.error('Error formatting appointment time:', error)
+    console.error("Error formatting appointment time:", error);
   }
 
   const style = transform
@@ -70,13 +107,14 @@ function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         opacity: isDragging ? 0.5 : 1,
       }
-    : undefined
+    : undefined;
 
   // Get the title with fallback
-  const title = appointment.title || 'Untitled Appointment'
-  
+  const title = appointment.title || "Untitled Appointment";
+
   // Color by meeting type for visibility
-  const typeColor = meetingTypeColors[meetingType] || meetingTypeColors['PHONE_CALL']
+  const typeColor =
+    meetingTypeColors[meetingType] || meetingTypeColors["PHONE_CALL"];
 
   return (
     <div
@@ -86,12 +124,12 @@ function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons
       className={`
         text-xs px-2 py-1 rounded-lg border shadow-sm antialiased
         ${typeColor}
-        ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-        ${isDragging ? 'opacity-50' : 'hover:shadow-md hover:shadow-purple-500/20'}
+        ${isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-default"}
+        ${isDragging ? "opacity-50" : "hover:shadow-md hover:shadow-purple-500/20"}
       `}
       onClick={(e) => {
-        e.stopPropagation()
-        onClick(appointment)
+        e.stopPropagation();
+        onClick(appointment);
       }}
     >
       <div className="flex items-center gap-1 mb-0.5">
@@ -100,37 +138,49 @@ function DraggableAppointment({ appointment, meetingTypeColors, meetingTypeIcons
       </div>
       <div className="truncate font-semibold">{title}</div>
     </div>
-  )
+  );
 }
 
 // Droppable Day Cell Component
-function DroppableDay({ date, children, onDateClick, isCurrentMonth, isTodayDate }: any) {
+function DroppableDay({
+  date,
+  children,
+  onDateClick,
+  isCurrentMonth,
+  isTodayDate,
+}: any) {
   const { setNodeRef, isOver } = useDroppable({
     id: `day-${date.toISOString()}`,
     data: { date },
-  })
+  });
 
   return (
     <div
       ref={setNodeRef}
       className={`
         aspect-square rounded-lg p-2 cursor-pointer transition-all relative
-        ${isCurrentMonth ? 'gradient-primary border border-purple-500/30 hover:border-white/40 hover:opacity-90' : 'bg-black/20 border border-purple-500/10'}
-        ${isOver ? 'ring-2 ring-purple-500 scale-105 shadow-lg shadow-purple-500/30' : ''}
+        ${isCurrentMonth ? "gradient-primary border border-purple-500/30 hover:border-white/40 hover:opacity-90" : "bg-black/20 border border-purple-500/10"}
+        ${isOver ? "ring-2 ring-purple-500 scale-105 shadow-lg shadow-purple-500/30" : ""}
       `}
       onClick={() => onDateClick(date)}
     >
       {children}
     </div>
-  )
+  );
 }
 
-export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }: CalendarViewProps) {
-  const [currentMonth, setCurrentMonth] = useState<Date | null>(null)
-  const [mounted, setMounted] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
-  const [showDetailDialog, setShowDetailDialog] = useState(false)
-  const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null)
+export function CalendarView({
+  appointments,
+  onDateClick,
+  onAppointmentUpdated,
+}: CalendarViewProps) {
+  const [currentMonth, setCurrentMonth] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [activeAppointment, setActiveAppointment] =
+    useState<Appointment | null>(null);
 
   // DND Sensors
   const sensors = useSensors(
@@ -138,144 +188,159 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       activationConstraint: {
         distance: 5,
       },
-    })
-  )
+    }),
+  );
 
   // Initialize date only on client side
   useEffect(() => {
-    setMounted(true)
-    setCurrentMonth(new Date())
-    
+    setMounted(true);
+    setCurrentMonth(new Date());
+
     // Debug: Log all appointments when component mounts
-    console.log('📅 Calendar View: Total appointments:', appointments.length)
-    appointments.forEach(apt => {
-      console.log('  - Appointment:', apt.title, 'Date:', apt.startTime, 'Status:', apt.status)
-    })
-  }, [appointments])
+    console.log("📅 Calendar View: Total appointments:", appointments.length);
+    appointments.forEach((apt) => {
+      console.log(
+        "  - Appointment:",
+        apt.title,
+        "Date:",
+        apt.startTime,
+        "Status:",
+        apt.status,
+      );
+    });
+  }, [appointments]);
 
   const handlePreviousMonth = () => {
-    if (!currentMonth) return
-    setCurrentMonth(subMonths(currentMonth, 1))
-  }
+    if (!currentMonth) return;
+    setCurrentMonth(subMonths(currentMonth, 1));
+  };
 
   const handleNextMonth = () => {
-    if (!currentMonth) return
-    setCurrentMonth(addMonths(currentMonth, 1))
-  }
+    if (!currentMonth) return;
+    setCurrentMonth(addMonths(currentMonth, 1));
+  };
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment)
-    setShowDetailDialog(true)
-  }
+    setSelectedAppointment(appointment);
+    setShowDetailDialog(true);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const appointment = event.active.data.current as Appointment
-    setActiveAppointment(appointment)
-  }
+    const appointment = event.active.data.current as Appointment;
+    setActiveAppointment(appointment);
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveAppointment(null)
+    const { active, over } = event;
+    setActiveAppointment(null);
 
-    if (!over) return
+    if (!over) return;
 
-    const appointment = active.data.current as Appointment
-    if (!appointment?.startTime) return
-    const aptStart = new Date(appointment.startTime)
+    const appointment = active.data.current as Appointment;
+    if (!appointment?.startTime) return;
+    const aptStart = new Date(appointment.startTime);
     if (aptStart < new Date()) {
-      toast.error('Cannot move past appointments')
-      return
+      toast.error("Cannot move past appointments");
+      return;
     }
 
-    const targetDateCell = over.data.current
+    const targetDateCell = over.data.current;
 
-    if (!targetDateCell?.date) return
+    if (!targetDateCell?.date) return;
 
-    const newDate = targetDateCell.date as Date
-    const oldStartTime = new Date(appointment.startTime)
-    const oldEndTime = new Date(appointment.endTime)
+    const newDate = targetDateCell.date as Date;
+    const oldStartTime = new Date(appointment.startTime);
+    const oldEndTime = new Date(appointment.endTime);
 
     // Preserve the time but change the date
     const newStartTime = setMinutes(
       setHours(newDate, getHours(oldStartTime)),
-      getMinutes(oldStartTime)
-    )
+      getMinutes(oldStartTime),
+    );
     const newEndTime = setMinutes(
       setHours(newDate, getHours(oldEndTime)),
-      getMinutes(oldEndTime)
-    )
+      getMinutes(oldEndTime),
+    );
 
     // Only update if the date actually changed
     if (isSameDay(newStartTime, oldStartTime)) {
-      return
+      return;
     }
 
     // Voice AI reservations can't be moved via this API
-    if (appointment.source === 'VOICE_AI') {
-      toast.error('Voice AI reservations cannot be moved. Edit the reservation directly.')
-      return
+    if (appointment.source === "VOICE_AI") {
+      toast.error(
+        "Voice AI reservations cannot be moved. Edit the reservation directly.",
+      );
+      return;
     }
 
     try {
       const response = await fetch(`/api/appointments/${appointment.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startTime: newStartTime.toISOString(),
           endTime: newEndTime.toISOString(),
         }),
-      })
+      });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.message || 'Failed to update appointment')
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to update appointment");
       }
 
-      toast.success(`Appointment moved to ${format(newDate, 'MMMM d, yyyy')}`)
-      onAppointmentUpdated()
+      toast.success(`Appointment moved to ${format(newDate, "MMMM d, yyyy")}`);
+      onAppointmentUpdated();
     } catch (error) {
-      console.error('Error moving appointment:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to move appointment')
+      console.error("Error moving appointment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to move appointment",
+      );
     }
-  }
+  };
 
   const getAppointmentsForDate = (date: Date) => {
     // Ensure appointments is an array
     if (!Array.isArray(appointments)) {
-      console.warn('⚠️ appointments is not an array:', appointments)
-      return []
+      console.warn("⚠️ appointments is not an array:", appointments);
+      return [];
     }
 
-    const filtered = appointments.filter(apt => {
+    const filtered = appointments.filter((apt) => {
       try {
         // Validate appointment has required fields
         if (!apt || !apt.startTime || !apt.status) {
-          console.warn('⚠️ Appointment missing required fields:', apt)
-          return false
+          console.warn("⚠️ Appointment missing required fields:", apt);
+          return false;
         }
 
-        const aptDate = new Date(apt.startTime)
+        const aptDate = new Date(apt.startTime);
         if (isNaN(aptDate.getTime())) {
-          console.warn('⚠️ Invalid date for appointment:', apt.id, apt.startTime)
-          return false
+          console.warn(
+            "⚠️ Invalid date for appointment:",
+            apt.id,
+            apt.startTime,
+          );
+          return false;
         }
 
-        const matches = isSameDay(aptDate, date) && apt.status !== 'CANCELLED'
-        
+        const matches = isSameDay(aptDate, date) && apt.status !== "CANCELLED";
+
         // Debug logging (removed for performance, only log in dev mode if needed)
         // if (matches) {
         //   console.log('✅ Appointment matched for date:', format(date, 'MMM d, yyyy'), apt.title)
         // }
-        
-        return matches
+
+        return matches;
       } catch (error) {
-        console.error('Error parsing appointment date:', error, apt)
-        return false
+        console.error("Error parsing appointment date:", error, apt);
+        return false;
       }
-    })
-    
-    return filtered
-  }
+    });
+
+    return filtered;
+  };
 
   // Don't render until mounted and date initialized
   if (!mounted || !currentMonth) {
@@ -283,26 +348,28 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       <div className="flex items-center justify-center p-12">
         <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
       </div>
-    )
+    );
   }
 
   // Calculate dates only after guard clause to prevent hydration errors
-  const monthStart = startOfMonth(currentMonth)
-  const monthEnd = endOfMonth(currentMonth)
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Add padding days to start from Sunday
-  const startDayOfWeek = monthStart.getDay()
-  const paddingDays = Array(startDayOfWeek).fill(null)
+  const startDayOfWeek = monthStart.getDay();
+  const paddingDays = Array(startDayOfWeek).fill(null);
 
   // Colors by meeting type - dark text for visibility on purple gradient
   const meetingTypeColors: Record<string, string> = {
-    IN_PERSON: 'bg-blue-500/35 text-blue-900 border-blue-600/50 font-semibold',
-    VIDEO_CALL: 'bg-green-500/35 text-green-900 border-green-600/50 font-semibold',
-    VIDEO: 'bg-green-500/35 text-green-900 border-green-600/50 font-semibold',
-    PHONE_CALL: 'bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold',
-    PHONE: 'bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold',
-  }
+    IN_PERSON: "bg-blue-500/35 text-blue-900 border-blue-600/50 font-semibold",
+    VIDEO_CALL:
+      "bg-green-500/35 text-green-900 border-green-600/50 font-semibold",
+    VIDEO: "bg-green-500/35 text-green-900 border-green-600/50 font-semibold",
+    PHONE_CALL:
+      "bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold",
+    PHONE: "bg-amber-500/35 text-amber-900 border-amber-600/50 font-semibold",
+  };
 
   const meetingTypeIcons: Record<string, any> = {
     IN_PERSON: MapPin,
@@ -310,7 +377,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
     VIDEO: Video,
     PHONE_CALL: Phone,
     PHONE: Phone,
-  }
+  };
 
   return (
     <DndContext
@@ -322,11 +389,23 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={handlePreviousMonth} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handlePreviousMonth}
+            className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-2xl font-bold gradient-text">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <Button variant="outline" size="icon" onClick={handleNextMonth} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
+          <h2 className="text-2xl font-bold gradient-text">
+            {format(currentMonth, "MMMM yyyy")}
+          </h2>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleNextMonth}
+            className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -335,8 +414,11 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
         <Card className="p-6 glass-effect border-purple-500/20 shadow-xl">
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-2 mb-4">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-sm font-semibold text-purple-200 antialiased py-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="text-center text-sm font-semibold text-purple-200 antialiased py-2"
+              >
                 {day}
               </div>
             ))}
@@ -347,10 +429,10 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
             {paddingDays.map((_, index) => (
               <div key={`padding-${index}`} className="aspect-square" />
             ))}
-            {daysInMonth.map(date => {
-              const dayAppointments = getAppointmentsForDate(date)
-              const isCurrentMonth = isSameMonth(date, currentMonth)
-              const isTodayDate = isToday(date)
+            {daysInMonth.map((date) => {
+              const dayAppointments = getAppointmentsForDate(date);
+              const isCurrentMonth = isSameMonth(date, currentMonth);
+              const isTodayDate = isToday(date);
 
               return (
                 <DroppableDay
@@ -361,11 +443,13 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                   isTodayDate={isTodayDate}
                 >
                   <div className="flex flex-col h-full">
-                    <div className={`text-sm font-semibold mb-1 antialiased ${isTodayDate ? 'text-white font-bold underline' : isCurrentMonth ? 'text-white' : 'text-purple-300/50'}`}>
-                      {format(date, 'd')}
+                    <div
+                      className={`text-sm font-semibold mb-1 antialiased ${isTodayDate ? "text-white font-bold underline" : isCurrentMonth ? "text-white" : "text-purple-300/50"}`}
+                    >
+                      {format(date, "d")}
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
-                      {dayAppointments.slice(0, 3).map(apt => (
+                      {dayAppointments.slice(0, 3).map((apt) => (
                         <DraggableAppointment
                           key={apt.id}
                           appointment={apt}
@@ -375,14 +459,16 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                         />
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div className={`text-xs px-2 font-medium antialiased ${isCurrentMonth ? 'text-white/90' : 'text-purple-300/50'}`}>
+                        <div
+                          className={`text-xs px-2 font-medium antialiased ${isCurrentMonth ? "text-white/90" : "text-purple-300/50"}`}
+                        >
                           +{dayAppointments.length - 3} more
                         </div>
                       )}
                     </div>
                   </div>
                 </DroppableDay>
-              )
+              );
             })}
           </div>
         </Card>
@@ -391,14 +477,18 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
         <AppointmentDetailDialog
           open={showDetailDialog}
           onClose={() => {
-            setShowDetailDialog(false)
-            setSelectedAppointment(null)
+            setShowDetailDialog(false);
+            setSelectedAppointment(null);
           }}
           appointment={selectedAppointment}
           onUpdate={() => {
-            onAppointmentUpdated()
+            onAppointmentUpdated();
           }}
-          isPast={selectedAppointment?.startTime ? new Date(selectedAppointment.startTime) < new Date() : false}
+          isPast={
+            selectedAppointment?.startTime
+              ? new Date(selectedAppointment.startTime) < new Date()
+              : false
+          }
         />
       </div>
 
@@ -408,7 +498,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
           <div
             className={`
               text-xs px-2 py-1 rounded-lg border opacity-95 shadow-xl shadow-purple-500/30 antialiased font-semibold
-              ${meetingTypeColors[activeAppointment.meetingType] || meetingTypeColors['PHONE_CALL']}
+              ${meetingTypeColors[activeAppointment.meetingType] || meetingTypeColors["PHONE_CALL"]}
             `}
           >
             <div className="flex items-center gap-1">
@@ -419,5 +509,5 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
         ) : null}
       </DragOverlay>
     </DndContext>
-  )
+  );
 }
