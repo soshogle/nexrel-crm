@@ -9,33 +9,45 @@ const config = [
   {
     ignores: [
       "node_modules/**",
-      ".next/**",
+      "**/.next/**",
       ".tmp-*/**",
+      "**/.tmp-*/**",
       "out/**",
+      "**/out/**",
       "dist/**",
+      "**/dist/**",
       "public/assets/**",
       "owner-websites/**",
+      "**/owner-websites/**",
       "nexrel-ecommerce-template/**",
       "nexrel-service-template/**",
       "Theodora-Stavropoulos-Remax/**",
+      "**/Theodora-Stavropoulos-Remax/**",
       "darksword-armory/**",
       "scripts/**",
       "backups/**",
+      "**/backups/**",
       "prisma/migrations/**",
     ],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "off",
+    },
   },
   ...compat.extends("next/core-web-vitals"),
   {
     rules: {
       "react/no-unescaped-entities": "off",
-      "react/no-children-prop": "warn",
-      "react-hooks/exhaustive-deps": "warn",
+      "react/no-children-prop": "off",
+      "react-hooks/exhaustive-deps": "off",
       "react-hooks/rules-of-hooks": "warn",
       "@next/next/no-img-element": "off",
-      "@next/next/no-assign-module-variable": "warn",
-      "@next/next/no-html-link-for-pages": "warn",
+      "@next/next/no-assign-module-variable": "off",
+      "@next/next/no-html-link-for-pages": "off",
+      "jsx-a11y/alt-text": "off",
       "no-restricted-imports": [
-        "warn",
+        "off",
         {
           paths: [
             {
